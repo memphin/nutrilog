@@ -147,12 +147,13 @@ struct HealthSettingsView: View {
 
 /// Settings → Apple Health → "Write to Apple Health" (backlog #27, FR-43): the global toggle and pending writes.
 struct HealthWriteSection: View {
-    let writes: HealthWriteService
-    @State private var error: String?
+    /// Bound straight to the service's property: no `Bool` closures or method references here (Swift 6.2 IRGen
+    /// crashed on a reabstraction thunk for one).
+    @Bindable var writes: HealthWriteService
 
     var body: some View {
         Section {
-            Toggle("Write to Apple Health", isOn: Binding(get: { writes.isEnabled }, set: setEnabled))
+            Toggle("Write to Apple Health", isOn: $writes.writeToHealth)
             if writes.isEnabled, writes.failedCount > 0 {
                 VStack(alignment: .leading, spacing: NL.Spacing.xs) {
                     Text("^[\(writes.failedCount) entry](inflect: true) not yet written to Apple Health")
@@ -160,27 +161,25 @@ struct HealthWriteSection: View {
                         Text(lastError).font(.footnote).foregroundStyle(.secondary)
                     }
                 }
-                Button("Try again") { Task { await writes.drain() } }
+                Button("Try again", action: retry)
             }
-            if let error {
+            if let error = writes.settingError {
                 Text(error).foregroundStyle(.red)
             }
         } footer: {
-            Text(
-                writes.isEnabled
-                    ? "Nutrients of each diary entry and the water you log are written to Apple Health "
-                    + "and kept up to date when you edit or delete them."
-                    : "Nothing is written to Apple Health. Samples written earlier stay there.",
-            )
+            Text(writes.isEnabled ? Self.onFooter : Self.offFooter)
         }
     }
 
-    private func setEnabled(_ enabled: Bool) {
-        do {
-            try writes.setEnabled(enabled)
-            error = nil
-        } catch {
-            self.error = "Couldn't save the setting: \(error.localizedDescription)"
+    static let onFooter = "Nutrients of each diary entry and the water you log are written to Apple Health "
+        + "and kept up to date when you edit or delete them."
+    static let offFooter = "Nothing is written to Apple Health; samples written earlier stay there, and entries you "
+        + "change now keep their old values in Health. When you turn this back on, new changes are written again and "
+        + "samples of entries deleted meanwhile are removed."
+
+    private func retry() {
+        Task { @MainActor in
+            await writes.drain()
         }
     }
 }

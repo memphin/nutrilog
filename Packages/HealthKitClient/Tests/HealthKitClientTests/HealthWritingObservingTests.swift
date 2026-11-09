@@ -33,6 +33,13 @@ struct HealthSampleDraftTests {
         #expect(HealthSamples.water(ml: 0, date: date, externalID: "w", version: 1).isEmpty)
     }
 
+    @Test func `sync version grows with every edit and every retry`() {
+        #expect(HealthSamples.syncVersion(revision: 1, attempt: 1) == 1001)
+        #expect(HealthSamples.syncVersion(revision: 1, attempt: 2) > HealthSamples.syncVersion(revision: 1, attempt: 1))
+        #expect(HealthSamples.syncVersion(revision: 2, attempt: 1) > HealthSamples.syncVersion(revision: 1, attempt: 999))
+        #expect(HealthSamples.syncVersion(revision: 1, attempt: 5000) == 1999) // clamped below the next revision
+    }
+
     @Test func `units match the stored values`() {
         #expect(HealthWriteType.dietaryEnergyConsumed.unitSymbol == "kcal")
         #expect(HealthWriteType.dietaryProtein.unitSymbol == "g")

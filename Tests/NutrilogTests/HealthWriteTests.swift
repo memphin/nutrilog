@@ -2,8 +2,47 @@ import Core
 import Foundation
 import HealthKitClient
 import Persistence
+import Synchronization
 import Testing
 @testable import Nutrilog
+
+/// Holds every `FakeHealthWriter.save` until `open()` — a write in flight.
+final class SaveGate: Sendable {
+    private struct State {
+        var isOpen = false
+        var waiting: [CheckedContinuation<Void, Never>] = []
+    }
+
+    private let state = Mutex(State())
+
+    var isHolding: Bool {
+        state.withLock { !$0.waiting.isEmpty }
+    }
+
+    func pass() async {
+        await withCheckedContinuation { continuation in
+            let resumeNow = state.withLock { state in
+                if state.isOpen {
+                    return true
+                }
+                state.waiting.append(continuation)
+                return false
+            }
+            if resumeNow {
+                continuation.resume()
+            }
+        }
+    }
+
+    func open() {
+        let waiting = state.withLock { state in
+            state.isOpen = true
+            defer { state.waiting = [] }
+            return state.waiting
+        }
+        waiting.forEach { $0.resume() }
+    }
+}
 
 /// Writing diary and water entries to Health (backlog #27).
 @MainActor
@@ -51,7 +90,7 @@ struct HealthWriteServiceTests {
             .dietaryFiber: 6, .dietarySugar: 9, .dietarySodium: 800,
         ])
         let drafts = writer.snapshot.samples(for: entry.id)
-        #expect(drafts.allSatisfy { $0.externalID == entry.id && $0.version == entry.revision && $0.date == entry.loggedAt })
+        #expect(drafts.allSatisfy { $0.externalID == entry.id && $0.version == entry.revision * 1000 + 1 && $0.date == entry.loggedAt })
         let stored = try links.links(for: .diaryEntry, id: entry.id)
         #expect(Set(stored.map(\.hkType)) == Set(HealthWriteType.dietaryNutrients.map(\.identifier)))
         #expect(Set(stored.map(\.hkUUID)) == Set(writer.snapshot.samples.map { $0.uuid.uuidString.lowercased() }))
@@ -82,7 +121,7 @@ struct HealthWriteServiceTests {
         await service.drain()
         #expect(values(entry.id)[.dietaryEnergyConsumed] == 260)
         #expect(writer.snapshot.samples(for: entry.id).count == 4) // kcal, protein, carbs, fat
-        #expect(writer.snapshot.samples(for: entry.id).allSatisfy { $0.version == 2 })
+        #expect(writer.snapshot.samples(for: entry.id).allSatisfy { $0.version == 2001 })
         #expect(writer.snapshot.deleteCalls.last?.externalID == entry.id)
         let newUUIDs = try Set(links.links(for: .diaryEntry, id: entry.id).map(\.hkUUID))
         #expect(newUUIDs.count == 4)
@@ -111,7 +150,7 @@ struct HealthWriteServiceTests {
         try diary.restore(entryIDs: [entry.id])
         await service.drain()
         #expect(values(entry.id)[.dietaryEnergyConsumed] == 420)
-        #expect(writer.snapshot.samples(for: entry.id).allSatisfy { $0.version == 3 })
+        #expect(writer.snapshot.samples(for: entry.id).allSatisfy { $0.version == 3001 })
         #expect(try links.links(for: .diaryEntry, id: entry.id).count == 7)
     }
 
@@ -191,10 +230,11 @@ struct HealthWriteServiceTests {
 
     // MARK: Failures and permissions
 
-    @Test func `a failed write keeps the entry and is retried`() async throws {
+    @Test func `a failed write keeps the entry and is retried with a higher sync version`() async throws {
         writer.update { $0.saveError = HealthDataError.unavailable }
         let entry = try logQuickAdd()
         await service.drain()
+        #expect(writer.snapshot.deleteCalls.isEmpty) // brand new: nothing to delete
         #expect(try env.diary?.entry(id: entry.id) != nil)
         let pending = try links.pending()
         #expect(pending.map(\.ownerID) == [entry.id])
@@ -205,10 +245,12 @@ struct HealthWriteServiceTests {
 
         await service.drain()
         #expect(try links.pending().first?.attempts == 2)
+        #expect(writer.snapshot.deleteCalls.map(\.externalID) == [entry.id]) // a retry may follow a partial write
 
         writer.update { $0.saveError = nil }
         await service.runMaintenance()
         #expect(values(entry.id).count == 7)
+        #expect(writer.snapshot.samples(for: entry.id).allSatisfy { $0.version == entry.revision * 1000 + 3 })
         #expect(try links.pending().isEmpty)
         #expect(service.failedCount == 0)
         #expect(service.lastError == nil)
@@ -225,15 +267,117 @@ struct HealthWriteServiceTests {
         #expect(try links.links(for: .diaryEntry, id: entry.id).count == 5)
         #expect(try links.pending().isEmpty)
 
-        // Nothing allowed at all (never connected): handled, nothing written, nothing left queued.
+        // Everything denied: nothing can be written, the row is done.
         writer.update { state in
             for type in HealthWriteType.allCases {
-                state.authorization[type] = .notDetermined
+                state.authorization[type] = .denied
             }
         }
         let other = try logQuickAdd()
         await service.drain()
         #expect(values(other.id).isEmpty)
+        #expect(try links.pending().isEmpty)
+    }
+
+    @Test func `entries logged before Health access wait and are written once access is granted`() async throws {
+        writer.update { state in
+            for type in HealthWriteType.allCases {
+                state.authorization[type] = .notDetermined
+            }
+        }
+        let early = try logQuickAdd()
+        let glass = try #require(env.water).add(ml: 250, day: today)
+        await service.drain()
+        #expect(writer.snapshot.saveCalls.isEmpty)
+        #expect(try Set(links.pending().map(\.ownerID)) == [early.id, glass.id]) // kept, not failed
+        #expect(service.failedCount == 0)
+        #expect(try links.pending().allSatisfy { $0.attempts == 0 && $0.lastError == nil })
+
+        // Onboarding → permission sheet → allowed.
+        writer.update { $0.authorization = [:] }
+        try await env.connectHealth()
+        #expect(values(early.id).count == 7)
+        #expect(values(glass.id) == [.dietaryWater: 250])
+        #expect(try links.pending().isEmpty)
+    }
+
+    @Test func `a late grant writes the last 7 days' unwritten entries, not older ones`() async throws {
+        let diary = try #require(env.diary)
+        writer.update { state in
+            for type in HealthWriteType.allCases {
+                state.authorization[type] = .denied
+            }
+        }
+        let recent = try diary.logQuickAdd(name: nil, nutrients: full, slotID: "lunch", day: today.adding(days: -6))
+        let old = try diary.logQuickAdd(name: nil, nutrients: full, slotID: "lunch", day: today.adding(days: -7))
+        await service.drain()
+        #expect(try links.pending().isEmpty) // denied: done, nothing written
+
+        writer.update { $0.authorization = [:] } // allowed later in the Health app
+        await service.writeAccessDidChange()
+        #expect(values(recent.id).count == 7)
+        #expect(values(old.id).isEmpty)
+    }
+
+    @Test func `links of types that may not be touched are kept`() async throws {
+        let diary = try #require(env.diary)
+        let entry = try logQuickAdd()
+        await service.drain()
+        let sodiumLink = try #require(try links.links(for: .diaryEntry, id: entry.id)
+            .first { $0.hkType == HealthWriteType.dietarySodium.identifier })
+
+        writer.update { $0.authorization[.dietarySodium] = .denied }
+        try diary.updateQuickAdd(entryID: entry.id, name: nil, nutrients: Nutrients(kcal: 10, proteinG: 1, carbsG: 1, fatG: 1, sodiumMg: 5))
+        await service.drain()
+        let afterEdit = try links.links(for: .diaryEntry, id: entry.id)
+        #expect(afterEdit.contains(sodiumLink)) // still describes the old sodium sample in Health
+        #expect(afterEdit.count == 5) // kcal, protein, carbs, fat + the kept sodium link
+        #expect(values(entry.id)[.dietarySodium] == 800)
+
+        try diary.softDelete(entryIDs: [entry.id])
+        await service.drain()
+        #expect(try links.links(for: .diaryEntry, id: entry.id) == [sodiumLink])
+        await service.runMaintenance()
+        #expect(try links.orphans().count == 1) // can't be deleted while denied
+
+        writer.update { $0.authorization = [:] }
+        await service.runMaintenance()
+        #expect(try links.orphans().isEmpty)
+        #expect(writer.snapshot.samples.isEmpty)
+    }
+
+    @Test func `turning writing off stops a pass in progress`() async throws {
+        let first = try logQuickAdd()
+        let second = try logQuickAdd()
+        let gate = SaveGate()
+        writer.update { $0.beforeSave = { await gate.pass() } }
+        let pass = Task { await service.drain() }
+        #expect(await waitUntil { gate.isHolding })
+        try service.setEnabled(false)
+        gate.open()
+        await pass.value
+        #expect(values(first.id).count == 7) // the row being written finishes
+        #expect(values(second.id).isEmpty) // the rest is left alone
+        #expect(writer.snapshot.saveCalls.count == 1)
+        #expect(try links.pending().isEmpty)
+    }
+
+    @Test func `an edit queued after off and on while a pass runs is not lost`() async throws {
+        let diary = try #require(env.diary)
+        let entry = try logQuickAdd()
+        let gate = SaveGate()
+        writer.update { $0.beforeSave = { await gate.pass() } }
+        let pass = Task { await service.drain() }
+        #expect(await waitUntil { gate.isHolding })
+        try service.setEnabled(false) // discards the queue
+        try service.setEnabled(true)
+        try diary.updateQuickAdd(entryID: entry.id, name: nil, nutrients: Nutrients(kcal: 99, proteinG: 0, carbsG: 0, fatG: 0))
+        gate.open()
+        await pass.value
+        // The old pass completed its generation; the edit's generation is still queued.
+        #expect(try links.pending().map(\.ownerID) == [entry.id])
+        await service.drain()
+        #expect(values(entry.id) == [.dietaryEnergyConsumed: 99])
         #expect(try links.pending().isEmpty)
     }
 

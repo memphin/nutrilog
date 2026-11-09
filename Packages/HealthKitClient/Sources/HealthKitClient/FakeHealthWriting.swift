@@ -21,6 +21,8 @@ public final class FakeHealthWriter: HealthWriting {
         /// Thrown by `save` / `deleteSamples` while set.
         public var saveError: (any Error & Sendable)?
         public var deleteError: (any Error & Sendable)?
+        /// Awaited at the start of every `save` — lets a test hold a write in flight.
+        public var beforeSave: (@Sendable () async -> Void)?
         // Recorded calls, for assertions.
         public var saveCalls: [[HealthSampleDraft]] = []
         public var deleteCalls: [(externalID: String, types: Set<HealthWriteType>)] = []
@@ -64,6 +66,9 @@ public final class FakeHealthWriter: HealthWriting {
 
     public func save(_ drafts: [HealthSampleDraft]) async throws -> [UUID] {
         guard isAvailable else { throw HealthDataError.unavailable }
+        if let beforeSave = snapshot.beforeSave {
+            await beforeSave()
+        }
         let stored = try state.withLock { state in
             state.saveCalls.append(drafts)
             if let error = state.saveError {

@@ -82,6 +82,7 @@ final class AppEnvironment {
                 diary: DiaryRepository(db, clock: clock),
                 water: WaterRepository(db, clock: clock),
                 settings: ProfileRepository(db, clock: clock),
+                clock: clock,
             )
         } else {
             healthSync = nil
@@ -148,6 +149,15 @@ final class AppEnvironment {
     /// Back in the foreground: retry failed Health writes and clean up orphans (the Health read refresh runs separately).
     func healthDidEnterForeground() async {
         await healthWrites?.runMaintenance()
+    }
+
+    /// Onboarding "Connect": shows the permission sheet, starts the backfill and the observers, then writes the
+    /// entries that were waiting for write permission (plus the last 7 days' unwritten ones). Throws when the sheet
+    /// could not be shown.
+    func connectHealth() async throws {
+        guard let healthSync else { return }
+        try await healthSync.connect()
+        await healthWrites?.writeAccessDidChange()
     }
 
     /// Pull-to-refresh (dashboard): retry pending Health writes, then re-read Health. Returns when done.

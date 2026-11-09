@@ -38,7 +38,11 @@
             ])
             var deleted = 0
             for type in types.sorted(by: { $0.rawValue < $1.rawValue }) {
-                deleted += try await store.deleteObjects(of: type.quantityType, predicate: predicate)
+                do {
+                    deleted += try await store.deleteObjects(of: type.quantityType, predicate: predicate)
+                } catch let error as HKError where error.code == .errorNoData {
+                    // Nothing matched: that is "0 deleted", not a failure (verify the exact behaviour on device).
+                }
             }
             return deleted
         }

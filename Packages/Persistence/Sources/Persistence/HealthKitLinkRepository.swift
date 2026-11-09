@@ -50,9 +50,9 @@ public struct HealthKitOutboxItem: Codable, Hashable, Sendable, TimestampedRecor
 
     public var ownerTable: HealthKitOwner
     public var ownerID: String
-    /// Grows on every (re)queue; `complete` only removes the row when nothing re-queued it meanwhile.
+    /// A new value of a monotonic counter on every (re)queue; `complete` only removes the row when nothing re-queued it.
     public var generation: Int
-    /// Failed attempts since the row was last queued.
+    /// Attempts started since the row was last queued (counted before each try, see `markAttempt`).
     public var attempts: Int
     public var lastError: String?
     public var queuedAt: Date
@@ -100,11 +100,15 @@ public struct HealthKitLinkRepository: Sendable {
         }
     }
 
-    /// Replaces the links of a row with the samples just written for it (`hkType`, `hkUUID`).
-    public func replaceLinks(for owner: HealthKitOwner, id: String, with samples: [(hkType: String, hkUUID: String)]) throws {
+    /// Replaces the links of a row with the samples just written for it (`hkType`, `hkUUID`). With `types` (hk_type
+    /// identifiers), only links of those types are replaced: links of types the app may not touch right now (write
+    /// permission withdrawn) keep describing the samples still in Health.
+    public func replaceLinks(
+        for owner: HealthKitOwner, id: String, types: Set<String>? = nil, with samples: [(hkType: String, hkUUID: String)],
+    ) throws {
         let now = clock.now()
         try database.writer.write { db in
-            try Self.deleteLinks(db, owner: owner, id: id)
+            try Self.deleteLinks(db, owner: owner, id: id, types: types)
             for sample in samples {
                 try HealthKitLink(ownerTable: owner, ownerID: id, hkType: sample.hkType, hkUUID: sample.hkUUID, createdAt: now)
                     .insert(db)
@@ -112,8 +116,9 @@ public struct HealthKitLinkRepository: Sendable {
         }
     }
 
-    public func deleteLinks(for owner: HealthKitOwner, id: String) throws {
-        try database.writer.write { db in try Self.deleteLinks(db, owner: owner, id: id) }
+    /// Deletes the links of a row (only those of `types` when given).
+    public func deleteLinks(for owner: HealthKitOwner, id: String, types: Set<String>? = nil) throws {
+        try database.writer.write { db in try Self.deleteLinks(db, owner: owner, id: id, types: types) }
     }
 
     /// Rows that still have Health samples although they were deleted (soft or hard).
@@ -170,12 +175,31 @@ public struct HealthKitLinkRepository: Sendable {
         }
     }
 
-    /// Keeps a row for the next try and records why it failed.
+    /// Counts an attempt *before* it starts, so even a crash mid-write shows up as an attempt: the next try then uses
+    /// a higher sync version and knows samples may exist. Returns the updated item, or nil when the row was
+    /// completed, discarded or queued again meanwhile.
+    public func markAttempt(_ item: HealthKitOutboxItem) throws -> HealthKitOutboxItem? {
+        try database.writer.write { db in
+            try db.execute(
+                sql: """
+                UPDATE healthkit_outbox SET attempts = attempts + 1
+                WHERE owner_table = ? AND owner_id = ? AND generation = ?
+                """,
+                arguments: [item.ownerTable, item.ownerID, item.generation],
+            )
+            guard db.changesCount > 0 else { return nil }
+            var updated = item
+            updated.attempts += 1
+            return updated
+        }
+    }
+
+    /// Keeps a row for the next try and records why it failed (the attempt was counted by `markAttempt`).
     public func recordFailure(_ item: HealthKitOutboxItem, error: String) throws {
         try database.writer.write { db in
             try db.execute(
                 sql: """
-                UPDATE healthkit_outbox SET attempts = attempts + 1, last_error = ?
+                UPDATE healthkit_outbox SET last_error = ?
                 WHERE owner_table = ? AND owner_id = ? AND generation = ?
                 """,
                 arguments: [error, item.ownerTable, item.ownerID, item.generation],
@@ -188,11 +212,33 @@ public struct HealthKitLinkRepository: Sendable {
         try database.writer.write { db in _ = try HealthKitOutboxItem.deleteAll(db) }
     }
 
-    /// Emits the newest generation now and whenever a row is queued (nil when the queue is empty). Completing or
-    /// failing a row does not change it, so a drain triggered by this never re-triggers itself.
+    /// Queues the active diary and water entries of the days from `since` on that have no Health samples yet — after
+    /// write permission was granted, so entries logged shortly before (onboarding skipped, access granted later) are
+    /// written without a full backfill. Returns the number queued.
+    @discardableResult
+    public func enqueueUnlinked(since day: LocalDay) throws -> Int {
+        let now = clock.now()
+        return try database.writer.write { db in
+            var count = 0
+            for owner in [HealthKitOwner.diaryEntry, .waterEntry] {
+                let ids = try String.fetchAll(db, sql: """
+                SELECT o.id FROM \(owner.rawValue) o
+                WHERE o.deleted_at IS NULL AND o.day >= ?
+                AND NOT EXISTS (SELECT 1 FROM healthkit_link l WHERE l.owner_table = ? AND l.owner_id = o.id)
+                ORDER BY o.day, o.id
+                """, arguments: [day, owner])
+                try Self.enqueue(db, owner: owner, ids: ids, now: now)
+                count += ids.count
+            }
+            return count
+        }
+    }
+
+    /// Emits the generation counter now and whenever a row is queued. Completing, failing or discarding rows never
+    /// changes it, so a drain triggered by this never re-triggers itself.
     public func observeQueue() -> AsyncValueObservation<Int?> {
         ValueObservation
-            .tracking { db in try Int.fetchOne(db, sql: "SELECT MAX(generation) FROM healthkit_outbox") }
+            .tracking { db in try Int.fetchOne(db, sql: "SELECT value FROM healthkit_outbox_sequence WHERE id = 1") }
             .removeDuplicates()
             .values(in: database.reader)
     }
@@ -207,22 +253,48 @@ public struct HealthKitLinkRepository: Sendable {
 
     // MARK: Helpers
 
-    static func deleteLinks(_ db: Database, owner: HealthKitOwner, id: String) throws {
-        try HealthKitLink.filter(HealthKitLink.Columns.ownerTable == owner && HealthKitLink.Columns.ownerID == id).deleteAll(db)
+    static func deleteLinks(_ db: Database, owner: HealthKitOwner, id: String, types: Set<String>? = nil) throws {
+        var request = HealthKitLink.filter(HealthKitLink.Columns.ownerTable == owner && HealthKitLink.Columns.ownerID == id)
+        if let types {
+            request = request.filter(types.contains(HealthKitLink.Columns.hkType))
+        }
+        try request.deleteAll(db)
     }
 
-    /// Queues rows inside the caller's transaction.
+    /// Queues rows inside the caller's transaction. Each (re)queue takes a new value of the monotonic counter.
     static func enqueue(_ db: Database, owner: HealthKitOwner, ids: [String], now: Date) throws {
         for id in ids {
+            try db.execute(sql: "UPDATE healthkit_outbox_sequence SET value = value + 1 WHERE id = 1")
             try db.execute(
                 sql: """
                 INSERT INTO healthkit_outbox (owner_table, owner_id, generation, attempts, last_error, queued_at)
-                VALUES (?, ?, (SELECT COALESCE(MAX(generation), 0) + 1 FROM healthkit_outbox), 0, NULL, ?)
+                VALUES (?, ?, (SELECT value FROM healthkit_outbox_sequence WHERE id = 1), 0, NULL, ?)
                 ON CONFLICT (owner_table, owner_id) DO UPDATE SET
                     generation = excluded.generation, attempts = 0, last_error = NULL, queued_at = excluded.queued_at
                 """,
                 arguments: [owner, id, Timestamp.string(now)],
             )
+        }
+    }
+
+    /// Import support: queues every diary / water row that has Health samples (call before a replace wipes the
+    /// links, so samples of rows the backup doesn't have are deleted).
+    static func enqueueLinkedOwners(_ db: Database, now: Date) throws {
+        for owner in [HealthKitOwner.diaryEntry, .waterEntry] {
+            let ids = try String.fetchAll(
+                db, sql: "SELECT DISTINCT owner_id FROM healthkit_link WHERE owner_table = ? ORDER BY owner_id", arguments: [owner],
+            )
+            try enqueue(db, owner: owner, ids: ids, now: now)
+        }
+    }
+
+    /// Import support: queues every active diary / water row (after a replace import).
+    static func enqueueActiveOwners(_ db: Database, now: Date) throws {
+        for owner in [HealthKitOwner.diaryEntry, .waterEntry] {
+            let ids = try String.fetchAll(
+                db, sql: "SELECT id FROM \(owner.rawValue) WHERE deleted_at IS NULL ORDER BY id",
+            )
+            try enqueue(db, owner: owner, ids: ids, now: now)
         }
     }
 }

@@ -5,9 +5,9 @@ import Foundation
 /// `HealthDataSource`: `LiveHealthDataSource` adopts both, tests use `FakeHealthWriter`.
 ///
 /// Every sample carries the id of the Nutrilog row it mirrors (`HKMetadataKeyExternalUUID`) plus a sync identifier
-/// "<row id>.<type>" and the row's revision as sync version. Deleting by external id therefore removes everything
-/// written for a row, even when the `healthkit_link` rows were lost (e.g. the app was killed between saving the
-/// sample and storing its link), and a rewrite with a higher version replaces an older copy Health still holds.
+/// "<row id>.<type>" and a sync version that grows with every edit and every retry (`syncVersion`). Deleting by
+/// external id therefore removes everything written for a row, even when the `healthkit_link` rows were lost (e.g. the
+/// app was killed between saving and storing the link), and a rewrite always outranks an older copy Health holds.
 ///
 /// Loop prevention (SPEC §3.4): only rows the user entered in Nutrilog (diary and water entries, manual weights)
 /// are ever turned into drafts. Values read from Health go to `daily_metrics` and never reach a writer.
@@ -22,7 +22,8 @@ public protocol HealthWriting: Sendable {
     func save(_ samples: [HealthSampleDraft]) async throws -> [UUID]
 
     /// Deletes every sample of `types` that this app wrote for the row `externalID`. Samples written by other apps
-    /// are never touched (HealthKit only lets an app delete its own). Returns the number deleted.
+    /// are never touched (HealthKit only lets an app delete its own). Returns the number deleted; nothing matching
+    /// is 0, never an error.
     @discardableResult
     func deleteSamples(externalID: String, types: Set<HealthWriteType>) async throws -> Int
 }
@@ -35,7 +36,7 @@ public struct HealthSampleDraft: Hashable, Sendable {
     public var date: Date
     /// The Nutrilog row id (`diary_entry.id`, `water_entry.id`) → `HKMetadataKeyExternalUUID`.
     public var externalID: String
-    /// The row's revision → `HKMetadataKeySyncVersion`; grows with every edit.
+    /// → `HKMetadataKeySyncVersion`; see `HealthSamples.syncVersion(revision:attempt:)`.
     public var version: Int
 
     public init(type: HealthWriteType, value: Double, date: Date, externalID: String, version: Int) {
@@ -73,6 +74,13 @@ public extension HealthWriteType {
 
 /// Builds the drafts for Nutrilog rows.
 public enum HealthSamples {
+    /// The sync version of a write: `revision * 1000 + attempt`. It grows with every edit (revision) and every retry
+    /// of the same revision (attempt), so a re-save after a crash or a failed try never carries the same version as a
+    /// copy Health may already hold (HealthKit ignores or rejects a sync identifier saved again with an equal version).
+    public static func syncVersion(revision: Int, attempt: Int) -> Int {
+        revision * 1000 + min(max(attempt, 0), 999)
+    }
+
     /// The nutrient samples of a diary entry. Missing (nil) and zero values are not written: Health sums
     /// dietary samples, so a 0 g sample adds nothing but noise.
     public static func dietary(

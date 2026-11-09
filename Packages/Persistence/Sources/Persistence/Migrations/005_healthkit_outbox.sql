@@ -5,9 +5,17 @@
 CREATE TABLE healthkit_outbox (
     owner_table     TEXT NOT NULL CHECK (owner_table IN ('diary_entry','water_entry','weight_entry')),
     owner_id        TEXT NOT NULL,
-    generation      INTEGER NOT NULL,                 -- larger than every other row's on each (re)queue
-    attempts        INTEGER NOT NULL DEFAULT 0,       -- failed attempts since the last queueing
+    generation      INTEGER NOT NULL,                 -- from healthkit_outbox_sequence; new on every (re)queue
+    attempts        INTEGER NOT NULL DEFAULT 0,       -- attempts started since the last queueing
     last_error      TEXT,
     queued_at       TEXT NOT NULL,
     PRIMARY KEY (owner_table, owner_id)
 );
+
+-- Monotonic generation counter: never reused, even after the queue was emptied, so a writer finishing an old
+-- generation can never remove a row that was queued again meanwhile.
+CREATE TABLE healthkit_outbox_sequence (
+    id              INTEGER PRIMARY KEY CHECK (id = 1),
+    value           INTEGER NOT NULL
+);
+INSERT INTO healthkit_outbox_sequence (id, value) VALUES (1, 0);
