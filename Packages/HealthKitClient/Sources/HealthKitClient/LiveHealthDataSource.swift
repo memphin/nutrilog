@@ -2,20 +2,23 @@
     import Core
     import Foundation
     import HealthKit
+    import Synchronization
 
     /// `HealthDataSource` backed by `HKHealthStore` (iOS only; needs the HealthKit entitlement).
     ///
     /// Queries per fetch (SPEC §3.4):
     /// - steps, active/basal energy, water: `HKStatisticsCollectionQuery` with `.cumulativeSum`, one bucket per
     ///   local day anchored at local midnight. The totals come from a query *without* `.separateBySource`, so
-    ///   Health's de-duplication across iPhone and Watch applies; a second query with `.separateBySource` only
-    ///   names the main source for the source summary.
+    ///   Health's de-duplication across iPhone and Watch applies; a second query with `.separateBySource` names the
+    ///   main source for the source summary and lets Core leave Nutrilog's own water out.
     /// - weight, body fat, resting heart rate, HRV: plain sample queries over the days, reduced in Core.
     /// - sleep: category samples whose end date falls inside the nights' windows.
     ///
     /// Statistics buckets follow the device calendar (`Calendar.current`), so pass that calendar in production.
     public final class LiveHealthDataSource: HealthDataSource {
-        private let store: HKHealthStore
+        let store: HKHealthStore
+        /// The running observer queries (backlog #26), replaced on every `startObserving`.
+        let observerQueries = Mutex<[HKObserverQuery]>([])
 
         public init(store: HKHealthStore = HKHealthStore()) {
             self.store = store

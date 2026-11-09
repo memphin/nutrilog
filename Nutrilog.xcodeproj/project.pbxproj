@@ -20,6 +20,7 @@
 		4B6FE28F847FE3FB45F70F18 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = A889B4CD67F814724B977510 /* Persistence */; };
 		4C8B1351185B5B231D206824 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02B31E9560DA95F7E191A672 /* AppConfig.swift */; };
 		52BE128D0BBB8486593D5D4F /* DiaryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0AF9328875CE64DEC3A2E2D /* DiaryModel.swift */; };
+		661D6EAD1085C1AAEF4D1D82 /* HealthWriteService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AA1FF77C30B305B73CDD364 /* HealthWriteService.swift */; };
 		66C6132AFD93ABA6B9FC23AA /* USDAKeyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81B23CAA505BA1C22B5F85C6 /* USDAKeyStore.swift */; };
 		68184A1CAA4FB02029B16A52 /* Scanner in Frameworks */ = {isa = PBXBuildFile; productRef = 1027AC8891CFCD49FA5F02E6 /* Scanner */; };
 		72B1AAC9BB066C4C509D2E3F /* HealthSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89A65223A0724F7BB3C9AEB6 /* HealthSettingsView.swift */; };
@@ -41,6 +42,7 @@
 		CF7335C7FD8411978B9DBA15 /* HealthTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61AEE6266270978795C272EF /* HealthTests.swift */; };
 		CFA34818EFB1ED1B551F03A6 /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 080725B27DAA3A8B4B5726A4 /* DesignSystem */; };
 		D63FFCA9058D3B3B24A31E40 /* QuickAddView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62FB67E26CA995E485714116 /* QuickAddView.swift */; };
+		DEA6ED43ED0C3E0835637019 /* HealthWriteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13167937AD97A7A6E63D0C7D /* HealthWriteTests.swift */; };
 		DF3E1A7AFED9764A1158B47E /* NutrilogApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D095BF32FF994BA5E303CEFE /* NutrilogApp.swift */; };
 		E137C48EA41D048FAC019CE0 /* ProfileTargetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F71079C582044C8F4ED01E8F /* ProfileTargetsView.swift */; };
 		EFB886BDAA15EBAA459742F1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 180130317CF5FAF7AE910FE2 /* Assets.xcassets */; };
@@ -62,6 +64,8 @@
 		0327B675F549F53BEA13BD28 /* FoodEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodEditorView.swift; sourceTree = "<group>"; };
 		0368CFE4A655A4BA30A56CEB /* AddFoodView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddFoodView.swift; sourceTree = "<group>"; };
 		06BBD431328AFB0851BF4014 /* HealthOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthOnboardingView.swift; sourceTree = "<group>"; };
+		0AA1FF77C30B305B73CDD364 /* HealthWriteService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthWriteService.swift; sourceTree = "<group>"; };
+		13167937AD97A7A6E63D0C7D /* HealthWriteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthWriteTests.swift; sourceTree = "<group>"; };
 		180130317CF5FAF7AE910FE2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1C7A62EC62945A0E3012FC0D /* FoodEditorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodEditorModel.swift; sourceTree = "<group>"; };
 		2137916B6A16402C94700DF7 /* NutrilogTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = NutrilogTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -151,6 +155,7 @@
 				06BBD431328AFB0851BF4014 /* HealthOnboardingView.swift */,
 				89A65223A0724F7BB3C9AEB6 /* HealthSettingsView.swift */,
 				78AC475FAECDC1B9D98F4D51 /* HealthSyncService.swift */,
+				0AA1FF77C30B305B73CDD364 /* HealthWriteService.swift */,
 			);
 			path = Health;
 			sourceTree = "<group>";
@@ -244,6 +249,7 @@
 				B74262F076BA46E2B4980AFF /* AppEnvironmentTests.swift */,
 				D073557851101D1AD6FABF46 /* AppModelTests.swift */,
 				61AEE6266270978795C272EF /* HealthTests.swift */,
+				13167937AD97A7A6E63D0C7D /* HealthWriteTests.swift */,
 				DFA022929D750396EDF97E64 /* TestSupport.swift */,
 				DF825E4994064B6BF2442C2C /* USDAKeyTests.swift */,
 			);
@@ -396,6 +402,7 @@
 				104AA4A32A6EC881CF63A75C /* AppEnvironmentTests.swift in Sources */,
 				4866F5733FE3075FDBC10671 /* AppModelTests.swift in Sources */,
 				CF7335C7FD8411978B9DBA15 /* HealthTests.swift in Sources */,
+				DEA6ED43ED0C3E0835637019 /* HealthWriteTests.swift in Sources */,
 				81534A8EE21DC5652C4025F6 /* TestSupport.swift in Sources */,
 				1B66D123840B97B94ED63379 /* USDAKeyTests.swift in Sources */,
 			);
@@ -420,6 +427,7 @@
 				0AE0985AF7FBC01A1B364EC1 /* HealthOnboardingView.swift in Sources */,
 				72B1AAC9BB066C4C509D2E3F /* HealthSettingsView.swift in Sources */,
 				3A155E78812EC13037AE60E3 /* HealthSyncService.swift in Sources */,
+				661D6EAD1085C1AAEF4D1D82 /* HealthWriteService.swift in Sources */,
 				DF3E1A7AFED9764A1158B47E /* NutrilogApp.swift in Sources */,
 				E137C48EA41D048FAC019CE0 /* ProfileTargetsView.swift in Sources */,
 				CAF0ED85767DB9B2600F5738 /* QuantitySheet.swift in Sources */,

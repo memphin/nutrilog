@@ -2,7 +2,15 @@ import SwiftUI
 
 @main
 struct NutrilogApp: App {
-    @State private var environment = NutrilogApp.makeEnvironment()
+    @State private var environment: AppEnvironment
+
+    init() {
+        let environment = NutrilogApp.makeEnvironment()
+        _environment = State(initialValue: environment)
+        // Here rather than in a view: Health may launch the app in the background to deliver observer updates,
+        // and the observer queries must be registered on every launch (backlog #26).
+        environment.startHealthBackgroundWork()
+    }
 
     var body: some Scene {
         WindowGroup {

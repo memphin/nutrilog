@@ -10,7 +10,7 @@ public struct DataPortability: Sendable {
     public static let format = "nutrilog-export"
 
     /// Tables in foreign-key-safe insertion order. `off_product_cache` is a re-fetchable cache of ODbL data and
-    /// is deliberately excluded.
+    /// is deliberately excluded, as is `healthkit_outbox` (this device's queue of pending Apple Health writes).
     static let tables = [
         "meal_slot", "food", "serving", "food_barcode", "recipe_ingredient", "meal_template", "meal_template_item",
         "diary_entry", "healthkit_link", "day_note", "water_entry", "weight_entry", "daily_metrics", "profile",

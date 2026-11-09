@@ -19,7 +19,9 @@ public struct DailyHealthMetrics: Hashable, Sendable, Codable {
     public var restingHR: Double?
     /// Average SDNN of the samples taken 00:00–09:00.
     public var hrvSDNNms: Double?
-    /// All water in Health, including water logged by other apps.
+    /// Water logged in Health by *other* apps. Water Nutrilog wrote itself is excluded (see
+    /// `DailyMetricsAggregator.aggregate(_:calendar:excludingWaterFrom:)`): it lives in `water_entry`, and the day's
+    /// total is `water_entry` + this value, so nothing is counted twice whether or not writing to Health is on.
     public var waterMl: Double?
     /// Name of the source that provided each metric, e.g. [.steps: "Ivan's Apple Watch", .weight: "Withings"].
     public var sources: [HealthMetric: String]
@@ -135,13 +137,21 @@ public extension DailyHealthMetrics {
 /// - Resting heart rate: the latest sample of the day from the highest-priority source (Apple Watch first).
 /// - HRV: the average of the samples taken 00:00–09:00, Apple Watch samples only when there are any.
 /// - Sleep: `SleepAggregator` for the night ending on the day.
+/// - Water: as the cumulative metrics, minus the water written by the sources in `excludingWaterFrom` (Nutrilog
+///   itself), so water the app logged and wrote to Health is not counted twice (SPEC §3.4 write loops, FR-46).
 public enum DailyMetricsAggregator {
     /// HRV counts samples from midnight until this hour (overnight average).
     public static let hrvWindowEndHour = 9
     /// Body fat taken this close to the weight, by the same source, is treated as the same measurement.
     public static let sameMeasurementTolerance: TimeInterval = 5 * 60
 
-    public static func aggregate(_ batch: HealthDataBatch, calendar: Calendar = .current) -> [DailyHealthMetrics] {
+    /// - Parameter excludingWaterFrom: bundle identifiers whose `dietaryWater` contribution is subtracted —
+    ///   Nutrilog's own, so water the app logged (and wrote to Health) is not read back as "other apps' water".
+    public static func aggregate(
+        _ batch: HealthDataBatch,
+        calendar: Calendar = .current,
+        excludingWaterFrom excludedSources: Set<String> = [],
+    ) -> [DailyHealthMetrics] {
         let plan = HealthFetchPlan(days: batch.days, calendar: calendar)
         var days: [LocalDay: DailyHealthMetrics] = [:]
         for day in plan.allDays {
@@ -149,7 +159,7 @@ public enum DailyMetricsAggregator {
         }
 
         for (metric, statistics) in batch.statistics {
-            apply(metric, statistics: statistics, plan: plan, to: &days)
+            apply(metric, statistics: statistics, plan: plan, excluding: metric == .dietaryWater ? excludedSources : [], to: &days)
         }
 
         let samplesByDay = batch.samples.mapValues { samples in
@@ -177,6 +187,7 @@ public enum DailyMetricsAggregator {
         _ metric: CumulativeMetric,
         statistics: [CumulativeStatistic],
         plan: HealthFetchPlan,
+        excluding excludedSources: Set<String>,
         to days: inout [LocalDay: DailyHealthMetrics],
     ) {
         // A statistic covers one local day; its midpoint is safely inside that day even if the bucket
@@ -186,8 +197,16 @@ public enum DailyMetricsAggregator {
         }
         for (day, stats) in byDay {
             guard let day else { continue }
-            let total = stats.reduce(0) { $0 + $1.sum }
-            let merged = CumulativeStatistic(start: stats[0].start, end: stats[0].end, sum: total, sources: stats.flatMap(\.sources))
+            var total = stats.reduce(0) { $0 + $1.sum }
+            var sources = stats.flatMap(\.sources)
+            if !excludedSources.isEmpty {
+                let excluded = sources.filter { excludedSources.contains($0.source.bundleIdentifier) }
+                guard excluded.isEmpty || sources.count > excluded.count else { continue } // only our own samples
+                // Per-source sums are taken before Health's de-duplication, so clamp at zero.
+                total = max(0, total - excluded.reduce(0) { $0 + $1.sum })
+                sources.removeAll { excludedSources.contains($0.source.bundleIdentifier) }
+            }
+            let merged = CumulativeStatistic(start: stats[0].start, end: stats[0].end, sum: total, sources: sources)
             let source = merged.mainSource?.name
             switch metric {
             case .steps:

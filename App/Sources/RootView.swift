@@ -16,6 +16,7 @@ struct RootView: View {
                     environment.refreshToday()
                     Task { await environment.healthSync?.refresh() }
                     environment.reloadUSDAKey() // the Keychain may have been locked at launch
+                    Task { await environment.healthDidEnterForeground() }
                 }
             }
             // Midnight, clock changes and time-zone changes move day boundaries: refresh "today" and re-sync Health.

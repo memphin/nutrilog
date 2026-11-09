@@ -106,7 +106,7 @@ public enum HealthReadType: String, CaseIterable, Sendable, Identifiable {
     }
 }
 
-/// The Health types Nutrilog writes (SPEC §3.4, FR-42/43/46). Writing itself arrives with backlog #27.
+/// The Health types Nutrilog writes (SPEC §3.4, FR-42/43/46) through `HealthWriting`.
 public enum HealthWriteType: String, CaseIterable, Sendable, Identifiable {
     case dietaryEnergyConsumed
     case dietaryProtein
