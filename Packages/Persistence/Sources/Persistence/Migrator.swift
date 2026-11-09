@@ -10,7 +10,8 @@ public enum Migrator {
         "003_off_product_cache_not_found",
         "004_food_per_serving_only",
         "005_healthkit_outbox",
-        // "006_<description>",
+        "006_barcode_scan_log",
+        // "007_<description>",
     ]
 
     public static func make() throws -> DatabaseMigrator {

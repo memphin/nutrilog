@@ -83,17 +83,23 @@ final class ScanFlowModel {
     private let lookup: BarcodeLookup?
     private let foods: FoodRepository?
     let labelPhotos: LabelPhotoStore
+    /// The local scan log for the resolution rate (backlog #30); nil in tests that don't need it.
+    private let scanLog: ScanLogRepository?
     /// Bumped whenever a lookup starts or is abandoned, so a late answer can't replace newer state.
     private var generation = 0
 
-    init(lookup: BarcodeLookup?, foods: FoodRepository?, labelPhotos: LabelPhotoStore) {
+    init(lookup: BarcodeLookup?, foods: FoodRepository?, labelPhotos: LabelPhotoStore, scanLog: ScanLogRepository? = nil) {
         self.lookup = lookup
         self.foods = foods
         self.labelPhotos = labelPhotos
+        self.scanLog = scanLog
     }
 
     convenience init(environment: AppEnvironment) {
-        self.init(lookup: environment.barcodeLookup, foods: environment.foods, labelPhotos: environment.labelPhotos)
+        self.init(
+            lookup: environment.barcodeLookup, foods: environment.foods, labelPhotos: environment.labelPhotos,
+            scanLog: environment.scanLog,
+        )
     }
 
     var loggedCount: Int {
@@ -164,7 +170,9 @@ final class ScanFlowModel {
         }
         let next: Phase?
         do {
-            next = try await Self.phase(for: lookup.resolve(candidates: candidates))
+            let result = try await lookup.resolve(candidates: candidates)
+            ScanLogging.record(result, candidates: candidates, in: scanLog)
+            next = Self.phase(for: result)
         } catch is CancellationError {
             if token == generation {
                 isRetrying = false
@@ -174,6 +182,7 @@ final class ScanFlowModel {
             }
             return
         } catch {
+            ScanLogging.record(error, candidates: candidates, in: scanLog)
             next = Self.phase(for: error, candidates: candidates)
         }
         guard token == generation else { return } // closed or rescanned meanwhile
@@ -267,6 +276,7 @@ final class ScanFlowModel {
     /// The user created the food for a code nobody knew: show its card so it can be logged right away.
     /// Stores a pending label photo under the new food's ID (app container only, never the database).
     func foodCreated(_ saved: FoodDetail) {
+        ScanLogging.recordCreated(barcode: barcodeForNewFood, saved: saved, in: scanLog)
         if let photo = pendingLabelPhoto {
             do {
                 try labelPhotos.save(photo, foodID: saved.food.id)

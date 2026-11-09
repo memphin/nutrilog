@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Export options for the TestFlight job (.github/workflows/ci.yml, docs/RELEASING.md).
+  Template: the job inserts `teamID` from the APPLE_TEAM_ID secret into a copy at build time. Never add it here.
+-->
+<plist version="1.0">
+<dict>
+	<key>method</key>
+	<string>app-store-connect</string>
+	<key>destination</key>
+	<string>upload</string>
+	<key>signingStyle</key>
+	<string>automatic</string>
+	<key>manageAppVersionAndBuildNumber</key>
+	<false/>
+	<key>uploadSymbols</key>
+	<true/>
+	<key>stripSwiftSymbols</key>
+	<true/>
+</dict>
+</plist>

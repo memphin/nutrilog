@@ -48,6 +48,10 @@ struct SettingsView: View {
                     Text(usdaKeyFooter)
                 }
 
+                Section("Diagnostics") {
+                    NavigationLink("Barcode resolution") { BarcodeResolutionView() }
+                }
+
                 Section {
                     NavigationLink("About & licenses") { AboutView() }
                 }
