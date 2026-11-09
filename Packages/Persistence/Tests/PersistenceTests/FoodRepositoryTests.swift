@@ -38,6 +38,16 @@ struct FoodRepositoryTests {
         #expect(try f.foods.food(barcode: "01000009", symbology: .ean8)?.food.id == food.id)
     }
 
+    @Test func `hinted barcode reading wins and ean8 hint never falls back`() throws {
+        let f = try Fixture()
+        let upce = try f.makeFood("UPC-E product", barcodes: ["0010000000009"])
+        #expect(try f.foods.food(barcode: "01000009", symbology: .ean8) == nil) // different code space
+        #expect(try f.foods.food(barcode: "01000009", symbology: .upcE)?.food.id == upce.id)
+        let ean8 = try f.makeFood("EAN-8 product", barcodes: ["01000009"])
+        #expect(try f.foods.food(barcode: "01000009", symbology: .ean8)?.food.id == ean8.id)
+        #expect(try f.foods.food(barcode: "01000009", symbology: .upcE)?.food.id == upce.id)
+    }
+
     @Test func `invalid barcode is rejected`() throws {
         let f = try Fixture()
         #expect(throws: PersistenceError.invalidBarcode("4006381333932")) {

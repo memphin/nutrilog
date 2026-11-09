@@ -133,11 +133,10 @@ public struct DiaryRepository: Sendable {
             guard var entry = try DiaryEntry.fetchOne(db, key: entryID) else { throw PersistenceError.notFound(entryID) }
             guard !entry.isQuickAdd else { throw PersistenceError.validation("quick-add entries have no quantity") }
             let newAmount = quantity.baseAmount
-            if entry.grams > 0 {
-                entry.nutrients = entry.nutrients.scaled(by: newAmount / entry.grams)
-            } else if let foodID = entry.foodID, let food = try Food.fetchOne(db, key: foodID) {
-                entry.nutrients = quantity.nutrients(per100: food.per100)
-            }
+            // A 0 g entry (legacy or imported) has no ratio to scale; re-reading the food would leak later edits
+            // into history (NFR-4), so it can't be resized — log it again instead.
+            guard entry.grams > 0 else { throw PersistenceError.validation("entry has no amount to scale") }
+            entry.nutrients = entry.nutrients.scaled(by: newAmount / entry.grams)
             entry.grams = newAmount
             entry.servingLabel = quantity.servingLabel
             entry.stampUpdated(now)
@@ -232,6 +231,13 @@ public struct DiaryRepository: Sendable {
         try database.writer.write { db in
             for id in entryIDs {
                 guard var entry = try DiaryEntry.fetchOne(db, key: id), entry.deletedAt != nil else { continue }
+                let taken = try Bool.fetchOne(db, sql: """
+                SELECT EXISTS(SELECT 1 FROM diary_entry
+                WHERE day = ? AND meal_slot_id = ? AND sort_order = ? AND deleted_at IS NULL AND id != ?)
+                """, arguments: [entry.day, entry.mealSlotID, entry.sortOrder, entry.id]) ?? false
+                if taken {
+                    entry.sortOrder = try Self.nextSortOrder(db, day: entry.day, slotID: entry.mealSlotID)
+                }
                 entry.deletedAt = nil
                 entry.stampUpdated(now)
                 try entry.update(db)

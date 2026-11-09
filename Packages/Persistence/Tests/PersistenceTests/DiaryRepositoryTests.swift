@@ -166,6 +166,20 @@ struct DiaryRepositoryTests {
         #expect(Set(orders).count == 3)
     }
 
+    @Test func `undo after reorder takes a free sort order`() throws {
+        let f = try Fixture()
+        let d = day("2026-11-09")
+        let food = try f.makeFood("Nuts")
+        let a = try f.diary.log(food: food, quantity: .base(10), slotID: "snacks", day: d)
+        let b = try f.diary.log(food: food, quantity: .base(20), slotID: "snacks", day: d)
+        let c = try f.diary.log(food: food, quantity: .base(30), slotID: "snacks", day: d)
+        try f.diary.softDelete(entryIDs: [b.id])
+        try f.diary.reorder(day: d, slotID: "snacks", orderedIDs: [c.id, a.id]) // c=0, a=1 (b's old slot)
+        try f.diary.restore(entryIDs: [b.id])
+        let orders = try [a, b, c].map { try #require(try f.diary.entry(id: $0.id)).sortOrder }
+        #expect(Set(orders).count == 3)
+    }
+
     @Test func `copy meal and day recomputes snapshot from current food`() throws {
         let f = try Fixture()
         let yesterday = day("2026-11-08"), today = day("2026-11-09")

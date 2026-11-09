@@ -206,13 +206,36 @@ struct DataPortabilityTests {
     @Test func `replace rejects a partial file`() throws {
         let f = try Fixture()
         let p = DataPortability(f.db)
-        #expect(throws: DataPortability.ImportError.self) {
-            try p.importJSON(
-                Data(#"{"format":"nutrilog-export","schemaVersion":1,"exportedAt":"x","tables":{"food":[]}}"#.utf8),
-                mode: .replace,
-            )
+        for tables in [#"{"food":[]}"#, #"{"food":[],"profile":[],"meal_slot":[]}"#] {
+            #expect(throws: DataPortability.ImportError.incompleteBackup) {
+                try p.importJSON(
+                    Data(#"{"format":"nutrilog-export","schemaVersion":1,"exportedAt":"x","tables":\#(tables)}"#.utf8),
+                    mode: .replace,
+                )
+            }
         }
         _ = try f.profiles.profile() // nothing was wiped
+    }
+
+    @Test func `merge skips unique clashes but rejects invalid rows`() throws {
+        let f = try Fixture()
+        try f.db.writer.write { db in
+            try db.execute(sql: """
+            INSERT INTO healthkit_link (id, owner_table, owner_id, hk_type, hk_uuid, created_at)
+            VALUES ('local', 'weight_entry', 'w1', 'HKQuantityTypeIdentifierBodyMass', 'HK-1', '2026-11-09T10:00:00Z')
+            """)
+        }
+        func file(_ id: String, owner: String, uuid: String) -> Data {
+            Data(#"{"format":"nutrilog-export","schemaVersion":1,"exportedAt":"x","tables":{"healthkit_link":[{"id":"\#(id)","owner_table":"\#(owner)","owner_id":"w2","hk_type":"t","hk_uuid":"\#(uuid)","created_at":"2026-11-09T11:00:00Z"}]}}"#.utf8)
+        }
+        let p = DataPortability(f.db)
+        let clash = try p.importJSON(file("remote", owner: "weight_entry", uuid: "HK-1"), mode: .merge)
+        #expect(clash.inserted == 0)
+        #expect(clash.skipped == 1)
+        let fresh = try p.importJSON(file("remote2", owner: "weight_entry", uuid: "HK-2"), mode: .merge)
+        #expect(fresh.inserted == 1)
+        // A CHECK violation is a broken file, not a conflict: the import fails instead of silently dropping it.
+        #expect(throws: (any Error).self) { try p.importJSON(file("bad", owner: "nonsense", uuid: "HK-3"), mode: .merge) }
     }
 
     @Test func `csv neutralizes spreadsheet formulas`() {
@@ -220,6 +243,9 @@ struct DataPortabilityTests {
         #expect(DataPortability.neutralizeFormula("@cmd") == "'@cmd")
         #expect(DataPortability.neutralizeFormula("-5") == "-5")
         #expect(DataPortability.neutralizeFormula("Banana") == "Banana")
+        #expect(DataPortability.neutralizeFormula("  =1+1") == "'  =1+1")
+        #expect(DataPortability.neutralizeFormula("＝1+1") == "'＝1+1")
+        #expect(DataPortability.csv([["=a,b"]]) == "\"'=a,b\"\r\n") // neutralized, then RFC 4180 quoted
     }
 
     @Test func `csv export`() throws {
