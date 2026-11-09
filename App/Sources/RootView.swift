@@ -5,6 +5,7 @@ import UIKit
 struct RootView: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.scenePhase) private var scenePhase
+    @State private var showHealthOnboarding = false
 
     var body: some View {
         content
@@ -12,11 +13,31 @@ struct RootView: View {
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active {
                     environment.refreshToday()
+                    Task { await environment.healthSync?.refresh() }
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
                 environment.refreshToday()
             }
+            .task {
+                await environment.healthSync?.refresh()
+                if isShowingTabs, await environment.shouldShowHealthOnboarding() {
+                    showHealthOnboarding = true
+                }
+            }
+            .sheet(isPresented: $showHealthOnboarding, onDismiss: environment.markHealthOnboardingShown) {
+                HealthOnboardingView()
+            }
+    }
+
+    /// False for the database error screen and debug screens, which should not be covered by onboarding.
+    private var isShowingTabs: Bool {
+        guard case .ready = environment.database else { return false }
+        #if DEBUG
+            return DebugScreen.requested == nil
+        #else
+            return true
+        #endif
     }
 
     @ViewBuilder

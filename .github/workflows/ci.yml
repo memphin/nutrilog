@@ -33,7 +33,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [Core, Persistence, FoodSources, DesignSystem, Scanner]  # HealthKitClient is iOS-only — tested via the app scheme; Scanner's camera UI is `#if os(iOS)`, its logic tests run here
+        package: [Core, Persistence, FoodSources, DesignSystem, Scanner, HealthKitClient]  # Scanner's camera UI and HealthKitClient's live HealthKit code are `#if os(iOS)` (built by the app job); their logic tests run here
     steps:
       - uses: actions/checkout@v5
       - name: Show toolchain
