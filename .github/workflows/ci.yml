@@ -15,11 +15,17 @@ jobs:
     name: Secret scan (gitleaks)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with: { fetch-depth: 0 }
-      - uses: gitleaks/gitleaks-action@v2
+      # Run the gitleaks CLI directly: scans the whole history (gitleaks-action fails on a repo's first push,
+      # where the first commit has no parent) and needs no third-party action or license.
+      - name: Scan full history with gitleaks
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_VERSION: 8.30.1
+        run: |
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz -C /usr/local/bin gitleaks
+          gitleaks git --no-banner --redact -v .
 
   packages:
     name: Swift packages — build & test
@@ -29,11 +35,11 @@ jobs:
       matrix:
         package: [Core, Persistence, FoodSources, DesignSystem]  # HealthKitClient & Scanner are iOS-only — tested via the app scheme
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Show toolchain
         run: xcodebuild -version && swift --version
       - name: Cache SwiftPM
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             Packages/${{ matrix.package }}/.build
@@ -48,7 +54,7 @@ jobs:
     runs-on: macos-26
     needs: packages
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Show toolchain
         run: xcodebuild -version
       - name: Create placeholder secrets
@@ -85,7 +91,7 @@ jobs:
   #   runs-on: macos-26
   #   needs: app
   #   steps:
-  #     - uses: actions/checkout@v4
+  #     - uses: actions/checkout@v5
   #     - run: bundle install && bundle exec fastlane beta
   #       env:
   #         USDA_FDC_API_KEY: ${{ secrets.USDA_FDC_API_KEY }}
