@@ -47,7 +47,18 @@ jobs:
           key: spm-${{ matrix.package }}-${{ hashFiles(format('Packages/{0}/Package.resolved', matrix.package)) }}
       - name: Test ${{ matrix.package }}
         working-directory: Packages/${{ matrix.package }}
-        run: swift test --parallel
+        run: swift test --parallel --enable-code-coverage
+      - name: Coverage
+        working-directory: Packages/${{ matrix.package }}
+        run: |
+          JSON=$(swift test --show-codecov-path)
+          PCT=$(jq '[.data[0].files[] | select(.filename | test("/Sources/"))] | (map(.summary.lines.covered) | add) * 100 / (map(.summary.lines.count) | add) | floor' "$JSON")
+          echo "${{ matrix.package }} line coverage: ${PCT}%" | tee -a "$GITHUB_STEP_SUMMARY"
+          # Core holds the nutrient/TDEE/date math: keep it ≥ 70 % (NFR-7, backlog #16).
+          if [ "${{ matrix.package }}" = "Core" ] && [ "$PCT" -lt 70 ]; then
+            echo "::error::Core coverage ${PCT}% is below 70%"
+            exit 1
+          fi
 
   app:
     name: iOS app — build & test (simulator)

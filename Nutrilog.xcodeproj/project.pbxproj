@@ -7,19 +7,35 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		018E0BAE0593A61F9524CF61 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1CA8B8FFD2D12E767B10B6E /* SettingsView.swift */; };
+		03EB647FB54E003C93F625E3 /* Formatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 332BBFC896239C9D6395BAE6 /* Formatting.swift */; };
+		09BADB1A0BBDC1C88C35C54F /* TargetsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85872A22FB7B839CA01C0AF8 /* TargetsModel.swift */; };
 		104AA4A32A6EC881CF63A75C /* AppEnvironmentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B74262F076BA46E2B4980AFF /* AppEnvironmentTests.swift */; };
+		4866F5733FE3075FDBC10671 /* AppModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D073557851101D1AD6FABF46 /* AppModelTests.swift */; };
 		4938903A2D3F636B0ECFCE00 /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB79B4BE92A3FFCB94D8CA93 /* AppEnvironment.swift */; };
 		4B6FE28F847FE3FB45F70F18 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = A889B4CD67F814724B977510 /* Persistence */; };
 		4C8B1351185B5B231D206824 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02B31E9560DA95F7E191A672 /* AppConfig.swift */; };
+		52BE128D0BBB8486593D5D4F /* DiaryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0AF9328875CE64DEC3A2E2D /* DiaryModel.swift */; };
 		68184A1CAA4FB02029B16A52 /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 080725B27DAA3A8B4B5726A4 /* DesignSystem */; };
+		75B76BE28FEF56116F1AB41E /* FoodEditorModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C7A62EC62945A0E3012FC0D /* FoodEditorModel.swift */; };
 		7CFFB861685166190159B1AF /* Scanner in Frameworks */ = {isa = PBXBuildFile; productRef = 1027AC8891CFCD49FA5F02E6 /* Scanner */; };
+		7F0BD5C3AA31BFE9476F53D5 /* DiarySheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88C0F2A65D5766E267236619 /* DiarySheets.swift */; };
 		924B13C90B00812AD3829D7F /* Core in Frameworks */ = {isa = PBXBuildFile; productRef = AB9209C5C9EF92BFDB397212 /* Core */; };
+		93F40FAA0B6B8597A92BDF6D /* AddFoodView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0368CFE4A655A4BA30A56CEB /* AddFoodView.swift */; };
+		960B5B0C93D3265331EF5287 /* DiaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A3BD94B01534D020D210090 /* DiaryView.swift */; };
 		9E285DA1EA0BB94E3C0ACB63 /* FoodIndex in Resources */ = {isa = PBXBuildFile; fileRef = 75DC5492FDBB333B50430029 /* FoodIndex */; };
+		A35CBFEC41A92533C258D56A /* DebugScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7E75BCA9037F92033C1EC6D /* DebugScreens.swift */; };
+		AB84906D2EDE73BDCC4044B4 /* UndoToast.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B7A03C9A4FE723D7A3BF9C /* UndoToast.swift */; };
+		B200F0D22BD2251C0881D5EF /* FoodEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0327B675F549F53BEA13BD28 /* FoodEditorView.swift */; };
 		B2A7F52D53D7CC4052A9D352 /* HealthKitClient in Frameworks */ = {isa = PBXBuildFile; productRef = 82AE5DAB28DD19241D0B72AD /* HealthKitClient */; };
 		B318D26F17E6B8CD774C9E64 /* FoodSources in Frameworks */ = {isa = PBXBuildFile; productRef = 31C0B385FA81090C31C324EA /* FoodSources */; };
 		BC7BC71995D1614AD56B4D84 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E654260AEEB47CC4E408FEBB /* RootView.swift */; };
+		CAF0ED85767DB9B2600F5738 /* QuantitySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F50396E834D499DFEF4D8B6 /* QuantitySheet.swift */; };
+		D63FFCA9058D3B3B24A31E40 /* QuickAddView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62FB67E26CA995E485714116 /* QuickAddView.swift */; };
 		DF3E1A7AFED9764A1158B47E /* NutrilogApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D095BF32FF994BA5E303CEFE /* NutrilogApp.swift */; };
+		E137C48EA41D048FAC019CE0 /* ProfileTargetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F71079C582044C8F4ED01E8F /* ProfileTargetsView.swift */; };
 		EFB886BDAA15EBAA459742F1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 180130317CF5FAF7AE910FE2 /* Assets.xcassets */; };
+		FAC7255BEDB07126E802F069 /* FoodsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78333C048891E54051653673 /* FoodsListView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -34,21 +50,37 @@
 
 /* Begin PBXFileReference section */
 		02B31E9560DA95F7E191A672 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
+		0327B675F549F53BEA13BD28 /* FoodEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodEditorView.swift; sourceTree = "<group>"; };
+		0368CFE4A655A4BA30A56CEB /* AddFoodView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddFoodView.swift; sourceTree = "<group>"; };
 		180130317CF5FAF7AE910FE2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		1C7A62EC62945A0E3012FC0D /* FoodEditorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodEditorModel.swift; sourceTree = "<group>"; };
 		2137916B6A16402C94700DF7 /* NutrilogTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = NutrilogTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2A3BD94B01534D020D210090 /* DiaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryView.swift; sourceTree = "<group>"; };
+		332BBFC896239C9D6395BAE6 /* Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formatting.swift; sourceTree = "<group>"; };
 		34B1B04B40C3BCA84C756B6C /* App.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = App.xcconfig; sourceTree = "<group>"; };
 		3AF39B0F528153E0E26659AE /* Persistence */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Persistence; path = Packages/Persistence; sourceTree = SOURCE_ROOT; };
+		5F50396E834D499DFEF4D8B6 /* QuantitySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuantitySheet.swift; sourceTree = "<group>"; };
 		60FBAD1B8EF1EAF542AFD162 /* Nutrilog.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Nutrilog.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		62FB67E26CA995E485714116 /* QuickAddView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddView.swift; sourceTree = "<group>"; };
 		63407E42DD103C94C747FC3E /* DesignSystem */ = {isa = PBXFileReference; lastKnownFileType = folder; name = DesignSystem; path = Packages/DesignSystem; sourceTree = SOURCE_ROOT; };
 		6383EA51CBC1C56DC110D389 /* FoodSources */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FoodSources; path = Packages/FoodSources; sourceTree = SOURCE_ROOT; };
 		75DC5492FDBB333B50430029 /* FoodIndex */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FoodIndex; path = Resources/FoodIndex; sourceTree = SOURCE_ROOT; };
+		78333C048891E54051653673 /* FoodsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodsListView.swift; sourceTree = "<group>"; };
+		85872A22FB7B839CA01C0AF8 /* TargetsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetsModel.swift; sourceTree = "<group>"; };
+		88C0F2A65D5766E267236619 /* DiarySheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiarySheets.swift; sourceTree = "<group>"; };
 		96D590C88C38803CC71E2F8E /* Core */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Core; path = Packages/Core; sourceTree = SOURCE_ROOT; };
 		9D49D6FA80ED906B28795E67 /* HealthKitClient */ = {isa = PBXFileReference; lastKnownFileType = folder; name = HealthKitClient; path = Packages/HealthKitClient; sourceTree = SOURCE_ROOT; };
+		A0AF9328875CE64DEC3A2E2D /* DiaryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryModel.swift; sourceTree = "<group>"; };
+		A1B7A03C9A4FE723D7A3BF9C /* UndoToast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoToast.swift; sourceTree = "<group>"; };
 		B74262F076BA46E2B4980AFF /* AppEnvironmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironmentTests.swift; sourceTree = "<group>"; };
 		C5474734DF2DBC41E0C59322 /* Scanner */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Scanner; path = Packages/Scanner; sourceTree = SOURCE_ROOT; };
 		CB79B4BE92A3FFCB94D8CA93 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
+		D073557851101D1AD6FABF46 /* AppModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModelTests.swift; sourceTree = "<group>"; };
 		D095BF32FF994BA5E303CEFE /* NutrilogApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutrilogApp.swift; sourceTree = "<group>"; };
+		D1CA8B8FFD2D12E767B10B6E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		D7E75BCA9037F92033C1EC6D /* DebugScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugScreens.swift; sourceTree = "<group>"; };
 		E654260AEEB47CC4E408FEBB /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		F71079C582044C8F4ED01E8F /* ProfileTargetsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileTargetsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -74,6 +106,16 @@
 				180130317CF5FAF7AE910FE2 /* Assets.xcassets */,
 			);
 			path = Resources;
+			sourceTree = "<group>";
+		};
+		160CF261217B3D04784D900C /* Diary */ = {
+			isa = PBXGroup;
+			children = (
+				A0AF9328875CE64DEC3A2E2D /* DiaryModel.swift */,
+				88C0F2A65D5766E267236619 /* DiarySheets.swift */,
+				2A3BD94B01534D020D210090 /* DiaryView.swift */,
+			);
+			path = Diary;
 			sourceTree = "<group>";
 		};
 		35EC61EC1E3713FB0B071106 /* Resources */ = {
@@ -104,6 +146,26 @@
 			);
 			sourceTree = "<group>";
 		};
+		5F4ACFC77F3EE5D011296D11 /* AddFood */ = {
+			isa = PBXGroup;
+			children = (
+				0368CFE4A655A4BA30A56CEB /* AddFoodView.swift */,
+				5F50396E834D499DFEF4D8B6 /* QuantitySheet.swift */,
+				62FB67E26CA995E485714116 /* QuickAddView.swift */,
+			);
+			path = AddFood;
+			sourceTree = "<group>";
+		};
+		62723209C3F73795C67716E3 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				D7E75BCA9037F92033C1EC6D /* DebugScreens.swift */,
+				332BBFC896239C9D6395BAE6 /* Formatting.swift */,
+				A1B7A03C9A4FE723D7A3BF9C /* UndoToast.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
 		63E9B5CFC895EB55FF285935 /* App */ = {
 			isa = PBXGroup;
 			children = (
@@ -126,6 +188,16 @@
 			path = Packages;
 			sourceTree = "<group>";
 		};
+		826FC4D458B562440628EE8D /* Foods */ = {
+			isa = PBXGroup;
+			children = (
+				1C7A62EC62945A0E3012FC0D /* FoodEditorModel.swift */,
+				0327B675F549F53BEA13BD28 /* FoodEditorView.swift */,
+				78333C048891E54051653673 /* FoodsListView.swift */,
+			);
+			path = Foods;
+			sourceTree = "<group>";
+		};
 		A9E406B16BCFD1C0B871A29B /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -139,6 +211,7 @@
 			isa = PBXGroup;
 			children = (
 				B74262F076BA46E2B4980AFF /* AppEnvironmentTests.swift */,
+				D073557851101D1AD6FABF46 /* AppModelTests.swift */,
 			);
 			path = NutrilogTests;
 			sourceTree = "<group>";
@@ -151,6 +224,16 @@
 			path = Tests;
 			sourceTree = "<group>";
 		};
+		E4B918FE2BAA42A314260E98 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				F71079C582044C8F4ED01E8F /* ProfileTargetsView.swift */,
+				D1CA8B8FFD2D12E767B10B6E /* SettingsView.swift */,
+				85872A22FB7B839CA01C0AF8 /* TargetsModel.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
 		F4D7DE84A33703DAB4EB6C5E /* Sources */ = {
 			isa = PBXGroup;
 			children = (
@@ -158,6 +241,11 @@
 				CB79B4BE92A3FFCB94D8CA93 /* AppEnvironment.swift */,
 				D095BF32FF994BA5E303CEFE /* NutrilogApp.swift */,
 				E654260AEEB47CC4E408FEBB /* RootView.swift */,
+				5F4ACFC77F3EE5D011296D11 /* AddFood */,
+				160CF261217B3D04784D900C /* Diary */,
+				826FC4D458B562440628EE8D /* Foods */,
+				E4B918FE2BAA42A314260E98 /* Settings */,
+				62723209C3F73795C67716E3 /* Shared */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -268,6 +356,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				104AA4A32A6EC881CF63A75C /* AppEnvironmentTests.swift in Sources */,
+				4866F5733FE3075FDBC10671 /* AppModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -275,10 +364,25 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				93F40FAA0B6B8597A92BDF6D /* AddFoodView.swift in Sources */,
 				4C8B1351185B5B231D206824 /* AppConfig.swift in Sources */,
 				4938903A2D3F636B0ECFCE00 /* AppEnvironment.swift in Sources */,
+				A35CBFEC41A92533C258D56A /* DebugScreens.swift in Sources */,
+				52BE128D0BBB8486593D5D4F /* DiaryModel.swift in Sources */,
+				7F0BD5C3AA31BFE9476F53D5 /* DiarySheets.swift in Sources */,
+				960B5B0C93D3265331EF5287 /* DiaryView.swift in Sources */,
+				75B76BE28FEF56116F1AB41E /* FoodEditorModel.swift in Sources */,
+				B200F0D22BD2251C0881D5EF /* FoodEditorView.swift in Sources */,
+				FAC7255BEDB07126E802F069 /* FoodsListView.swift in Sources */,
+				03EB647FB54E003C93F625E3 /* Formatting.swift in Sources */,
 				DF3E1A7AFED9764A1158B47E /* NutrilogApp.swift in Sources */,
+				E137C48EA41D048FAC019CE0 /* ProfileTargetsView.swift in Sources */,
+				CAF0ED85767DB9B2600F5738 /* QuantitySheet.swift in Sources */,
+				D63FFCA9058D3B3B24A31E40 /* QuickAddView.swift in Sources */,
 				BC7BC71995D1614AD56B4D84 /* RootView.swift in Sources */,
+				018E0BAE0593A61F9524CF61 /* SettingsView.swift in Sources */,
+				09BADB1A0BBDC1C88C35C54F /* TargetsModel.swift in Sources */,
+				AB84906D2EDE73BDCC4044B4 /* UndoToast.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

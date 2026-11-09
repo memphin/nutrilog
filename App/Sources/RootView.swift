@@ -1,34 +1,41 @@
+import DesignSystem
 import SwiftUI
 
-/// Phase 0 placeholder. Replaced by the Diary / Dashboard tab structure in Phase 1.
 struct RootView: View {
     @Environment(AppEnvironment.self) private var environment
 
     var body: some View {
-        NavigationStack {
-            List {
-                Section("Status") {
-                    switch environment.database {
-                    case .ready:
-                        Label("Database ready", systemImage: "checkmark.circle")
-                    case let .failed(message):
-                        Label("Database error: \(message)", systemImage: "exclamationmark.triangle")
-                    }
-                    Label(
-                        environment.config.usdaAPIKey == nil ? "USDA key not set (optional)" : "USDA key configured",
-                        systemImage: "key",
-                    )
+        switch environment.database {
+        case .ready:
+            #if DEBUG
+                if let screen = DebugScreen.requested {
+                    DebugScreen(name: screen)
+                } else {
+                    tabs
                 }
-                Section {
-                    Text("Phase 0 — foundation. Food diary arrives in Phase 1.")
-                        .foregroundStyle(.secondary)
-                }
+            #else
+                tabs
+            #endif
+        case let .failed(message):
+            ErrorStateView("The database could not be opened.\n\(message)")
+        }
+    }
+
+    private var tabs: some View {
+        TabView {
+            Tab("Diary", systemImage: "book.pages") {
+                DiaryView()
             }
-            .navigationTitle("Nutrilog")
+            Tab("Foods", systemImage: "fork.knife") {
+                FoodsListView()
+            }
+            Tab("Settings", systemImage: "gearshape") {
+                SettingsView()
+            }
         }
     }
 }
 
 #Preview {
-    RootView().environment(AppEnvironment.preview())
+    RootView().environment(AppEnvironment.preview(sampleData: true))
 }
