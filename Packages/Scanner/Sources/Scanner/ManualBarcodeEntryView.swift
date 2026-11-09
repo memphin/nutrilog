@@ -30,7 +30,7 @@
                     if let message = validation.message {
                         Text(message).foregroundStyle(.red)
                     } else {
-                        Text("Type the 8, 12 or 13 digits printed under the barcode.")
+                        Text("Type the 8, 12, 13 or 14 digits printed under the barcode.")
                     }
                 }
                 Section {

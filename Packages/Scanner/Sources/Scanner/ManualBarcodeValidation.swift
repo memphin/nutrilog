@@ -49,14 +49,22 @@ public enum ManualBarcodeValidation: Equatable, Sendable {
         }
     }
 
-    /// Typed codes carry no symbology, so infer it from the length. An 8-digit code is EAN-8 when its
-    /// check digit says so, otherwise UPC-E (the same rule `Barcode.normalize` applies).
+    /// Typed codes carry no symbology, so infer it from the length. An 8-digit code is `.ean8` or `.upcE` only
+    /// when exactly one reading has a valid check digit; when both do (common: most UPC-E codes also pass the
+    /// EAN-8 check) it stays `.unknown` and `ScannedBarcode.candidates` carries both keys.
     static func symbology(forDigits digits: String) -> Barcode.Symbology {
         switch digits.count {
-        case 13: .ean13
-        case 12: .upcA
-        case 8: Barcode.hasValidCheckDigit(digits) ? .ean8 : .upcE
-        default: .unknown
+        case 13: return .ean13
+        case 12: return .upcA
+        case 8:
+            let isEAN8 = Barcode.hasValidCheckDigit(digits)
+            let isUPCE = Barcode.expandUPCE(digits).map(Barcode.hasValidCheckDigit) ?? false
+            switch (isEAN8, isUPCE) {
+            case (true, false): return .ean8
+            case (false, true): return .upcE
+            default: return .unknown
+            }
+        default: return .unknown
         }
     }
 }

@@ -5,14 +5,23 @@
     /// the torch is shared hardware, so it lights while the scanner's capture session is running.
     @MainActor
     enum Torch {
-        static var isAvailable: Bool {
-            AVCaptureDevice.default(for: .video)?.hasTorch ?? false
+        private static var device: AVCaptureDevice? {
+            AVCaptureDevice.default(for: .video).flatMap { $0.hasTorch ? $0 : nil }
         }
 
-        /// Returns the torch state actually applied (`false` when it couldn't be switched on).
+        static var isAvailable: Bool {
+            device != nil
+        }
+
+        /// Whether the torch is actually lit right now.
+        static var isOn: Bool {
+            device?.torchMode == .on
+        }
+
+        /// Switches the torch and returns its actual state afterwards (unchanged when switching failed).
         @discardableResult
         static func set(_ on: Bool) -> Bool {
-            guard let device = AVCaptureDevice.default(for: .video), device.hasTorch else { return false }
+            guard let device else { return false }
             do {
                 try device.lockForConfiguration()
                 defer { device.unlockForConfiguration() }
@@ -21,10 +30,10 @@
                 } else {
                     device.torchMode = .off
                 }
-                return on
             } catch {
-                return false
+                // Fall through and report the device's real state.
             }
+            return device.torchMode == .on
         }
     }
 #endif

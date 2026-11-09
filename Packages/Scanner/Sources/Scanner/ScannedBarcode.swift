@@ -7,14 +7,29 @@ public struct ScannedBarcode: Equatable, Sendable {
     public let payload: String
     /// Symbology mapped to Core's model. Code-128 has no Core case and is reported as `.unknown`.
     public let symbology: Barcode.Symbology
-    /// `Barcode.normalize` result (EAN-13 / EAN-8 key), or `nil` when the payload isn't a valid retail code,
-    /// e.g. a Code-128 label that doesn't carry a GTIN.
-    public let normalized: String?
+    /// Every normalized key the payload can stand for, most likely first. Usually one; an 8-digit code without an
+    /// EAN-8 hint can read both as EAN-8 and as UPC-E (expanded to EAN-13), so lookups should try each in order.
+    /// The order matches `Persistence.FoodRepository.food(barcode:symbology:)`: the hinted reading, then the
+    /// unhinted one, then UPC-E. Empty when the payload isn't a valid retail code, e.g. a Code-128 lot number.
+    public let candidates: [String]
+
+    /// The most likely normalized key (EAN-13 / EAN-8), or `nil` when the payload isn't a valid retail code.
+    public var normalized: String? {
+        candidates.first
+    }
 
     public init(payload: String, symbology: Barcode.Symbology) {
         self.payload = payload
         self.symbology = symbology
-        normalized = Barcode.normalize(payload, symbology: symbology)
+        // An explicit EAN-8 is trusted as is: EAN-8 and UPC-E are separate code spaces sharing 8-digit strings.
+        let hints: [Barcode.Symbology] = symbology == .ean8 ? [.ean8] : [symbology, .unknown, .upcE]
+        var candidates: [String] = []
+        for hint in hints {
+            if let code = Barcode.normalize(payload, symbology: hint), !candidates.contains(code) {
+                candidates.append(code)
+            }
+        }
+        self.candidates = candidates
     }
 }
 

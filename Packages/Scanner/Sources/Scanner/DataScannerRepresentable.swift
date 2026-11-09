@@ -1,12 +1,15 @@
 #if os(iOS)
+    import OSLog
     import SwiftUI
     import VisionKit
 
     /// Thin bridge to VisionKit's `DataScannerViewController`. All decisions (symbology mapping, debounce) live in
-    /// pure, unit-tested types; this only forwards detections.
+    /// pure, unit-tested types; this only forwards detections and start failures.
     struct DataScannerRepresentable: UIViewControllerRepresentable {
         var isScanning: Bool
         var onDetect: @MainActor (ScannedBarcode) -> Void
+        /// Called when `startScanning()` throws (e.g. the camera is in use or became unavailable).
+        var onStartFailure: @MainActor (Error) -> Void
 
         func makeUIViewController(context: Context) -> DataScannerViewController {
             let scanner = DataScannerViewController(
@@ -25,7 +28,13 @@
         func updateUIViewController(_ scanner: DataScannerViewController, context: Context) {
             context.coordinator.onDetect = onDetect
             if isScanning, !scanner.isScanning {
-                try? scanner.startScanning()
+                do {
+                    try scanner.startScanning()
+                } catch {
+                    // Report after this view update so the caller can change state safely.
+                    let onStartFailure = onStartFailure
+                    Task { @MainActor in onStartFailure(error) }
+                }
             } else if !isScanning, scanner.isScanning {
                 scanner.stopScanning()
             }
@@ -55,9 +64,21 @@
             ) {
                 for item in addedItems {
                     guard case let .barcode(barcode) = item, let payload = barcode.payloadStringValue else { continue }
-                    onDetect(ScannerSymbology.barcode(symbology: barcode.observation.symbology, payload: payload))
+                    let symbology = barcode.observation.symbology
+                    #if DEBUG
+                        // Confirms on device which payload formats Vision delivers (e.g. UPC-A as 12 or 13 digits,
+                        // UPC-E as 6, 7 or 8 digits).
+                        Self.logger.debug(
+                            "Detected \(symbology.rawValue, privacy: .public) payload \(payload, privacy: .public)",
+                        )
+                    #endif
+                    onDetect(ScannerSymbology.barcode(symbology: symbology, payload: payload))
                 }
             }
+
+            #if DEBUG
+                private static let logger = Logger(subsystem: "Scanner", category: "DataScanner")
+            #endif
         }
     }
 #endif

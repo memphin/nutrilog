@@ -20,22 +20,28 @@
             self.onScan = onScan
         }
 
+        /// The camera runs only while the scanner is shown, the manual-entry sheet is closed and the app is active.
+        private var isScanning: Bool {
+            availability == .ready && !isShowingManualEntry && scenePhase == .active
+        }
+
         public var body: some View {
             content
                 .sensoryFeedback(.success, trigger: detections)
                 .task { await refreshAvailability(requestIfNeeded: true) }
-                // Re-check when coming back from Settings.
+                // Re-check when coming back from Settings (or after the camera was busy).
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .active {
                         Task { await refreshAvailability(requestIfNeeded: false) }
                     }
                 }
-                .onDisappear {
-                    if isTorchOn {
-                        Torch.set(false)
-                        isTorchOn = false
+                // Whenever scanning stops, the torch goes off so the button never shows a stale state.
+                .onChange(of: isScanning) { _, scanning in
+                    if !scanning {
+                        turnTorchOff()
                     }
                 }
+                .onDisappear(perform: turnTorchOff)
                 .sheet(isPresented: $isShowingManualEntry) {
                     NavigationStack {
                         ManualBarcodeEntryView { barcode in
@@ -63,40 +69,52 @@
                 CameraUnavailableView(reason: .restricted, onManualEntry: showManualEntry)
             case .unsupported:
                 CameraUnavailableView(reason: .unsupported, onManualEntry: showManualEntry)
+            case .unavailable:
+                CameraUnavailableView(reason: .unavailable, onManualEntry: showManualEntry)
             }
         }
 
         private var scanner: some View {
-            DataScannerRepresentable(isScanning: !isShowingManualEntry, onDetect: handle)
-                .ignoresSafeArea()
-                .overlay(alignment: .bottom) {
-                    HStack(spacing: 16) {
-                        if Torch.isAvailable {
-                            Button {
-                                isTorchOn = Torch.set(!isTorchOn)
-                            } label: {
-                                Label(
-                                    isTorchOn ? "Turn Torch Off" : "Turn Torch On",
-                                    systemImage: isTorchOn ? "flashlight.on.fill" : "flashlight.off.fill",
-                                )
-                            }
-                            .accessibilityIdentifier("scannerTorch")
+            DataScannerRepresentable(
+                isScanning: isScanning,
+                onDetect: handle,
+                onStartFailure: { _ in availability = .unavailable },
+            )
+            .ignoresSafeArea()
+            .overlay(alignment: .bottom) {
+                HStack(spacing: 16) {
+                    if Torch.isAvailable {
+                        Button {
+                            isTorchOn = Torch.set(!isTorchOn)
+                        } label: {
+                            Label(
+                                isTorchOn ? "Turn Torch Off" : "Turn Torch On",
+                                systemImage: isTorchOn ? "flashlight.on.fill" : "flashlight.off.fill",
+                            )
                         }
-                        Button(action: showManualEntry) {
-                            Label("Enter Manually", systemImage: "keyboard")
-                        }
-                        .accessibilityIdentifier("scannerManualEntry")
+                        .accessibilityIdentifier("scannerTorch")
                     }
-                    .labelStyle(.iconOnly)
-                    .font(.title2)
-                    .buttonStyle(.glass)
-                    .controlSize(.large)
-                    .padding(.bottom, 24)
+                    Button(action: showManualEntry) {
+                        Label("Enter Manually", systemImage: "keyboard")
+                    }
+                    .accessibilityIdentifier("scannerManualEntry")
                 }
+                .labelStyle(.iconOnly)
+                .font(.title2)
+                .buttonStyle(.glass)
+                .controlSize(.large)
+                .padding(.bottom, 24)
+            }
         }
 
         private func showManualEntry() {
             isShowingManualEntry = true
+        }
+
+        private func turnTorchOff() {
+            if isTorchOn || Torch.isOn {
+                isTorchOn = Torch.set(false)
+            }
         }
 
         private func handle(_ barcode: ScannedBarcode) {
@@ -111,14 +129,18 @@
                 _ = await AVCaptureDevice.requestAccess(for: .video)
                 status = AVCaptureDevice.authorizationStatus(for: .video)
             }
-            availability = ScannerAvailability(authorization: status, isSupported: DataScannerViewController.isSupported)
+            availability = ScannerAvailability(
+                authorization: status,
+                isSupported: DataScannerViewController.isSupported,
+                isAvailable: DataScannerViewController.isAvailable,
+            )
         }
     }
 
     /// Shown instead of the camera when it can't be used; always offers manual entry.
     struct CameraUnavailableView: View {
         enum Reason {
-            case denied, restricted, unsupported
+            case denied, restricted, unsupported, unavailable
         }
 
         let reason: Reason
@@ -146,6 +168,7 @@
             case .denied: "Camera Access Off"
             case .restricted: "Camera Restricted"
             case .unsupported: "Scanning Not Available"
+            case .unavailable: "Camera Unavailable"
             }
         }
 
@@ -158,6 +181,9 @@
                 "Camera access is restricted on this device, e.g. by Screen Time. You can type the barcode instead."
             case .unsupported:
                 "This device can't scan barcodes with the camera. You can type the barcode instead."
+            case .unavailable:
+                "The camera can't be used right now, e.g. because another app is using it. "
+                    + "You can type the barcode instead."
             }
         }
     }

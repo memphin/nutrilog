@@ -87,8 +87,9 @@ struct ManualBarcodeValidationTests {
         (" 3850-1040-03455 ", "3850104003455", .ean13), // spaces and dashes tolerated
         ("036000291452", "0036000291452", .upcA),
         ("00036000291452", "0036000291452", .unknown), // GTIN-14
-        ("96385074", "96385074", .ean8),
-        ("04252614", "0042100005264", .upcE),
+        ("96385074", "96385074", .ean8), // only the EAN-8 reading is valid
+        ("04252614", "0042100005264", .upcE), // only the UPC-E reading is valid
+        ("09999992", "09999992", .unknown), // valid both ways: don't guess
     ])
     func `accepts valid codes`(input: String, normalized: String, symbology: Barcode.Symbology) throws {
         let barcode = try #require(ManualBarcodeValidation(input).barcode)
@@ -116,20 +117,63 @@ struct ManualBarcodeValidationTests {
     }
 }
 
+struct CandidateKeyTests {
+    @Test func `typed ambiguous 8-digit code is unknown and carries both keys`() throws {
+        let barcode = try #require(ManualBarcodeValidation("09999992").barcode)
+        #expect(barcode.symbology == .unknown)
+        #expect(barcode.candidates == ["09999992", "0099999000092"])
+    }
+
+    @Test(arguments: ["09999992", "01234565", "04252614", "96385074"])
+    func `symbology is guessed only when exactly one reading is valid`(code: String) throws {
+        let isEAN8 = Barcode.hasValidCheckDigit(code)
+        let isUPCE = Barcode.expandUPCE(code).map(Barcode.hasValidCheckDigit) ?? false
+        let barcode = try #require(ManualBarcodeValidation(code).barcode)
+        let expected: Barcode.Symbology = isEAN8 && isUPCE ? .unknown : (isEAN8 ? .ean8 : .upcE)
+        #expect(barcode.symbology == expected)
+        #expect(barcode.candidates.count == (isEAN8 && isUPCE ? 2 : 1))
+    }
+
+    @Test func `scanned UPC-E puts the UPC-E key first and keeps the EAN-8 reading as fallback`() {
+        let barcode = ScannerSymbology.barcode(symbology: .upce, payload: "09999992")
+        #expect(barcode.symbology == .upcE)
+        #expect(barcode.candidates == ["0099999000092", "09999992"])
+        #expect(barcode.normalized == "0099999000092")
+    }
+
+    @Test func `scanned EAN-8 is trusted as is`() {
+        let barcode = ScannerSymbology.barcode(symbology: .ean8, payload: "09999992")
+        #expect(barcode.candidates == ["09999992"])
+    }
+
+    @Test func `a 13-digit code has a single key`() {
+        #expect(ScannerSymbology.barcode(symbology: .ean13, payload: "3850104003455").candidates == ["3850104003455"])
+    }
+
+    @Test func `invalid code has no keys`() {
+        let barcode = ScannerSymbology.barcode(symbology: .code128, payload: "LOT-42")
+        #expect(barcode.candidates.isEmpty)
+        #expect(barcode.normalized == nil)
+    }
+}
+
 struct ScannerAvailabilityTests {
     @Test(arguments: [
-        (AVAuthorizationStatus.notDetermined, true, ScannerAvailability.needsPermission),
-        (.authorized, true, .ready),
-        (.denied, true, .denied),
-        (.restricted, true, .restricted),
-        (.authorized, false, .unsupported),
-        (.denied, false, .unsupported),
+        (AVAuthorizationStatus.notDetermined, true, false, ScannerAvailability.needsPermission),
+        (.authorized, true, true, .ready),
+        (.authorized, true, false, .unavailable),
+        (.denied, true, false, .denied),
+        (.restricted, true, false, .restricted),
+        (.authorized, false, false, .unsupported),
+        (.denied, false, false, .unsupported),
     ])
-    func `decides from permission and support`(
+    func `decides from permission, support and availability`(
         status: AVAuthorizationStatus,
         isSupported: Bool,
+        isAvailable: Bool,
         expected: ScannerAvailability,
     ) {
-        #expect(ScannerAvailability(authorization: status, isSupported: isSupported) == expected)
+        let availability = ScannerAvailability(authorization: status, isSupported: isSupported, isAvailable: isAvailable)
+        #expect(availability == expected)
     }
 }
