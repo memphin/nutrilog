@@ -42,6 +42,13 @@ final class TargetsModel {
     private(set) var currentTarget: Target?
     let today: LocalDay
 
+    // Field text as loaded. The fields round to 2 decimals / whole percent, so a field still showing its
+    // loaded text means "unchanged" and the stored value is kept instead of the rounded one.
+    private var loadedPercents: [String]?
+    private var loadedGrams: [String]?
+    private var loadedFiber: String?
+    private var loadedWeight: String?
+
     init(today: LocalDay) {
         self.today = today
     }
@@ -62,6 +69,7 @@ final class TargetsModel {
         rateKgPerWeek = profile.goalRateKgPerWeek > 0 ? profile.goalRateKgPerWeek : 0.5
         storedWeightKg = latestWeightKg
         weightKg = Format.field(latestWeightKg)
+        loadedWeight = weightKg
         if let target {
             overrideKcal = target.origin == .manual
             manualKcal = Format.field(target.kcal)
@@ -73,6 +81,9 @@ final class TargetsModel {
             proteinPct = Format.field(split.proteinPct.rounded())
             carbsPct = Format.field(split.carbsPct.rounded())
             fatPct = Format.field(100 - split.proteinPct.rounded() - split.carbsPct.rounded())
+            loadedPercents = [proteinPct, carbsPct, fatPct]
+            loadedGrams = [proteinG, carbsG, fatG]
+            loadedFiber = fiberG
         }
     }
 
@@ -116,6 +127,9 @@ final class TargetsModel {
     }
 
     var macros: MacroTargets? {
+        if let stored = currentTarget, keepsStoredMacros(stored) {
+            return stored.macros
+        }
         switch macroInput {
         case .percent:
             guard let kcal = effectiveKcal, let split, split.isValid else { return nil }
@@ -145,6 +159,18 @@ final class TargetsModel {
         return errors
     }
 
+    /// True when the stored gram targets still apply: the macro fields of the current input mode are as
+    /// loaded and, for percentages, the calorie target is unchanged. Without this, re-saving would turn the
+    /// stored grams into the rounded percentages' grams.
+    private func keepsStoredMacros(_ stored: Target) -> Bool {
+        switch macroInput {
+        case .percent:
+            [proteinPct, carbsPct, fatPct] == loadedPercents && effectiveKcal?.rounded() == stored.kcal
+        case .grams:
+            [proteinG, carbsG, fatG] == loadedGrams
+        }
+    }
+
     /// Gram targets' energy vs. the calorie target — shown as a hint in gram mode.
     var gramsEnergyMismatch: Double? {
         guard macroInput == .grams, let macros, let kcal = effectiveKcal, kcal > 0 else { return nil }
@@ -164,9 +190,9 @@ final class TargetsModel {
         return profile
     }
 
-    /// New weight to store, when the field differs from the latest stored weight.
+    /// New weight to store, when the user changed the field and it differs from the latest stored weight.
     var newWeight: Double? {
-        guard let weight = Format.number(weightKg), weight > 0, weight < 500 else { return nil }
+        guard weightKg != loadedWeight, let weight = Format.number(weightKg), weight > 0, weight < 500 else { return nil }
         if let stored = storedWeightKg, abs(stored - weight) < 0.001 {
             return nil
         }
@@ -175,10 +201,28 @@ final class TargetsModel {
 
     func makeTarget() -> Target? {
         guard validationErrors.isEmpty, let kcal = effectiveKcal, let macros else { return nil }
-        let fiber = Format.number(fiberG).flatMap { $0 > 0 ? $0 : nil }
+        let fiber = fiberG == loadedFiber ? currentTarget?.fiberG : Format.number(fiberG).flatMap { $0 > 0 ? $0 : nil }
         return Target(
             effectiveFrom: today, kcal: kcal.rounded(), macros: macros, fiberG: fiber,
             origin: overrideKcal ? .manual : .formula,
         )
+    }
+
+    /// Saves the form. The target — the point of this screen, validated as a whole — is written first, then
+    /// the profile and weight only when they changed, so a failure leaves as little half-saved as possible.
+    /// Returns false when the form is invalid (nothing is written).
+    @discardableResult
+    func save(to profiles: ProfileRepository) throws -> Bool {
+        guard let target = makeTarget() else { return false }
+        let profileToSave = updatedProfile().flatMap { $0 == profile ? nil : $0 }
+        let weightToAdd = newWeight
+        try profiles.setTarget(target)
+        if let profileToSave {
+            try profiles.save(profileToSave)
+        }
+        if let weightToAdd {
+            try profiles.addWeight(kg: weightToAdd)
+        }
+        return true
     }
 }

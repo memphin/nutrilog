@@ -17,6 +17,13 @@ struct AccessibilityTextTests {
         #expect(A11y.energyRemaining(consumed: 2150, target: 2000) == "150 calories over target of 2,000")
         #expect(A11y.energyRemaining(consumed: 900, target: nil) == "900 calories eaten, no target set")
     }
+
+    @Test func `energy labels speak kilojoules`() {
+        #expect(A11y.energyRemaining(consumed: 3138, target: 8368, unit: "kJ") == "5,230 kilojoules remaining of 8,368")
+        #expect(A11y.energyRemaining(consumed: 9000, target: 8368, unit: "kJ") == "632 kilojoules over target of 8,368")
+        #expect(A11y.energyRemaining(consumed: 3766, target: nil, unit: "kJ") == "3,766 kilojoules eaten, no target set")
+        #expect(A11y.energyRemaining(consumed: 750, target: 2000, unit: "kcal") == "1,250 calories remaining of 2,000")
+    }
 }
 
 struct ProgressTests {

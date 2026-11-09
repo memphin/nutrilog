@@ -20,6 +20,7 @@ struct AddFoodView: View {
     @State private var query = ""
     @State private var lists = Lists()
     @State private var results: [FoodSearchResult] = []
+    @State private var searchFailed = false
     @State private var path: [FoodDetail] = []
     @State private var showCreate = false
     @State private var showQuickAdd = false
@@ -57,7 +58,7 @@ struct AddFoodView: View {
                         .buttonStyle(.plain)
                     }
                 } else {
-                    if results.isEmpty {
+                    if results.isEmpty, !searchFailed {
                         EmptyStateView(
                             "No matches",
                             systemImage: "magnifyingglass",
@@ -69,7 +70,7 @@ struct AddFoodView: View {
                         Button { open(result) } label: {
                             FoodRow(
                                 name: result.name, brand: result.brand, per100: result.per100, source: result.source,
-                                unit: environment.energyUnit, isLiquid: false,
+                                unit: environment.energyUnit, isLiquid: result.isLiquid,
                             )
                         }
                         .buttonStyle(.plain)
@@ -156,16 +157,31 @@ struct AddFoodView: View {
         let text = query
         guard !text.trimmingCharacters(in: .whitespaces).isEmpty, let search = environment.search else {
             results = []
+            searchFailed = false
             return
         }
         try? await Task.sleep(for: .milliseconds(150)) // debounce typing
         guard !Task.isCancelled else { return }
-        results = (try? search.search(text)) ?? []
+        do {
+            results = try search.search(text)
+            searchFailed = false
+        } catch {
+            results = []
+            searchFailed = true // don't claim "No matches" when the search didn't run
+            errorMessage = "Search failed: \(error.localizedDescription)"
+        }
     }
 
     private func open(_ food: Food) {
-        guard let detail = try? environment.foods?.detail(id: food.id) else { return }
-        path.append(detail)
+        do {
+            guard let detail = try environment.foods?.detail(id: food.id) else {
+                errorMessage = "\(food.name) is no longer available."
+                return
+            }
+            path.append(detail)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     private func open(_ result: FoodSearchResult) {
@@ -180,6 +196,16 @@ struct AddFoodView: View {
                 errorMessage = error.localizedDescription
             }
         }
+    }
+}
+
+extension FoodSearchResult {
+    /// Whether the row's "per 100" is ml. Bundled index values are per 100 g (their local copies are solids too).
+    var isLiquid: Bool {
+        if case let .food(food) = self {
+            return food.isLiquid
+        }
+        return false
     }
 }
 

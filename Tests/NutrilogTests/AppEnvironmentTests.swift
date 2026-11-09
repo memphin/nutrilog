@@ -30,8 +30,33 @@ struct AppEnvironmentBehaviourTests {
     @Test func `energy unit preference is persisted`() throws {
         let env = AppEnvironment.preview()
         #expect(env.energyUnit == .kcal)
-        env.energyUnit = .kilojoules
+        try env.setEnergyUnit(.kilojoules)
+        #expect(env.energyUnit == .kilojoules)
         #expect(try env.profiles?.setting(SettingKey.energyUnit, as: String.self) == "kJ")
+    }
+
+    @Test func `import reloads cached settings and bumps the data generation`() throws {
+        let env = AppEnvironment.preview()
+        let portability = try #require(env.portability)
+        try env.setEnergyUnit(.kilojoules)
+        let exported = try portability.exportJSON()
+        try env.setEnergyUnit(.kcal)
+
+        try portability.importJSON(exported, mode: .replace)
+        #expect(env.energyUnit == .kcal) // stale until told
+        try env.dataDidChangeExternally()
+        #expect(env.energyUnit == .kilojoules)
+        #expect(env.dataGeneration == 1)
+    }
+
+    @Test func `today is refreshed from the clock`() {
+        let clock = ManualClock()
+        let env = AppEnvironment.preview(clock: clock.appClock)
+        let start = env.today
+        #expect(!env.refreshToday()) // same day
+        clock.advance(hours: 24)
+        #expect(env.refreshToday())
+        #expect(env.today == start.next)
     }
 
     @Test func `bundled food index ships with the app`() throws {

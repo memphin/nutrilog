@@ -115,6 +115,7 @@ private struct DiaryContent: View {
         .toolbar { toolbar }
         .task(id: model.day) { await model.observeDiary() }
         .task(id: model.day) { await model.observeTarget() }
+        .onChange(of: environment.dataGeneration) { model.dataDidChangeExternally() }
         .undoToast(model.undo)
         .sheet(item: $addTarget) { target in
             AddFoodView(target: target)
@@ -131,7 +132,7 @@ private struct DiaryContent: View {
             }
         }
         .sheet(item: $movingEntry) { entry in
-            MoveToDateSheet(entry: entry, slots: model.slots) { slotID, day in
+            MoveToDateSheet(entry: entry, slots: model.moveTargets(for: entry)) { slotID, day in
                 model.move(entry, toSlot: slotID, day: day)
             }
         }

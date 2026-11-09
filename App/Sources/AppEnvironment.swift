@@ -17,19 +17,24 @@ final class AppEnvironment {
     let bundledIndex: BundledFoodIndex?
     let clock: AppClock
 
-    /// Display preference (Settings → Units); persisted in the `setting` table.
-    var energyUnit: EnergyUnit = .kcal {
-        didSet { try? profiles?.setSetting(SettingKey.energyUnit, energyUnit.rawValue) }
-    }
+    /// Display preference (Settings → Units); persisted in the `setting` table. Change it with `setEnergyUnit(_:)`.
+    private(set) var energyUnit: EnergyUnit = .kcal
+
+    /// The current local day. Stored rather than computed so views re-render when it changes; `refreshToday()`
+    /// updates it when the app becomes active or the system reports a significant time change (midnight).
+    private(set) var today: LocalDay
+
+    /// Bumped when the database contents change outside the normal flows (JSON import), so screens drop
+    /// state that may no longer match the data, such as a pending undo.
+    private(set) var dataGeneration = 0
 
     init(database: DatabaseState, config: AppConfig, bundledIndex: BundledFoodIndex?, clock: AppClock = .system) {
         self.database = database
         self.config = config
         self.bundledIndex = bundledIndex
         self.clock = clock
-        if let raw = try? profiles?.setting(SettingKey.energyUnit, as: String.self), let unit = EnergyUnit(rawValue: raw) {
-            energyUnit = unit
-        }
+        today = LocalDay.today(now: clock.now())
+        try? reloadSettings() // unreadable settings fall back to the defaults
     }
 
     var db: AppDatabase? {
@@ -59,8 +64,33 @@ final class AppEnvironment {
         db.map { DataPortability($0, clock: clock) }
     }
 
-    var today: LocalDay {
-        LocalDay.today(now: clock.now())
+    /// Re-reads the clock; returns true when the local day changed.
+    @discardableResult
+    func refreshToday() -> Bool {
+        let current = LocalDay.today(now: clock.now())
+        guard current != today else { return false }
+        today = current
+        return true
+    }
+
+    /// Persists the energy unit, then shows it. On failure the previous unit stays.
+    func setEnergyUnit(_ unit: EnergyUnit) throws {
+        guard unit != energyUnit else { return }
+        try profiles?.setSetting(SettingKey.energyUnit, unit.rawValue)
+        energyUnit = unit
+    }
+
+    /// Reloads the settings cached here from the database.
+    func reloadSettings() throws {
+        guard let profiles else { return }
+        let raw = try profiles.setting(SettingKey.energyUnit, as: String.self)
+        energyUnit = raw.flatMap(EnergyUnit.init(rawValue:)) ?? .kcal
+    }
+
+    /// Call after an import replaced or merged data: invalidates pending undo actions and reloads cached settings.
+    func dataDidChangeExternally() throws {
+        dataGeneration += 1
+        try reloadSettings()
     }
 
     /// Production environment: on-disk database in Application Support + bundled food index.
@@ -78,13 +108,14 @@ final class AppEnvironment {
     }
 
     /// In-memory environment for tests and previews, optionally with sample data.
-    static func preview(sampleData: Bool = false) -> AppEnvironment {
+    static func preview(sampleData: Bool = false, clock: AppClock = .system) -> AppEnvironment {
         let state: DatabaseState
         do { state = try .ready(AppDatabase.inMemory()) } catch { state = .failed(String(describing: error)) }
         let env = AppEnvironment(
             database: state,
             config: AppConfig(usdaAPIKey: nil, offUserAgent: AppConfig.defaultUserAgent),
             bundledIndex: BundledFoodIndex.inBundle(),
+            clock: clock,
         )
         if sampleData {
             env.insertSampleData()

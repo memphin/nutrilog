@@ -11,14 +11,16 @@ public enum A11y {
         return "\(label) \(format(value)) \(spokenUnit)"
     }
 
-    /// "1,250 calories remaining of 2,000" / "150 calories over target of 2,000".
-    public static func energyRemaining(consumed: Double, target: Double?) -> String {
-        guard let target, target > 0 else { return "\(format(consumed)) calories eaten, no target set" }
+    /// "1,250 calories remaining of 2,000" / "150 calories over target of 2,000"; with `unit` "kJ",
+    /// "5,230 kilojoules remaining of 8,368". Values are in `unit`.
+    public static func energyRemaining(consumed: Double, target: Double?, unit: String = "kcal") -> String {
+        let spokenUnit = spoken(unit)
+        guard let target, target > 0 else { return "\(format(consumed)) \(spokenUnit) eaten, no target set" }
         let remaining = target - consumed
         if remaining >= 0 {
-            return "\(format(remaining)) calories remaining of \(format(target))"
+            return "\(format(remaining)) \(spokenUnit) remaining of \(format(target))"
         }
-        return "\(format(-remaining)) calories over target of \(format(target))"
+        return "\(format(-remaining)) \(spokenUnit) over target of \(format(target))"
     }
 
     static func spoken(_ unit: String) -> String {

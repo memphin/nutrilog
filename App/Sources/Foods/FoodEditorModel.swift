@@ -48,6 +48,15 @@ final class FoodEditorModel {
     let energyUnit: EnergyUnit
     private(set) var original: FoodDetail?
 
+    /// Nutrition fields as loaded from `original`. Fields still showing this text keep the stored value on
+    /// save: the fields round to 2 decimals, and USDA / Open Food Facts values often have more.
+    private struct LoadedFields {
+        var energy, protein, carbs, fat, fiber, sugar, satFat, sodiumOrSalt: String
+        var entersSalt: Bool
+    }
+
+    private var loaded: LoadedFields?
+
     init(energyUnit: EnergyUnit, editing detail: FoodDetail? = nil, initialName: String = "", barcode: String? = nil) {
         self.energyUnit = energyUnit
         original = detail
@@ -149,13 +158,19 @@ final class FoodEditorModel {
         food.brand = Self.optional(brand)
         food.notes = Self.optional(notes)
         food.isLiquid = isLiquid
-        food.per100 = per100
-        food.dataQuality = .complete
+        food.per100 = keepingUneditedValues(per100)
+        // Editing a bundled / USDA / Open Food Facts food keeps its data-quality flag.
+        food.dataQuality = original?.food.dataQuality ?? .complete
         let drafts = servings.filter { !$0.label.trimmingCharacters(in: .whitespaces).isEmpty }
         let savedServings = drafts.map { draft in
-            var serving = original?.servings.first { $0.id == draft.id } ?? Serving(id: draft.id, label: "", grams: 1)
+            let old = original?.servings.first { $0.id == draft.id }
+            var serving = old ?? Serving(id: draft.id, label: "", grams: 1)
             serving.label = draft.label.trimmingCharacters(in: .whitespaces)
-            serving.grams = Self.value(draft.amount) ?? 1
+            if let old, draft.amount == Format.field(old.grams) {
+                serving.grams = old.grams // amount not edited: keep the unrounded value
+            } else {
+                serving.grams = Self.value(draft.amount) ?? 1
+            }
             return serving
         }
         food.defaultServingID = savedServings.contains { $0.id == defaultServingID } ? defaultServingID : nil
@@ -167,6 +182,38 @@ final class FoodEditorModel {
     }
 
     // MARK: Helpers
+
+    /// `entered` with every nutrient whose field the user left as loaded replaced by the stored value.
+    private func keepingUneditedValues(_ entered: Nutrients) -> Nutrients {
+        // Per-serving input reinterprets every field, so then all values are new.
+        guard let stored = original?.food.per100, let loaded, basis == .per100 else { return entered }
+        var result = entered
+        if energy == loaded.energy {
+            result.kcal = stored.kcal
+        }
+        if protein == loaded.protein {
+            result.proteinG = stored.proteinG
+        }
+        if carbs == loaded.carbs {
+            result.carbsG = stored.carbsG
+        }
+        if fat == loaded.fat {
+            result.fatG = stored.fatG
+        }
+        if fiber == loaded.fiber {
+            result.fiberG = stored.fiberG
+        }
+        if sugar == loaded.sugar {
+            result.sugarG = stored.sugarG
+        }
+        if satFat == loaded.satFat {
+            result.satFatG = stored.satFatG
+        }
+        if sodiumOrSalt == loaded.sodiumOrSalt, entersSalt == loaded.entersSalt {
+            result.sodiumMg = stored.sodiumMg
+        }
+        return result
+    }
 
     private func load(_ detail: FoodDetail) {
         let food = detail.food
@@ -184,6 +231,10 @@ final class FoodEditorModel {
         satFat = Format.field(food.satFatG100)
         entersSalt = false
         sodiumOrSalt = Format.field(food.sodiumMg100)
+        loaded = LoadedFields(
+            energy: energy, protein: protein, carbs: carbs, fat: fat, fiber: fiber, sugar: sugar, satFat: satFat,
+            sodiumOrSalt: sodiumOrSalt, entersSalt: entersSalt,
+        )
         servings = detail.servings.map { ServingDraft(id: $0.id, label: $0.label, amount: Format.field($0.grams)) }
         defaultServingID = food.defaultServingID
         barcodes = detail.barcodes

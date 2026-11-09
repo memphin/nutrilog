@@ -94,6 +94,70 @@ struct FoodEditorModelTests {
         #expect(reopened.servings.first?.label == "slice")
         #expect(reopened.makeDetail()?.food.id == detail.food.id)
     }
+
+    @Test func `editing a non-custom food keeps unedited values and its data quality`() throws {
+        let stored = Nutrients(kcal: 61.234, proteinG: 3.2756, carbsG: 4.6312, fatG: 3.2481, sodiumMg: 43.217)
+        let food = Food(
+            name: "Milk, whole", source: .usda, sourceID: "746782", per100: stored, isLiquid: true,
+            dataQuality: .partialMacros,
+        )
+        let detail = FoodDetail(food: food, servings: [Serving(label: "cup", grams: 244.0123)])
+        let model = FoodEditorModel(energyUnit: .kilojoules, editing: detail)
+        model.name = "Whole milk"
+        let renamed = try #require(model.makeDetail())
+        #expect(renamed.food.name == "Whole milk")
+        #expect(renamed.food.per100 == stored) // fields show 2 decimals (and kJ); untouched values stay exact
+        #expect(renamed.food.dataQuality == .partialMacros)
+        #expect(renamed.servings.first?.grams == 244.0123)
+
+        model.protein = "3.4"
+        let edited = try #require(model.makeDetail())
+        #expect(edited.food.proteinG100 == 3.4)
+        #expect(edited.food.kcal100 == stored.kcal)
+        #expect(edited.food.fatG100 == stored.fatG)
+        #expect(edited.food.sodiumMg100 == stored.sodiumMg)
+    }
+}
+
+@MainActor
+struct FoodsListModelTests {
+    @Test func `deleting a food offers undo`() throws {
+        let env = AppEnvironment.preview()
+        let foods = try #require(env.foods)
+        let saved = try foods.save(FoodDetail(
+            food: Food(name: "Ajvar", per100: Nutrients(kcal: 80, proteinG: 1.5, carbsG: 8, fatG: 4.5)),
+            servings: [Serving(label: "tbsp", grams: 15)],
+            barcodes: ["3850104003455"],
+        ))
+        let model = FoodsListModel(environment: env)
+        model.reload()
+        #expect(model.foods.map(\.name) == ["Ajvar"])
+
+        model.delete(saved.food)
+        #expect(model.foods.isEmpty)
+        #expect(model.undo.current?.message == "Deleted Ajvar")
+
+        model.undo.performUndo()
+        #expect(model.foods.map(\.name) == ["Ajvar"])
+        let restored = try #require(try foods.detail(id: saved.food.id))
+        #expect(restored.food.deletedAt == nil)
+        #expect(restored.servings.map(\.label) == ["tbsp"])
+        #expect(restored.barcodes == ["3850104003455"])
+        #expect(model.errorMessage == nil)
+    }
+
+    @Test func `food undo is dropped after an import`() throws {
+        let env = AppEnvironment.preview()
+        let saved = try #require(try env.foods?.save(FoodDetail(food: Food(name: "Ajvar", per100: .zero))))
+        let model = FoodsListModel(environment: env)
+        model.delete(saved.food)
+        try env.dataDidChangeExternally()
+        model.undo.performUndo() // still visible if the view hasn't reacted yet: must not resurrect the food
+        #expect(try env.foods?.detail(id: saved.food.id)?.food.deletedAt != nil)
+        model.delete(saved.food)
+        model.dataDidChangeExternally()
+        #expect(model.undo.current == nil)
+    }
 }
 
 @MainActor
@@ -173,6 +237,69 @@ struct TargetsModelTests {
         #expect(m.newWeight == nil) // unchanged weight is not stored again
         #expect(m.updatedProfile()?.goalRateKgPerWeek == 0.25)
     }
+
+    @Test func `re-saving an unchanged target keeps its gram macros`() throws {
+        let today = try #require(LocalDay("2026-11-09"))
+        let profile = try #require(try AppEnvironment.preview().profiles?.profile())
+        let storedMacros = MacroTargets(proteinG: 160, carbsG: 220, fatG: 75) // ≈ 29.2 / 40.1 / 30.8 %
+        let stored = Target(effectiveFrom: today.adding(days: -30), kcal: 2200, macros: storedMacros, origin: .manual)
+        let m = TargetsModel(today: today)
+        m.load(profile: profile, target: stored, latestWeightKg: nil)
+        #expect(m.macroInput == .percent)
+        #expect(m.fatPct == "31")
+        // Recomputing from the rounded 29 / 40 / 31 % would make fat 76 g.
+        #expect(m.makeTarget()?.macros == storedMacros)
+
+        m.manualKcal = "2000" // a new calorie target scales the macros by the percentages
+        let rescaled = MacroSplit(proteinPct: 29, carbsPct: 40, fatPct: 31).grams(forKcal: 2000)
+        #expect(m.makeTarget()?.macros == rescaled)
+
+        m.manualKcal = "2200"
+        m.macroInput = .grams
+        #expect(m.makeTarget()?.macros == storedMacros)
+        m.fatG = "80"
+        #expect(m.makeTarget()?.fatG == 80)
+    }
+
+    @Test func `unchanged weight with more decimals is not stored again`() throws {
+        let today = try #require(LocalDay("2026-11-09"))
+        let profile = try #require(try AppEnvironment.preview().profiles?.profile())
+        let m = TargetsModel(today: today)
+        m.load(profile: profile, target: nil, latestWeightKg: 80.123)
+        #expect(m.weightKg == Format.field(80.123)) // "80.12"
+        #expect(m.newWeight == nil)
+        m.weightKg = "81"
+        #expect(m.newWeight == 81)
+        m.weightKg = Format.field(80.123)
+        #expect(m.newWeight == nil)
+    }
+
+    @Test func `saving writes the target and only what changed`() throws {
+        let today = try #require(LocalDay("2026-11-09"))
+        let env = AppEnvironment.preview()
+        let profiles = try #require(env.profiles)
+        try profiles.addWeight(kg: 80.123)
+
+        let empty = TargetsModel(today: today)
+        try empty.load(profile: profiles.profile(), target: nil, latestWeightKg: nil)
+        #expect(try !empty.save(to: profiles)) // invalid form: nothing written
+        #expect(try profiles.target(on: today) == nil)
+
+        let first = TargetsModel(today: today)
+        try first.load(profile: profiles.profile(), target: nil, latestWeightKg: profiles.latestWeight()?.kg)
+        first.overrideKcal = true
+        first.manualKcal = "2200"
+        #expect(try first.save(to: profiles))
+        let saved = try #require(try profiles.target(on: today))
+        #expect(saved.kcal == 2200)
+
+        let second = TargetsModel(today: today)
+        try second.load(profile: profiles.profile(), target: saved, latestWeightKg: profiles.latestWeight()?.kg)
+        #expect(try second.save(to: profiles))
+        #expect(try profiles.target(on: today)?.macros == saved.macros)
+        let weights = try #require(try env.portability?.exportCSV()["weights.csv"])
+        #expect(weights.split(whereSeparator: \.isNewline).count == 2) // header + the one weigh-in
+    }
 }
 
 @MainActor
@@ -226,8 +353,106 @@ struct DiaryModelTests {
         #expect(try env.diary?.note(for: model.day)?.text == "sick")
     }
 
+    @Test func `diary follows today across midnight`() {
+        let clock = ManualClock()
+        let env = AppEnvironment.preview(clock: clock.appClock)
+        let model = DiaryModel(environment: env)
+        let firstDay = model.day
+        clock.advance(hours: 24) // e.g. the app sat in the background overnight
+        #expect(model.day == firstDay) // nothing changes until the app becomes active again
+        env.refreshToday()
+        #expect(model.day == firstDay.next)
+        #expect(model.isToday)
+    }
+
+    @Test func `a day the user picked stays when the date changes`() {
+        let clock = ManualClock()
+        let env = AppEnvironment.preview(clock: clock.appClock)
+        let model = DiaryModel(environment: env)
+        model.goToPreviousDay()
+        let picked = model.day
+        clock.advance(hours: 24)
+        env.refreshToday()
+        #expect(model.day == picked)
+        model.goToToday()
+        #expect(model.day == env.today)
+        model.day = env.today.previous // the date picker sets `day` directly
+        #expect(!model.isToday)
+    }
+
+    @Test func `undo is dropped after an import`() throws {
+        let (env, food) = try environment()
+        let model = DiaryModel(environment: env)
+        let entry = try #require(try env.diary?.log(food: food, quantity: .base(50), slotID: "breakfast", day: model.day))
+        model.delete([entry])
+        try env.dataDidChangeExternally()
+        model.undo.performUndo() // the toast may still be up: undoing must not touch the imported data
+        #expect(try env.diary?.diary(for: model.day).entryCount == 0)
+
+        let second = try #require(try env.diary?.log(food: food, quantity: .base(20), slotID: "breakfast", day: model.day))
+        model.delete([second])
+        #expect(model.undo.current != nil)
+        model.dataDidChangeExternally() // what the view does when the data generation changes
+        #expect(model.undo.current == nil)
+    }
+
+    @Test func `move sheet offers the entry's inactive slot`() async throws {
+        let (env, food) = try environment()
+        let model = DiaryModel(environment: env)
+        let entry = try #require(try env.diary?.log(food: food, quantity: .base(50), slotID: "lunch", day: model.day))
+        let slots = try #require(try env.diary?.mealSlots(includeInactive: true)).map { slot in
+            var copy = slot
+            copy.isActive = slot.id != "lunch"
+            return copy
+        }
+        try env.profiles?.saveMealSlots(slots)
+
+        let observation = Task { await model.observeDiary() }
+        defer { observation.cancel() }
+        #expect(await waitUntil { model.diary?.entryCount == 1 })
+        #expect(!model.slots.contains { $0.id == "lunch" })
+        #expect(model.moveTargets(for: entry).map(\.id) == ["breakfast", "lunch", "dinner", "snacks"])
+    }
+
+    @Test func `observation restarts after an error`() async {
+        struct Failure: Error {}
+        var attempts = 0
+        var values: [Int] = []
+        var errors = 0
+        await DiaryModel.resubscribing(retryDelay: .milliseconds(1)) {
+            attempts += 1
+            let attempt = attempts
+            return AsyncThrowingStream<Int, Error> { continuation in
+                if attempt < 3 {
+                    continuation.finish(throwing: Failure())
+                } else {
+                    continuation.yield(42)
+                    continuation.finish()
+                }
+            }
+        } onValue: {
+            values.append($0)
+        } onError: {
+            _ in errors += 1
+        }
+        #expect(attempts == 3)
+        #expect(values == [42])
+        #expect(errors == 1) // reported once per run of failures, not on every retry
+    }
+
+    @Test func `undo toast is announced and stays while VoiceOver runs`() async throws {
+        var announcements: [String] = []
+        let center = UndoCenter(duration: .milliseconds(20), isVoiceOverRunning: { true }, announce: { announcements.append($0) })
+        center.offer("Deleted Oats") {}
+        #expect(announcements == ["Deleted Oats. Undo available"])
+        try await Task.sleep(for: .milliseconds(150))
+        #expect(center.current?.message == "Deleted Oats")
+        center.dismiss()
+        #expect(center.current == nil)
+    }
+
     @Test func `undo center auto dismisses`() async throws {
-        let center = UndoCenter(duration: .milliseconds(50))
+        let center = UndoCenter(duration: .milliseconds(50), isVoiceOverRunning: { false }, announce: { _ in })
         var undone = false
         center.offer("x") { undone = true }
         #expect(center.current != nil)
@@ -268,5 +493,14 @@ struct FormattingTests {
     @Test func `source badges`() {
         #expect(FoodSource.bundled.badge == .bundled)
         #expect(FoodSource.custom.badge == .custom)
+    }
+
+    @Test func `search rows know liquids`() throws {
+        let milk = Food(name: "Milk", per100: Nutrients(kcal: 59, proteinG: 3.3, carbsG: 4.7, fatG: 2.8), isLiquid: true)
+        let bread = Food(name: "Bread", per100: Nutrients(kcal: 240, proteinG: 8, carbsG: 44, fatG: 3))
+        #expect(FoodSearchResult.food(milk).isLiquid)
+        #expect(!FoodSearchResult.food(bread).isLiquid)
+        let bundled = try #require(try BundledFoodIndex.inBundle(.main)?.search("rice", limit: 1).first)
+        #expect(!FoodSearchResult.bundled(bundled).isLiquid)
     }
 }

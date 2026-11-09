@@ -11,6 +11,7 @@
 		03EB647FB54E003C93F625E3 /* Formatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 332BBFC896239C9D6395BAE6 /* Formatting.swift */; };
 		09BADB1A0BBDC1C88C35C54F /* TargetsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85872A22FB7B839CA01C0AF8 /* TargetsModel.swift */; };
 		104AA4A32A6EC881CF63A75C /* AppEnvironmentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B74262F076BA46E2B4980AFF /* AppEnvironmentTests.swift */; };
+		167F41E1F03A45D90C383A72 /* FoodsListModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42526B1ADDB2F2F9008B32B8 /* FoodsListModel.swift */; };
 		4866F5733FE3075FDBC10671 /* AppModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D073557851101D1AD6FABF46 /* AppModelTests.swift */; };
 		4938903A2D3F636B0ECFCE00 /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB79B4BE92A3FFCB94D8CA93 /* AppEnvironment.swift */; };
 		4B6FE28F847FE3FB45F70F18 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = A889B4CD67F814724B977510 /* Persistence */; };
@@ -20,6 +21,7 @@
 		75B76BE28FEF56116F1AB41E /* FoodEditorModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C7A62EC62945A0E3012FC0D /* FoodEditorModel.swift */; };
 		7CFFB861685166190159B1AF /* Scanner in Frameworks */ = {isa = PBXBuildFile; productRef = 1027AC8891CFCD49FA5F02E6 /* Scanner */; };
 		7F0BD5C3AA31BFE9476F53D5 /* DiarySheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88C0F2A65D5766E267236619 /* DiarySheets.swift */; };
+		81534A8EE21DC5652C4025F6 /* TestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFA022929D750396EDF97E64 /* TestSupport.swift */; };
 		924B13C90B00812AD3829D7F /* Core in Frameworks */ = {isa = PBXBuildFile; productRef = AB9209C5C9EF92BFDB397212 /* Core */; };
 		93F40FAA0B6B8597A92BDF6D /* AddFoodView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0368CFE4A655A4BA30A56CEB /* AddFoodView.swift */; };
 		960B5B0C93D3265331EF5287 /* DiaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A3BD94B01534D020D210090 /* DiaryView.swift */; };
@@ -59,6 +61,7 @@
 		332BBFC896239C9D6395BAE6 /* Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formatting.swift; sourceTree = "<group>"; };
 		34B1B04B40C3BCA84C756B6C /* App.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = App.xcconfig; sourceTree = "<group>"; };
 		3AF39B0F528153E0E26659AE /* Persistence */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Persistence; path = Packages/Persistence; sourceTree = SOURCE_ROOT; };
+		42526B1ADDB2F2F9008B32B8 /* FoodsListModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodsListModel.swift; sourceTree = "<group>"; };
 		5F50396E834D499DFEF4D8B6 /* QuantitySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuantitySheet.swift; sourceTree = "<group>"; };
 		60FBAD1B8EF1EAF542AFD162 /* Nutrilog.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Nutrilog.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		62FB67E26CA995E485714116 /* QuickAddView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddView.swift; sourceTree = "<group>"; };
@@ -79,6 +82,7 @@
 		D095BF32FF994BA5E303CEFE /* NutrilogApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutrilogApp.swift; sourceTree = "<group>"; };
 		D1CA8B8FFD2D12E767B10B6E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		D7E75BCA9037F92033C1EC6D /* DebugScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugScreens.swift; sourceTree = "<group>"; };
+		DFA022929D750396EDF97E64 /* TestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSupport.swift; sourceTree = "<group>"; };
 		E654260AEEB47CC4E408FEBB /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		F71079C582044C8F4ED01E8F /* ProfileTargetsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileTargetsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -193,6 +197,7 @@
 			children = (
 				1C7A62EC62945A0E3012FC0D /* FoodEditorModel.swift */,
 				0327B675F549F53BEA13BD28 /* FoodEditorView.swift */,
+				42526B1ADDB2F2F9008B32B8 /* FoodsListModel.swift */,
 				78333C048891E54051653673 /* FoodsListView.swift */,
 			);
 			path = Foods;
@@ -212,6 +217,7 @@
 			children = (
 				B74262F076BA46E2B4980AFF /* AppEnvironmentTests.swift */,
 				D073557851101D1AD6FABF46 /* AppModelTests.swift */,
+				DFA022929D750396EDF97E64 /* TestSupport.swift */,
 			);
 			path = NutrilogTests;
 			sourceTree = "<group>";
@@ -357,6 +363,7 @@
 			files = (
 				104AA4A32A6EC881CF63A75C /* AppEnvironmentTests.swift in Sources */,
 				4866F5733FE3075FDBC10671 /* AppModelTests.swift in Sources */,
+				81534A8EE21DC5652C4025F6 /* TestSupport.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -373,6 +380,7 @@
 				960B5B0C93D3265331EF5287 /* DiaryView.swift in Sources */,
 				75B76BE28FEF56116F1AB41E /* FoodEditorModel.swift in Sources */,
 				B200F0D22BD2251C0881D5EF /* FoodEditorView.swift in Sources */,
+				167F41E1F03A45D90C383A72 /* FoodsListModel.swift in Sources */,
 				FAC7255BEDB07126E802F069 /* FoodsListView.swift in Sources */,
 				03EB647FB54E003C93F625E3 /* Formatting.swift in Sources */,
 				DF3E1A7AFED9764A1158B47E /* NutrilogApp.swift in Sources */,
