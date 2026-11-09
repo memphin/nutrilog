@@ -48,7 +48,7 @@ public struct EnergyRing: View {
             .padding(lineWidth)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(A11y.energyRemaining(consumed: consumed, target: target))
+        .accessibilityLabel(A11y.energyRemaining(consumed: consumed, target: target, unit: unit))
     }
 }
 

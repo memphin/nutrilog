@@ -8,9 +8,9 @@ import UniformTypeIdentifiers
 struct SettingsView: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var waterGoal = 2500.0
+    @State private var errorMessage: String?
 
     var body: some View {
-        @Bindable var environment = environment
         NavigationStack {
             Form {
                 Section {
@@ -19,7 +19,7 @@ struct SettingsView: View {
                 }
 
                 Section("Units") {
-                    Picker("Energy", selection: $environment.energyUnit) {
+                    Picker("Energy", selection: energyUnit) {
                         Text("Kilocalories (kcal)").tag(EnergyUnit.kcal)
                         Text("Kilojoules (kJ)").tag(EnergyUnit.kilojoules)
                     }
@@ -52,16 +52,40 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
-            .task {
+            // Re-read after an import replaced the data.
+            .task(id: environment.dataGeneration) {
                 waterGoal = (try? environment.profiles?.profile().waterGoalMl) ?? 2500
             }
+            .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: {
+                if !$0 {
+                    errorMessage = nil
+                }
+            })) {
+                Button("OK", role: .cancel) {}
+            } message: { Text(errorMessage ?? "") }
         }
     }
 
+    private var energyUnit: Binding<EnergyUnit> {
+        Binding(get: { environment.energyUnit }, set: { unit in
+            do {
+                try environment.setEnergyUnit(unit)
+            } catch {
+                errorMessage = "Couldn't save the energy unit: \(error.localizedDescription)"
+            }
+        })
+    }
+
     private func saveWaterGoal() {
-        guard let profiles = environment.profiles, var profile = try? profiles.profile(), profile.waterGoalMl != waterGoal else { return }
-        profile.waterGoalMl = waterGoal
-        try? profiles.save(profile)
+        guard let profiles = environment.profiles else { return }
+        do {
+            var profile = try profiles.profile()
+            guard profile.waterGoalMl != waterGoal else { return }
+            profile.waterGoalMl = waterGoal
+            try profiles.save(profile)
+        } catch {
+            errorMessage = "Couldn't save the water goal: \(error.localizedDescription)"
+        }
     }
 }
 
@@ -223,6 +247,12 @@ struct DataSettingsView: View {
         do {
             let summary = try portability.importJSON(data, mode: mode)
             message = "Imported: \(summary.inserted) new, \(summary.updated) updated, \(summary.skipped) unchanged."
+            do {
+                // Settings cached in memory and pending undo actions may not match the imported data.
+                try environment.dataDidChangeExternally()
+            } catch {
+                message = "Imported, but the settings couldn't be reloaded: \(error.localizedDescription)"
+            }
         } catch DataPortability.ImportError.newerSchema {
             message = "This file was made by a newer version of Nutrilog. Update the app first."
         } catch DataPortability.ImportError.notAnExport {

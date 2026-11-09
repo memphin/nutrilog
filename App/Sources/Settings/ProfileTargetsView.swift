@@ -55,15 +55,9 @@ struct ProfileTargetsView: View {
     }
 
     private func save(_ model: TargetsModel) {
-        guard let profiles = environment.profiles, let target = model.makeTarget() else { return }
+        guard let profiles = environment.profiles else { return }
         do {
-            if let profile = model.updatedProfile() {
-                try profiles.save(profile)
-            }
-            if let weight = model.newWeight {
-                try profiles.addWeight(kg: weight)
-            }
-            try profiles.setTarget(target)
+            guard try model.save(to: profiles) else { return }
             savedMessage = "New targets apply from today. Past days keep the targets they had."
         } catch {
             errorMessage = error.localizedDescription
