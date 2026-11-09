@@ -153,7 +153,7 @@ final class TargetsModel {
         if macroInput == .grams, macros == nil {
             errors.append("Enter protein, carbs and fat in grams.")
         }
-        if let weight = Format.number(weightKg), weight <= 0 || weight >= 500 {
+        if let weight = Format.number(weightKg), !WeightRepository.validKg.contains(weight) {
             errors.append("Weight looks wrong.")
         }
         return errors
@@ -192,7 +192,7 @@ final class TargetsModel {
 
     /// New weight to store, when the user changed the field and it differs from the latest stored weight.
     var newWeight: Double? {
-        guard weightKg != loadedWeight, let weight = Format.number(weightKg), weight > 0, weight < 500 else { return nil }
+        guard weightKg != loadedWeight, let weight = Format.number(weightKg), WeightRepository.validKg.contains(weight) else { return nil }
         if let stored = storedWeightKg, abs(stored - weight) < 0.001 {
             return nil
         }

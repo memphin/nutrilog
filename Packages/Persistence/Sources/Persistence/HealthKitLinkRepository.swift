@@ -236,6 +236,27 @@ public struct HealthKitLinkRepository: Sendable {
         }
     }
 
+    /// Queues active weights from `since`'s midnight (in `calendar`) that have body fat but no linked sample of
+    /// `hkType` (the body-fat type) — after body fat writing was allowed, so weights written before get their body fat
+    /// sample. Returns the number queued.
+    @discardableResult
+    public func enqueueWeights(missing hkType: String, since day: LocalDay, calendar: Calendar = .current) throws -> Int {
+        let now = clock.now()
+        let start = Timestamp.string(day.startDate(calendar: calendar))
+        return try database.writer.write { db in
+            let ids = try String.fetchAll(db, sql: """
+            SELECT o.id FROM weight_entry o
+            WHERE o.deleted_at IS NULL AND o.body_fat_pct IS NOT NULL AND o.measured_at >= ?
+            AND NOT EXISTS (
+                SELECT 1 FROM healthkit_link l WHERE l.owner_table = 'weight_entry' AND l.owner_id = o.id AND l.hk_type = ?
+            )
+            ORDER BY o.measured_at, o.id
+            """, arguments: [start, hkType])
+            try Self.enqueue(db, owner: .weightEntry, ids: ids, now: now)
+            return ids.count
+        }
+    }
+
     /// Emits the generation counter now and whenever a row is queued. Completing, failing or discarding rows never
     /// changes it, so a drain triggered by this never re-triggers itself.
     public func observeQueue() -> AsyncValueObservation<Int?> {

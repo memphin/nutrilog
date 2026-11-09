@@ -83,24 +83,29 @@ struct WeightReconcilerTests {
             DailyHealthMetrics(day: day("2026-11-08"), weightKg: 81, bodyFatPct: 19),
             DailyHealthMetrics(day: day("2026-11-09"), weightKg: 80.5, bodyFatPct: 18.5),
         ]
+        // The 07:00 weigh-in was entered last (a correction made in the evening).
         let manual = [
-            ManualWeight(measuredAt: time("2026-11-09 18:00", zagreb), kg: 81.2),
-            ManualWeight(measuredAt: time("2026-11-09 07:00", zagreb), kg: 80.2),
+            ManualWeight(measuredAt: time("2026-11-09 18:00", zagreb), kg: 81.2, enteredAt: time("2026-11-09 18:00", zagreb)),
+            ManualWeight(measuredAt: time("2026-11-09 07:00", zagreb), kg: 80.2, enteredAt: time("2026-11-09 19:00", zagreb)),
         ]
         let days = WeightReconciler.daily(health: health, manual: manual, calendar: zagreb)
         #expect(days.map(\.day) == [day("2026-11-08"), day("2026-11-09")])
         #expect(days[0] == DayWeight(day: day("2026-11-08"), kg: 81, bodyFatPct: 19, isManual: false))
-        // First manual of the day; body fat falls back to Health's when the manual entry has none.
+        // Latest entered manual of the day; body fat falls back to Health's when the manual entries have none.
         #expect(days[1] == DayWeight(day: day("2026-11-09"), kg: 80.2, bodyFatPct: 18.5, isManual: true))
+        // Without entry times, the later measurement counts as entered later.
+        let plain = manual.map { ManualWeight(measuredAt: $0.measuredAt, kg: $0.kg) }
+        #expect(WeightReconciler.daily(health: [], manual: plain, calendar: zagreb).first?.kg == 81.2)
     }
 
     @Test func `manual body fat wins and days are local`() {
         let manual = [
-            ManualWeight(measuredAt: time("2026-11-09 00:30", zagreb), kg: 80, bodyFatPct: nil),
-            ManualWeight(measuredAt: time("2026-11-09 08:00", zagreb), kg: 81, bodyFatPct: 17),
+            ManualWeight(measuredAt: time("2026-11-09 00:30", zagreb), kg: 80, bodyFatPct: nil, enteredAt: time("2026-11-09 09:00", zagreb)),
+            ManualWeight(measuredAt: time("2026-11-09 08:00", zagreb), kg: 81, bodyFatPct: 17, enteredAt: time("2026-11-09 08:00", zagreb)),
         ]
         let health = [DailyHealthMetrics(day: day("2026-11-09"), bodyFatPct: 19)]
         let days = WeightReconciler.daily(health: health, manual: manual, calendar: zagreb)
+        // The 00:30 entry was made last and wins; its missing body fat comes from the other manual entry.
         #expect(days == [DayWeight(day: day("2026-11-09"), kg: 80, bodyFatPct: 17, isManual: true)])
         // 00:30 in Zagreb is still Nov 8 in New York.
         let ny = WeightReconciler.daily(health: [], manual: [manual[0]], calendar: HealthFixtures.newYork)

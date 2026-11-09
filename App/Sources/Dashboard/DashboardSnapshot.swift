@@ -93,7 +93,9 @@ struct DashboardSnapshot: Equatable {
         todayMetrics = rows.first { $0.day == data.today }
         dayWeights = WeightReconciler.daily(
             health: rows,
-            manual: data.manualWeights.map { ManualWeight(measuredAt: $0.measuredAt, kg: $0.kg, bodyFatPct: $0.bodyFatPct) },
+            manual: data.manualWeights.map {
+                ManualWeight(measuredAt: $0.measuredAt, kg: $0.kg, bodyFatPct: $0.bodyFatPct, enteredAt: $0.createdAt)
+            },
             calendar: calendar,
         )
         weight = WeightTrend.summary(dayWeights, today: data.today)

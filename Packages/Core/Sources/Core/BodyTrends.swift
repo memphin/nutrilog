@@ -10,11 +10,21 @@ public struct ManualWeight: Hashable, Sendable {
     public var measuredAt: Date
     public var kg: Double
     public var bodyFatPct: Double?
+    /// When the entry was made (`created_at`); nil means `measuredAt`.
+    public var enteredAt: Date?
 
-    public init(measuredAt: Date, kg: Double, bodyFatPct: Double? = nil) {
+    public init(measuredAt: Date, kg: Double, bodyFatPct: Double? = nil, enteredAt: Date? = nil) {
         self.measuredAt = measuredAt
         self.kg = kg
         self.bodyFatPct = bodyFatPct
+        self.enteredAt = enteredAt
+    }
+
+    /// Later entries first: by entry time, then by measurement time.
+    static func enteredLater(_ lhs: ManualWeight, _ rhs: ManualWeight) -> Bool {
+        let left = lhs.enteredAt ?? lhs.measuredAt
+        let right = rhs.enteredAt ?? rhs.measuredAt
+        return left != right ? left > right : lhs.measuredAt > rhs.measuredAt
     }
 }
 
@@ -40,9 +50,9 @@ public struct DayWeight: Hashable, Sendable {
 /// (`DailyMetricsAggregator.aggregate(_:calendar:excludingOwnSamplesFrom:)`), so a manual weigh-in is never counted
 /// twice: it reaches the dashboard only through `weight_entry`, immediately, whether or not writing to Health is on.
 ///
-/// Per day: the first manual weigh-in wins over the Health value (the user typed it on purpose, e.g. to correct a
-/// scale), like Health's "first of the day" rule. Body fat comes from that manual entry when it has one, else from
-/// the earliest manual entry with one, else from Health.
+/// Per day: a manual weigh-in wins over the Health value (the user typed it on purpose, e.g. to correct a scale).
+/// With several manual entries on one day, the one entered last wins — a later entry is usually a correction. Body
+/// fat comes from that entry when it has one, else from the latest other manual entry with one, else from Health.
 public enum WeightReconciler {
     public static func daily(
         health: [DailyHealthMetrics],
@@ -55,10 +65,10 @@ public enum WeightReconciler {
         }
         let manualByDay = Dictionary(grouping: manual) { LocalDay($0.measuredAt, calendar: calendar) }
         for (day, entries) in manualByDay {
-            let sorted = entries.sorted { $0.measuredAt < $1.measuredAt }
-            guard let first = sorted.first else { continue }
-            let fat = first.bodyFatPct ?? sorted.first { $0.bodyFatPct != nil }?.bodyFatPct ?? result[day]?.bodyFatPct
-            result[day] = DayWeight(day: day, kg: first.kg, bodyFatPct: fat, isManual: true)
+            let sorted = entries.sorted(by: ManualWeight.enteredLater)
+            guard let chosen = sorted.first else { continue }
+            let fat = chosen.bodyFatPct ?? sorted.first { $0.bodyFatPct != nil }?.bodyFatPct ?? result[day]?.bodyFatPct
+            result[day] = DayWeight(day: day, kg: chosen.kg, bodyFatPct: fat, isManual: true)
         }
         return result.values.sorted { $0.day < $1.day }
     }

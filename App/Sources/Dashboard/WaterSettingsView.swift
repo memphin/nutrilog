@@ -23,8 +23,11 @@ struct WaterSettingsView: View {
                 }
                 if sizes.count < WaterQuickAdd.maximumCount {
                     Button("Add size", systemImage: "plus") {
-                        save(sizes + [min((sizes.max() ?? 250) + 250, WaterQuickAdd.validRange.upperBound)])
+                        if let next = WaterQuickAdd.nextSize(after: sizes) {
+                            save(sizes + [next])
+                        }
                     }
+                    .disabled(WaterQuickAdd.nextSize(after: sizes) == nil)
                 }
             } footer: {
                 Text("The water buttons on the Today screen. Duplicate sizes are merged.")
@@ -51,9 +54,8 @@ struct WaterSettingsView: View {
     private func update(_ index: Int, to value: Int) {
         var updated = sizes
         updated[index] = value
-        // Keep the edited row in place while stepping; sort and merge duplicates when saving.
-        sizes = updated
-        persist(updated)
+        // Show what was saved: sorted, duplicates merged (stepping onto another size merges the two).
+        save(updated)
     }
 
     private func save(_ updated: [Int]) {

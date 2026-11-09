@@ -145,11 +145,17 @@ final class HealthWriteService {
 
     /// The user answered the Health permission sheet: write the rows that were waiting for permission, and queue the
     /// last `lateGrantDays` days' entries that were never written (access granted after logging, without a backfill).
+    /// When body fat writing is allowed, recent weights with body fat but no body-fat sample are queued too (body fat
+    /// was added in an update, after those weights were written).
     func writeAccessDidChange() async {
         if isEnabled {
             let calendar = calendarProvider()
             let today = LocalDay.today(calendar: calendar, now: clock.now())
-            _ = try? links.enqueueUnlinked(since: today.adding(days: -(Self.lateGrantDays - 1)), calendar: calendar)
+            let since = today.adding(days: -(Self.lateGrantDays - 1))
+            _ = try? links.enqueueUnlinked(since: since, calendar: calendar)
+            if writer.isAvailable, await writer.writeAuthorization(for: .bodyFatPercentage) == .authorized {
+                _ = try? links.enqueueWeights(missing: HealthWriteType.bodyFatPercentage.identifier, since: since, calendar: calendar)
+            }
         }
         await drain()
     }
@@ -196,7 +202,9 @@ final class HealthWriteService {
             let allowed = ownerTypes.filter { statuses[$0] == .authorized }
             if allowed.isEmpty {
                 // Not asked yet: keep the row until the user answers (`writeAccessDidChange`). All denied: done.
-                if !ownerTypes.contains(where: { statuses[$0] == .notDetermined }) {
+                // Only the owner's main types count (a weight waits for body mass, not for body fat, which an update
+                // added and which may stay unanswered for a long time).
+                if !Self.holdingTypes(for: item.ownerTable).contains(where: { statuses[$0] == .notDetermined }) {
                     try? links.complete(item)
                 }
                 continue
@@ -292,6 +300,11 @@ final class HealthWriteService {
         case .waterEntry: [.dietaryWater]
         case .weightEntry: HealthWriteType.body
         }
+    }
+
+    /// While one of these is undetermined and nothing can be written, the row waits for the user's answer.
+    static func holdingTypes(for owner: HealthKitOwner) -> Set<HealthWriteType> {
+        owner == .weightEntry ? [.bodyMass] : types(for: owner)
     }
 
     private func updateCounts() {

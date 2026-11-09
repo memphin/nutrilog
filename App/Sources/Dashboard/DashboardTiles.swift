@@ -190,6 +190,17 @@ enum WaterQuickAdd {
         return valid.isEmpty ? defaultSizes : Array(valid.prefix(maximumCount))
     }
 
+    /// The size "Add size" adds: 250 ml above the largest (capped), else the first free 50 ml step; nil when the
+    /// list is full or every step is taken.
+    static func nextSize(after sizes: [Int]) -> Int? {
+        guard sizes.count < maximumCount else { return nil }
+        let preferred = min((sizes.max() ?? 0) + 250, validRange.upperBound)
+        if !sizes.contains(preferred) {
+            return preferred
+        }
+        return stride(from: validRange.lowerBound, through: validRange.upperBound, by: 50).first { !sizes.contains($0) }
+    }
+
     static func sizes(from settings: ProfileRepository) -> [Int] {
         normalized((try? settings.setting(SettingKey.waterQuickAddSizes, as: [Int].self)) ?? defaultSizes)
     }
@@ -209,18 +220,26 @@ enum WaterQuickAdd {
 enum HealthAccess: Equatable {
     /// No Health store on this device.
     case unavailable
+    /// Not known yet (the status is being read).
+    case checking
     /// The user has not been asked yet.
     case notRequested
-    /// The user answered the permission sheet (or Health could not tell).
+    /// The user answered the permission sheet, or connected before and an update added types to allow (Health then
+    /// says `.shouldRequest` again, but the user is not "unconnected"), or Health could not tell.
     case requested
 
-    init(isAvailable: Bool, status: HealthAuthorizationRequestStatus) {
+    /// - Parameters:
+    ///   - status: `HealthSyncService.requestStatus`; nil while it is being read.
+    ///   - isConnected: `HealthSyncService.isConnected` (answered, or a full sync completed before).
+    init(isAvailable: Bool, status: HealthAuthorizationRequestStatus?, isConnected: Bool) {
         if !isAvailable {
             self = .unavailable
-        } else if status == .shouldRequest {
-            self = .notRequested
-        } else {
+        } else if isConnected {
             self = .requested
+        } else if let status {
+            self = status == .shouldRequest ? .notRequested : .requested
+        } else {
+            self = .checking
         }
     }
 }
@@ -249,6 +268,7 @@ enum TileState: Equatable {
         }
         switch access {
         case .unavailable: return .unavailable
+        case .checking: return .loading
         case .notRequested: return .needsAccess
         case .requested: return isFirstSync ? .loading : .noData(HealthKitClient.noDataMessage)
         }

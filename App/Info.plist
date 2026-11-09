@@ -27,7 +27,7 @@
 	<key>NSHealthShareUsageDescription</key>
 	<string>Nutrilog reads your weight, body fat, steps, sleep, energy, heart rate and water from Apple Health to show them next to what you eat.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>Nutrilog writes the nutrients and water you log, and weight you enter manually, to Apple Health.</string>
+	<string>Nutrilog writes the nutrients and water you log, and the weight and body fat you enter manually, to Apple Health.</string>
 	<key>OFFUserAgentContact</key>
 	<string>$(OFF_USER_AGENT_CONTACT)</string>
 	<key>UILaunchScreen</key>

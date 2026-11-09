@@ -124,11 +124,8 @@ struct DashboardTileView: View {
 
     var body: some View {
         let state = model.state(of: tile)
-        VStack(alignment: .leading, spacing: NL.Spacing.s) {
-            Label(tile.title, systemImage: tile.systemImage)
-                .font(NL.Typography.label)
-                .foregroundStyle(.secondary)
-                .labelStyle(.titleAndIcon)
+        let card = VStack(alignment: .leading, spacing: NL.Spacing.s) {
+            header
             if state == .ready {
                 TileContent(tile: tile, model: model)
             } else {
@@ -139,10 +136,41 @@ struct DashboardTileView: View {
         .padding(NL.Spacing.m)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: NL.Radius.m))
         .contentShape(RoundedRectangle(cornerRadius: NL.Radius.m))
-        // A tap on the tile opens its detail; buttons inside (water quick-add) keep their own taps.
+        // A tap on the tile opens its detail; buttons inside (water quick-add, Connect) keep their own taps.
         .onTapGesture(perform: open)
-        .accessibilityElement(children: .contain)
-        .accessibilityAction(named: "Show details", open)
+
+        if tile == .water, state == .ready {
+            // Keeps its quick-add buttons reachable; the header is the focusable "open details" button.
+            card.accessibilityElement(children: .contain)
+        } else {
+            // One element: "Weight, 81.4 kilograms, trend 81.2, down 0.4 in 7 days". Activating opens the detail.
+            card
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(model.snapshot.accessibilityLabel(of: tile, state: state, energyUnit: model.energyUnit))
+                .accessibilityAddTraits(.isButton)
+                .accessibilityHint("Shows the last 14 days")
+                .accessibilityAction(.default, open)
+                .accessibilityActions {
+                    if state == .needsAccess {
+                        Button("Connect Apple Health") { Task { await model.connectHealth() } }
+                    }
+                }
+        }
+    }
+
+    @ViewBuilder private var header: some View {
+        let label = Label(tile.title, systemImage: tile.systemImage)
+            .font(NL.Typography.label)
+            .foregroundStyle(.secondary)
+            .labelStyle(.titleAndIcon)
+        if tile == .water {
+            Button(action: open) { label }
+                .buttonStyle(.plain)
+                .accessibilityLabel(model.snapshot.accessibilityLabel(of: .water, state: .ready))
+                .accessibilityHint("Shows the last 14 days")
+        } else {
+            label
+        }
     }
 }
 
@@ -158,7 +186,7 @@ private struct TilePlaceholder: View {
             }
         } else {
             VStack(alignment: .leading, spacing: NL.Spacing.xs) {
-                Text("—").font(NL.Typography.number).foregroundStyle(.tertiary)
+                Text("No data").font(NL.Typography.smallNumber).foregroundStyle(.tertiary)
                 Text(state.message ?? "")
                     .font(.footnote)
                     .foregroundStyle(.secondary)

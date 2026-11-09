@@ -51,7 +51,8 @@ struct WeightForm: Equatable {
 
 struct WeightEntrySheet: View {
     let model: DashboardModel
-    let editing: WeightEntry?
+    /// The entry being edited; the "edit today's weigh-in instead" hint can switch a new entry to editing.
+    @State private var editing: WeightEntry?
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.dismiss) private var dismiss
     @State private var form: WeightForm
@@ -59,13 +60,25 @@ struct WeightEntrySheet: View {
 
     init(model: DashboardModel, editing: WeightEntry?) {
         self.model = model
-        self.editing = editing
+        _editing = State(initialValue: editing)
         _form = State(initialValue: editing.map(WeightForm.init(entry:)) ?? WeightForm(measuredAt: Date()))
     }
 
     var body: some View {
         NavigationStack {
             Form {
+                if editing == nil, let existing = model.todaysManualWeight {
+                    Section {
+                        Button("Edit today's weigh-in instead?") {
+                            editing = existing
+                            form = WeightForm(entry: existing)
+                        }
+                    } footer: {
+                        Text("You already entered \(DashboardFormat.kg(existing.kg)) at "
+                            + "\(existing.measuredAt.formatted(date: .omitted, time: .shortened)) today. "
+                            + "A new entry for today replaces it on the dashboard.")
+                    }
+                }
                 Section {
                     LabeledContent("Weight") {
                         HStack {
@@ -88,6 +101,7 @@ struct WeightEntrySheet: View {
                 } footer: {
                     Text(footer)
                 }
+                BodyFatWritePrompt()
                 if let editing {
                     Section {
                         Button("Delete weight", role: .destructive) {

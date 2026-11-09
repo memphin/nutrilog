@@ -95,6 +95,27 @@ struct WeightRepositoryTests {
         #expect(try queued(f) == [recent.id])
     }
 
+    @Test func `weights with body fat but no body fat sample are queued when body fat is allowed`() throws {
+        let f = try Fixture()
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        let since = LocalDay(f.clock.now, calendar: calendar).adding(days: -6)
+        let massOnly = try weights(f).add(kg: 80, bodyFatPct: 18)
+        let complete = try weights(f).add(kg: 81, bodyFatPct: 19)
+        let noFat = try weights(f).add(kg: 82)
+        let old = try weights(f).add(kg: 83, bodyFatPct: 20, measuredAt: since.startDate(calendar: calendar).addingTimeInterval(-1))
+        let mass = "HKQuantityTypeIdentifierBodyMass"
+        let fat = "HKQuantityTypeIdentifierBodyFatPercentage"
+        try f.healthLinks.replaceLinks(for: .weightEntry, id: massOnly.id, with: [(mass, "u1")])
+        try f.healthLinks.replaceLinks(for: .weightEntry, id: complete.id, with: [(mass, "u2"), (fat, "u3")])
+        try f.healthLinks.replaceLinks(for: .weightEntry, id: noFat.id, with: [(mass, "u4")])
+        try f.healthLinks.replaceLinks(for: .weightEntry, id: old.id, with: [(mass, "u5")])
+        try f.healthLinks.discardPending()
+
+        #expect(try f.healthLinks.enqueueWeights(missing: fat, since: since, calendar: calendar) == 1)
+        #expect(try queued(f) == [massOnly.id])
+    }
+
     @Test func `imports queue weights for Health`() throws {
         let source = try Fixture()
         let entry = try WeightRepository(source.db, clock: source.clock.appClock).add(kg: 79.9)

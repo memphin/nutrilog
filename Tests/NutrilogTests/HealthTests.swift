@@ -319,7 +319,7 @@ struct HealthPermissionTests {
         let model = HealthSettingsModel()
         await model.load(environment: env)
         #expect(!model.isConnected)
-        #expect(model.requestStatus == .shouldRequest)
+        #expect(env.healthSync?.requestStatus == .shouldRequest)
         #expect(model.statuses.isEmpty)
     }
 

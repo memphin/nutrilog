@@ -28,10 +28,14 @@ struct TileStateTests {
     }
 
     @Test func `access from the authorization request status`() {
-        #expect(HealthAccess(isAvailable: false, status: .unnecessary) == .unavailable)
-        #expect(HealthAccess(isAvailable: true, status: .shouldRequest) == .notRequested)
-        #expect(HealthAccess(isAvailable: true, status: .unnecessary) == .requested)
-        #expect(HealthAccess(isAvailable: true, status: .unknown) == .requested)
+        #expect(HealthAccess(isAvailable: false, status: .unnecessary, isConnected: true) == .unavailable)
+        #expect(HealthAccess(isAvailable: true, status: .shouldRequest, isConnected: false) == .notRequested)
+        #expect(HealthAccess(isAvailable: true, status: .unnecessary, isConnected: true) == .requested)
+        #expect(HealthAccess(isAvailable: true, status: .unknown, isConnected: false) == .requested)
+        #expect(HealthAccess(isAvailable: true, status: nil, isConnected: false) == .checking)
+        // Connected before, and an update added types to allow: still connected.
+        #expect(HealthAccess(isAvailable: true, status: .shouldRequest, isConnected: true) == .requested)
+        #expect(TileState.resolve(hasValue: false, access: .checking, isFirstSync: false) == .loading)
     }
 
     @Test func `snapshot maps each tile to its state`() throws {
@@ -116,6 +120,12 @@ struct WaterQuickAddTests {
         #expect(WaterQuickAdd.sizes(from: profiles) == [200, 330, 500, 750])
         #expect(WaterQuickAdd.normalized([]) == [250, 500])
         #expect(WaterQuickAdd.normalized([1]) == [250, 500])
+    }
+
+    @Test func `add size picks a free value or none`() {
+        #expect(WaterQuickAdd.nextSize(after: [250, 500]) == 750)
+        #expect(WaterQuickAdd.nextSize(after: [1750, 2000]) == 50) // the capped 2000 is taken: first free step
+        #expect(WaterQuickAdd.nextSize(after: [250, 500, 750, 1000]) == nil) // full
     }
 
     @Test func `goal progress includes other apps' water`() {

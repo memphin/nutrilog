@@ -8,34 +8,51 @@ import Persistence
 @Observable
 final class DashboardModel {
     private(set) var data: DashboardData
-    private(set) var access: HealthAccess = .requested
     private(set) var layout: DashboardLayout = .default
     private(set) var waterSizes: [Int] = WaterQuickAdd.defaultSizes
     var errorMessage: String?
     let undo = UndoCenter()
 
     private let environment: AppEnvironment
-    private let calendar: Calendar
+    private let calendarProvider: @MainActor () -> Calendar
 
-    init(environment: AppEnvironment, calendar: Calendar = .current) {
+    /// - Parameter calendar: read on every use, so a time-zone change applies without a new model.
+    init(environment: AppEnvironment, calendar: @escaping @MainActor () -> Calendar = { Calendar.current }) {
         self.environment = environment
-        self.calendar = calendar
+        calendarProvider = calendar
         data = DashboardData(today: environment.today)
         reloadSettings()
+    }
+
+    private var calendar: Calendar {
+        calendarProvider()
     }
 
     var snapshot: DashboardSnapshot {
         DashboardSnapshot(data, calendar: calendar)
     }
 
+    /// Follows `HealthSyncService.requestStatus`, which connect (onboarding, Settings, a tile), every refresh and
+    /// app activation update — so the tiles move from "Connect" to loading to values without a relaunch.
+    var access: HealthAccess {
+        guard let sync = environment.healthSync else {
+            return HealthAccess(isAvailable: environment.health.isAvailable, status: .unknown, isConnected: false)
+        }
+        return HealthAccess(isAvailable: environment.health.isAvailable, status: sync.requestStatus, isConnected: sync.isConnected)
+    }
+
     var energyUnit: EnergyUnit {
         environment.energyUnit
     }
 
-    /// True until the first Health sync has finished (tiles without data show "loading" meanwhile).
+    /// True while the first Health sync runs (tiles without data show "loading" meanwhile). Uses the observable
+    /// `phase` and `lastSyncedAt`, so the tiles update when the sync starts and ends.
     var isFirstSync: Bool {
-        guard let sync = environment.healthSync else { return false }
-        return sync.lastSyncedAt == nil && sync.isSyncing
+        guard let sync = environment.healthSync, sync.lastSyncedAt == nil else { return false }
+        if case .syncing = sync.phase {
+            return true
+        }
+        return false
     }
 
     func state(of tile: DashboardTile) -> TileState {
@@ -52,8 +69,7 @@ final class DashboardModel {
     }
 
     func reloadAccess() async {
-        let status = await environment.health.authorizationRequestStatus()
-        access = HealthAccess(isAvailable: environment.health.isAvailable, status: status)
+        await environment.healthSync?.reloadAuthorization()
     }
 
     /// Streams everything the tiles show for `environment.today`; restarted by the view when the day changes.
@@ -181,6 +197,14 @@ final class DashboardModel {
     }
 
     // MARK: Weight (FR-42)
+
+    /// The manual weigh-in that counts for today (the one entered last), for the weight sheet's "edit instead" hint.
+    var todaysManualWeight: WeightEntry? {
+        let calendar = calendar
+        return data.manualWeights
+            .filter { LocalDay($0.measuredAt, calendar: calendar) == data.today }
+            .max { ($0.createdAt, $0.measuredAt) < ($1.createdAt, $1.measuredAt) }
+    }
 
     /// Saves a new weigh-in, or changes `editing`. Returns false (and sets `errorMessage`) on failure.
     @discardableResult
