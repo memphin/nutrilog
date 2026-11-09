@@ -243,7 +243,8 @@ final class ScanFlowModel {
         guard amount > 0, amount.isFinite else { throw PersistenceError.validation("serving weight must be greater than zero") }
         var product = try ensureSaved()
         guard product.detail.isPerServingPlaceholder else { return product.detail }
-        let converted = Self.convertingPlaceholder(product.detail, servingWeight: amount, missing: product.missing)
+        let missing = product.missing.map { Set($0.compactMap { FoodDraft.MandatoryNutrient(rawValue: $0.rawValue) }) }
+        let converted = try product.detail.convertingPerServingPlaceholder(servingWeight: amount, missing: missing)
         let saved = try foods.save(converted)
         product.detail = saved
         product.isSaved = true
@@ -251,34 +252,6 @@ final class ScanFlowModel {
         product.missing = saved.food.dataQuality == .complete ? [] : product.missing ?? ScannedProduct.inferredMissing(saved.food)
         phase = .found(product)
         return saved
-    }
-
-    /// `detail` (a per-serving placeholder) with values per 100 for a serving of `servingWeight` g/ml. `missing` nil
-    /// means unknown (a placeholder found locally): the quality then stays partial.
-    nonisolated static func convertingPlaceholder(
-        _ detail: FoodDetail,
-        servingWeight: Double,
-        missing: Set<FoodEditorModel.RequiredNutrient>?,
-    ) -> FoodDetail {
-        var result = detail
-        var food = detail.food
-        food.per100 = Nutrients.per100(fromServing: food.per100, servingGrams: servingWeight)
-        food.perServingOnly = false
-        // Per-serving values were partial only because the weight was unknown; missing macros keep them partial.
-        if missing?.isEmpty == true, food.dataQuality == .partialMacros {
-            food.dataQuality = .complete
-        }
-        if food.notes?.hasPrefix("Nutrition per serving;") == true {
-            food.notes = nil
-        }
-        result.servings = detail.servings.map { serving in
-            guard serving.id == food.defaultServingID else { return serving }
-            var updated = serving
-            updated.grams = servingWeight
-            return updated
-        }
-        result.food = food
-        return result
     }
 
     /// Call after the quantity sheet logged the food. Returns whether to keep scanning or close the scanner.

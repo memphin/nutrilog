@@ -26,6 +26,17 @@ struct AddFoodView: View {
     @State private var showQuickAdd = false
     @State private var showScanner = false
     @State private var errorMessage: String?
+    @State private var scope: SearchScope = .local
+    @State private var online = OnlineSearchModel()
+    @State private var servingPrompt: PendingServingWeight?
+
+    /// Where a typed search looks: this iPhone (own foods + bundled index) or online (OFF + USDA, backlog #22).
+    enum SearchScope: String, CaseIterable, Identifiable {
+        case local = "On this iPhone", online = "Online"
+        var id: String {
+            rawValue
+        }
+    }
 
     struct Lists {
         var recents: [Food] = []
@@ -59,22 +70,33 @@ struct AddFoodView: View {
                         .buttonStyle(.plain)
                     }
                 } else {
-                    if results.isEmpty, !searchFailed {
-                        EmptyStateView(
-                            "No matches",
-                            systemImage: "magnifyingglass",
-                            message: "Create the food to log it now and find it next time.",
-                        )
-                        .listRowBackground(Color.clear)
+                    Picker("Search in", selection: $scope) {
+                        ForEach(SearchScope.allCases) { Text($0.rawValue).tag($0) }
                     }
-                    ForEach(results) { result in
-                        Button { open(result) } label: {
-                            FoodRow(
-                                name: result.name, brand: result.brand, per100: result.per100, source: result.source,
-                                unit: environment.energyUnit, isLiquid: result.isLiquid,
+                    .pickerStyle(.segmented)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets())
+
+                    if scope == .online {
+                        OnlineResultsView(model: online, text: query, unit: environment.energyUnit) { openOnline($0) }
+                    } else {
+                        if results.isEmpty, !searchFailed {
+                            EmptyStateView(
+                                "No matches",
+                                systemImage: "magnifyingglass",
+                                message: "Create the food to log it now, or search online.",
                             )
+                            .listRowBackground(Color.clear)
                         }
-                        .buttonStyle(.plain)
+                        ForEach(results) { result in
+                            Button { open(result) } label: {
+                                FoodRow(
+                                    name: result.name, brand: result.brand, per100: result.per100, source: result.source,
+                                    unit: environment.energyUnit, isLiquid: result.isLiquid,
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
                 }
             }
@@ -94,6 +116,16 @@ struct AddFoodView: View {
             }
             .task { reloadLists() }
             .task(id: query) { await runSearch() }
+            .task(id: OnlineSearchKey(query: query.trimmingCharacters(in: .whitespacesAndNewlines), isOnline: scope == .online)) {
+                guard scope == .online else { return }
+                await online.search(query, offSearch: environment.offSearch, usda: environment.usda)
+            }
+            .sheet(item: $servingPrompt) { pending in
+                ServingWeightPrompt(detail: pending.detail) { detail in
+                    servingPrompt = nil
+                    path.append(detail)
+                }
+            }
             .sheet(isPresented: $showCreate) {
                 FoodEditorView(initialName: query) { saved in
                     reloadLists()
@@ -184,6 +216,19 @@ struct AddFoodView: View {
                 return
             }
             path.append(detail)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Stores a local copy of the online food, then opens it (asking for the serving weight first when needed).
+    private func openOnline(_ result: OnlineFoodResult) {
+        guard let foods = environment.foods else { return }
+        do {
+            switch try online.select(result, in: foods) {
+            case let .open(detail): path.append(detail)
+            case let .askServingWeight(pending): servingPrompt = pending
+            }
         } catch {
             errorMessage = error.localizedDescription
         }
