@@ -9,7 +9,7 @@ struct EnergyTests {
         // Female, 60 kg, 165 cm, 25 y: 600 + 1031.25 − 125 − 161 = 1345.25
         #expect(Energy.mifflinStJeor(weightKg: 60, heightCm: 165, ageYears: 25, sex: .female) == 1345.25)
         // Other uses the midpoint constant −78.
-        #expect(Energy.mifflinStJeor(weightKg: 70, heightCm: 170, ageYears: 40, sex: .other) == 700 + 1062.5 - 200 - 78)
+        #expect(Energy.mifflinStJeor(weightKg: 70, heightCm: 170, ageYears: 40, sex: .other) == 1484.5) // 700 + 1062.5 − 200 − 78
     }
 
     @Test func `baseline TDEE uses activity factor`() {

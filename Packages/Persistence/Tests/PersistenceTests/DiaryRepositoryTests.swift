@@ -56,7 +56,7 @@ struct DiaryRepositoryTests {
         let diary = try f.diary.diary(for: d)
         #expect(diary.sections.map(\.slot.id) == ["breakfast", "lunch", "dinner", "snacks"])
         #expect(diary.entryCount == 3)
-        #expect(diary.totals.kcal == 260 + 130 + 250)
+        #expect(diary.totals.kcal == 640) // 260 + 130 + 250
         #expect(abs(diary.totals.proteinG - 8.1) < 1e-9)
         #expect(diary.sections[1].totals.kcal == 260)
         #expect(try f.diary.totals(for: d.next) == .zero)
