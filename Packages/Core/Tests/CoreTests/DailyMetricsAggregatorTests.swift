@@ -150,7 +150,7 @@ struct DailyMetricsAggregatorTests {
         #expect(rows[day("2026-11-10")]?.restingHR == 58) // no watch that day → the other source
     }
 
-    @Test func `HRV is the overnight average from 00 00 to 09 00, DST day included`() throws {
+    @Test func `overnight HRV averages 00 00 to 09 00, DST day included`() throws {
         // 2026-03-29: the 00:00–09:00 window holds only 8 h of real time.
         let batch = HealthDataBatch(days: day("2026-03-29") ... day("2026-03-30"), samples: [
             .heartRateVariabilitySDNN: [

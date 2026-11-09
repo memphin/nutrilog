@@ -19,6 +19,10 @@ enum HealthFixtures {
     static let withings = HealthSource(name: "Withings", bundleIdentifier: "com.withings.wiScaleNG", productType: "iPhone17,1")
     static let sleepApp = HealthSource(name: "AutoSleep", bundleIdentifier: "com.tantsissa.AutoSleep", productType: "iPhone17,1")
     static let healthApp = HealthSource(name: "Health", bundleIdentifier: "com.apple.Health", productType: "iPhone17,1")
+    /// A third-party sleep app running on the watch: a watch product type, but not Apple's own source.
+    static let watchSleepApp = HealthSource(
+        name: "Pillow", bundleIdentifier: "com.neybox.pillow.watchkitapp", productType: "Watch7,1",
+    )
 }
 
 /// "2026-11-09" → LocalDay.

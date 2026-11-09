@@ -49,7 +49,9 @@ public struct SleepSummary: Hashable, Sendable, Codable {
 ///   Apple Watch wins over other apps, which win over iPhone in-bed estimates (`HealthSourceKind`). Between
 ///   sources of the same kind, the one with the most time asleep wins.
 /// - Within that source, overlapping samples are merged: every moment counts once. Where stages overlap, the
-///   moment goes to the deepest stage (deep > REM > core > unspecified > awake > in bed).
+///   moment goes to the deepest stage: deep > REM > core > unspecified > awake > in bed for Apple Watch. Other
+///   sources often write one long "asleep" block with awake periods inside it, so for them awake wins over
+///   unspecified asleep (deep > REM > core > awake > unspecified > in bed).
 public enum SleepAggregator {
     /// Hour of the day at which one night ends and the next begins.
     public static let nightBoundaryHour = 18
@@ -106,14 +108,17 @@ public enum SleepAggregator {
         return result
     }
 
-    /// Stage precedence where samples of one source overlap: the first stage covering a moment wins.
-    static let precedence: [SleepStage] = [.asleepDeep, .asleepREM, .asleepCore, .asleepUnspecified, .awake, .inBed]
+    /// Stage precedence where samples of one Apple Watch overlap: the first stage covering a moment wins.
+    static let watchPrecedence: [SleepStage] = [.asleepDeep, .asleepREM, .asleepCore, .asleepUnspecified, .awake, .inBed]
+    /// Stage precedence for other sources: awake periods cut into an unspecified "asleep" block.
+    static let fallbackPrecedence: [SleepStage] = [.asleepDeep, .asleepREM, .asleepCore, .awake, .asleepUnspecified, .inBed]
 
     /// Sweeps over the samples of one source, assigning every covered moment to exactly one stage.
     private static func measure(_ samples: [SleepSample], night: LocalDay) -> SleepSummary {
         // The earliest sample names the source; all samples of the group share its bundle identifier.
         let sorted = samples.sorted { ($0.start, $0.end) < ($1.start, $1.end) }
         let source = sorted.first(where: { $0.source.kind == .appleWatch })?.source ?? sorted[0].source
+        let precedence = source.kind == .appleWatch ? watchPrecedence : fallbackPrecedence
 
         var events: [(time: Date, stage: SleepStage, delta: Int)] = []
         events.reserveCapacity(samples.count * 2)

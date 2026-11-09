@@ -77,6 +77,16 @@ public enum HealthDataError: Error, Equatable, Sendable {
     case unavailable
 }
 
+public extension HealthFetchPlan {
+    /// The end-date range to query sleep samples with HealthKit's `.strictEndDate`, which is half-open
+    /// [start, end). It runs one second past `sleepInterval.end` so a sample ending exactly at 18:00 on the last
+    /// day is not lost (on a backfill chunk boundary it would be lost for good: the next chunk does not own that
+    /// night). Samples outside the nights are dropped by `SleepAggregator`.
+    var sleepQueryInterval: DateInterval {
+        DateInterval(start: sleepInterval.start, end: sleepInterval.end.addingTimeInterval(1))
+    }
+}
+
 /// Shared texts and constants of the Health integration.
 public enum HealthKitClient {
     /// Shown wherever a Health value is missing: read access is opaque, so missing data may mean a denied type.

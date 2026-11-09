@@ -1,3 +1,4 @@
+import Combine
 import DesignSystem
 import SwiftUI
 import UIKit
@@ -16,14 +17,18 @@ struct RootView: View {
                     Task { await environment.healthSync?.refresh() }
                 }
             }
+            // Midnight, clock changes and time-zone changes move day boundaries: refresh "today" and re-sync Health.
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
-                environment.refreshToday()
+                Task { await environment.systemTimeDidChange() }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .NSSystemTimeZoneDidChange).receive(on: DispatchQueue.main)) { _ in
+                Task { await environment.systemTimeDidChange() }
             }
             .task {
-                await environment.healthSync?.refresh()
                 if isShowingTabs, await environment.shouldShowHealthOnboarding() {
                     showHealthOnboarding = true
                 }
+                await environment.healthSync?.refresh()
             }
             .sheet(isPresented: $showHealthOnboarding, onDismiss: environment.markHealthOnboardingShown) {
                 HealthOnboardingView()

@@ -143,14 +143,13 @@
         }
 
         private func sleepSamples(plan: HealthFetchPlan) async throws -> [SleepSample] {
-            // `.strictEndDate`: samples ending inside (first night start, last night end] — night membership is
-            // decided by the end date (SPEC §3.4).
+            // Night membership is decided by the end date (SPEC §3.4). `.strictEndDate` is half-open, so the query
+            // runs to one second past the last night's end; Core then applies the exact (start, end] windows.
+            let query = plan.sleepQueryInterval
             let descriptor = HKSampleQueryDescriptor(
                 predicates: [.categorySample(
                     type: HKCategoryType(.sleepAnalysis),
-                    predicate: HKQuery.predicateForSamples(
-                        withStart: plan.sleepInterval.start, end: plan.sleepInterval.end, options: .strictEndDate,
-                    ),
+                    predicate: HKQuery.predicateForSamples(withStart: query.start, end: query.end, options: .strictEndDate),
                 )],
                 sortDescriptors: [SortDescriptor(\.startDate)],
             )

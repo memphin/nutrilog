@@ -184,6 +184,37 @@ struct FakeHealthDataSourceTests {
         }
     }
 
+    @Test func `fetch errors can start after some successful fetches`() async throws {
+        let fake = FakeHealthDataSource()
+        fake.update {
+            $0.fetchError = HealthDataError.unavailable
+            $0.fetchErrorAfter = 1
+        }
+        let days = day("2026-11-09") ... day("2026-11-09")
+        _ = try await fake.fetchDailyData(for: days, calendar: zagreb)
+        await #expect(throws: HealthDataError.unavailable) { try await fake.fetchDailyData(for: days, calendar: zagreb) }
+        #expect(fake.snapshot.fetchedTimeZones == [zagreb.timeZone, zagreb.timeZone])
+    }
+
+    @Test func `a nap ending exactly at 18 00 on the last day is fetched`() async throws {
+        // HealthKit's `.strictEndDate` is half-open; the query runs one second longer so this sample survives.
+        let nap = SleepSample(start: at("2026-11-09", 17), end: at("2026-11-09", 18), stage: .asleepCore, source: watch)
+        let lastNightEnd = day("2026-11-08").date(atHour: 18, calendar: zagreb)
+        let previousNight = SleepSample(start: at("2026-11-08", 17), end: lastNightEnd, stage: .asleepCore, source: watch)
+        let fake = FakeHealthDataSource()
+        fake.update { $0.sleep = [nap, previousNight] }
+
+        let days = day("2026-11-09") ... day("2026-11-09")
+        let plan = HealthFetchPlan(days: days, calendar: zagreb)
+        #expect(plan.sleepQueryInterval.end.timeIntervalSince(plan.sleepInterval.end) == 1)
+        let batch = try await fake.fetchDailyData(for: days, calendar: zagreb)
+        #expect(batch.sleep.contains(nap))
+
+        // The previous night's sample also matches the query start, but Core keeps it out of this night.
+        let metrics = DailyMetricsAggregator.aggregate(batch, calendar: zagreb)
+        #expect(metrics.first?.sleepAsleepMin == 60)
+    }
+
     @Test func `demo data fills every metric`() async throws {
         let fake = FakeHealthDataSource.demo(endingOn: day("2026-11-09"), days: 10, calendar: zagreb)
         #expect(await fake.authorizationRequestStatus() == .unnecessary)

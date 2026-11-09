@@ -77,17 +77,23 @@ struct HealthSettingsView: View {
     private var connectionSection: some View {
         Section {
             if model.isConnected {
-                LabeledContent("Last updated") {
-                    if environment.healthSync?.phase == .syncing {
-                        ProgressView()
-                    } else {
-                        Text(environment.healthSync?.lastSyncedAt?.formatted(date: .abbreviated, time: .shortened) ?? "Never")
+                if case let .syncing(done, total) = environment.healthSync?.phase {
+                    VStack(alignment: .leading, spacing: NL.Spacing.xs) {
+                        Text("Reading Apple Health…")
+                        ProgressView(value: Double(done), total: Double(max(total, 1)))
+                        Text("\(done) of \(total) days").font(.footnote).foregroundStyle(.secondary)
                     }
+                    .accessibilityElement(children: .combine)
+                } else {
+                    LabeledContent(
+                        "Last updated",
+                        value: environment.healthSync?.lastSyncedAt?.formatted(date: .abbreviated, time: .shortened) ?? "Never",
+                    )
                 }
                 Button("Update now") {
                     Task { await environment.healthSync?.refresh(force: true) }
                 }
-                .disabled(environment.healthSync?.phase == .syncing)
+                .disabled(isSyncing)
                 Button("What Nutrilog reads and writes") { showOnboarding = true }
             } else {
                 Button("Connect Apple Health") { showOnboarding = true }
@@ -122,6 +128,13 @@ struct HealthSettingsView: View {
                     + "so a type without data may simply not be shared with Nutrilog.",
             )
         }
+    }
+
+    private var isSyncing: Bool {
+        if case .syncing = environment.healthSync?.phase {
+            return true
+        }
+        return false
     }
 
     private func reload() {

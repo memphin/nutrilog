@@ -95,6 +95,45 @@ struct SleepAggregatorTests {
         #expect(!fallback.hasStages)
     }
 
+    @Test func `a third-party watch app is not treated as Apple Watch`() throws {
+        // The watch app reports more sleep, but only Apple's own watch source has priority.
+        let watchApp = [sleep(.asleepUnspecified, "2026-11-08 22:00", "2026-11-09 08:00", HealthFixtures.watchSleepApp)]
+        let summary = try #require(SleepAggregator.aggregate(samples: watchApp + watchNight(), for: night, calendar: zagreb))
+        #expect(summary.source == HealthFixtures.watch)
+        #expect(summary.asleepMinutes == 465)
+
+        // Without Apple Watch data it is an ordinary app source and still beats the iPhone estimate.
+        let phone = [sleep(.inBed, "2026-11-08 21:00", "2026-11-09 09:00", HealthFixtures.iPhone)]
+        let fallback = try #require(SleepAggregator.aggregate(samples: watchApp + phone, for: night, calendar: zagreb))
+        #expect(fallback.source == HealthFixtures.watchSleepApp)
+        #expect(fallback.asleepMinutes == 600)
+    }
+
+    @Test func `other sources let awake cut into an unspecified asleep block`() throws {
+        let samples = [
+            sleep(.asleepUnspecified, "2026-11-08 23:00", "2026-11-09 07:00", HealthFixtures.sleepApp),
+            sleep(.awake, "2026-11-09 03:00", "2026-11-09 03:30", HealthFixtures.sleepApp),
+        ]
+        let summary = try #require(SleepAggregator.aggregate(samples: samples, for: night, calendar: zagreb))
+        #expect(summary.source == HealthFixtures.sleepApp)
+        #expect(summary.asleepMinutes == 450)
+        #expect(summary.minutes(\.unspecified) == 450)
+        #expect(summary.minutes(\.awake) == 30)
+        #expect(summary.inBedMinutes == 480)
+    }
+
+    @Test func `the Apple Watch keeps unspecified asleep over an overlapping awake sample`() throws {
+        let samples = [
+            sleep(.asleepUnspecified, "2026-11-08 23:00", "2026-11-09 07:00"),
+            sleep(.awake, "2026-11-09 03:00", "2026-11-09 03:30"),
+        ]
+        let summary = try #require(SleepAggregator.aggregate(samples: samples, for: night, calendar: zagreb))
+        #expect(summary.source == HealthFixtures.watch)
+        #expect(summary.asleepMinutes == 480)
+        #expect(summary.minutes(\.awake) == 0)
+        #expect(summary.inBedMinutes == 480)
+    }
+
     @Test func `two watches pick the one that slept longer, never the sum`() throws {
         let shorter = [sleep(.asleepCore, "2026-11-09 01:00", "2026-11-09 07:00", HealthFixtures.oldWatch)]
         let summary = try #require(SleepAggregator.aggregate(samples: shorter + watchNight(), for: night, calendar: zagreb))
@@ -207,6 +246,8 @@ struct HealthSourceTests {
         #expect(HealthFixtures.iPhone.kind == .iPhone)
         #expect(HealthFixtures.withings.kind == .app)
         #expect(HealthFixtures.healthApp.kind == .app) // manual entries in the Health app
+        #expect(HealthFixtures.watchSleepApp.kind == .app) // third-party app on the watch
+        #expect(HealthSource(name: "?", bundleIdentifier: "com.apple.health.X").kind == .iPhone)
         #expect(HealthSource(name: "?", bundleIdentifier: "x").kind == .app)
         #expect(HealthSourceKind.appleWatch < .app)
         #expect(HealthSourceKind.app < .iPhone)

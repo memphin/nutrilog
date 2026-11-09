@@ -104,6 +104,13 @@ final class AppEnvironment {
         try? profiles?.setSetting(SettingKey.healthOnboardingShown, true)
     }
 
+    /// The clock jumped or the time zone changed (`significantTimeChangeNotification`, system time zone change):
+    /// re-read "today" and re-sync every Health day, since day boundaries may have moved.
+    func systemTimeDidChange() async {
+        refreshToday()
+        await healthSync?.refresh(force: true)
+    }
+
     /// Re-reads the clock; returns true when the local day changed.
     @discardableResult
     func refreshToday() -> Bool {
@@ -212,10 +219,10 @@ final class AppEnvironment {
 enum SettingKey {
     static let energyUnit = "energyUnit"
     static let waterQuickAddSizes = "waterQuickAddSizes"
-    /// Bool: the 90-day Health backfill finished (backlog #24).
-    static let healthBackfillCompleted = "healthBackfillCompleted"
-    /// LocalDay: the day of the last successful Health sync.
-    static let healthLastSyncedDay = "healthLastSyncedDay"
+    /// Date: when the last Health sync finished successfully (backlog #24).
+    static let healthLastSyncedAt = "healthLastSyncedAt"
+    /// Date: when the last full 90-day Health sync finished successfully.
+    static let healthLastFullSyncAt = "healthLastFullSyncAt"
     /// Bool: the first-launch Health onboarding was shown.
     static let healthOnboardingShown = "healthOnboardingShown"
 }

@@ -3,7 +3,8 @@ import HealthKitClient
 import SwiftUI
 
 /// Explains every Health type before the system permission sheet (backlog #23). Shown once on first launch and
-/// from Settings → Apple Health. "Continue" shows the system sheet, then reads Health.
+/// from Settings → Apple Health. "Continue" shows the system sheet and closes once the user has answered; the
+/// 90-day sync then runs in the background, with its progress and errors shown in Settings → Apple Health.
 struct HealthOnboardingView: View {
     static let intro = "Nutrilog shows your Apple Health data next to what you eat. Here is what it asks for and why — "
         + "Apple Health then lets you allow or deny each type."

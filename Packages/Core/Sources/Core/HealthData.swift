@@ -20,22 +20,20 @@ public struct HealthSource: Hashable, Sendable, Codable {
         self.productType = productType
     }
 
+    /// Only Apple's own device sources ("com.apple.health.<UUID>") count as Apple Watch or iPhone; a third-party
+    /// app is `.app` even when it runs on a watch.
     public var kind: HealthSourceKind {
-        if productType?.hasPrefix("Watch") == true {
-            return .appleWatch
-        }
-        if bundleIdentifier.hasPrefix("com.apple.health.") {
-            return .iPhone
-        }
-        return .app
+        guard bundleIdentifier.hasPrefix("com.apple.health.") else { return .app }
+        return productType?.hasPrefix("Watch") == true ? .appleWatch : .iPhone
     }
 }
 
 /// Source classes in priority order (SPEC D5: Apple Watch first for sleep, heart rate and HRV).
 public enum HealthSourceKind: Int, Comparable, Sendable, Codable, CaseIterable {
-    /// Recorded on an Apple Watch.
+    /// Recorded by Apple's own software on an Apple Watch.
     case appleWatch = 0
-    /// Another app or device writing to Health (Withings, sleep apps, manual entries in the Health app).
+    /// Another app or device writing to Health (Withings, sleep apps — also their watch apps — and manual
+    /// entries in the Health app).
     case app = 1
     /// Apple's own iPhone estimates (in-bed time from the sleep schedule, phone steps).
     case iPhone = 2

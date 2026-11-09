@@ -8,6 +8,10 @@ import Synchronization
 /// like a daily statistics collection query (without Health's cross-source de-duplication, so don't add
 /// overlapping cumulative samples from two sources). Setting `readAllowed = false` mimics a user who denied
 /// every read type: everything comes back empty, exactly like the real opaque behaviour.
+///
+/// Sample selection follows the HealthKit predicates `LiveHealthDataSource` uses: per-day samples by start date
+/// in [first midnight, last midnight) (`.strictStartDate`), sleep by end date in `HealthFetchPlan.sleepQueryInterval`
+/// with HealthKit's half-open `.strictEndDate` semantics [start, end). Core then applies the exact night windows.
 public final class FakeHealthDataSource: HealthDataSource {
     public struct State: Sendable {
         public var authorizationRequested = false
@@ -18,12 +22,17 @@ public final class FakeHealthDataSource: HealthDataSource {
         public var samples: [SampledMetric: [HealthQuantitySample]] = [:]
         public var sleep: [SleepSample] = []
         public var characteristics = HealthCharacteristics()
-        /// Thrown by the next `requestAuthorization()` / every `fetchDailyData` call while set.
+        /// Thrown by the next `requestAuthorization()` call while set.
         public var authorizationError: (any Error & Sendable)?
+        /// Thrown by `fetchDailyData` while set, once `fetchErrorAfter` fetches (counted over the fake's life)
+        /// have succeeded — e.g. 1 lets the first backfill chunk through and fails the next.
         public var fetchError: (any Error & Sendable)?
+        public var fetchErrorAfter = 0
         // Recorded calls, for assertions.
         public var authorizationRequestCount = 0
         public var fetchedRanges: [ClosedRange<LocalDay>] = []
+        /// The calendar time zone of each `fetchDailyData` call.
+        public var fetchedTimeZones: [TimeZone] = []
 
         public init() {}
     }
@@ -75,20 +84,24 @@ public final class FakeHealthDataSource: HealthDataSource {
         guard isAvailable else { throw HealthDataError.unavailable }
         let state = state.withLock { state in
             state.fetchedRanges.append(days)
+            state.fetchedTimeZones.append(calendar.timeZone)
             return state
         }
-        if let error = state.fetchError {
+        if let error = state.fetchError, state.fetchedRanges.count > state.fetchErrorAfter {
             throw error
         }
         guard state.readAllowed else { return HealthDataBatch(days: days) }
 
         let plan = HealthFetchPlan(days: days, calendar: calendar)
-        let inDays = { (sample: HealthQuantitySample) in plan.dayInterval.contains(sample.start) && sample.start < plan.dayInterval.end }
+        let inDays = { (sample: HealthQuantitySample) in
+            sample.start >= plan.dayInterval.start && sample.start < plan.dayInterval.end
+        }
+        let sleepQuery = plan.sleepQueryInterval
         return HealthDataBatch(
             days: days,
             statistics: state.cumulativeSamples.mapValues { Self.dailyStatistics($0.filter(inDays), plan: plan) },
             samples: state.samples.mapValues { $0.filter(inDays) },
-            sleep: state.sleep.filter { $0.end > plan.sleepInterval.start && $0.end <= plan.sleepInterval.end },
+            sleep: state.sleep.filter { $0.end >= sleepQuery.start && $0.end < sleepQuery.end },
         )
     }
 
