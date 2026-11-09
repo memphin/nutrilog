@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secrets-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  packages:
+    name: Swift packages — build & test
+    runs-on: macos-26
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [Core, Persistence, FoodSources, DesignSystem]  # HealthKitClient & Scanner are iOS-only — tested via the app scheme
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_26.app
+      - name: Cache SwiftPM
+        uses: actions/cache@v4
+        with:
+          path: |
+            Packages/${{ matrix.package }}/.build
+            ~/Library/Caches/org.swift.swiftpm
+          key: spm-${{ matrix.package }}-${{ hashFiles(format('Packages/{0}/Package.resolved', matrix.package)) }}
+      - name: Test ${{ matrix.package }}
+        working-directory: Packages/${{ matrix.package }}
+        run: swift test --parallel
+
+  app:
+    name: iOS app — build & test (simulator)
+    runs-on: macos-26
+    needs: packages
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_26.app
+      - name: Create placeholder secrets
+        run: cp Config/Secrets.xcconfig.template Config/Secrets.xcconfig
+      - name: Build & test
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project NutriLog.xcodeproj \
+            -scheme NutriLog \
+            -destination 'platform=iOS Simulator,name=iPhone 17' \
+            -resultBundlePath TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO | xcpretty
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestResults
+          path: TestResults.xcresult
+
+  # Uncomment once an App Store Connect API key is added to repo secrets
+  # (APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_KEY_P8, MATCH_* or a signing cert).
+  # testflight:
+  #   name: TestFlight upload
+  #   if: startsWith(github.ref, 'refs/tags/v')
+  #   runs-on: macos-26
+  #   needs: app
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - run: bundle install && bundle exec fastlane beta
+  #       env:
+  #         USDA_FDC_API_KEY: ${{ secrets.USDA_FDC_API_KEY }}

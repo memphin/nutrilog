@@ -1,0 +1,45 @@
+# Secrets — never commit
+Config/Secrets.xcconfig
+*.mobileprovision
+*.p12
+*.p8
+fastlane/report.xml
+fastlane/*.ipa
+fastlane/*.dSYM.zip
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM
+*.dSYM.zip
+*.playground
+timeline.xctimeline
+*.xcresult
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Packages/*/.build/
+Package.resolved.bak
+
+# macOS
+.DS_Store
+
+# Tools
+tools/.venv/
+tools/data/raw/
+__pycache__/
+*.pyc
+
+# Generated bundled index is committed on purpose:
+!Resources/FoodIndex/bundled_foods.sqlite
+
+# Local-only originals (pre-scaffold docs and zip)
+archive/

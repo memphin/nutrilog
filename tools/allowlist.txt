@@ -1,0 +1,32 @@
+# One substring (case-insensitive, matched against the FDC description) or exact fdc_id per line.
+# Start small; grow from "not found" searches in daily use.
+chicken, broiler or fryers, breast
+egg, whole, raw
+oats
+rice, white, long-grain
+rice, brown
+potatoes, raw
+banana, raw
+apple, raw
+milk, whole
+yogurt, plain
+cheese, mozzarella
+olive oil
+butter, salted
+bread, whole-wheat
+pasta, dry
+beef, ground
+salmon, atlantic
+tuna, light, canned
+beans, black
+lentils
+tomatoes, red, ripe, raw
+cucumber
+onions, raw
+carrots, raw
+broccoli, raw
+spinach, raw
+almonds
+walnuts
+peanut butter
+honey
