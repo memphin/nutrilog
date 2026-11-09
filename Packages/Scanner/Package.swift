@@ -3,20 +3,23 @@ import PackageDescription
 
 let package = Package(
     name: "Scanner",
-    platforms: [.iOS(.v26), .macOS(.v15)], // macOS target lets `swift test` run on CI without a simulator
+    // The camera UI is iOS-only (`#if os(iOS)`); the macOS target lets `swift test` run the pure logic on CI.
+    platforms: [.iOS(.v26), .macOS(.v15)],
     products: [
         .library(name: "Scanner", targets: ["Scanner"]),
     ],
-    dependencies: [],
+    dependencies: [
+        .package(path: "../Core"),
+    ],
     targets: [
         .target(
             name: "Scanner",
-            dependencies: [],
+            dependencies: ["Core"],
             swiftSettings: [.swiftLanguageMode(.v6)],
         ),
         .testTarget(
             name: "ScannerTests",
-            dependencies: ["Scanner"],
+            dependencies: ["Scanner", "Core"],
         ),
     ],
 )
