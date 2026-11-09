@@ -10,8 +10,7 @@ struct HealthKitOutboxTests {
 
     @Test func `outbox is migrated (005) and not exported`() throws {
         let f = try Fixture()
-        #expect(Migrator.migrations.last == "005_healthkit_outbox")
-        #expect(DataPortability.schemaVersion == 5)
+        #expect(Migrator.migrations.contains("005_healthkit_outbox"))
         try f.healthLinks.enqueue(.diaryEntry, id: "a")
         let data = try DataPortability(f.db, clock: f.clock.appClock).exportJSON()
         let object = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])

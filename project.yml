@@ -10,7 +10,9 @@ settings:
   base:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
-    MARKETING_VERSION: "0.1.0"
+    # Local builds only: the TestFlight job overrides both from the tag (v0.2.0 → 0.2.0) and the commit count.
+    # Keep MARKETING_VERSION at the version being released next (docs/RELEASING.md).
+    MARKETING_VERSION: "0.2.0"
     CURRENT_PROJECT_VERSION: "1"
     ENABLE_USER_SCRIPT_SANDBOXING: YES
 packages:
@@ -45,6 +47,8 @@ targets:
       path: App/Info.plist
       properties:
         CFBundleDisplayName: Nutrilog
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         ITSAppUsesNonExemptEncryption: false

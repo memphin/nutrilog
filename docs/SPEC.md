@@ -367,7 +367,7 @@ Nutrient mapping notes: prefer `energy-kcal_100g`, else `energy_100g` (kJ) / 4.1
 | Public App Store listing | $99/yr (same) | Optional; HealthKit apps face stricter review (privacy policy URL required). Not needed for personal use |
 | AltStore / sideloading tools | €0 | Also 7-day refresh unless paid account |
 
-CI: GitHub Actions `macos-latest` running `xcodebuild test` on PRs; optional Fastlane `pilot` upload to TestFlight on tags (secrets: App Store Connect API key).
+CI: GitHub Actions `macos-latest` running `xcodebuild test` on PRs; `v*` tags also archive and upload to TestFlight with `xcodebuild -exportArchive` and automatic cloud signing (secrets: App Store Connect API key, team ID; no certificates in the repo). Setup: `docs/RELEASING.md`.
 
 ---
 

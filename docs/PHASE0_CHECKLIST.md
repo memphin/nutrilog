@@ -10,5 +10,5 @@
 - [x] Add SwiftFormat + SwiftLint configs
 - [x] Run `swift test` in `Packages/Persistence` → green (done locally); CI green on first PR — pending push
 - [x] Download FDC CSVs, run `tools/build_food_index.py`, commit `Resources/FoodIndex/bundled_foods.sqlite`
-- [ ] (Phase 2) App Store Connect: create app record, TestFlight internal group; store API key in GitHub secrets; enable `testflight` job
+- [ ] (Phase 2) App Store Connect: create app record, TestFlight internal group; store API key in GitHub secrets (`testflight` job is enabled; steps in `docs/RELEASING.md`)
 - [x] Run `tools/import_issues.sh` to create labels, milestones and Phase 1–3 issues (Project board: optional, not created)

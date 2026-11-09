@@ -17,13 +17,16 @@
 		167F41E1F03A45D90C383A72 /* FoodsListModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42526B1ADDB2F2F9008B32B8 /* FoodsListModel.swift */; };
 		1B66D123840B97B94ED63379 /* USDAKeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF825E4994064B6BF2442C2C /* USDAKeyTests.swift */; };
 		2B72DF9DC39A4FD532F82AD6 /* StubOpenFoodFactsClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9CCA4A26FB3F7E0C4FF09B0 /* StubOpenFoodFactsClient.swift */; };
+		2F72AA6FCE65F593C82570B7 /* BarcodeResolutionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D43D67F6BDD6DC3B91132A7 /* BarcodeResolutionView.swift */; };
 		3A155E78812EC13037AE60E3 /* HealthSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78AC475FAECDC1B9D98F4D51 /* HealthSyncService.swift */; };
 		4866F5733FE3075FDBC10671 /* AppModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D073557851101D1AD6FABF46 /* AppModelTests.swift */; };
 		4938903A2D3F636B0ECFCE00 /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB79B4BE92A3FFCB94D8CA93 /* AppEnvironment.swift */; };
 		4B6FE28F847FE3FB45F70F18 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = A889B4CD67F814724B977510 /* Persistence */; };
 		4C8B1351185B5B231D206824 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02B31E9560DA95F7E191A672 /* AppConfig.swift */; };
+		50A6CFC489DF154A0AA0321F /* ScanLogging.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6262BB27CA1589E6093F80 /* ScanLogging.swift */; };
 		52BE128D0BBB8486593D5D4F /* DiaryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0AF9328875CE64DEC3A2E2D /* DiaryModel.swift */; };
 		58795C8A1EF5F8C72541211A /* StubOpenFoodFactsSearchClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BE8ACADAC7651CCEC03FF98 /* StubOpenFoodFactsSearchClient.swift */; };
+		5B1199DEB7304FCF88C1FCA8 /* ScanLogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B6E769753521818A47867D1 /* ScanLogTests.swift */; };
 		661D6EAD1085C1AAEF4D1D82 /* HealthWriteService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AA1FF77C30B305B73CDD364 /* HealthWriteService.swift */; };
 		66C6132AFD93ABA6B9FC23AA /* USDAKeyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81B23CAA505BA1C22B5F85C6 /* USDAKeyStore.swift */; };
 		68184A1CAA4FB02029B16A52 /* Scanner in Frameworks */ = {isa = PBXBuildFile; productRef = 1027AC8891CFCD49FA5F02E6 /* Scanner */; };
@@ -78,6 +81,7 @@
 		0AA1FF77C30B305B73CDD364 /* HealthWriteService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthWriteService.swift; sourceTree = "<group>"; };
 		13167937AD97A7A6E63D0C7D /* HealthWriteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthWriteTests.swift; sourceTree = "<group>"; };
 		180130317CF5FAF7AE910FE2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		1A6262BB27CA1589E6093F80 /* ScanLogging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanLogging.swift; sourceTree = "<group>"; };
 		1C7A62EC62945A0E3012FC0D /* FoodEditorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodEditorModel.swift; sourceTree = "<group>"; };
 		2137916B6A16402C94700DF7 /* NutrilogTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = NutrilogTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		29307B4DBBBE49DA22C8C06A /* FoodLookup */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FoodLookup; path = Packages/FoodLookup; sourceTree = SOURCE_ROOT; };
@@ -85,6 +89,7 @@
 		332BBFC896239C9D6395BAE6 /* Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formatting.swift; sourceTree = "<group>"; };
 		34B1B04B40C3BCA84C756B6C /* App.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = App.xcconfig; sourceTree = "<group>"; };
 		3AF39B0F528153E0E26659AE /* Persistence */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Persistence; path = Packages/Persistence; sourceTree = SOURCE_ROOT; };
+		3B6E769753521818A47867D1 /* ScanLogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanLogTests.swift; sourceTree = "<group>"; };
 		40D4DECE786948C76A63B1D1 /* ScanFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanFlowTests.swift; sourceTree = "<group>"; };
 		42526B1ADDB2F2F9008B32B8 /* FoodsListModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodsListModel.swift; sourceTree = "<group>"; };
 		4BB9BD384F97235746715A1E /* ServingWeightPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServingWeightPrompt.swift; sourceTree = "<group>"; };
@@ -102,6 +107,7 @@
 		78333C048891E54051653673 /* FoodsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodsListView.swift; sourceTree = "<group>"; };
 		78AC475FAECDC1B9D98F4D51 /* HealthSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSyncService.swift; sourceTree = "<group>"; };
 		7BE8ACADAC7651CCEC03FF98 /* StubOpenFoodFactsSearchClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StubOpenFoodFactsSearchClient.swift; sourceTree = "<group>"; };
+		7D43D67F6BDD6DC3B91132A7 /* BarcodeResolutionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeResolutionView.swift; sourceTree = "<group>"; };
 		81B23CAA505BA1C22B5F85C6 /* USDAKeyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USDAKeyStore.swift; sourceTree = "<group>"; };
 		85872A22FB7B839CA01C0AF8 /* TargetsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetsModel.swift; sourceTree = "<group>"; };
 		88C0F2A65D5766E267236619 /* DiarySheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiarySheets.swift; sourceTree = "<group>"; };
@@ -278,6 +284,7 @@
 				13167937AD97A7A6E63D0C7D /* HealthWriteTests.swift */,
 				8B0E99FA1A1F64A610187439 /* OnlineSearchTests.swift */,
 				40D4DECE786948C76A63B1D1 /* ScanFlowTests.swift */,
+				3B6E769753521818A47867D1 /* ScanLogTests.swift */,
 				DFA022929D750396EDF97E64 /* TestSupport.swift */,
 				DF825E4994064B6BF2442C2C /* USDAKeyTests.swift */,
 			);
@@ -298,6 +305,7 @@
 				D7EAAE523E4903BA152CEB02 /* LabelPhotoStore.swift */,
 				4DCD9DE455FD28A6C73B69F3 /* ProductCardView.swift */,
 				5CB15838C5815C2C2892E6A1 /* ScanFlowModel.swift */,
+				1A6262BB27CA1589E6093F80 /* ScanLogging.swift */,
 				73B40A78D5287C3224F49964 /* ScanView.swift */,
 				D9CCA4A26FB3F7E0C4FF09B0 /* StubOpenFoodFactsClient.swift */,
 			);
@@ -307,6 +315,7 @@
 		E4B918FE2BAA42A314260E98 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				7D43D67F6BDD6DC3B91132A7 /* BarcodeResolutionView.swift */,
 				F71079C582044C8F4ED01E8F /* ProfileTargetsView.swift */,
 				D1CA8B8FFD2D12E767B10B6E /* SettingsView.swift */,
 				85872A22FB7B839CA01C0AF8 /* TargetsModel.swift */,
@@ -446,6 +455,7 @@
 				DEA6ED43ED0C3E0835637019 /* HealthWriteTests.swift in Sources */,
 				D953F9BE2CB9E64FED7766C4 /* OnlineSearchTests.swift in Sources */,
 				85EEBF3444FF4814C5E4CE4F /* ScanFlowTests.swift in Sources */,
+				5B1199DEB7304FCF88C1FCA8 /* ScanLogTests.swift in Sources */,
 				81534A8EE21DC5652C4025F6 /* TestSupport.swift in Sources */,
 				1B66D123840B97B94ED63379 /* USDAKeyTests.swift in Sources */,
 			);
@@ -458,6 +468,7 @@
 				93F40FAA0B6B8597A92BDF6D /* AddFoodView.swift in Sources */,
 				4C8B1351185B5B231D206824 /* AppConfig.swift in Sources */,
 				4938903A2D3F636B0ECFCE00 /* AppEnvironment.swift in Sources */,
+				2F72AA6FCE65F593C82570B7 /* BarcodeResolutionView.swift in Sources */,
 				A35CBFEC41A92533C258D56A /* DebugScreens.swift in Sources */,
 				52BE128D0BBB8486593D5D4F /* DiaryModel.swift in Sources */,
 				7F0BD5C3AA31BFE9476F53D5 /* DiarySheets.swift in Sources */,
@@ -481,6 +492,7 @@
 				D63FFCA9058D3B3B24A31E40 /* QuickAddView.swift in Sources */,
 				BC7BC71995D1614AD56B4D84 /* RootView.swift in Sources */,
 				ADC4A442805C72E043EA37A4 /* ScanFlowModel.swift in Sources */,
+				50A6CFC489DF154A0AA0321F /* ScanLogging.swift in Sources */,
 				D87F05CD4E76424EDBB130A7 /* ScanView.swift in Sources */,
 				FCF338A6D394B280390662D4 /* ServingWeightPrompt.swift in Sources */,
 				018E0BAE0593A61F9524CF61 /* SettingsView.swift in Sources */,
@@ -551,7 +563,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.2.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -634,7 +646,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.2.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
