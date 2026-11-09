@@ -319,7 +319,7 @@ struct HealthPermissionTests {
         let model = HealthSettingsModel()
         await model.load(environment: env)
         #expect(!model.isConnected)
-        #expect(model.requestStatus == .shouldRequest)
+        #expect(env.healthSync?.requestStatus == .shouldRequest)
         #expect(model.statuses.isEmpty)
     }
 
@@ -358,7 +358,7 @@ struct HealthKitMappingTests {
         }
         #expect(SampledMetric.bodyFatPercentage.valueScale == 100)
         #expect(LiveHealthDataSource.readTypes.count == 12)
-        #expect(LiveHealthDataSource.shareTypes.count == 9)
+        #expect(LiveHealthDataSource.shareTypes.count == 10)
     }
 
     @Test func `sleep values map to stages`() {

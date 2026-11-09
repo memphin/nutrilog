@@ -60,6 +60,9 @@ public extension HealthWriteType {
         .dietarySugar, .dietarySodium,
     ]
 
+    /// The types written for a manual weight.
+    static let body: Set<HealthWriteType> = [.bodyMass, .bodyFatPercentage]
+
     /// Unit of `HealthSampleDraft.value`.
     var unitSymbol: String {
         switch self {
@@ -68,6 +71,7 @@ public extension HealthWriteType {
         case .dietarySodium: "mg"
         case .dietaryWater: "ml"
         case .bodyMass: "kg"
+        case .bodyFatPercentage: "%"
         }
     }
 }
@@ -105,6 +109,20 @@ public enum HealthSamples {
     public static func water(ml: Double, date: Date, externalID: String, version: Int) -> [HealthSampleDraft] {
         guard ml > 0, ml.isFinite else { return [] }
         return [HealthSampleDraft(type: .dietaryWater, value: ml, date: date, externalID: externalID, version: version)]
+    }
+
+    /// The samples of a manual weight: body mass, plus body fat (in percent, 18.5) when entered.
+    public static func weight(
+        kg: Double, bodyFatPct: Double?, date: Date, externalID: String, version: Int,
+    ) -> [HealthSampleDraft] {
+        guard kg > 0, kg.isFinite else { return [] }
+        var drafts = [HealthSampleDraft(type: .bodyMass, value: kg, date: date, externalID: externalID, version: version)]
+        if let bodyFatPct, bodyFatPct > 0, bodyFatPct.isFinite {
+            drafts.append(HealthSampleDraft(
+                type: .bodyFatPercentage, value: bodyFatPct, date: date, externalID: externalID, version: version,
+            ))
+        }
+        return drafts
     }
 
     /// When to date a sample for a row of local day `day` that was logged at `loggedAt`: the log time when it lies on

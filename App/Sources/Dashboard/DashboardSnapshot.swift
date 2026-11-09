@@ -1,0 +1,290 @@
+import Core
+import Foundation
+import Persistence
+
+/// Everything the dashboard reads from the database for one day (backlog #28).
+struct DashboardData: Equatable {
+    /// Days of history read for trends and baselines (weight EMA, 30-day HRV average, 14-day details).
+    static let historyDays = 60
+
+    var today: LocalDay
+    /// `daily_metrics` rows of the history window (Health values from other sources).
+    var metrics: [DailyMetricsRecord] = []
+    /// Manual weights of the history window.
+    var manualWeights: [WeightEntry] = []
+    /// Water logged in Nutrilog today.
+    var water: [WaterEntry] = []
+    /// Today's diary totals.
+    var totals: Nutrients = .zero
+    var target: Target?
+    var waterGoalMl: Double = 2500
+
+    var window: ClosedRange<LocalDay> {
+        today.adding(days: -(Self.historyDays - 1)) ... today
+    }
+
+    /// [midnight of the window's first day, midnight after today) — manual weights to read.
+    func weightInterval(calendar: Calendar = .current) -> DateInterval {
+        DateInterval(start: window.lowerBound.startDate(calendar: calendar), end: today.next.startDate(calendar: calendar))
+    }
+}
+
+/// Today's water: logged in Nutrilog plus other apps' water from Health (FR-46). Nutrilog's own Health samples are
+/// already left out of `otherAppsMl`, so nothing is counted twice.
+struct WaterProgress: Equatable {
+    var loggedMl: Double
+    var otherAppsMl: Double
+    var goalMl: Double
+
+    var totalMl: Double {
+        loggedMl + otherAppsMl
+    }
+
+    /// 0…1 for drawing.
+    var fraction: Double {
+        guard goalMl > 0 else { return 0 }
+        return min(max(totalMl / goalMl, 0), 1)
+    }
+
+    var isGoalReached: Bool {
+        goalMl > 0 && totalMl >= goalMl
+    }
+
+    var remainingMl: Double {
+        max(goalMl - totalMl, 0)
+    }
+}
+
+struct SleepValue: Equatable {
+    var asleepMin: Int?
+    var inBedMin: Int?
+    var coreMin: Int?
+    var deepMin: Int?
+    var remMin: Int?
+    var awakeMin: Int?
+
+    var hasStages: Bool {
+        coreMin != nil || deepMin != nil || remMin != nil
+    }
+}
+
+struct BodyFatValue: Equatable {
+    var day: LocalDay
+    var pct: Double
+}
+
+/// The values of every tile, computed from `DashboardData` (pure, so the rules are unit-tested).
+struct DashboardSnapshot: Equatable {
+    let today: LocalDay
+    let todayMetrics: DailyHealthMetrics?
+    /// Manual and Health weights merged per day (`WeightReconciler`).
+    let dayWeights: [DayWeight]
+    let weight: WeightSummary?
+    let bodyFat: BodyFatValue?
+    let restingHR: BaselineComparison?
+    let hrv: BaselineComparison?
+    let water: WaterProgress
+    let totals: Nutrients
+    let target: Target?
+
+    init(_ data: DashboardData, calendar: Calendar = .current) {
+        today = data.today
+        let rows = data.metrics.map(\.metrics)
+        todayMetrics = rows.first { $0.day == data.today }
+        dayWeights = WeightReconciler.daily(
+            health: rows,
+            manual: data.manualWeights.map {
+                ManualWeight(measuredAt: $0.measuredAt, kg: $0.kg, bodyFatPct: $0.bodyFatPct, enteredAt: $0.createdAt)
+            },
+            calendar: calendar,
+        )
+        weight = WeightTrend.summary(dayWeights, today: data.today)
+        bodyFat = dayWeights.last { $0.bodyFatPct != nil && $0.day <= data.today }
+            .flatMap { day in day.bodyFatPct.map { BodyFatValue(day: day.day, pct: $0) } }
+        restingHR = MetricBaseline.compare(Self.values(rows, \.restingHR), today: data.today)
+        hrv = MetricBaseline.compare(Self.values(rows, \.hrvSDNNms), today: data.today)
+        water = WaterProgress(
+            loggedMl: data.water.reduce(0) { $0 + $1.ml },
+            otherAppsMl: todayMetrics?.waterMl ?? 0,
+            goalMl: data.waterGoalMl,
+        )
+        totals = data.totals
+        target = data.target
+    }
+
+    var steps: Int? {
+        todayMetrics?.steps
+    }
+
+    var activeKcal: Double? {
+        todayMetrics?.activeKcal
+    }
+
+    /// Last night (the night ending today).
+    var sleep: SleepValue? {
+        guard let metrics = todayMetrics, metrics.hasValue(.sleep) else { return nil }
+        return SleepValue(
+            asleepMin: metrics.sleepAsleepMin, inBedMin: metrics.sleepInBedMin, coreMin: metrics.sleepCoreMin,
+            deepMin: metrics.sleepDeepMin, remMin: metrics.sleepRemMin, awakeMin: metrics.sleepAwakeMin,
+        )
+    }
+
+    func hasValue(_ tile: DashboardTile) -> Bool {
+        switch tile {
+        case .energy, .water: true
+        case .steps: steps != nil
+        case .sleep: sleep != nil
+        case .weight: weight != nil
+        case .bodyFat: bodyFat != nil
+        case .activeEnergy: activeKcal != nil
+        case .restingHeartRate: restingHR != nil
+        case .hrv: hrv != nil
+        }
+    }
+
+    func state(of tile: DashboardTile, access: HealthAccess, isFirstSync: Bool) -> TileState {
+        TileState.resolve(hasValue: hasValue(tile), usesHealth: tile.usesHealth, access: access, isFirstSync: isFirstSync)
+    }
+
+    private static func values(_ rows: [DailyHealthMetrics], _ key: KeyPath<DailyHealthMetrics, Double?>) -> [LocalDay: Double] {
+        var result: [LocalDay: Double] = [:]
+        for row in rows {
+            if let value = row[keyPath: key] {
+                result[row.day] = value
+            }
+        }
+        return result
+    }
+}
+
+// MARK: - Detail history
+
+/// One day in a tile's detail list.
+struct TileHistoryRow: Equatable, Identifiable {
+    var day: LocalDay
+    /// nil: no value that day.
+    var value: String?
+    var detail: String?
+
+    var id: LocalDay {
+        day
+    }
+}
+
+/// The last days of one tile, newest first (the detail screen; charts come in phase 3).
+enum TileHistory {
+    static let days = 14
+
+    /// - Parameters:
+    ///   - kcalByDay: diary energy per day (only for `.energy`).
+    ///   - loggedWaterByDay: water logged in Nutrilog per day (only for `.water`).
+    static func rows(
+        for tile: DashboardTile,
+        data: DashboardData,
+        kcalByDay: [LocalDay: Double] = [:],
+        loggedWaterByDay: [LocalDay: Double] = [:],
+        energyUnit: EnergyUnit = .kcal,
+        calendar: Calendar = .current,
+    ) -> [TileHistoryRow] {
+        let snapshot = DashboardSnapshot(data, calendar: calendar)
+        let metrics = Dictionary(data.metrics.map { ($0.day, $0.metrics) }) { first, _ in first }
+        let weights = Dictionary(snapshot.dayWeights.map { ($0.day, $0) }) { first, _ in first }
+        var weightByDay: [LocalDay: Double] = [:]
+        for (day, weight) in weights {
+            if let kg = weight.kg {
+                weightByDay[day] = kg
+            }
+        }
+        let trend = WeightTrend.ema(weightByDay, through: data.today)
+        return (0 ..< days).map { offset in
+            let day = data.today.adding(days: -offset)
+            let row = metrics[day]
+            switch tile {
+            case .energy:
+                let kcal = kcalByDay[day]
+                return TileHistoryRow(day: day, value: kcal.map { energyUnit.format($0) })
+            case .steps:
+                return TileHistoryRow(day: day, value: row?.steps.map { "\($0.formatted()) steps" })
+            case .sleep:
+                let asleep = row?.sleepAsleepMin ?? row?.sleepInBedMin
+                return TileHistoryRow(day: day, value: asleep.map(DashboardFormat.duration), detail: row.flatMap(DashboardFormat.stages))
+            case .weight:
+                let weight = weights[day]
+                let kg = weight?.kg
+                return TileHistoryRow(
+                    day: day,
+                    value: kg.map(DashboardFormat.kg),
+                    detail: kg == nil ? nil : [
+                        trend[day].map { "Trend \(DashboardFormat.kg($0))" },
+                        weight?.isManual == true ? "Entered in Nutrilog" : nil,
+                    ].compactMap(\.self).joined(separator: " · "),
+                )
+            case .bodyFat:
+                return TileHistoryRow(day: day, value: weights[day]?.bodyFatPct.map(DashboardFormat.percent))
+            case .activeEnergy:
+                return TileHistoryRow(day: day, value: row?.activeKcal.map { energyUnit.format($0) })
+            case .restingHeartRate:
+                return TileHistoryRow(day: day, value: row?.restingHR.map(DashboardFormat.bpm))
+            case .hrv:
+                return TileHistoryRow(day: day, value: row?.hrvSDNNms.map(DashboardFormat.ms))
+            case .water:
+                let logged = loggedWaterByDay[day] ?? 0
+                let other = row?.waterMl ?? 0
+                let total = logged + other
+                return TileHistoryRow(
+                    day: day,
+                    value: total > 0 ? DashboardFormat.ml(total) : nil,
+                    detail: other > 0 && logged > 0 ? "\(DashboardFormat.ml(logged)) in Nutrilog, \(DashboardFormat.ml(other)) from other apps" : nil,
+                )
+            }
+        }
+    }
+}
+
+// MARK: - Formatting
+
+enum DashboardFormat {
+    /// "7 h 05 min", "45 min".
+    static func duration(_ minutes: Int) -> String {
+        let hours = minutes / 60
+        let rest = minutes % 60
+        guard hours > 0 else { return "\(rest) min" }
+        return "\(hours) h \(String(format: "%02d", rest)) min"
+    }
+
+    /// "Core 3 h 30 min · Deep 1 h 15 min · REM 1 h 40 min · Awake 10 min"; nil without stages.
+    static func stages(_ metrics: DailyHealthMetrics) -> String? {
+        let parts: [(String, Int?)] = [
+            ("Core", metrics.sleepCoreMin), ("Deep", metrics.sleepDeepMin), ("REM", metrics.sleepRemMin), ("Awake", metrics.sleepAwakeMin),
+        ]
+        let text = parts.compactMap { name, minutes in minutes.map { "\(name) \(duration($0))" } }
+        return text.isEmpty ? nil : text.joined(separator: " · ")
+    }
+
+    static func kg(_ value: Double) -> String {
+        "\(value.formatted(.number.precision(.fractionLength(1)))) kg"
+    }
+
+    /// "−0.4 kg", "+0.2 kg", "±0.0 kg".
+    static func kgChange(_ value: Double) -> String {
+        let rounded = (value * 10).rounded() / 10
+        let sign = rounded > 0 ? "+" : rounded < 0 ? "−" : "±"
+        return "\(sign)\(abs(rounded).formatted(.number.precision(.fractionLength(1)))) kg"
+    }
+
+    static func percent(_ value: Double) -> String {
+        "\(value.formatted(.number.precision(.fractionLength(1)))) %"
+    }
+
+    static func bpm(_ value: Double) -> String {
+        "\(value.formatted(.number.precision(.fractionLength(0)))) bpm"
+    }
+
+    static func ms(_ value: Double) -> String {
+        "\(value.formatted(.number.precision(.fractionLength(0)))) ms"
+    }
+
+    static func ml(_ value: Double) -> String {
+        "\(value.formatted(.number.precision(.fractionLength(0)))) ml"
+    }
+}

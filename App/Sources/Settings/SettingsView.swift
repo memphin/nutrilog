@@ -29,6 +29,7 @@ struct SettingsView: View {
                         LabeledContent("Daily water goal", value: "\(Int(waterGoal)) ml")
                     }
                     .onChange(of: waterGoal) { saveWaterGoal() }
+                    NavigationLink("Water quick-add sizes") { WaterSettingsView() }
                 }
 
                 Section {

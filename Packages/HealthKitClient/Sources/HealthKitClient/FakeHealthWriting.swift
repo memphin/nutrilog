@@ -4,8 +4,8 @@ import Synchronization
 
 /// In-memory `HealthWriting` for tests and previews. Keeps the samples "in Health" and records every call.
 ///
-/// With `mirror`, saved water samples also appear in that fake's `dietaryWater` data under `source` (and vanish
-/// when deleted), like the real store: a test can then check that water Nutrilog wrote is not read back as water
+/// With `mirror`, saved water, weight and body fat samples also appear in that fake's data under `source` (and
+/// vanish when deleted), like the real store: a test can then check that what Nutrilog wrote is not read back as data
 /// from other apps.
 public final class FakeHealthWriter: HealthWriting {
     public struct StoredSample: Hashable, Sendable {
@@ -81,8 +81,15 @@ public final class FakeHealthWriter: HealthWriting {
             state.samples += stored
             return stored
         }
-        for sample in stored where sample.draft.type == .dietaryWater {
-            mirror?.update { $0.cumulativeSamples[.dietaryWater, default: []].append(mirrored(sample.draft)) }
+        for sample in stored {
+            let value = mirrored(sample.draft)
+            mirror?.update { state in
+                if sample.draft.type == .dietaryWater {
+                    state.cumulativeSamples[.dietaryWater, default: []].append(value)
+                } else if let metric = Self.sampledMetric(sample.draft.type) {
+                    state.samples[metric, default: []].append(value)
+                }
+            }
         }
         return stored.map(\.uuid)
     }
@@ -102,15 +109,29 @@ public final class FakeHealthWriter: HealthWriting {
             state.samples.removeAll { $0.draft.externalID == externalID && types.contains($0.draft.type) }
             return removed
         }
-        for sample in removed where sample.draft.type == .dietaryWater {
+        for sample in removed {
             let value = mirrored(sample.draft)
             mirror?.update { state in
-                if let index = state.cumulativeSamples[.dietaryWater]?.firstIndex(of: value) {
-                    state.cumulativeSamples[.dietaryWater]?.remove(at: index)
+                if sample.draft.type == .dietaryWater {
+                    if let index = state.cumulativeSamples[.dietaryWater]?.firstIndex(of: value) {
+                        state.cumulativeSamples[.dietaryWater]?.remove(at: index)
+                    }
+                } else if let metric = Self.sampledMetric(sample.draft.type),
+                          let index = state.samples[metric]?.firstIndex(of: value)
+                {
+                    state.samples[metric]?.remove(at: index)
                 }
             }
         }
         return removed.count
+    }
+
+    private static func sampledMetric(_ type: HealthWriteType) -> SampledMetric? {
+        switch type {
+        case .bodyMass: .bodyMass
+        case .bodyFatPercentage: .bodyFatPercentage
+        default: nil
+        }
     }
 
     private func mirrored(_ draft: HealthSampleDraft) -> HealthQuantitySample {

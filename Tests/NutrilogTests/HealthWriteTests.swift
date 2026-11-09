@@ -216,7 +216,8 @@ struct HealthWriteServiceTests {
 
         // A new service reads the persisted setting.
         let reloaded = try HealthWriteService(
-            writer: writer, links: links, diary: diary, water: #require(env.water), settings: #require(env.profiles),
+            writer: writer, links: links, diary: diary, water: #require(env.water), weights: #require(env.weights),
+            settings: #require(env.profiles),
         )
         #expect(!reloaded.isEnabled)
 

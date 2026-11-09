@@ -28,6 +28,8 @@ public final class FakeHealthDataSource: HealthDataSource {
         /// have succeeded — e.g. 1 lets the first backfill chunk through and fails the next.
         public var fetchError: (any Error & Sendable)?
         public var fetchErrorAfter = 0
+        /// Awaited at the start of every `fetchDailyData` — lets a test hold a sync in flight.
+        public var beforeFetch: (@Sendable () async -> Void)?
         // Recorded calls, for assertions.
         public var authorizationRequestCount = 0
         public var fetchedRanges: [ClosedRange<LocalDay>] = []
@@ -82,6 +84,9 @@ public final class FakeHealthDataSource: HealthDataSource {
 
     public func fetchDailyData(for days: ClosedRange<LocalDay>, calendar: Calendar) async throws -> HealthDataBatch {
         guard isAvailable else { throw HealthDataError.unavailable }
+        if let beforeFetch = snapshot.beforeFetch {
+            await beforeFetch()
+        }
         let state = state.withLock { state in
             state.fetchedRanges.append(days)
             state.fetchedTimeZones.append(calendar.timeZone)

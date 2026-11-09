@@ -45,7 +45,7 @@ final class AppEnvironment {
     private(set) var usda: any USDAClient
     /// The key `usda` was built with.
     private var usdaKey: String?
-    /// Writes diary and water entries to Health (backlog #27); nil when the database could not be opened.
+    /// Writes diary, water and manual weight entries to Health (backlog #27, #29); nil when the database could not be opened.
     let healthWrites: HealthWriteService?
 
     /// Display preference (Settings → Units); persisted in the `setting` table. Change it with `setEnergyUnit(_:)`.
@@ -92,6 +92,7 @@ final class AppEnvironment {
                 links: HealthKitLinkRepository(db, clock: clock),
                 diary: DiaryRepository(db, clock: clock),
                 water: WaterRepository(db, clock: clock),
+                weights: WeightRepository(db, clock: clock),
                 settings: ProfileRepository(db, clock: clock),
                 clock: clock,
             )

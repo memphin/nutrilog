@@ -70,6 +70,9 @@ struct RootView: View {
 
     private var tabs: some View {
         TabView {
+            Tab("Today", systemImage: "square.grid.2x2") {
+                DashboardView()
+            }
             Tab("Diary", systemImage: "book.pages") {
                 DiaryView()
             }

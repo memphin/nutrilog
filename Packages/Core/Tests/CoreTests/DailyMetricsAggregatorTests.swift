@@ -99,7 +99,7 @@ struct DailyMetricsAggregatorTests {
         ])
         let rows = Dictionary(
             uniqueKeysWithValues: DailyMetricsAggregator.aggregate(
-                batch, calendar: zagreb, excludingWaterFrom: ["hr.ivanjuric.nutrilog"],
+                batch, calendar: zagreb, excludingOwnSamplesFrom: ["hr.ivanjuric.nutrilog"],
             ).map { ($0.day, $0) },
         )
         #expect(rows[day("2026-11-08")]?.waterMl == 500)
@@ -120,7 +120,7 @@ struct DailyMetricsAggregatorTests {
                 SourceContribution(source: nutrilog, sum: 600), SourceContribution(source: HealthFixtures.healthApp, sum: 200),
             ])],
         ])
-        let rows = DailyMetricsAggregator.aggregate(batch, calendar: zagreb, excludingWaterFrom: ["app"])
+        let rows = DailyMetricsAggregator.aggregate(batch, calendar: zagreb, excludingOwnSamplesFrom: ["app"])
         #expect(rows.first?.waterMl == 0)
     }
 

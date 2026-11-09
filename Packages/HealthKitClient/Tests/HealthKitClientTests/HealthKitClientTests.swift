@@ -27,7 +27,7 @@ private func at(_ dayString: String, _ hour: Int, _ minute: Int = 0) -> Date {
 struct HealthTypeCatalogTests {
     @Test func `catalog lists the SPEC read and write types`() {
         #expect(HealthReadType.allCases.count == 12)
-        #expect(HealthWriteType.allCases.count == 9)
+        #expect(HealthWriteType.allCases.count == 10)
         #expect(Set(HealthReadType.allCases.compactMap(\.metric)) == Set(HealthMetric.allCases))
         #expect(HealthReadType.allCases.filter { $0.kind == .characteristic } == [.dateOfBirth, .biologicalSex])
         #expect(HealthReadType.allCases.filter { $0.kind == .category } == [.sleepAnalysis])
@@ -80,6 +80,7 @@ struct HealthTypeCatalogTests {
                 .dietarySodium: HKQuantityTypeIdentifier.dietarySodium.rawValue,
                 .dietaryWater: HKQuantityTypeIdentifier.dietaryWater.rawValue,
                 .bodyMass: HKQuantityTypeIdentifier.bodyMass.rawValue,
+                .bodyFatPercentage: HKQuantityTypeIdentifier.bodyFatPercentage.rawValue,
             ]
             for type in HealthWriteType.allCases {
                 #expect(type.identifier == writes[type], "\(type)")

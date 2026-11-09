@@ -4,7 +4,7 @@ import HealthKitClient
 import Observation
 import Persistence
 
-/// Mirrors diary and water entries to Apple Health (backlog #27, FR-43, FR-46).
+/// Mirrors diary, water and manual weight entries to Apple Health (backlog #27, #29, FR-42, FR-43, FR-46).
 ///
 /// How it works:
 /// - The repositories queue every changed row in `healthkit_outbox`, in the same transaction as the change (imports
@@ -28,8 +28,9 @@ import Persistence
 ///   cleanup (samples of entries deleted meanwhile are removed at the next launch or foreground) and writes new
 ///   changes; entries edited while off keep their old values in Health until they are edited again.
 ///
-/// Loop prevention (SPEC §3.4): only `diary_entry` and `water_entry` rows are ever written. Health reads go to
-/// `daily_metrics` only, and `HealthSyncService` leaves Nutrilog's own water out of `daily_metrics.water_ml`.
+/// Loop prevention (SPEC §3.4): only `diary_entry`, `water_entry` and `weight_entry` rows are ever written. Health
+/// reads go to `daily_metrics` only, and `HealthSyncService` leaves Nutrilog's own water, weight and body fat out of
+/// it, so nothing written here is read back as another app's data.
 @MainActor
 @Observable
 final class HealthWriteService {
@@ -40,6 +41,7 @@ final class HealthWriteService {
     private let links: HealthKitLinkRepository
     private let diary: DiaryRepository
     private let water: WaterRepository
+    private let weights: WeightRepository
     private let settings: ProfileRepository
     private let clock: AppClock
     private let calendarProvider: @MainActor () -> Calendar
@@ -63,6 +65,7 @@ final class HealthWriteService {
         links: HealthKitLinkRepository,
         diary: DiaryRepository,
         water: WaterRepository,
+        weights: WeightRepository,
         settings: ProfileRepository,
         clock: AppClock = .system,
         calendar: @escaping @MainActor () -> Calendar = { Calendar.current },
@@ -71,6 +74,7 @@ final class HealthWriteService {
         self.links = links
         self.diary = diary
         self.water = water
+        self.weights = weights
         self.settings = settings
         self.clock = clock
         calendarProvider = calendar
@@ -141,10 +145,17 @@ final class HealthWriteService {
 
     /// The user answered the Health permission sheet: write the rows that were waiting for permission, and queue the
     /// last `lateGrantDays` days' entries that were never written (access granted after logging, without a backfill).
+    /// When body fat writing is allowed, recent weights with body fat but no body-fat sample are queued too (body fat
+    /// was added in an update, after those weights were written).
     func writeAccessDidChange() async {
         if isEnabled {
-            let today = LocalDay.today(calendar: calendarProvider(), now: clock.now())
-            try? links.enqueueUnlinked(since: today.adding(days: -(Self.lateGrantDays - 1)))
+            let calendar = calendarProvider()
+            let today = LocalDay.today(calendar: calendar, now: clock.now())
+            let since = today.adding(days: -(Self.lateGrantDays - 1))
+            _ = try? links.enqueueUnlinked(since: since, calendar: calendar)
+            if writer.isAvailable, await writer.writeAuthorization(for: .bodyFatPercentage) == .authorized {
+                _ = try? links.enqueueWeights(missing: HealthWriteType.bodyFatPercentage.identifier, since: since, calendar: calendar)
+            }
         }
         await drain()
     }
@@ -187,16 +198,13 @@ final class HealthWriteService {
         let statuses = await authorizationStatuses()
         for item in items {
             guard isEnabled else { return } // turned off during the pass: leave everything else alone
-            // Manual weights are not mirrored yet (the weight UI, backlog #29, adds them); leave their samples alone.
-            guard item.ownerTable != .weightEntry else {
-                try? links.complete(item)
-                continue
-            }
             let ownerTypes = Self.types(for: item.ownerTable)
             let allowed = ownerTypes.filter { statuses[$0] == .authorized }
             if allowed.isEmpty {
                 // Not asked yet: keep the row until the user answers (`writeAccessDidChange`). All denied: done.
-                if !ownerTypes.contains(where: { statuses[$0] == .notDetermined }) {
+                // Only the owner's main types count (a weight waits for body mass, not for body fat, which an update
+                // added and which may stay unanswered for a long time).
+                if !Self.holdingTypes(for: item.ownerTable).contains(where: { statuses[$0] == .notDetermined }) {
                     try? links.complete(item)
                 }
                 continue
@@ -252,7 +260,11 @@ final class HealthWriteService {
             let version = HealthSamples.syncVersion(revision: entry.revision, attempt: item.attempts)
             return HealthSamples.water(ml: entry.ml, date: date, externalID: entry.id, version: version)
         case .weightEntry:
-            return nil // not mirrored yet, see `processQueue`
+            guard let entry = try weights.entry(id: item.ownerID), entry.deletedAt == nil else { return nil }
+            let version = HealthSamples.syncVersion(revision: entry.revision, attempt: item.attempts)
+            return HealthSamples.weight(
+                kg: entry.kg, bodyFatPct: entry.bodyFatPct, date: entry.measuredAt, externalID: entry.id, version: version,
+            )
         }
     }
 
@@ -286,8 +298,13 @@ final class HealthWriteService {
         switch owner {
         case .diaryEntry: HealthWriteType.dietaryNutrients
         case .waterEntry: [.dietaryWater]
-        case .weightEntry: [.bodyMass]
+        case .weightEntry: HealthWriteType.body
         }
+    }
+
+    /// While one of these is undetermined and nothing can be written, the row waits for the user's answer.
+    static func holdingTypes(for owner: HealthKitOwner) -> Set<HealthWriteType> {
+        owner == .weightEntry ? [.bodyMass] : types(for: owner)
     }
 
     private func updateCounts() {

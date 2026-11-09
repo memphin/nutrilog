@@ -110,7 +110,7 @@ public struct DataPortability: Sendable {
             }
             for table in Self.tables {
                 guard let rows = file.tables[table] else { continue }
-                let healthOwner = HealthKitOwner(rawValue: table).flatMap { $0 == .weightEntry ? nil : $0 }
+                let healthOwner = HealthKitOwner(rawValue: table)
                 let pkColumns = try db.primaryKey(table).columns
                 let columns = try Set(db.columns(in: table).map(\.name))
                 let hasUpdatedAt = columns.contains("updated_at")

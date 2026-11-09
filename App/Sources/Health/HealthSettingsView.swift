@@ -18,16 +18,13 @@ enum HealthReadStatus: Equatable {
 @MainActor
 @Observable
 final class HealthSettingsModel {
-    private(set) var requestStatus: HealthAuthorizationRequestStatus = .unknown
+    private(set) var isConnected = false
     private(set) var statuses: [HealthReadType: HealthReadStatus] = [:]
 
-    /// The user has answered the permission sheet (or a sync has already run), so statuses are meaningful.
-    var isConnected: Bool {
-        requestStatus == .unnecessary
-    }
-
     func load(environment: AppEnvironment) async {
-        requestStatus = await environment.health.authorizationRequestStatus()
+        // The shared status in `HealthSyncService`, so the dashboard follows a connect made here.
+        await environment.healthSync?.reloadAuthorization()
+        isConnected = environment.healthSync?.isConnected ?? false
         guard isConnected, let repository = environment.dailyMetrics, let sync = environment.healthSync else {
             statuses = [:]
             return
@@ -61,6 +58,7 @@ struct HealthSettingsView: View {
                 }
             } else {
                 connectionSection
+                BodyFatWritePrompt()
                 if let writes = environment.healthWrites {
                     HealthWriteSection(writes: writes)
                 }

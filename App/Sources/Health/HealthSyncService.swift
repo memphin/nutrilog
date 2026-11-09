@@ -15,7 +15,8 @@ import Persistence
 ///   hourly background delivery re-reads the recent days whenever Health changes (a morning weigh-in shows up within
 ///   the hour without opening the app). Every observer completion handler is called by `HealthObserverDispatcher`.
 /// The calendar (time zone) is read at the start of every sync, so day boundaries follow the device.
-/// Water written by Nutrilog itself is left out of `daily_metrics.water_ml` (it lives in `water_entry`).
+/// Water and weights written by Nutrilog itself are left out of `daily_metrics` (they live in `water_entry` and
+/// `weight_entry`).
 @MainActor
 @Observable
 final class HealthSyncService {
@@ -43,7 +44,7 @@ final class HealthSyncService {
 
     let source: any HealthDataSource
     private let observer: (any HealthObserving)?
-    /// Nutrilog's own source in Health; its water is not counted as water from other apps.
+    /// Nutrilog's own source in Health; its water and weights are not counted as data from other apps.
     private let ownBundleIdentifier: String?
     private let metrics: DailyMetricsRepository
     private let settings: ProfileRepository
@@ -55,6 +56,9 @@ final class HealthSyncService {
     private(set) var lastSyncedAt: Date?
     /// When the last full-window sync finished successfully (persisted).
     private(set) var lastFullSyncAt: Date?
+    /// Whether Health would show the permission sheet — the one shared, observable copy (dashboard, Settings). Nil
+    /// until first read; refreshed by `reloadAuthorization()`, `connect()` and every `refresh()`.
+    private(set) var requestStatus: HealthAuthorizationRequestStatus?
     @ObservationIgnored private var running: Task<Void, Never>?
     @ObservationIgnored private var pending: Scope?
     @ObservationIgnored private var dispatcher: HealthObserverDispatcher?
@@ -102,10 +106,31 @@ final class HealthSyncService {
         running != nil
     }
 
+    /// The user has connected Health: they answered the permission sheet, or a full sync completed before. The
+    /// second case covers an update that added new types (Health then reports `.shouldRequest` again): the user is
+    /// still connected, there are just new types to allow.
+    var isConnected: Bool {
+        requestStatus == .unnecessary || isBackfillComplete
+    }
+
+    /// Connected, but Health has types the user was never asked about (added by an app update).
+    var hasNewTypesToAllow: Bool {
+        isBackfillComplete && requestStatus == .shouldRequest
+    }
+
+    /// Re-reads whether Health would show the permission sheet.
+    func reloadAuthorization() async {
+        let status = await source.authorizationRequestStatus()
+        if status != requestStatus {
+            requestStatus = status
+        }
+    }
+
     /// Shows the Health permission sheet (after the onboarding explanation) and returns once the user answered.
     /// The full-window sync then runs in the background; follow it through `phase`.
     func connect() async throws {
         try await source.requestAuthorization()
+        await reloadAuthorization()
         startSync(.full)
         await startObserving()
     }
@@ -157,6 +182,7 @@ final class HealthSyncService {
     /// Does nothing before the user has been asked for access. Returns when the sync has finished.
     func refresh(force: Bool = false) async {
         guard source.isAvailable else { return }
+        await reloadAuthorization()
         if !force {
             guard running == nil else { return await waitForSync() }
             if let lastSyncedAt, clock.now().timeIntervalSince(lastSyncedAt) < Self.minimumRefreshInterval {
@@ -188,7 +214,7 @@ final class HealthSyncService {
         let calendar = calendar ?? calendarProvider()
         let batch = try await source.fetchDailyData(for: days, calendar: calendar)
         let own = ownBundleIdentifier.map { Set([$0]) } ?? []
-        let rows = DailyMetricsAggregator.aggregate(batch, calendar: calendar, excludingWaterFrom: own)
+        let rows = DailyMetricsAggregator.aggregate(batch, calendar: calendar, excludingOwnSamplesFrom: own)
         return try metrics.upsert(rows)
     }
 
