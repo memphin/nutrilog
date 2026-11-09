@@ -1,6 +1,6 @@
 import Foundation
 
-/// Number parsing for Open Food Facts JSON, which sends the same field as a JSON number in one product and as a
+/// Number parsing for food-source JSON. Open Food Facts sends the same field as a JSON number in one product and as a
 /// string in the next ("12.5", "12,5", "< 0.5", "12 g", ""). Nothing here throws or traps: anything unusable is `nil`.
 enum LenientNumber {
     /// The number in `text`, accepting a decimal comma, exponents ("4e-05"), thousands separators ("1.234,5",

@@ -9,6 +9,7 @@ struct SettingsView: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var waterGoal = 2500.0
     @State private var errorMessage: String?
+    @State private var usdaKeyDraft = ""
 
     var body: some View {
         NavigationStack {
@@ -39,13 +40,12 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    LabeledContent(
-                        "USDA FoodData Central",
-                        value: environment.config.usdaAPIKey == nil ? "No key (optional)" : "Key configured",
-                    )
+                    usdaKeyRows
                     NavigationLink("Network access") { NetworkInfoView() }
                 } header: {
                     Text("Food sources")
+                } footer: {
+                    Text(usdaKeyFooter)
                 }
 
                 Section {
@@ -64,6 +64,57 @@ struct SettingsView: View {
             })) {
                 Button("OK", role: .cancel) {}
             } message: { Text(errorMessage ?? "") }
+        }
+    }
+
+    /// "USDA API key": a secure field with Save, or the saved key's status with Remove.
+    @ViewBuilder private var usdaKeyRows: some View {
+        if environment.usdaKeySource == .keychain {
+            LabeledContent("USDA API key", value: "Saved")
+            Button("Remove USDA API key", role: .destructive) { removeUSDAKey() }
+        } else if environment.usdaKeychainUnreadable {
+            // A key may be stored but can't be read yet: don't offer an empty field that looks like "no key".
+            LabeledContent("USDA API key", value: "Keychain locked")
+        } else {
+            SecureField("USDA API key", text: $usdaKeyDraft)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .submitLabel(.done)
+                .onSubmit { saveUSDAKey() }
+            Button("Save USDA API key") { saveUSDAKey() }
+                .disabled(usdaKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        }
+    }
+
+    private var usdaKeyFooter: String {
+        if environment.usdaKeySource != .keychain, environment.usdaKeychainUnreadable {
+            return "If you saved a USDA API key, it can't be read until this iPhone is unlocked. It then loads automatically."
+        }
+        return switch environment.usdaKeySource {
+        case .keychain:
+            "Online USDA FoodData Central search uses your key, stored in this iPhone's Keychain."
+        case .buildConfig:
+            "Online USDA FoodData Central search uses the key built into this version. Save your own to use it instead."
+        case .none:
+            "Optional. With a free key from api.data.gov you can also search USDA FoodData Central online. "
+                + "It's stored only in this iPhone's Keychain."
+        }
+    }
+
+    private func saveUSDAKey() {
+        do {
+            try environment.saveUSDAKey(usdaKeyDraft)
+            usdaKeyDraft = ""
+        } catch {
+            errorMessage = "Couldn't save the USDA API key: \(error.localizedDescription)"
+        }
+    }
+
+    private func removeUSDAKey() {
+        do {
+            try environment.removeUSDAKey()
+        } catch {
+            errorMessage = "Couldn't remove the USDA API key: \(error.localizedDescription)"
         }
     }
 

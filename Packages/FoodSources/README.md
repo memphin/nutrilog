@@ -6,8 +6,19 @@ Open Food Facts client, USDA FDC client, bundled food index, barcode lookup pipe
   allowlist, `User-Agent` from Info.plist `OFFUserAgentContact`, 8 s timeout, 2 retries with backoff,
   `OpenFoodFactsError` (`.notFound` for `status: 0`, `.offline`, …).
 - `OFFFoodMapper`: `OFFProduct` → `FoodDraft` (kcal/kJ, salt → sodium, per-serving scaling, data quality).
+- `USDAClient` (protocol) / `USDAHTTPClient`: FDC `/v1/foods/search` over Foundation, SR Legacy and Branded,
+  optional API key (sent in the `X-Api-Key` header, never in a URL, never in a description or `dump`). Without a
+  key `isAvailable` is false and `search` throws `.missingAPIKey` without a request. HTTP 429 starts a one-hour
+  in-memory cool-down (`rateLimitedUntil`, `USDAError.rateLimited(until:)`); 5xx/dropped connections are retried
+  like OFF.
+- `FDCFoodMapper`: `FDCFood` → `FoodDraft` (`origin = .usda`, `sourceID` = FDC ID) by nutrient ID — energy 1008,
+  else 1062 kJ, else Atwater 2048/2047; protein 1003; fat 1004/1085; carbs 1005/1050; fiber 1079/2033; sugars
+  2000/1063; saturated fat 1258; sodium 1093 — with kcal/kJ and g/mg/µg conversion.
 - `FoodDraft`: neutral, unsaved food; the app converts it to `Persistence.Food` (FoodSources doesn't depend on
   Persistence).
-- `HTTPTransport`: network seam; tests use the OFF JSON fixtures in `Tests/FoodSourcesTests/Fixtures/OFF`.
+- Shared by both clients: `HTTPTransport` (network seam), `HTTPRetryPolicy`, lenient JSON decoding,
+  `NutrientValues` (plausibility rules), `MeasureParser`.
+- Tests use JSON fixtures in `Tests/FoodSourcesTests/Fixtures/OFF` and `Fixtures/USDA` (trimmed real FDC
+  responses captured with `DEMO_KEY`, plus hand-built edge cases in `search_edge_cases.json`).
 
 Run tests: `cd Packages/FoodSources && swift test`

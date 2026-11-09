@@ -1,0 +1,12 @@
+{
+  "totalHits": 0,
+  "currentPage": 0,
+  "totalPages": 0,
+  "foodSearchCriteria": {
+    "dataType": ["Foundation", "SR Legacy", "Branded"],
+    "query": "xyzzyqwerty",
+    "pageNumber": 1,
+    "pageSize": 25
+  },
+  "foods": []
+}

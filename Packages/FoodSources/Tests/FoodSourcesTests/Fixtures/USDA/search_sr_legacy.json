@@ -1,0 +1,99 @@
+{
+  "totalHits": 1,
+  "currentPage": 1,
+  "totalPages": 1,
+  "foodSearchCriteria": {
+    "dataType": [
+      "SR Legacy"
+    ],
+    "query": "apple",
+    "pageNumber": 1,
+    "pageSize": 2
+  },
+  "foods": [
+    {
+      "fdcId": 174988,
+      "description": "Croissants, apple",
+      "dataType": "SR Legacy",
+      "ndbNumber": 18240,
+      "publishedDate": "2019-04-01",
+      "foodCategory": "Baked Products",
+      "score": 271.72873,
+      "foodNutrients": [
+        {
+          "nutrientId": 1062,
+          "nutrientName": "Energy",
+          "nutrientNumber": "268",
+          "unitName": "kJ",
+          "value": 1060.0
+        },
+        {
+          "nutrientId": 1004,
+          "nutrientName": "Total lipid (fat)",
+          "nutrientNumber": "204",
+          "unitName": "G",
+          "value": 8.7
+        },
+        {
+          "nutrientId": 1005,
+          "nutrientName": "Carbohydrate, by difference",
+          "nutrientNumber": "205",
+          "unitName": "G",
+          "derivationCode": "NC",
+          "value": 37.1
+        },
+        {
+          "nutrientId": 1008,
+          "nutrientName": "Energy",
+          "nutrientNumber": "208",
+          "unitName": "KCAL",
+          "derivationCode": "NC",
+          "value": 254
+        },
+        {
+          "nutrientId": 1051,
+          "nutrientName": "Water",
+          "nutrientNumber": "255",
+          "unitName": "G",
+          "value": 45.6
+        },
+        {
+          "nutrientId": 1092,
+          "nutrientName": "Potassium, K",
+          "nutrientNumber": "306",
+          "unitName": "MG",
+          "value": 90.0
+        },
+        {
+          "nutrientId": 1003,
+          "nutrientName": "Protein",
+          "nutrientNumber": "203",
+          "unitName": "G",
+          "value": 7.4
+        },
+        {
+          "nutrientId": 1079,
+          "nutrientName": "Fiber, total dietary",
+          "nutrientNumber": "291",
+          "unitName": "G",
+          "value": 2.5
+        },
+        {
+          "nutrientId": 1093,
+          "nutrientName": "Sodium, Na",
+          "nutrientNumber": "307",
+          "unitName": "MG",
+          "value": 274
+        },
+        {
+          "nutrientId": 1258,
+          "nutrientName": "Fatty acids, total saturated",
+          "nutrientNumber": "606",
+          "unitName": "G",
+          "derivationCode": "FLA",
+          "value": 4.99
+        }
+      ]
+    }
+  ]
+}
