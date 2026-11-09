@@ -15,7 +15,8 @@ import Persistence
 ///   hourly background delivery re-reads the recent days whenever Health changes (a morning weigh-in shows up within
 ///   the hour without opening the app). Every observer completion handler is called by `HealthObserverDispatcher`.
 /// The calendar (time zone) is read at the start of every sync, so day boundaries follow the device.
-/// Water written by Nutrilog itself is left out of `daily_metrics.water_ml` (it lives in `water_entry`).
+/// Water and weights written by Nutrilog itself are left out of `daily_metrics` (they live in `water_entry` and
+/// `weight_entry`).
 @MainActor
 @Observable
 final class HealthSyncService {
@@ -43,7 +44,7 @@ final class HealthSyncService {
 
     let source: any HealthDataSource
     private let observer: (any HealthObserving)?
-    /// Nutrilog's own source in Health; its water is not counted as water from other apps.
+    /// Nutrilog's own source in Health; its water and weights are not counted as data from other apps.
     private let ownBundleIdentifier: String?
     private let metrics: DailyMetricsRepository
     private let settings: ProfileRepository
@@ -188,7 +189,7 @@ final class HealthSyncService {
         let calendar = calendar ?? calendarProvider()
         let batch = try await source.fetchDailyData(for: days, calendar: calendar)
         let own = ownBundleIdentifier.map { Set([$0]) } ?? []
-        let rows = DailyMetricsAggregator.aggregate(batch, calendar: calendar, excludingWaterFrom: own)
+        let rows = DailyMetricsAggregator.aggregate(batch, calendar: calendar, excludingOwnSamplesFrom: own)
         return try metrics.upsert(rows)
     }
 

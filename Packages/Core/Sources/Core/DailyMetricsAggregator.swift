@@ -12,7 +12,8 @@ public struct DailyHealthMetrics: Hashable, Sendable, Codable {
     public var sleepDeepMin: Int?
     public var sleepRemMin: Int?
     public var sleepAwakeMin: Int?
-    /// First weigh-in of the day.
+    /// First weigh-in of the day from *other* sources: weights Nutrilog wrote itself (manual entries) are excluded,
+    /// they live in `weight_entry` and `WeightReconciler` merges both.
     public var weightKg: Double?
     /// Body fat in percent (18.5), from the same measurement as the weight when there is one.
     public var bodyFatPct: Double?
@@ -20,7 +21,7 @@ public struct DailyHealthMetrics: Hashable, Sendable, Codable {
     /// Average SDNN of the samples taken 00:00–09:00.
     public var hrvSDNNms: Double?
     /// Water logged in Health by *other* apps. Water Nutrilog wrote itself is excluded (see
-    /// `DailyMetricsAggregator.aggregate(_:calendar:excludingWaterFrom:)`): it lives in `water_entry`, and the day's
+    /// `DailyMetricsAggregator.aggregate(_:calendar:excludingOwnSamplesFrom:)`): it lives in `water_entry`, and the day's
     /// total is `water_entry` + this value, so nothing is counted twice whether or not writing to Health is on.
     public var waterMl: Double?
     /// Name of the source that provided each metric, e.g. [.steps: "Ivan's Apple Watch", .weight: "Withings"].
@@ -137,20 +138,23 @@ public extension DailyHealthMetrics {
 /// - Resting heart rate: the latest sample of the day from the highest-priority source (Apple Watch first).
 /// - HRV: the average of the samples taken 00:00–09:00, Apple Watch samples only when there are any.
 /// - Sleep: `SleepAggregator` for the night ending on the day.
-/// - Water: as the cumulative metrics, minus the water written by the sources in `excludingWaterFrom` (Nutrilog
+/// - Water: as the cumulative metrics, minus the water written by the sources in `excludingOwnSamplesFrom` (Nutrilog
 ///   itself), so water the app logged and wrote to Health is not counted twice (SPEC §3.4 write loops, FR-46).
+/// - Weight and body fat written by those sources (manual weights, FR-42) are ignored the same way: they live in
+///   `weight_entry`, and `WeightReconciler` merges them with the values read here.
 public enum DailyMetricsAggregator {
     /// HRV counts samples from midnight until this hour (overnight average).
     public static let hrvWindowEndHour = 9
     /// Body fat taken this close to the weight, by the same source, is treated as the same measurement.
     public static let sameMeasurementTolerance: TimeInterval = 5 * 60
 
-    /// - Parameter excludingWaterFrom: bundle identifiers whose `dietaryWater` contribution is subtracted —
-    ///   Nutrilog's own, so water the app logged (and wrote to Health) is not read back as "other apps' water".
+    /// - Parameter excludingOwnSamplesFrom: bundle identifiers whose `dietaryWater` contribution is subtracted and
+    ///   whose weight and body fat samples are ignored — Nutrilog's own, so what the app logged (and wrote to Health)
+    ///   is not read back as data from other apps.
     public static func aggregate(
         _ batch: HealthDataBatch,
         calendar: Calendar = .current,
-        excludingWaterFrom excludedSources: Set<String> = [],
+        excludingOwnSamplesFrom excludedSources: Set<String> = [],
     ) -> [DailyHealthMetrics] {
         let plan = HealthFetchPlan(days: batch.days, calendar: calendar)
         var days: [LocalDay: DailyHealthMetrics] = [:]
@@ -162,8 +166,12 @@ public enum DailyMetricsAggregator {
             apply(metric, statistics: statistics, plan: plan, excluding: metric == .dietaryWater ? excludedSources : [], to: &days)
         }
 
-        let samplesByDay = batch.samples.mapValues { samples in
-            Dictionary(grouping: samples) { plan.day(containing: $0.start) }
+        let ownBody: Set<SampledMetric> = [.bodyMass, .bodyFatPercentage]
+        let samplesByDay = batch.samples.reduce(into: [SampledMetric: [LocalDay?: [HealthQuantitySample]]]()) { result, entry in
+            let samples = ownBody.contains(entry.key)
+                ? entry.value.filter { !excludedSources.contains($0.source.bundleIdentifier) }
+                : entry.value
+            result[entry.key] = Dictionary(grouping: samples) { plan.day(containing: $0.start) }
         }
         for day in plan.allDays {
             let samples = { (metric: SampledMetric) in samplesByDay[metric]?[day] ?? [] }

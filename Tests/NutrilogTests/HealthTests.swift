@@ -358,7 +358,7 @@ struct HealthKitMappingTests {
         }
         #expect(SampledMetric.bodyFatPercentage.valueScale == 100)
         #expect(LiveHealthDataSource.readTypes.count == 12)
-        #expect(LiveHealthDataSource.shareTypes.count == 9)
+        #expect(LiveHealthDataSource.shareTypes.count == 10)
     }
 
     @Test func `sleep values map to stages`() {

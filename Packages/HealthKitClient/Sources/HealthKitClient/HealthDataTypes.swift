@@ -117,6 +117,7 @@ public enum HealthWriteType: String, CaseIterable, Sendable, Identifiable {
     case dietarySodium
     case dietaryWater
     case bodyMass
+    case bodyFatPercentage
 
     public var id: String {
         rawValue
@@ -138,6 +139,7 @@ public enum HealthWriteType: String, CaseIterable, Sendable, Identifiable {
         case .dietarySodium: "Sodium"
         case .dietaryWater: "Water"
         case .bodyMass: "Weight"
+        case .bodyFatPercentage: "Body fat"
         }
     }
 
@@ -152,6 +154,8 @@ public enum HealthWriteType: String, CaseIterable, Sendable, Identifiable {
             "Water you log in Nutrilog."
         case .bodyMass:
             "Only weights you enter by hand in Nutrilog. Weights from your scale are never written back."
+        case .bodyFatPercentage:
+            "Only body fat you enter by hand with a weight in Nutrilog. Values from your scale are never written back."
         }
     }
 }

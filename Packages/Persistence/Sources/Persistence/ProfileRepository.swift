@@ -89,26 +89,16 @@ public struct ProfileRepository: Sendable {
             .fetchOne(db)
     }
 
-    // MARK: Weight (manual fallback until HealthKit arrives in phase 2)
+    // MARK: Weight (see `WeightRepository`)
 
+    /// A manual weigh-in (Profile & targets); queued for Apple Health like every manual weight.
     @discardableResult
     public func addWeight(kg: Double, bodyFatPct: Double? = nil, at date: Date? = nil) throws -> WeightEntry {
-        guard kg > 0, kg < 500 else { throw PersistenceError.validation("weight out of range") }
-        let now = clock.now()
-        return try database.writer.write { db in
-            let entry = WeightEntry(
-                id: newID(), measuredAt: date ?? now, kg: kg, bodyFatPct: bodyFatPct, source: "manual",
-                createdAt: now, updatedAt: now, deletedAt: nil, revision: 1,
-            )
-            try entry.insert(db)
-            return entry
-        }
+        try WeightRepository(database, clock: clock).add(kg: kg, bodyFatPct: bodyFatPct, measuredAt: date)
     }
 
     public func latestWeight() throws -> WeightEntry? {
-        try database.reader.read { db in
-            try WeightEntry.filter(WeightEntry.Columns.deletedAt == nil).order(WeightEntry.Columns.measuredAt.desc).fetchOne(db)
-        }
+        try WeightRepository(database, clock: clock).latest()
     }
 
     // MARK: Settings

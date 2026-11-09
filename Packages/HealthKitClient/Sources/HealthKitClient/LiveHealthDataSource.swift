@@ -226,6 +226,7 @@
             case .dietarySodium: HKQuantityType(.dietarySodium)
             case .dietaryWater: HKQuantityType(.dietaryWater)
             case .bodyMass: HKQuantityType(.bodyMass)
+            case .bodyFatPercentage: HKQuantityType(.bodyFatPercentage)
             }
         }
     }

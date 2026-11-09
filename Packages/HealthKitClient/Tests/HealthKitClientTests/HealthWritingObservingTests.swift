@@ -33,6 +33,18 @@ struct HealthSampleDraftTests {
         #expect(HealthSamples.water(ml: 0, date: date, externalID: "w", version: 1).isEmpty)
     }
 
+    @Test func `weight drafts: body mass, plus body fat when entered`() {
+        let date = Date(timeIntervalSince1970: 0)
+        let both = HealthSamples.weight(kg: 80.5, bodyFatPct: 18.2, date: date, externalID: "k", version: 1001)
+        #expect(both.map(\.type) == [.bodyMass, .bodyFatPercentage])
+        #expect(both.map(\.value) == [80.5, 18.2])
+        #expect(both.allSatisfy { $0.externalID == "k" && $0.version == 1001 && $0.date == date })
+        #expect(HealthSamples.weight(kg: 80, bodyFatPct: nil, date: date, externalID: "k", version: 1).map(\.type) == [.bodyMass])
+        #expect(HealthSamples.weight(kg: 0, bodyFatPct: 20, date: date, externalID: "k", version: 1).isEmpty)
+        #expect(HealthWriteType.body == [.bodyMass, .bodyFatPercentage])
+        #expect(HealthWriteType.bodyFatPercentage.unitSymbol == "%")
+    }
+
     @Test func `sync version grows with every edit and every retry`() {
         #expect(HealthSamples.syncVersion(revision: 1, attempt: 1) == 1001)
         #expect(HealthSamples.syncVersion(revision: 1, attempt: 2) > HealthSamples.syncVersion(revision: 1, attempt: 1))
@@ -76,6 +88,19 @@ struct FakeHealthWriterTests {
         #expect(try await writer.deleteSamples(externalID: "d1", types: [.dietaryProtein]) == 1)
         #expect(writer.snapshot.samples(for: "d1").map(\.type).sorted { $0.rawValue < $1.rawValue }
             == [.dietaryCarbohydrates, .dietaryEnergyConsumed, .dietaryFatTotal])
+    }
+
+    @Test func `mirrors weight and body fat into the fake source`() async throws {
+        let source = FakeHealthDataSource()
+        let writer = FakeHealthWriter(mirror: source)
+        let date = try #require(LocalDay("2026-11-09")?.date(atHour: 7, calendar: zagreb()))
+        _ = try await writer.save(HealthSamples.weight(kg: 80, bodyFatPct: 18, date: date, externalID: "k1", version: 1))
+        #expect(source.snapshot.samples[.bodyMass]?.map(\.value) == [80])
+        #expect(source.snapshot.samples[.bodyFatPercentage]?.map(\.value) == [18])
+        #expect(source.snapshot.samples[.bodyMass]?.first?.source.bundleIdentifier == "hr.ivanjuric.nutrilog")
+        #expect(try await writer.deleteSamples(externalID: "k1", types: HealthWriteType.body) == 2)
+        #expect(source.snapshot.samples[.bodyMass]?.isEmpty == true)
+        #expect(source.snapshot.samples[.bodyFatPercentage]?.isEmpty == true)
     }
 
     @Test func `denied types and injected errors throw`() async {

@@ -12,7 +12,7 @@
             let samples = drafts.map { draft in
                 HKQuantitySample(
                     type: draft.type.quantityType,
-                    quantity: HKQuantity(unit: draft.type.unit, doubleValue: draft.value),
+                    quantity: HKQuantity(unit: draft.type.unit, doubleValue: draft.value * draft.type.valueScale),
                     start: draft.date,
                     end: draft.date,
                     metadata: [
@@ -101,7 +101,13 @@
             case .dietarySodium: .gramUnit(with: .milli)
             case .dietaryWater: .literUnit(with: .milli)
             case .bodyMass: .gramUnit(with: .kilo)
+            case .bodyFatPercentage: .percent()
             }
+        }
+
+        /// Health stores body fat as a fraction (0.182); drafts carry percent (18.2).
+        var valueScale: Double {
+            self == .bodyFatPercentage ? 0.01 : 1
         }
     }
 #endif

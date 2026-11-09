@@ -78,7 +78,7 @@ public struct HealthKitOrphan: Hashable, Sendable {
 
 /// `healthkit_link` and the `healthkit_outbox` queue (backlog #27).
 ///
-/// The repositories that change mirrored rows (`DiaryRepository`, `WaterRepository`) queue them in the same
+/// The repositories that change mirrored rows (`DiaryRepository`, `WaterRepository`, `WeightRepository`) queue them in the same
 /// transaction as the change; the app's Health writer drains the queue after the commit.
 public struct HealthKitLinkRepository: Sendable {
     let database: AppDatabase
@@ -212,21 +212,23 @@ public struct HealthKitLinkRepository: Sendable {
         try database.writer.write { db in _ = try HealthKitOutboxItem.deleteAll(db) }
     }
 
-    /// Queues the active diary and water entries of the days from `since` on that have no Health samples yet — after
+    /// Queues the active diary, water and weight entries from day `since` on that have no Health samples yet — after
     /// write permission was granted, so entries logged shortly before (onboarding skipped, access granted later) are
-    /// written without a full backfill. Returns the number queued.
+    /// written without a full backfill. Weights count from `since`'s midnight in `calendar`. Returns the number queued.
     @discardableResult
-    public func enqueueUnlinked(since day: LocalDay) throws -> Int {
+    public func enqueueUnlinked(since day: LocalDay, calendar: Calendar = .current) throws -> Int {
         let now = clock.now()
+        let start = Timestamp.string(day.startDate(calendar: calendar))
         return try database.writer.write { db in
             var count = 0
-            for owner in [HealthKitOwner.diaryEntry, .waterEntry] {
+            for owner in HealthKitOwner.allCases {
+                let isWeight = owner == .weightEntry
                 let ids = try String.fetchAll(db, sql: """
                 SELECT o.id FROM \(owner.rawValue) o
-                WHERE o.deleted_at IS NULL AND o.day >= ?
+                WHERE o.deleted_at IS NULL AND \(isWeight ? "o.measured_at" : "o.day") >= ?
                 AND NOT EXISTS (SELECT 1 FROM healthkit_link l WHERE l.owner_table = ? AND l.owner_id = o.id)
-                ORDER BY o.day, o.id
-                """, arguments: [day, owner])
+                ORDER BY \(isWeight ? "o.measured_at" : "o.day"), o.id
+                """, arguments: [isWeight ? start : day.isoString, owner])
                 try Self.enqueue(db, owner: owner, ids: ids, now: now)
                 count += ids.count
             }
@@ -277,10 +279,10 @@ public struct HealthKitLinkRepository: Sendable {
         }
     }
 
-    /// Import support: queues every diary / water row that has Health samples (call before a replace wipes the
-    /// links, so samples of rows the backup doesn't have are deleted).
+    /// Import support: queues every diary / water / weight row that has Health samples (call before a replace wipes
+    /// the links, so samples of rows the backup doesn't have are deleted).
     static func enqueueLinkedOwners(_ db: Database, now: Date) throws {
-        for owner in [HealthKitOwner.diaryEntry, .waterEntry] {
+        for owner in HealthKitOwner.allCases {
             let ids = try String.fetchAll(
                 db, sql: "SELECT DISTINCT owner_id FROM healthkit_link WHERE owner_table = ? ORDER BY owner_id", arguments: [owner],
             )
@@ -288,9 +290,9 @@ public struct HealthKitLinkRepository: Sendable {
         }
     }
 
-    /// Import support: queues every active diary / water row (after a replace import).
+    /// Import support: queues every active diary / water / weight row (after a replace import).
     static func enqueueActiveOwners(_ db: Database, now: Date) throws {
-        for owner in [HealthKitOwner.diaryEntry, .waterEntry] {
+        for owner in HealthKitOwner.allCases {
             let ids = try String.fetchAll(
                 db, sql: "SELECT id FROM \(owner.rawValue) WHERE deleted_at IS NULL ORDER BY id",
             )

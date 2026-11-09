@@ -14,6 +14,8 @@
 
         var body: some View {
             switch name {
+            case "dashboard":
+                DashboardView()
             case "addFood":
                 AddFoodView(target: AddTarget(slotID: "breakfast", day: environment.today))
             case "scan":
