@@ -3,10 +3,10 @@ import Synchronization
 import Testing
 @testable import FoodSources
 
-/// OFF v2 JSON payloads in `Fixtures/OFF`, shaped like real responses.
+/// JSON payloads shaped like real responses: OFF v2 in `Fixtures/OFF`, FDC search in `Fixtures/USDA`.
 enum Fixture {
-    static func data(_ name: String) throws -> Data {
-        let url = try #require(Bundle.module.url(forResource: name, withExtension: "json", subdirectory: "Fixtures/OFF"))
+    static func data(_ name: String, in directory: String = "OFF") throws -> Data {
+        let url = try #require(Bundle.module.url(forResource: name, withExtension: "json", subdirectory: "Fixtures/\(directory)"))
         return try Data(contentsOf: url)
     }
 

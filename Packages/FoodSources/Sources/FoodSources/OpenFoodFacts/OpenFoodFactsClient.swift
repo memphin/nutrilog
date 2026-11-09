@@ -44,27 +44,8 @@ public extension OpenFoodFactsClient {
 /// A timeout is not retried — one 8 s wait is enough for someone standing at a shelf — and no connection at all
 /// fails at once with ``OpenFoodFactsError/offline``.
 public struct OpenFoodFactsHTTPClient: OpenFoodFactsClient {
-    public struct RetryPolicy: Hashable, Sendable {
-        /// Extra attempts after the first.
-        public var maxRetries: Int
-        /// Delay before the first retry; doubles for each further retry.
-        public var baseDelay: Duration
-        /// Longest `Retry-After` on HTTP 429 still worth waiting for; longer ones fail with `.rateLimited`.
-        public var maxRetryAfter: Duration
-
-        public init(maxRetries: Int = 2, baseDelay: Duration = .milliseconds(500), maxRetryAfter: Duration = .seconds(2)) {
-            self.maxRetries = maxRetries
-            self.baseDelay = baseDelay
-            self.maxRetryAfter = maxRetryAfter
-        }
-
-        public static let standard = RetryPolicy()
-
-        /// Delay before retry number `retry` (0-based).
-        public func delay(beforeRetry retry: Int) -> Duration {
-            baseDelay * (1 << min(retry, 16))
-        }
-    }
+    /// Kept for source compatibility; the policy is shared with ``USDAHTTPClient``.
+    public typealias RetryPolicy = HTTPRetryPolicy
 
     public static let defaultBaseURL = URL(string: "https://world.openfoodfacts.org")!
     /// Per-request timeout, seconds.
@@ -181,7 +162,7 @@ public struct OpenFoodFactsHTTPClient: OpenFoodFactsClient {
         case 404:
             return .failure(.notFound)
         case 429:
-            guard let retryAfter = Self.retryAfter(response), retryAfter <= retryPolicy.maxRetryAfter else {
+            guard let retryAfter = HTTPFailure.retryAfter(response), retryAfter <= retryPolicy.maxRetryAfter else {
                 return .failure(.rateLimited)
             }
             return .retryable(.rateLimited, retryAfter: retryAfter)
@@ -192,26 +173,12 @@ public struct OpenFoodFactsHTTPClient: OpenFoodFactsClient {
         }
     }
 
-    /// `Retry-After` in seconds; `nil` when absent or an HTTP date (treated as too long to wait).
-    private static func retryAfter(_ response: HTTPURLResponse) -> Duration? {
-        guard let text = response.value(forHTTPHeaderField: "Retry-After")?.trimmingCharacters(in: .whitespaces),
-              let seconds = Int(text), seconds >= 0
-        else {
-            return nil
-        }
-        return .seconds(seconds)
-    }
-
     private static func outcome(_ error: URLError) -> Outcome {
-        switch error.code {
-        case .notConnectedToInternet, .dataNotAllowed, .internationalRoamingOff, .callIsActive:
-            .failure(.offline)
-        case .timedOut:
-            .failure(.timedOut)
-        case .networkConnectionLost, .cannotConnectToHost, .cannotFindHost, .dnsLookupFailed:
-            .retryable(.offline, retryAfter: nil)
-        default:
-            .failure(.network(error.code))
+        switch HTTPFailure.classify(error) {
+        case .offline: .failure(.offline)
+        case .timedOut: .failure(.timedOut)
+        case .connectionDropped: .retryable(.offline, retryAfter: nil)
+        case let .other(code): .failure(.network(code))
         }
     }
 }

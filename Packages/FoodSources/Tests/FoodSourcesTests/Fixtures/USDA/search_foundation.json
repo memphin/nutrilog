@@ -1,0 +1,122 @@
+{
+  "totalHits": 1,
+  "currentPage": 1,
+  "totalPages": 1,
+  "foodSearchCriteria": {
+    "dataType": [
+      "Foundation"
+    ],
+    "query": "apple",
+    "pageNumber": 1,
+    "pageSize": 2
+  },
+  "foods": [
+    {
+      "fdcId": 1750340,
+      "description": "Apples, fuji, with skin, raw",
+      "dataType": "Foundation",
+      "ndbNumber": 9504,
+      "publishedDate": "2020-10-30",
+      "foodCategory": "Fruits and Fruit Juices",
+      "score": 228.65495,
+      "foodNutrients": [
+        {
+          "nutrientId": 1092,
+          "nutrientName": "Potassium, K",
+          "nutrientNumber": "306",
+          "unitName": "MG",
+          "derivationCode": "A",
+          "value": 104
+        },
+        {
+          "nutrientId": 1093,
+          "nutrientName": "Sodium, Na",
+          "nutrientNumber": "307",
+          "unitName": "MG",
+          "derivationCode": "A",
+          "value": 1.01
+        },
+        {
+          "nutrientId": 2000,
+          "nutrientName": "Total Sugars",
+          "nutrientNumber": "269",
+          "unitName": "G",
+          "derivationCode": "A",
+          "value": 13.3
+        },
+        {
+          "nutrientId": 1051,
+          "nutrientName": "Water",
+          "nutrientNumber": "255",
+          "unitName": "G",
+          "derivationCode": "A",
+          "value": 83.6
+        },
+        {
+          "nutrientId": 1004,
+          "nutrientName": "Total lipid (fat)",
+          "nutrientNumber": "204",
+          "unitName": "G",
+          "derivationCode": "A",
+          "value": 0.162
+        },
+        {
+          "nutrientId": 1079,
+          "nutrientName": "Fiber, total dietary",
+          "nutrientNumber": "291",
+          "unitName": "G",
+          "derivationCode": "A",
+          "value": 2.08
+        },
+        {
+          "nutrientId": 1003,
+          "nutrientName": "Protein",
+          "nutrientNumber": "203",
+          "unitName": "G",
+          "derivationCode": "NC",
+          "value": 0.148
+        },
+        {
+          "nutrientId": 1005,
+          "nutrientName": "Carbohydrate, by difference",
+          "nutrientNumber": "205",
+          "unitName": "G",
+          "derivationCode": "NC",
+          "value": 15.7
+        },
+        {
+          "nutrientId": 2047,
+          "nutrientName": "Energy (Atwater General Factors)",
+          "nutrientNumber": "957",
+          "unitName": "KCAL",
+          "derivationCode": "NC",
+          "value": 64.7
+        },
+        {
+          "nutrientId": 2048,
+          "nutrientName": "Energy (Atwater Specific Factors)",
+          "nutrientNumber": "958",
+          "unitName": "KCAL",
+          "derivationCode": "NC",
+          "value": 58.2
+        },
+        {
+          "nutrientId": 1050,
+          "nutrientName": "Carbohydrate, by summation",
+          "nutrientNumber": "205.2",
+          "unitName": "G",
+          "derivationCode": "AS",
+          "value": 15.4
+        },
+        {
+          "nutrientId": 1063,
+          "nutrientName": "Sugars, Total",
+          "nutrientNumber": "269.3",
+          "unitName": "G",
+          "derivationCode": "AS",
+          "value": 13.3
+        }
+      ]
+    }
+  ]
+}

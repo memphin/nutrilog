@@ -15,11 +15,15 @@ struct RootView: View {
                 if phase == .active {
                     environment.refreshToday()
                     Task { await environment.healthSync?.refresh() }
+                    environment.reloadUSDAKey() // the Keychain may have been locked at launch
                 }
             }
             // Midnight, clock changes and time-zone changes move day boundaries: refresh "today" and re-sync Health.
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
                 Task { await environment.systemTimeDidChange() }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.protectedDataDidBecomeAvailableNotification)) { _ in
+                environment.reloadUSDAKey()
             }
             .onReceive(NotificationCenter.default.publisher(for: .NSSystemTimeZoneDidChange).receive(on: DispatchQueue.main)) { _ in
                 Task { await environment.systemTimeDidChange() }

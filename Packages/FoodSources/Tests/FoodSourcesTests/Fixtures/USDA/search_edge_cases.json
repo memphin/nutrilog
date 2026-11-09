@@ -1,0 +1,83 @@
+{
+  "totalHits": 7,
+  "currentPage": 1,
+  "totalPages": 1,
+  "foodSearchCriteria": {
+    "dataType": ["Foundation", "SR Legacy", "Branded"],
+    "query": "edge cases (hand-built in the real search shape)",
+    "pageNumber": 1,
+    "pageSize": 25
+  },
+  "foods": [
+    {
+      "fdcId": 9000001,
+      "description": "ENERGY BAR (kJ energy, sodium in g, sat. fat in mg)",
+      "dataType": "Branded",
+      "gtinUpc": "not-a-barcode",
+      "brandOwner": "Example Foods Inc.",
+      "servingSizeUnit": "GRM",
+      "servingSize": 40.0,
+      "foodNutrients": [
+        { "nutrientId": 1008, "nutrientName": "Energy", "nutrientNumber": "208", "unitName": "kJ", "value": 1673.6 },
+        { "nutrientId": 1003, "nutrientName": "Protein", "nutrientNumber": "203", "unitName": "G", "value": 20.0 },
+        { "nutrientId": 1004, "nutrientName": "Total lipid (fat)", "nutrientNumber": "204", "unitName": "G", "value": 15.0 },
+        { "nutrientId": 1005, "nutrientName": "Carbohydrate, by difference", "nutrientNumber": "205", "unitName": "G", "value": 45.0 },
+        { "nutrientId": 1258, "nutrientName": "Fatty acids, total saturated", "nutrientNumber": "606", "unitName": "MG", "value": 1500 },
+        { "nutrientId": 1093, "nutrientName": "Sodium, Na", "nutrientNumber": "307", "unitName": "G", "value": 0.4 }
+      ]
+    },
+    {
+      "fdcId": "9000002",
+      "description": "Kilojoules only, ids missing, values as strings",
+      "dataType": "SR Legacy",
+      "foodNutrients": [
+        { "nutrientNumber": "268", "nutrientName": "Energy", "unitName": "kJ", "value": "418.4" },
+        { "nutrientNumber": "203", "nutrientName": "Protein", "unitName": "G", "value": "12.5" },
+        { "nutrientNumber": "204", "nutrientName": "Total lipid (fat)", "unitName": "G", "value": "3" },
+        { "nutrientNumber": "205", "nutrientName": "Carbohydrate, by difference", "unitName": "G", "value": "0" },
+        { "nutrientNumber": "307", "nutrientName": "Sodium, Na", "unitName": "IU", "value": "10" }
+      ]
+    },
+    {
+      "description": "No fdcId: dropped",
+      "dataType": "Branded",
+      "foodNutrients": []
+    },
+    {
+      "fdcId": 9000004,
+      "description": "Foundation food with fallback ids only",
+      "dataType": "Foundation",
+      "foodNutrients": [
+        { "nutrientId": 2047, "nutrientName": "Energy (Atwater General Factors)", "nutrientNumber": "957", "unitName": "KCAL", "value": 120.0 },
+        { "nutrientId": 1003, "nutrientName": "Protein", "nutrientNumber": "203", "unitName": "G", "value": 4.0 },
+        { "nutrientId": 1085, "nutrientName": "Total fat (NLEA)", "nutrientNumber": "298", "unitName": "G", "value": 2.5 },
+        { "nutrientId": 1050, "nutrientName": "Carbohydrate, by summation", "nutrientNumber": "205.2", "unitName": "G", "value": 20.0 },
+        { "nutrientId": 2033, "nutrientName": "Total dietary fiber (AOAC 2011.25)", "nutrientNumber": "293", "unitName": "G", "value": 3.0 },
+        { "nutrientId": 1063, "nutrientName": "Sugars, Total", "nutrientNumber": "269.3", "unitName": "G", "value": 1.2 },
+        { "nutrientId": 1093, "nutrientName": "Sodium, Na", "nutrientNumber": "307", "unitName": "MG", "value": 5.0 }
+      ]
+    },
+    {
+      "fdcId": 9000005,
+      "description": "Energy only",
+      "dataType": "Branded",
+      "servingSizeUnit": "ml",
+      "servingSize": 0,
+      "foodNutrients": [
+        { "nutrientId": 1008, "nutrientName": "Energy", "nutrientNumber": "208", "unitName": "KCAL", "value": 42.0 }
+      ]
+    },
+    {
+      "fdcId": 9000006,
+      "description": "Implausible and negative values",
+      "dataType": "Branded",
+      "foodNutrients": [
+        { "nutrientId": 1008, "nutrientName": "Energy", "nutrientNumber": "208", "unitName": "KCAL", "value": 2500.0 },
+        { "nutrientId": 1003, "nutrientName": "Protein", "nutrientNumber": "203", "unitName": "G", "value": -1.0 },
+        { "nutrientId": 1004, "nutrientName": "Total lipid (fat)", "nutrientNumber": "204", "unitName": "G", "value": 10.0 },
+        { "nutrientId": 1005, "nutrientName": "Carbohydrate, by difference", "nutrientNumber": "205", "unitName": "G", "value": null }
+      ]
+    },
+    "not an object"
+  ]
+}

@@ -1,5 +1,6 @@
 import Core
 import FoodLookup
+import FoodSources
 import Foundation
 import HealthKitClient
 import Observation
@@ -22,6 +23,22 @@ final class AppEnvironment {
     let health: any HealthDataSource
     /// Keeps `daily_metrics` in sync with Health; nil when the database could not be opened.
     let healthSync: HealthSyncService?
+    /// Holds the user-entered USDA key (Settings).
+    let usdaKeyStore: any USDAKeyStoring
+
+    /// The app's one USDA 429 cool-down, shared by every client built here. Reset only when the resolved key changes.
+    let usdaRateLimit = USDARateLimit()
+
+    /// Where the USDA key in use comes from. Change it with `saveUSDAKey(_:)` / `removeUSDAKey()`.
+    private(set) var usdaKeySource: USDAKeySource
+    /// True while the Keychain can't be read (e.g. before the first unlock after a reboot). Not the same as "no saved
+    /// key": a key may be stored. `reloadUSDAKey()` retries when the app becomes active or protected data unlocks.
+    private(set) var usdaKeychainUnreadable: Bool
+    /// USDA FoodData Central client for online search (#22). Rebuilt when the resolved key changes; without a key
+    /// `usda.isAvailable` is false and the source is hidden.
+    private(set) var usda: any USDAClient
+    /// The key `usda` was built with.
+    private var usdaKey: String?
 
     /// Display preference (Settings → Units); persisted in the `setting` table. Change it with `setEnergyUnit(_:)`.
     private(set) var energyUnit: EnergyUnit = .kcal
@@ -40,6 +57,7 @@ final class AppEnvironment {
         bundledIndex: BundledFoodIndex?,
         clock: AppClock = .system,
         health: any HealthDataSource = FakeHealthDataSource(isAvailable: false),
+        usdaKeyStore: any USDAKeyStoring = InMemoryUSDAKeyStore(),
     ) {
         self.database = database
         self.config = config
@@ -56,6 +74,12 @@ final class AppEnvironment {
         } else {
             healthSync = nil
         }
+        self.usdaKeyStore = usdaKeyStore
+        let resolved = Self.resolveUSDAKey(store: usdaKeyStore, config: config)
+        usdaKeySource = resolved.source
+        usdaKeychainUnreadable = resolved.unreadable
+        usdaKey = resolved.key
+        usda = USDAHTTPClient(apiKey: resolved.key, rateLimit: usdaRateLimit)
         today = LocalDay.today(now: clock.now())
         try? reloadSettings() // unreadable settings fall back to the defaults
     }
@@ -135,6 +159,55 @@ final class AppEnvironment {
         energyUnit = raw.flatMap(EnergyUnit.init(rawValue:)) ?? .kcal
     }
 
+    /// Saves a user-entered USDA key in the Keychain; it then wins over the build-config key. Blank keys are ignored.
+    func saveUSDAKey(_ key: String) throws {
+        let key = key.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !key.isEmpty else { return }
+        try usdaKeyStore.save(key)
+        reloadUSDAKey()
+    }
+
+    /// Removes the user-entered USDA key; the build-config key (if any) applies again.
+    func removeUSDAKey() throws {
+        try usdaKeyStore.delete()
+        reloadUSDAKey()
+    }
+
+    /// Re-reads the Keychain and re-resolves the USDA key (Keychain, then build config, then none). The client and
+    /// its cool-down are kept when the key is unchanged; a different key gets a new client and a reset cool-down.
+    /// Called on launch, after Save/Remove, when the app becomes active and when protected data becomes available.
+    func reloadUSDAKey() {
+        let resolved = Self.resolveUSDAKey(store: usdaKeyStore, config: config)
+        if usdaKeySource != resolved.source {
+            usdaKeySource = resolved.source
+        }
+        if usdaKeychainUnreadable != resolved.unreadable {
+            usdaKeychainUnreadable = resolved.unreadable
+        }
+        guard resolved.key != usdaKey else { return }
+        usdaKey = resolved.key
+        usdaRateLimit.reset()
+        usda = USDAHTTPClient(apiKey: resolved.key, rateLimit: usdaRateLimit)
+    }
+
+    /// An unreadable Keychain falls back to the build-config key and is reported as `unreadable`.
+    private static func resolveUSDAKey(
+        store: any USDAKeyStoring,
+        config: AppConfig,
+    ) -> (key: String?, source: USDAKeySource, unreadable: Bool) {
+        let saved: String?
+        let unreadable: Bool
+        do {
+            saved = try store.load()
+            unreadable = false
+        } catch {
+            saved = nil
+            unreadable = true
+        }
+        let resolved = USDAKeySource.resolve(saved: saved, buildConfig: config.usdaAPIKey)
+        return (resolved.key, resolved.source, unreadable)
+    }
+
     /// Call after an import replaced or merged data: invalidates pending undo actions and reloads cached settings.
     func dataDidChangeExternally() throws {
         dataGeneration += 1
@@ -163,6 +236,7 @@ final class AppEnvironment {
             config: AppConfig(bundle: bundle),
             bundledIndex: BundledFoodIndex.inBundle(bundle),
             health: LiveHealthDataSource(),
+            usdaKeyStore: KeychainUSDAKeyStore(),
         )
     }
 
@@ -220,6 +294,31 @@ final class AppEnvironment {
             effectiveFrom: today.adding(days: -30), kcal: 2200,
             macros: MacroTargets(proteinG: 160, carbsG: 220, fatG: 75), origin: .manual,
         ))
+    }
+}
+
+/// Where the USDA FoodData Central key in use comes from (ADR-0004). The Keychain key wins over the build-config one.
+enum USDAKeySource: Equatable {
+    /// Entered by the user in Settings.
+    case keychain
+    /// `USDA_FDC_API_KEY` from Config/Secrets.xcconfig, via Info.plist `USDAFDCAPIKey`.
+    case buildConfig
+    /// No key: online USDA search is unavailable; the app works with the bundled foods and Open Food Facts.
+    case none
+
+    /// The key to use and its source: `saved`, else `buildConfig`, else none. Blank keys count as missing.
+    static func resolve(saved: String?, buildConfig: String?) -> (key: String?, source: USDAKeySource) {
+        func usable(_ key: String?) -> String? {
+            guard let key = key?.trimmingCharacters(in: .whitespacesAndNewlines), !key.isEmpty else { return nil }
+            return key
+        }
+        if let key = usable(saved) {
+            return (key, .keychain)
+        }
+        if let key = usable(buildConfig) {
+            return (key, .buildConfig)
+        }
+        return (nil, .none)
     }
 }
 

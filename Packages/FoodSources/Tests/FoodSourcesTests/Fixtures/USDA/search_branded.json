@@ -1,0 +1,259 @@
+{
+  "totalHits": 3,
+  "currentPage": 1,
+  "totalPages": 1,
+  "foodSearchCriteria": {
+    "dataType": [
+      "Branded"
+    ],
+    "query": "apple",
+    "pageNumber": 1,
+    "pageSize": 2
+  },
+  "foods": [
+    {
+      "fdcId": 454004,
+      "description": "APPLE",
+      "dataType": "Branded",
+      "gtinUpc": "867824000001",
+      "publishedDate": "2019-04-01",
+      "brandOwner": "TREECRISP 2 GO",
+      "ingredients": "CRISP APPLE.",
+      "foodCategory": "Pre-Packaged Fruit & Vegetables",
+      "servingSizeUnit": "g",
+      "servingSize": 154.0,
+      "householdServingFullText": "5.5 ONZ",
+      "score": 821.32935,
+      "foodNutrients": [
+        {
+          "nutrientId": 1093,
+          "nutrientName": "Sodium, Na",
+          "nutrientNumber": "307",
+          "unitName": "MG",
+          "derivationCode": "LCCD",
+          "value": 0.0
+        },
+        {
+          "nutrientId": 1258,
+          "nutrientName": "Fatty acids, total saturated",
+          "nutrientNumber": "606",
+          "unitName": "G",
+          "derivationCode": "LCCD",
+          "value": 0.0
+        },
+        {
+          "nutrientId": 1003,
+          "nutrientName": "Protein",
+          "nutrientNumber": "203",
+          "unitName": "G",
+          "derivationCode": "LCCS",
+          "value": 0.0
+        },
+        {
+          "nutrientId": 1005,
+          "nutrientName": "Carbohydrate, by difference",
+          "nutrientNumber": "205",
+          "unitName": "G",
+          "derivationCode": "LCCS",
+          "value": 14.3
+        },
+        {
+          "nutrientId": 1008,
+          "nutrientName": "Energy",
+          "nutrientNumber": "208",
+          "unitName": "KCAL",
+          "derivationCode": "LCCS",
+          "value": 52.0
+        },
+        {
+          "nutrientId": 2000,
+          "nutrientName": "Total Sugars",
+          "nutrientNumber": "269",
+          "unitName": "G",
+          "derivationCode": "LCCS",
+          "value": 10.4
+        },
+        {
+          "nutrientId": 1079,
+          "nutrientName": "Fiber, total dietary",
+          "nutrientNumber": "291",
+          "unitName": "G",
+          "derivationCode": "LCCS",
+          "value": 3.2
+        },
+        {
+          "nutrientId": 1092,
+          "nutrientName": "Potassium, K",
+          "nutrientNumber": "306",
+          "unitName": "MG",
+          "derivationCode": "LCCS",
+          "value": 110
+        },
+        {
+          "nutrientId": 1004,
+          "nutrientName": "Total lipid (fat)",
+          "nutrientNumber": "204",
+          "unitName": "G",
+          "derivationCode": "LCSL",
+          "value": 0.65
+        }
+      ]
+    },
+    {
+      "fdcId": 2117388,
+      "description": "APPLE",
+      "dataType": "Branded",
+      "gtinUpc": "070038322238",
+      "publishedDate": "2021-10-28",
+      "brandOwner": "Associated Wholesale Grocers, Inc.",
+      "brandName": "BEST CHOICE",
+      "ingredients": "FILTERED WATER, APPLE JUICE CONCENTRATE, ASCORBIC ACID (VITAMIN C).",
+      "foodCategory": "Fruit & Vegetable Juice, Nectars & Fruit Drinks",
+      "packageWeight": "64 fl oz/2 Quart/1.89 L",
+      "servingSizeUnit": "ml",
+      "servingSize": 240.0,
+      "householdServingFullText": "8 OZA",
+      "score": 821.32935,
+      "foodNutrients": [
+        {
+          "nutrientId": 1003,
+          "nutrientName": "Protein",
+          "nutrientNumber": "203",
+          "unitName": "G",
+          "derivationCode": "LCCS",
+          "value": 0.0
+        },
+        {
+          "nutrientId": 1004,
+          "nutrientName": "Total lipid (fat)",
+          "nutrientNumber": "204",
+          "unitName": "G",
+          "derivationCode": "LCCD",
+          "value": 0.0
+        },
+        {
+          "nutrientId": 1005,
+          "nutrientName": "Carbohydrate, by difference",
+          "nutrientNumber": "205",
+          "unitName": "G",
+          "derivationCode": "LCCS",
+          "value": 11.7
+        },
+        {
+          "nutrientId": 1008,
+          "nutrientName": "Energy",
+          "nutrientNumber": "208",
+          "unitName": "KCAL",
+          "derivationCode": "LCCS",
+          "value": 46.0
+        },
+        {
+          "nutrientId": 2000,
+          "nutrientName": "Total Sugars",
+          "nutrientNumber": "269",
+          "unitName": "G",
+          "derivationCode": "LCCS",
+          "value": 11.7
+        },
+        {
+          "nutrientId": 1093,
+          "nutrientName": "Sodium, Na",
+          "nutrientNumber": "307",
+          "unitName": "MG",
+          "derivationCode": "LCCS",
+          "value": 15.0
+        }
+      ]
+    },
+    {
+      "fdcId": 2501185,
+      "description": "MILK",
+      "dataType": "Branded",
+      "gtinUpc": "044100146992",
+      "publishedDate": "2023-03-16",
+      "brandOwner": "HP Hood LLC",
+      "brandName": "HOOD",
+      "ingredients": "MILK AND VITAMIN D3.",
+      "foodCategory": "Milk",
+      "packageWeight": "HALF GALLON/1.89 L",
+      "servingSizeUnit": "MLT",
+      "servingSize": 240.0,
+      "householdServingFullText": "1 cup",
+      "score": 548.48975,
+      "foodNutrients": [
+        {
+          "nutrientId": 1003,
+          "nutrientName": "Protein",
+          "nutrientNumber": "203",
+          "unitName": "G",
+          "derivationCode": "LCCS",
+          "value": 3.33
+        },
+        {
+          "nutrientId": 1004,
+          "nutrientName": "Total lipid (fat)",
+          "nutrientNumber": "204",
+          "unitName": "G",
+          "derivationCode": "LCCS",
+          "value": 3.33
+        },
+        {
+          "nutrientId": 1005,
+          "nutrientName": "Carbohydrate, by difference",
+          "nutrientNumber": "205",
+          "unitName": "G",
+          "derivationCode": "LCCS",
+          "value": 5.42
+        },
+        {
+          "nutrientId": 1008,
+          "nutrientName": "Energy",
+          "nutrientNumber": "208",
+          "unitName": "KCAL",
+          "derivationCode": "LCCS",
+          "value": 62.0
+        },
+        {
+          "nutrientId": 2000,
+          "nutrientName": "Total Sugars",
+          "nutrientNumber": "269",
+          "unitName": "G",
+          "derivationCode": "LCCS",
+          "value": 5.0
+        },
+        {
+          "nutrientId": 1079,
+          "nutrientName": "Fiber, total dietary",
+          "nutrientNumber": "291",
+          "unitName": "G",
+          "derivationCode": "LCCS",
+          "value": 0.0
+        },
+        {
+          "nutrientId": 1092,
+          "nutrientName": "Potassium, K",
+          "nutrientNumber": "306",
+          "unitName": "MG",
+          "derivationCode": "LCCS",
+          "value": 167
+        },
+        {
+          "nutrientId": 1093,
+          "nutrientName": "Sodium, Na",
+          "nutrientNumber": "307",
+          "unitName": "MG",
+          "derivationCode": "LCCS",
+          "value": 52.0
+        },
+        {
+          "nutrientId": 1258,
+          "nutrientName": "Fatty acids, total saturated",
+          "nutrientNumber": "606",
+          "unitName": "G",
+          "derivationCode": "LCCS",
+          "value": 2.08
+        }
+      ]
+    }
+  ]
+}
