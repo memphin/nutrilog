@@ -14,6 +14,8 @@ public enum NL {
         public static let water = Color.cyan
         public static let secondaryText = Color.secondary
         public static let track = Color.secondary.opacity(0.18)
+        /// Small trend charts (the dashboard's 7-day sparklines) of metrics without a color of their own.
+        public static let trend = Color.accentColor
     }
 
     // MARK: Spacing (4-pt grid)

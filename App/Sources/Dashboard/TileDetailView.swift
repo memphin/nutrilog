@@ -44,7 +44,9 @@ struct TileDetailView: View {
             } header: {
                 Text("Last \(TileHistory.days) days")
             } footer: {
-                if tile.usesHealth, tile != .water {
+                if tile == .totalEnergy {
+                    Text("Total energy is active plus resting energy from Apple Health. A day with only one of them has no total.")
+                } else if tile.usesHealth, tile != .water {
                     Text("Days without a value had no data in Apple Health — or Nutrilog may not have permission to read it.")
                 }
             }

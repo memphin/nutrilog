@@ -16,18 +16,30 @@ public struct FoodRepository: Sendable {
     // MARK: Writes
 
     /// Inserts a new food (or updates it when `detail.food.id` already exists) with its servings and barcodes.
-    /// Servings missing from `detail.servings` are soft-deleted; barcodes are replaced.
+    /// Servings missing from `detail.servings` are soft-deleted; barcodes are replaced: codes no longer in
+    /// `detail.barcodes` are unlinked, so a scan of them no longer finds this food.
+    ///
+    /// A barcode carried by another *active* food fails with ``PersistenceError/barcodeInUse(barcode:foodID:)``
+    /// unless it is in `movingBarcodes` (normalized codes the user agreed to move here, see ``activeOwners(of:excluding:)``);
+    /// it is then unlinked from that food, which gets a new `updated_at`. Codes of deleted foods are always taken over.
     @discardableResult
-    public func save(_ detail: FoodDetail) throws -> FoodDetail {
+    public func save(_ detail: FoodDetail, movingBarcodes: Set<String> = []) throws -> FoodDetail {
         let now = clock.now()
         let barcodes = try normalizedBarcodes(detail.barcodes)
         return try database.writer.write { db in
-            try Self.save(db, detail: detail, barcodes: barcodes, now: now)
+            try Self.save(db, detail: detail, barcodes: barcodes, now: now, movingBarcodes: movingBarcodes)
         }
     }
 
-    /// Body of ``save(_:)`` inside a write transaction; `barcodes` are already normalized and deduplicated.
-    private static func save(_ db: Database, detail: FoodDetail, barcodes: [String], now: Date) throws -> FoodDetail {
+    /// Body of ``save(_:movingBarcodes:)`` inside a write transaction; `barcodes` are already normalized and
+    /// deduplicated.
+    private static func save(
+        _ db: Database,
+        detail: FoodDetail,
+        barcodes: [String],
+        now: Date,
+        movingBarcodes: Set<String> = [],
+    ) throws -> FoodDetail {
         var food = detail.food
         if let existing = try Food.fetchOne(db, key: food.id) {
             food.createdAt = existing.createdAt
@@ -76,10 +88,10 @@ public struct FoodRepository: Sendable {
         for code in barcodes {
             if let owner = try FoodBarcode.fetchOne(db, key: code), owner.foodID != food.id {
                 let ownerFood = try Food.fetchOne(db, key: owner.foodID)
-                if ownerFood?.deletedAt == nil {
+                if ownerFood?.deletedAt == nil, !movingBarcodes.contains(code) {
                     throw PersistenceError.barcodeInUse(barcode: code, foodID: owner.foodID)
                 }
-                try Self.takeOver(owner, from: ownerFood, db: db, now: now) // previous owner was deleted
+                try Self.takeOver(owner, from: ownerFood, db: db, now: now) // owner deleted, or the user moves it
             }
         }
         try FoodBarcode.filter(FoodBarcode.Columns.foodID == food.id).deleteAll(db)
@@ -133,6 +145,23 @@ public struct FoodRepository: Sendable {
     public func food(barcodes candidates: [String]) throws -> FoodDetail? {
         guard !candidates.isEmpty else { return nil }
         return try database.reader.read { db in try Self.activeFood(db, barcodes: candidates) }
+    }
+
+    /// Other active foods carrying one of `barcodes` (normalized keys, matched exactly as ``save(_:movingBarcodes:)``
+    /// checks them), in the order of `barcodes`. Lets the editor ask "This barcode is on 'X' — move it here?" before
+    /// saving instead of failing.
+    public func activeOwners(of barcodes: [String], excluding foodID: String?) throws -> [(barcode: String, food: Food)] {
+        guard !barcodes.isEmpty else { return [] }
+        return try database.reader.read { db in
+            var result: [(barcode: String, food: Food)] = []
+            for code in barcodes {
+                guard let link = try FoodBarcode.fetchOne(db, key: code), link.foodID != foodID,
+                      let food = try Food.fetchOne(db, key: link.foodID), food.deletedAt == nil
+                else { continue }
+                result.append((code, food))
+            }
+            return result
+        }
     }
 
     public func favorites() throws -> [Food] {

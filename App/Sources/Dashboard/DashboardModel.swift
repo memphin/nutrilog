@@ -82,7 +82,7 @@ final class DashboardModel {
         await withDiscardingTaskGroup { group in
             group.addTask { await self.observeMetrics() }
             group.addTask { await self.observeWeights() }
-            group.addTask { await self.observeWater(today) }
+            group.addTask { await self.observeWater() }
             group.addTask { await self.observeDiary(today) }
             group.addTask { await self.observeTarget(today) }
             group.addTask { await self.observeWaterGoal() }
@@ -101,9 +101,15 @@ final class DashboardModel {
         await DiaryModel.resubscribing { repo.observeEntries(in: interval) } onValue: { data.manualWeights = $0 } onError: { report($0) }
     }
 
-    private func observeWater(_ day: LocalDay) async {
+    /// One observation for the sparkline's 7 days: today's entries for the tile, daily totals for the chart.
+    private func observeWater() async {
         guard let repo = environment.water else { return }
-        await DiaryModel.resubscribing { repo.observeEntries(for: day) } onValue: { data.water = $0 } onError: { report($0) }
+        let window = data.sparklineWindow
+        let today = data.today
+        await DiaryModel.resubscribing { repo.observeEntries(in: window) } onValue: { entries in
+            data.water = entries.filter { $0.day == today }
+            data.waterByDay = entries.reduce(into: [:]) { $0[$1.day, default: 0] += $1.ml }
+        } onError: { report($0) }
     }
 
     private func observeDiary(_ day: LocalDay) async {

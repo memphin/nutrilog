@@ -32,6 +32,7 @@
 		52BE128D0BBB8486593D5D4F /* DiaryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0AF9328875CE64DEC3A2E2D /* DiaryModel.swift */; };
 		58795C8A1EF5F8C72541211A /* StubOpenFoodFactsSearchClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BE8ACADAC7651CCEC03FF98 /* StubOpenFoodFactsSearchClient.swift */; };
 		5B1199DEB7304FCF88C1FCA8 /* ScanLogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B6E769753521818A47867D1 /* ScanLogTests.swift */; };
+		63A06B0B7E9B7752B3697481 /* Sparkline.swift in Sources */ = {isa = PBXBuildFile; fileRef = B84C37B092BDA62A26DD440E /* Sparkline.swift */; };
 		661D6EAD1085C1AAEF4D1D82 /* HealthWriteService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AA1FF77C30B305B73CDD364 /* HealthWriteService.swift */; };
 		66C6132AFD93ABA6B9FC23AA /* USDAKeyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81B23CAA505BA1C22B5F85C6 /* USDAKeyStore.swift */; };
 		68184A1CAA4FB02029B16A52 /* Scanner in Frameworks */ = {isa = PBXBuildFile; productRef = 1027AC8891CFCD49FA5F02E6 /* Scanner */; };
@@ -49,6 +50,7 @@
 		93F40FAA0B6B8597A92BDF6D /* AddFoodView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0368CFE4A655A4BA30A56CEB /* AddFoodView.swift */; };
 		960B5B0C93D3265331EF5287 /* DiaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A3BD94B01534D020D210090 /* DiaryView.swift */; };
 		97D8EA158C78FF839FF3D240 /* DashboardAccessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = B603731B14753759F3C92555 /* DashboardAccessibility.swift */; };
+		9C8E9E59527A09F6B2B36AA9 /* OwnerFeedbackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 707940AA91A579272CB16AD8 /* OwnerFeedbackTests.swift */; };
 		9E285DA1EA0BB94E3C0ACB63 /* FoodIndex in Resources */ = {isa = PBXBuildFile; fileRef = 75DC5492FDBB333B50430029 /* FoodIndex */; };
 		A35CBFEC41A92533C258D56A /* DebugScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7E75BCA9037F92033C1EC6D /* DebugScreens.swift */; };
 		AB84906D2EDE73BDCC4044B4 /* UndoToast.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B7A03C9A4FE723D7A3BF9C /* UndoToast.swift */; };
@@ -117,6 +119,7 @@
 		6383EA51CBC1C56DC110D389 /* FoodSources */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FoodSources; path = Packages/FoodSources; sourceTree = SOURCE_ROOT; };
 		651FF0CC6361D791D9E4C6D6 /* TileDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TileDetailView.swift; sourceTree = "<group>"; };
 		6859538620DCCBD77A651712 /* OnlineSearchModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnlineSearchModel.swift; sourceTree = "<group>"; };
+		707940AA91A579272CB16AD8 /* OwnerFeedbackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwnerFeedbackTests.swift; sourceTree = "<group>"; };
 		73B40A78D5287C3224F49964 /* ScanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanView.swift; sourceTree = "<group>"; };
 		75DC5492FDBB333B50430029 /* FoodIndex */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FoodIndex; path = Resources/FoodIndex; sourceTree = SOURCE_ROOT; };
 		78333C048891E54051653673 /* FoodsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodsListView.swift; sourceTree = "<group>"; };
@@ -139,6 +142,7 @@
 		B4B4F85583C71529B44494C0 /* WeightEntrySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightEntrySheet.swift; sourceTree = "<group>"; };
 		B603731B14753759F3C92555 /* DashboardAccessibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardAccessibility.swift; sourceTree = "<group>"; };
 		B74262F076BA46E2B4980AFF /* AppEnvironmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironmentTests.swift; sourceTree = "<group>"; };
+		B84C37B092BDA62A26DD440E /* Sparkline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sparkline.swift; sourceTree = "<group>"; };
 		C5474734DF2DBC41E0C59322 /* Scanner */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Scanner; path = Packages/Scanner; sourceTree = SOURCE_ROOT; };
 		CB79B4BE92A3FFCB94D8CA93 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
 		D073557851101D1AD6FABF46 /* AppModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModelTests.swift; sourceTree = "<group>"; };
@@ -239,6 +243,7 @@
 				F87E174607A41B937561E217 /* DashboardSnapshot.swift */,
 				828903692011EC3D30FD2CA5 /* DashboardTiles.swift */,
 				200292DBDEE662CE1C732A6B /* DashboardView.swift */,
+				B84C37B092BDA62A26DD440E /* Sparkline.swift */,
 				651FF0CC6361D791D9E4C6D6 /* TileDetailView.swift */,
 				14DF3C6838FE65C74899D773 /* WaterSettingsView.swift */,
 				B4B4F85583C71529B44494C0 /* WeightEntrySheet.swift */,
@@ -323,6 +328,7 @@
 				61AEE6266270978795C272EF /* HealthTests.swift */,
 				13167937AD97A7A6E63D0C7D /* HealthWriteTests.swift */,
 				8B0E99FA1A1F64A610187439 /* OnlineSearchTests.swift */,
+				707940AA91A579272CB16AD8 /* OwnerFeedbackTests.swift */,
 				40D4DECE786948C76A63B1D1 /* ScanFlowTests.swift */,
 				3B6E769753521818A47867D1 /* ScanLogTests.swift */,
 				DFA022929D750396EDF97E64 /* TestSupport.swift */,
@@ -497,6 +503,7 @@
 				CF7335C7FD8411978B9DBA15 /* HealthTests.swift in Sources */,
 				DEA6ED43ED0C3E0835637019 /* HealthWriteTests.swift in Sources */,
 				D953F9BE2CB9E64FED7766C4 /* OnlineSearchTests.swift in Sources */,
+				9C8E9E59527A09F6B2B36AA9 /* OwnerFeedbackTests.swift in Sources */,
 				85EEBF3444FF4814C5E4CE4F /* ScanFlowTests.swift in Sources */,
 				5B1199DEB7304FCF88C1FCA8 /* ScanLogTests.swift in Sources */,
 				81534A8EE21DC5652C4025F6 /* TestSupport.swift in Sources */,
@@ -545,6 +552,7 @@
 				D87F05CD4E76424EDBB130A7 /* ScanView.swift in Sources */,
 				FCF338A6D394B280390662D4 /* ServingWeightPrompt.swift in Sources */,
 				018E0BAE0593A61F9524CF61 /* SettingsView.swift in Sources */,
+				63A06B0B7E9B7752B3697481 /* Sparkline.swift in Sources */,
 				2B72DF9DC39A4FD532F82AD6 /* StubOpenFoodFactsClient.swift in Sources */,
 				58795C8A1EF5F8C72541211A /* StubOpenFoodFactsSearchClient.swift in Sources */,
 				09BADB1A0BBDC1C88C35C54F /* TargetsModel.swift in Sources */,

@@ -66,7 +66,7 @@ struct DashboardLayoutTests {
         #expect(DashboardLayout.load(from: profiles) == .default)
 
         var layout = DashboardLayout.default
-        layout.move(fromOffsets: [DashboardTile.allCases.firstIndex(of: .weight)!], toOffset: 0)
+        try layout.move(fromOffsets: [#require(DashboardTile.allCases.firstIndex(of: .weight))], toOffset: 0)
         layout.setVisible(.bodyFat, false)
         try layout.save(to: profiles)
 
@@ -81,7 +81,7 @@ struct DashboardLayoutTests {
         let env = AppEnvironment.preview()
         let model = DashboardModel(environment: env)
         model.setVisible(.hrv, false)
-        model.moveTiles(fromOffsets: [DashboardTile.allCases.firstIndex(of: .water)!], toOffset: 0)
+        try model.moveTiles(fromOffsets: [#require(DashboardTile.allCases.firstIndex(of: .water))], toOffset: 0)
         let reloaded = DashboardModel(environment: env)
         #expect(reloaded.layout.hidden == [.hrv])
         #expect(reloaded.layout.order.first == .water)
@@ -89,10 +89,11 @@ struct DashboardLayoutTests {
         #expect(DashboardModel(environment: env).layout == .default)
     }
 
-    @Test func `unknown and duplicate tiles are dropped, missing ones appended`() throws {
+    @Test func `unknown and duplicate tiles are dropped, missing ones added`() throws {
         let json = #"{"order":["water","future-tile","water","steps"],"hidden":["steps","other"]}"#
         let layout = try JSONDecoder().decode(DashboardLayout.self, from: Data(json.utf8))
-        #expect(Array(layout.order.prefix(2)) == [.water, .steps])
+        // Missing tiles follow the tile before them in the default order; `energy` has none and goes last.
+        #expect(layout.order == [.water, .sleep, .weight, .bodyFat, .steps, .activeEnergy, .totalEnergy, .restingHeartRate, .hrv, .energy])
         #expect(Set(layout.order) == Set(DashboardTile.allCases))
         #expect(layout.order.count == DashboardTile.allCases.count)
         #expect(layout.hidden == [.steps])
@@ -101,9 +102,48 @@ struct DashboardLayoutTests {
         #expect(again == layout)
     }
 
+    @Test func `total energy follows active energy in the default layout`() throws {
+        let order = DashboardLayout.default.order
+        let active = try #require(order.firstIndex(of: .activeEnergy))
+        #expect(order[active + 1] == .totalEnergy)
+    }
+
+    @Test func `a layout saved before total energy existed gets it after active energy, visible`() throws {
+        let env = AppEnvironment.preview()
+        let profiles = try #require(env.profiles)
+        // The JSON a v0.2 user has after reordering and hiding a tile.
+        let saved = #"{"order":["weight","energy","water","sleep","bodyFat","steps","activeEnergy","restingHeartRate","hrv"],"hidden":["hrv"]}"#
+        try profiles.setSetting(SettingKey.dashboardLayout, JSONDecoder().decode(OldLayout.self, from: Data(saved.utf8)))
+        let layout = DashboardLayout.load(from: profiles)
+        #expect(layout.order == [.weight, .energy, .water, .sleep, .bodyFat, .steps, .activeEnergy, .totalEnergy, .restingHeartRate, .hrv])
+        #expect(layout.hidden == [.hrv])
+        #expect(layout.visible.contains(.totalEnergy))
+        // The user's own order is kept as is, and a moved Active energy takes the new tile along.
+        let moved = #"{"order":["activeEnergy","energy"],"hidden":[]}"#
+        let movedLayout = try JSONDecoder().decode(DashboardLayout.self, from: Data(moved.utf8))
+        #expect(Array(movedLayout.order.prefix(2)) == [.activeEnergy, .totalEnergy])
+    }
+
+    /// The setting exactly as an older version stored it (raw strings).
+    private struct OldLayout: Codable, Sendable {
+        var order: [String]
+        var hidden: [String]
+    }
+
     @Test func `rows pair narrow tiles and give wide tiles a row`() {
-        let layout = DashboardLayout(order: [.energy, .steps, .weight, .bodyFat, .sleep, .hrv, .water, .restingHeartRate, .activeEnergy], hidden: [])
-        #expect(layout.rows == [[.energy], [.steps, .weight], [.bodyFat], [.sleep], [.hrv], [.water], [.restingHeartRate, .activeEnergy]])
+        let layout = DashboardLayout(
+            order: [.energy, .steps, .weight, .bodyFat, .sleep, .hrv, .water, .restingHeartRate, .activeEnergy, .totalEnergy], hidden: [],
+        )
+        #expect(layout.rows == [
+            [.energy],
+            [.steps, .weight],
+            [.bodyFat],
+            [.sleep],
+            [.hrv],
+            [.water],
+            [.restingHeartRate, .activeEnergy],
+            [.totalEnergy],
+        ])
         var hidden = layout
         hidden.setVisible(.weight, false)
         #expect(hidden.rows.prefix(3) == [[.energy], [.steps, .bodyFat], [.sleep]])
@@ -357,11 +397,18 @@ struct DashboardDemoTests {
         #expect(snapshot.hrv?.deviationText != nil)
         #expect(snapshot.restingHR != nil)
         #expect(snapshot.activeKcal != nil)
+        #expect(snapshot.energyBurned?.totalKcal != nil)
+        // A week of demo history: every tile but calories has a sparkline and a spoken trend.
+        for tile in DashboardTile.allCases where tile != .energy {
+            #expect(snapshot.sparkline(for: tile) != nil, "\(tile)")
+            #expect(snapshot.accessibilityTrend(of: tile, state: .ready) != nil, "\(tile)")
+        }
+        #expect(snapshot.sparkline(for: .energy) == nil)
         #expect(snapshot.totals.kcal > 0)
         #expect(try env.weights?.latest() == nil) // nothing entered by hand
     }
 
-    @Test func `before Health is connected, Health tiles ask for access`() async throws {
+    @Test func `before Health is connected, Health tiles ask for access`() async {
         let env = AppEnvironment.preview() // fake Health, never asked
         let model = DashboardModel(environment: env)
         await model.reloadAccess()

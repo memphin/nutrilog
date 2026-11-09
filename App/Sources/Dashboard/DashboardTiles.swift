@@ -27,6 +27,7 @@ enum DashboardTile: String, CaseIterable, Codable, Identifiable, Hashable {
     case bodyFat
     case steps
     case activeEnergy
+    case totalEnergy
     case restingHeartRate
     case hrv
 
@@ -42,6 +43,7 @@ enum DashboardTile: String, CaseIterable, Codable, Identifiable, Hashable {
         case .weight: "Weight"
         case .bodyFat: "Body fat"
         case .activeEnergy: "Active energy"
+        case .totalEnergy: "Total energy"
         case .restingHeartRate: "Resting heart rate"
         case .hrv: "HRV"
         case .water: "Water"
@@ -56,6 +58,7 @@ enum DashboardTile: String, CaseIterable, Codable, Identifiable, Hashable {
         case .weight: "scalemass"
         case .bodyFat: "percent"
         case .activeEnergy: "bolt.heart"
+        case .totalEnergy: "flame.circle"
         case .restingHeartRate: "heart"
         case .hrv: "waveform.path.ecg"
         case .water: "drop"
@@ -79,8 +82,8 @@ enum DashboardTile: String, CaseIterable, Codable, Identifiable, Hashable {
 // MARK: - Layout
 
 /// Order and visibility of the tiles, persisted in the `setting` table. Stored as raw strings so a value from a newer
-/// version (an unknown tile) is skipped instead of breaking the whole layout, and tiles added in a later version are
-/// appended (visible) at the end.
+/// version (an unknown tile) is skipped instead of breaking the whole layout, and tiles added in a later version show
+/// up (visible) in a saved layout: right after the tile they follow in the default order, or at the end.
 struct DashboardLayout: Equatable, Codable {
     var order: [DashboardTile]
     var hidden: Set<DashboardTile>
@@ -138,11 +141,18 @@ struct DashboardLayout: Equatable, Codable {
         return rows
     }
 
-    /// Drops duplicates and appends tiles missing from `order`.
+    /// Drops duplicates and adds tiles missing from `order` (a tile added in an update): after the nearest tile that
+    /// precedes it in the default order (Total energy after Active energy), or at the end when none does.
     private mutating func normalize() {
         var seen = Set<DashboardTile>()
         order = order.filter { seen.insert($0).inserted }
-        order += DashboardTile.allCases.filter { !seen.contains($0) }
+        let catalog = DashboardTile.allCases
+        for (index, tile) in catalog.enumerated() where !seen.contains(tile) {
+            let current = order
+            let anchor = catalog[..<index].reversed().lazy.compactMap { current.firstIndex(of: $0) }.first
+            order.insert(tile, at: anchor.map { $0 + 1 } ?? order.endIndex)
+            seen.insert(tile)
+        }
     }
 
     // MARK: Codable (lenient)

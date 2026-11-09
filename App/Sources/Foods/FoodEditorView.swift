@@ -1,6 +1,7 @@
 import Core
 import DesignSystem
 import Persistence
+import Scanner
 import SwiftUI
 
 /// Create / edit a custom food (backlog #9).
@@ -15,6 +16,8 @@ struct FoodEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var model: FoodEditorModel?
     @State private var errorMessage: String?
+    /// Barcodes on other foods, waiting for "move it here?".
+    @State private var conflicts: [FoodEditorModel.BarcodeConflict] = []
 
     /// - Parameter completing: Complete-nutrition mode (see ``FoodEditorModel``): these nutrients start empty.
     init(
@@ -34,7 +37,7 @@ struct FoodEditorView: View {
     var body: some View {
         NavigationStack {
             if let model {
-                FoodEditorForm(model: model)
+                FoodEditorForm(model: model, foods: environment.foods)
                     .navigationTitle(model.completing != nil ? "Complete nutrition" : model.isEditing ? "Edit food" : "New food")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
@@ -53,6 +56,22 @@ struct FoodEditorView: View {
                 )
             }
         }
+        .alert("Move barcode?", isPresented: Binding(get: { !conflicts.isEmpty }, set: {
+            if !$0 {
+                conflicts = []
+            }
+        })) {
+            Button("Move Here") {
+                let moving = Set(conflicts.map(\.barcode))
+                conflicts = []
+                if let model {
+                    commit(model, movingBarcodes: moving)
+                }
+            }
+            Button("Cancel", role: .cancel) { conflicts = [] }
+        } message: {
+            Text(FoodEditorModel.conflictMessage(conflicts) + "\n\nIt will be removed from the other food.")
+        }
         .alert("Couldn't save", isPresented: Binding(get: { errorMessage != nil }, set: {
             if !$0 {
                 errorMessage = nil
@@ -62,10 +81,26 @@ struct FoodEditorView: View {
         } message: { Text(errorMessage ?? "") }
     }
 
+    /// Asks before taking a barcode from another food (saving would otherwise fail on it), then saves.
     private func save(_ model: FoodEditorModel) {
-        guard let detail = model.makeDetail(), let foods = environment.foods else { return }
+        guard let foods = environment.foods else { return }
         do {
-            let saved = try foods.save(detail)
+            let found = try model.barcodeConflicts(in: foods)
+            guard found.isEmpty else {
+                conflicts = found
+                return
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+            return
+        }
+        commit(model, movingBarcodes: [])
+    }
+
+    private func commit(_ model: FoodEditorModel, movingBarcodes: Set<String>) {
+        guard let foods = environment.foods else { return }
+        do {
+            guard let saved = try model.save(to: foods, movingBarcodes: movingBarcodes) else { return }
             dismiss()
             onSaved(saved)
         } catch let PersistenceError.barcodeInUse(code, foodID) {
@@ -79,6 +114,9 @@ struct FoodEditorView: View {
 
 private struct FoodEditorForm: View {
     @Bindable var model: FoodEditorModel
+    let foods: FoodRepository?
+    @State private var isScanning = false
+    @State private var scanNotice: String?
 
     var body: some View {
         Form {
@@ -150,14 +188,29 @@ private struct FoodEditorForm: View {
                 Text("Named portions like \"1 slice = 25 g\" make logging faster.")
             }
 
-            Section("Barcodes") {
-                ForEach(model.barcodes.indices, id: \.self) { index in
-                    TextField("EAN / UPC", text: $model.barcodes[index])
-                        .keyboardType(.numberPad)
-                        .monospacedDigit()
+            Section {
+                ForEach($model.barcodeRows) { $row in
+                    BarcodeRow(code: $row.code, owner: model.owner(of: row.code)) {
+                        withAnimation { model.removeBarcode(id: row.id) }
+                    }
                 }
-                .onDelete { model.barcodes.remove(atOffsets: $0) }
-                Button("Add barcode", systemImage: "barcode") { model.barcodes.append("") }
+                .onDelete { model.removeBarcodes(atOffsets: $0) }
+                Button("Scan barcode", systemImage: "barcode.viewfinder") {
+                    scanNotice = nil
+                    isScanning = true
+                }
+                Button("Type barcode", systemImage: "keyboard") { model.addBarcodeRow() }
+            } header: {
+                Text("Barcodes")
+            } footer: {
+                if let scanNotice {
+                    Text(scanNotice)
+                }
+            }
+            .task(id: model.barcodes) {
+                if let foods {
+                    model.refreshBarcodeOwners(in: foods)
+                }
             }
 
             Section("Notes") {
@@ -167,6 +220,22 @@ private struct FoodEditorForm: View {
             if !model.validationErrors.isEmpty, !model.name.isEmpty || !model.energy.isEmpty {
                 Section {
                     ForEach(model.validationErrors, id: \.self) { Text($0).foregroundStyle(.red) }
+                }
+            }
+        }
+        .sheet(isPresented: $isScanning) {
+            BarcodeScanSheet { barcode in
+                switch model.insertScanned(candidates: barcode.candidates) {
+                case let .added(code):
+                    scanNotice = "Added \(code)."
+                    isScanning = false
+                    return nil
+                case let .duplicate(code):
+                    scanNotice = "\(code) is already on this food."
+                    isScanning = false
+                    return nil
+                case .invalid:
+                    return "\(barcode.payload) isn't a product barcode (EAN / UPC). Try another code."
                 }
             }
         }
@@ -190,6 +259,72 @@ private struct FoodEditorForm: View {
             Text(title)
                 .padding(.leading, indent ? NL.Spacing.l : 0)
                 .foregroundStyle(indent ? .secondary : .primary)
+        }
+    }
+}
+
+/// One barcode: the code (editable), a hint when another food carries it, and an explicit remove button besides
+/// swipe-to-delete.
+private struct BarcodeRow: View {
+    @Binding var code: String
+    let owner: String?
+    let remove: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: NL.Spacing.xxs) {
+            HStack {
+                TextField("EAN / UPC", text: $code)
+                    .keyboardType(.numberPad)
+                    .monospacedDigit()
+                Button(action: remove) {
+                    Image(systemName: "minus.circle.fill")
+                        .foregroundStyle(.red)
+                        .imageScale(.large)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel(code.isEmpty ? "Remove empty barcode" : "Remove barcode \(code)")
+            }
+            if let owner {
+                Label("Also on '\(owner)' — saving asks to move it here", systemImage: "exclamationmark.triangle")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+        }
+    }
+}
+
+/// The camera scanner (with its manual-entry fallback) for adding a barcode to a food. `onScan` returns a message
+/// to show while scanning continues (an unusable code), or nil when the sheet is closed by the caller.
+private struct BarcodeScanSheet: View {
+    let onScan: (ScannedBarcode) -> String?
+    @Environment(\.dismiss) private var dismiss
+    @State private var notice: String?
+
+    var body: some View {
+        NavigationStack {
+            BarcodeScannerView { barcode in
+                notice = onScan(barcode)
+            }
+            .overlay(alignment: .top) {
+                if let notice {
+                    Text(notice)
+                        .font(.callout)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, NL.Spacing.l)
+                        .padding(.vertical, NL.Spacing.s)
+                        .glassEffect()
+                        .padding(.top, NL.Spacing.m)
+                        .padding(.horizontal, NL.Spacing.l)
+                }
+            }
+            .navigationTitle("Scan barcode")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
         }
     }
 }

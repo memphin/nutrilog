@@ -74,6 +74,20 @@ public struct WaterRepository: Sendable {
             .values(in: database.reader)
     }
 
+    /// Active entries of every day in `days`, oldest first: one observation for a multi-day view (the dashboard's
+    /// 7-day water trend and today's entries).
+    public func observeEntries(in days: ClosedRange<LocalDay>) -> AsyncValueObservation<[WaterEntry]> {
+        ValueObservation.tracking { db in
+            try WaterEntry
+                .filter(WaterEntry.Columns.day >= days.lowerBound && WaterEntry.Columns.day <= days.upperBound)
+                .filter(WaterEntry.Columns.deletedAt == nil)
+                .order(WaterEntry.Columns.day, WaterEntry.Columns.loggedAt, WaterEntry.Columns.id)
+                .fetchAll(db)
+        }
+        .removeDuplicates()
+        .values(in: database.reader)
+    }
+
     public func softDelete(ids: [String]) throws {
         let now = clock.now()
         try database.writer.write { db in

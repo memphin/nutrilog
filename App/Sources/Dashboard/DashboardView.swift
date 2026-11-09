@@ -124,10 +124,17 @@ struct DashboardTileView: View {
 
     var body: some View {
         let state = model.state(of: tile)
+        let snapshot = model.snapshot
+        // Only for a tile with a value: no chart when there is no data or no access.
+        let sparkline = state == .ready ? snapshot.sparkline(for: tile) : nil
+        let trend = snapshot.accessibilityTrend(of: tile, state: state)
         let card = VStack(alignment: .leading, spacing: NL.Spacing.s) {
-            header
+            header(trend: trend)
             if state == .ready {
                 TileContent(tile: tile, model: model)
+                if let sparkline {
+                    SparklineView(sparkline: sparkline, tint: tile == .water ? NL.Palette.water : NL.Palette.trend)
+                }
             } else {
                 TilePlaceholder(state: state, model: model)
             }
@@ -146,7 +153,8 @@ struct DashboardTileView: View {
             // One element: "Weight, 81.4 kilograms, trend 81.2, down 0.4 in 7 days". Activating opens the detail.
             card
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(model.snapshot.accessibilityLabel(of: tile, state: state, energyUnit: model.energyUnit))
+                .accessibilityLabel(snapshot.accessibilityLabel(of: tile, state: state, energyUnit: model.energyUnit))
+                .accessibilityValue(trend ?? "")
                 .accessibilityAddTraits(.isButton)
                 .accessibilityHint("Shows the last 14 days")
                 .accessibilityAction(.default, open)
@@ -158,7 +166,7 @@ struct DashboardTileView: View {
         }
     }
 
-    @ViewBuilder private var header: some View {
+    @ViewBuilder private func header(trend: String?) -> some View {
         let label = Label(tile.title, systemImage: tile.systemImage)
             .font(NL.Typography.label)
             .foregroundStyle(.secondary)
@@ -167,6 +175,7 @@ struct DashboardTileView: View {
             Button(action: open) { label }
                 .buttonStyle(.plain)
                 .accessibilityLabel(model.snapshot.accessibilityLabel(of: .water, state: .ready))
+                .accessibilityValue(trend ?? "")
                 .accessibilityHint("Shows the last 14 days")
         } else {
             label
@@ -238,7 +247,14 @@ private struct TileContent: View {
             }
         case .activeEnergy:
             let unit = model.energyUnit
-            ValueText(snapshot.activeKcal.map { unit.display($0).formatted(.number.precision(.fractionLength(0))) } ?? "—", unit: unit.symbol)
+            ValueText(
+                snapshot.activeKcal.map { unit.display($0).formatted(.number.precision(.fractionLength(0))) } ?? "—",
+                unit: unit.symbol,
+            )
+        case .totalEnergy:
+            if let burned = snapshot.energyBurned {
+                TotalEnergyContent(burned: burned, unit: model.energyUnit)
+            }
         case .restingHeartRate:
             BaselineContent(comparison: snapshot.restingHR, unit: "bpm", today: snapshot.today)
         case .hrv:
@@ -265,6 +281,36 @@ private struct ValueText: View {
         }
         .lineLimit(1)
         .minimumScaleFactor(0.7)
+    }
+}
+
+/// Active + resting energy. With only one part known, that part is shown under its own name — never as the total.
+private struct TotalEnergyContent: View {
+    let burned: EnergyBurned
+    let unit: EnergyUnit
+
+    private func number(_ kcal: Double) -> String {
+        unit.display(kcal).formatted(.number.precision(.fractionLength(0)))
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: NL.Spacing.xxs) {
+            if let total = burned.totalKcal {
+                ValueText(number(total), unit: unit.symbol)
+                Text(burned.breakdown(unit))
+                    .font(.footnote).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                if let active = burned.activeKcal {
+                    ValueText(number(active), unit: "\(unit.symbol) active")
+                } else if let resting = burned.restingKcal {
+                    ValueText(number(resting), unit: "\(unit.symbol) resting")
+                }
+                Text(burned.activeKcal == nil ? "No active energy yet — no total" : "No resting energy yet — no total")
+                    .font(.footnote).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
     }
 }
 
