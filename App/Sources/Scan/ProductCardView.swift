@@ -1,0 +1,349 @@
+import Core
+import DesignSystem
+import Persistence
+import PhotosUI
+import SwiftUI
+
+/// The product card after a scan (FR-12): image, name, brand, Nutri-Score, per-100 and per-serving values,
+/// data-quality warning with "Complete nutrition", stale-cache notice, then Log.
+struct ProductCardView: View {
+    let product: ScannedProduct
+    let energyUnit: EnergyUnit
+    var labelPhoto: Data?
+    let onLog: () -> Void
+    let onCompleteNutrition: () -> Void
+    let onSetServingWeight: (Double) -> Void
+
+    @State private var servingWeightText = ""
+    @FocusState private var servingWeightFocused: Bool
+
+    private var food: Food {
+        product.food
+    }
+
+    private var unit: String {
+        food.baseUnit.symbol
+    }
+
+    var body: some View {
+        Form {
+            Section {
+                header
+            }
+
+            if product.isStale, let fetchedAt = product.remote?.fetchedAt {
+                Section {
+                    Label {
+                        Text("Offline: showing the copy saved \(fetchedAt.formatted(.relative(presentation: .named))). It may be outdated.")
+                    } icon: {
+                        Image(systemName: "wifi.slash")
+                    }
+                    .foregroundStyle(.secondary)
+                }
+            }
+
+            if product.needsServingWeight {
+                servingWeightSection
+            }
+
+            if product.needsCompletion {
+                Section {
+                    Label(qualityWarning, systemImage: "exclamationmark.triangle")
+                        .foregroundStyle(.orange)
+                    Button("Complete nutrition", systemImage: "square.and.pencil", action: onCompleteNutrition)
+                }
+            }
+
+            if let per100 = product.per100 {
+                nutrientSection("Per 100 \(unit)", per100)
+            }
+            if let serving = product.serving {
+                let title = serving.amount.map { "Per \(serving.label) (\(NutrientRow.format($0, unit: unit)) \(unit))" }
+                    ?? "Per \(serving.label)"
+                nutrientSection(title, serving.nutrients)
+            }
+
+            if let labelPhoto, let image = UIImage(data: labelPhoto) {
+                Section("Label photo") {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxHeight: 240)
+                        .accessibilityLabel("Your photo of the nutrition label")
+                }
+            }
+
+            if product.remote != nil {
+                Section {
+                    Text("Data from Open Food Facts (ODbL). Saved to your foods when you log it.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .safeAreaInset(edge: .bottom) {
+            Button(action: onLog) {
+                Text("Log").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.glassProminent)
+            .controlSize(.large)
+            .padding(.horizontal, NL.Spacing.l)
+            .padding(.bottom, NL.Spacing.s)
+        }
+    }
+
+    private var header: some View {
+        HStack(alignment: .top, spacing: NL.Spacing.m) {
+            AsyncImage(url: product.imageURL) { phase in
+                if let image = phase.image {
+                    image.resizable().scaledToFit()
+                } else {
+                    Image(systemName: "takeoutbag.and.cup.and.straw")
+                        .font(.largeTitle)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(width: 72, height: 72)
+            .background(.quaternary, in: RoundedRectangle(cornerRadius: NL.Radius.s))
+            .clipShape(RoundedRectangle(cornerRadius: NL.Radius.s))
+            .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: NL.Spacing.xs) {
+                Text(food.name).font(.headline)
+                if let brand = food.brand, !brand.isEmpty {
+                    Text(brand).font(.subheadline).foregroundStyle(.secondary)
+                }
+                HStack(spacing: NL.Spacing.s) {
+                    SourceBadge(food.source.badge)
+                    if let grade = product.nutriscore {
+                        NutriScoreBadge(grade: grade)
+                    }
+                }
+                if let barcode = product.barcode {
+                    Text(barcode).font(.caption).monospacedDigit().foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
+    private var servingWeightSection: some View {
+        Section {
+            HStack {
+                TextField("Serving weight", text: $servingWeightText)
+                    .keyboardType(.decimalPad)
+                    .focused($servingWeightFocused)
+                Text(unit).foregroundStyle(.secondary)
+                Button("Set") {
+                    if let amount = Format.number(servingWeightText), amount > 0 {
+                        servingWeightFocused = false
+                        onSetServingWeight(amount)
+                    }
+                }
+                .disabled((Format.number(servingWeightText) ?? 0) <= 0)
+            }
+        } header: {
+            Text("Serving weight unknown")
+        } footer: {
+            Text("This product only lists values per serving. Enter the serving weight from the pack to log it in \(unit) "
+                + "too; until then it can be logged by servings only.")
+        }
+    }
+
+    private var qualityWarning: String {
+        switch food.dataQuality {
+        case .energyOnly: "Only the energy is known for this product."
+        case .partialMacros, .complete: "Some nutrients are missing for this product."
+        }
+    }
+
+    private func nutrientSection(_ title: String, _ n: Nutrients) -> some View {
+        Section(title) {
+            NutrientRow("Energy", value: energyUnit.display(n.kcal), unit: energyUnit.symbol, emphasized: true)
+            NutrientRow("Protein", value: missing(.protein) ? nil : n.proteinG)
+            NutrientRow("Carbohydrates", value: missing(.carbs) ? nil : n.carbsG)
+            if let sugar = n.sugarG {
+                NutrientRow("of which sugars", value: sugar, indent: true)
+            }
+            if let fiber = n.fiberG {
+                NutrientRow("Fiber", value: fiber)
+            }
+            NutrientRow("Fat", value: missing(.fat) ? nil : n.fatG)
+            if let sat = n.satFatG {
+                NutrientRow("of which saturated", value: sat, indent: true)
+            }
+            if let sodium = n.sodiumMg {
+                NutrientRow("Salt", value: Salt.saltG(fromSodiumMg: sodium))
+            }
+        }
+    }
+
+    /// Missing values show "—" rather than a misleading 0.
+    private func missing(_ nutrient: FoodEditorModel.RequiredNutrient) -> Bool {
+        product.food.dataQuality != .complete && product.missing.contains(nutrient)
+    }
+}
+
+/// Nutri-Score letter in its official color.
+struct NutriScoreBadge: View {
+    let grade: String
+
+    private var color: Color {
+        switch grade {
+        case "A": Color(red: 0.0, green: 0.51, blue: 0.25)
+        case "B": Color(red: 0.52, green: 0.73, blue: 0.18)
+        case "C": Color(red: 0.93, green: 0.73, blue: 0.0)
+        case "D": Color(red: 0.89, green: 0.45, blue: 0.08)
+        default: Color(red: 0.89, green: 0.24, blue: 0.10)
+        }
+    }
+
+    var body: some View {
+        Text("Nutri-Score \(grade)")
+            .font(.caption2.weight(.bold))
+            .padding(.horizontal, NL.Spacing.s - 2)
+            .padding(.vertical, NL.Spacing.xxs)
+            .foregroundStyle(.white)
+            .background(color, in: Capsule())
+            .accessibilityLabel("Nutri-Score \(grade)")
+    }
+}
+
+/// Nobody knows the code (FR-13): create the food with the barcode prefilled; optionally photograph the label first.
+struct NotFoundView: View {
+    let barcode: String
+    @Bindable var model: ScanFlowModel
+    let onCreate: () -> Void
+
+    var body: some View {
+        Form {
+            Section {
+                ContentUnavailableView {
+                    Label("Product not found", systemImage: "barcode")
+                } description: {
+                    Text("\(barcode) isn't in your foods or on Open Food Facts. Create it from the label: next time this "
+                        + "barcode is scanned it is found instantly, even offline.")
+                } actions: {
+                    Button("Create food", systemImage: "plus", action: onCreate)
+                        .buttonStyle(.glassProminent)
+                }
+            }
+            LabelPhotoSection(photo: $model.pendingLabelPhoto)
+        }
+    }
+}
+
+/// The lookup failed: say why, retry, or create the food by hand.
+struct LookupFailedView: View {
+    let failure: ScanFlowModel.Failure
+    let barcode: String?
+    let onRetry: () -> Void
+    let onCreate: () -> Void
+
+    var body: some View {
+        ContentUnavailableView {
+            Label(failure.title, systemImage: failure == .offline ? "wifi.slash" : "exclamationmark.icloud")
+        } description: {
+            VStack(spacing: NL.Spacing.s) {
+                Text(failure.message)
+                if let barcode {
+                    Text(barcode).monospacedDigit().foregroundStyle(.secondary)
+                }
+            }
+        } actions: {
+            Button("Try again", systemImage: "arrow.clockwise", action: onRetry)
+                .buttonStyle(.glassProminent)
+            Button("Create food manually", systemImage: "plus", action: onCreate)
+        }
+    }
+}
+
+/// Optional photo of the nutrition label, kept on this device for reference (FR-13). Camera when available,
+/// otherwise the photo library.
+struct LabelPhotoSection: View {
+    @Binding var photo: Data?
+    @State private var showCamera = false
+    @State private var libraryItem: PhotosPickerItem?
+
+    private var cameraAvailable: Bool {
+        UIImagePickerController.isSourceTypeAvailable(.camera)
+    }
+
+    var body: some View {
+        Section {
+            if let photo, let image = UIImage(data: photo) {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxHeight: 200)
+                    .accessibilityLabel("Label photo")
+                Button("Remove photo", systemImage: "trash", role: .destructive) { self.photo = nil }
+            }
+            if cameraAvailable {
+                Button(photo == nil ? "Photograph label" : "Retake photo", systemImage: "camera") { showCamera = true }
+            }
+            PhotosPicker(selection: $libraryItem, matching: .images) {
+                Label("Choose from library", systemImage: "photo.on.rectangle")
+            }
+        } header: {
+            Text("Label photo (optional)")
+        } footer: {
+            Text("Kept only on this iPhone, as a reference for the values you type in.")
+        }
+        .fullScreenCover(isPresented: $showCamera) {
+            CameraPicker { image in
+                photo = LabelPhotoStore.jpegData(from: image)
+            }
+            .ignoresSafeArea()
+        }
+        .onChange(of: libraryItem) { _, item in
+            guard let item else { return }
+            Task {
+                if let data = try? await item.loadTransferable(type: Data.self), let image = UIImage(data: data) {
+                    photo = LabelPhotoStore.jpegData(from: image)
+                }
+                libraryItem = nil
+            }
+        }
+    }
+}
+
+/// `UIImagePickerController` with the camera (SwiftUI has no camera capture view).
+private struct CameraPicker: UIViewControllerRepresentable {
+    let onImage: (UIImage) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_: UIImagePickerController, context _: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(parent: self)
+    }
+
+    final class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: CameraPicker
+
+        init(parent: CameraPicker) {
+            self.parent = parent
+        }
+
+        func imagePickerController(
+            _: UIImagePickerController,
+            didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any],
+        ) {
+            if let image = info[.originalImage] as? UIImage {
+                parent.onImage(image)
+            }
+            parent.dismiss()
+        }
+
+        func imagePickerControllerDidCancel(_: UIImagePickerController) {
+            parent.dismiss()
+        }
+    }
+}

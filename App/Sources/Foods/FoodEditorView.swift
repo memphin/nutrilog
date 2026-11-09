@@ -8,6 +8,7 @@ struct FoodEditorView: View {
     var editing: FoodDetail?
     var initialName: String = ""
     var barcode: String?
+    var completing: Set<FoodEditorModel.RequiredNutrient>?
     var onSaved: (FoodDetail) -> Void = { _ in }
 
     @Environment(AppEnvironment.self) private var environment
@@ -15,10 +16,18 @@ struct FoodEditorView: View {
     @State private var model: FoodEditorModel?
     @State private var errorMessage: String?
 
-    init(editing: FoodDetail? = nil, initialName: String = "", barcode: String? = nil, onSaved: @escaping (FoodDetail) -> Void = { _ in }) {
+    /// - Parameter completing: Complete-nutrition mode (see ``FoodEditorModel``): these nutrients start empty.
+    init(
+        editing: FoodDetail? = nil,
+        initialName: String = "",
+        barcode: String? = nil,
+        completing: Set<FoodEditorModel.RequiredNutrient>? = nil,
+        onSaved: @escaping (FoodDetail) -> Void = { _ in },
+    ) {
         self.editing = editing
         self.initialName = initialName
         self.barcode = barcode
+        self.completing = completing
         self.onSaved = onSaved
     }
 
@@ -26,7 +35,7 @@ struct FoodEditorView: View {
         NavigationStack {
             if let model {
                 FoodEditorForm(model: model)
-                    .navigationTitle(model.isEditing ? "Edit food" : "New food")
+                    .navigationTitle(model.completing != nil ? "Complete nutrition" : model.isEditing ? "Edit food" : "New food")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -38,7 +47,10 @@ struct FoodEditorView: View {
         }
         .onAppear {
             if model == nil {
-                model = FoodEditorModel(energyUnit: environment.energyUnit, editing: editing, initialName: initialName, barcode: barcode)
+                model = FoodEditorModel(
+                    energyUnit: environment.energyUnit, editing: editing, initialName: initialName, barcode: barcode,
+                    completing: completing,
+                )
             }
         }
         .alert("Couldn't save", isPresented: Binding(get: { errorMessage != nil }, set: {

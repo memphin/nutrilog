@@ -25,6 +25,10 @@ final class AppEnvironment {
     let healthSync: HealthSyncService?
     /// Holds the user-entered USDA key (Settings).
     let usdaKeyStore: any USDAKeyStoring
+    /// Open Food Facts (live HTTP client; a stub in tests and previews). Used by the barcode pipeline.
+    let openFoodFacts: any OpenFoodFactsClient
+    /// Label photos taken for foods not found by a scan (FR-13); files in the app container, never in the database.
+    let labelPhotos: LabelPhotoStore
 
     /// The app's one USDA 429 cool-down, shared by every client built here. Reset only when the resolved key changes.
     let usdaRateLimit = USDARateLimit()
@@ -62,6 +66,8 @@ final class AppEnvironment {
         healthWriter: (any HealthWriting)? = nil,
         healthObserver: (any HealthObserving)? = nil,
         usdaKeyStore: any USDAKeyStoring = InMemoryUSDAKeyStore(),
+        openFoodFacts: (any OpenFoodFactsClient)? = nil,
+        labelPhotos: LabelPhotoStore = .live,
     ) {
         self.database = database
         self.config = config
@@ -89,6 +95,9 @@ final class AppEnvironment {
             healthWrites = nil
         }
         self.usdaKeyStore = usdaKeyStore
+        self.openFoodFacts = openFoodFacts
+            ?? OpenFoodFactsHTTPClient(contact: config.offContact, appVersion: config.appVersion)
+        self.labelPhotos = labelPhotos
         let resolved = Self.resolveUSDAKey(store: usdaKeyStore, config: config)
         usdaKeySource = resolved.source
         usdaKeychainUnreadable = resolved.unreadable
@@ -164,6 +173,11 @@ final class AppEnvironment {
     func refreshHealth() async {
         await healthWrites?.drain()
         await healthSync?.pullToRefresh()
+    }
+
+    /// Barcode → local food / OFF product (backlog #19); nil when the database could not be opened.
+    var barcodeLookup: BarcodeLookup? {
+        db.map { BarcodeLookup(database: $0, client: openFoodFacts, clock: clock) }
     }
 
     /// True once per install: Health is available, the user was never asked for access, and the onboarding
@@ -302,6 +316,8 @@ final class AppEnvironment {
         health: (any HealthDataSource)? = nil,
         healthWriter: (any HealthWriting)? = nil,
         healthObserver: (any HealthObserving)? = nil,
+        openFoodFacts: (any OpenFoodFactsClient)? = nil,
+        labelPhotos: LabelPhotoStore? = nil,
     ) -> AppEnvironment {
         let state: DatabaseState
         do { state = try .ready(AppDatabase.inMemory()) } catch { state = .failed(String(describing: error)) }
@@ -315,6 +331,9 @@ final class AppEnvironment {
             health: health,
             healthWriter: healthWriter ?? FakeHealthWriter(mirror: health as? FakeHealthDataSource),
             healthObserver: healthObserver ?? FakeHealthObserver(),
+            // Never the network: an empty stub answers "not found".
+            openFoodFacts: openFoodFacts ?? StubOpenFoodFactsClient(),
+            labelPhotos: labelPhotos ?? .temporary(),
         )
         if sampleData {
             env.insertSampleData()

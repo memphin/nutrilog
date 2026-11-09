@@ -53,16 +53,23 @@ struct QuantitySheet: View {
                         .frame(maxWidth: 120)
                         .accessibilityLabel("Amount")
                     Picker("Unit", selection: $unitChoice) {
-                        Text(food.baseUnit.symbol).tag("base")
+                        // A per-serving placeholder's weight is a 100 g/ml stand-in: log it by servings only.
+                        if !detail.isPerServingPlaceholder {
+                            Text(food.baseUnit.symbol).tag("base")
+                        }
                         ForEach(detail.servings) { serving in
-                            Text("\(serving.label) (\(NutrientRow.format(serving.grams, unit: "g")) \(food.baseUnit.symbol))")
-                                .tag(serving.id)
+                            if detail.isPerServingPlaceholder {
+                                Text(serving.label).tag(serving.id)
+                            } else {
+                                Text("\(serving.label) (\(NutrientRow.format(serving.grams, unit: "g")) \(food.baseUnit.symbol))")
+                                    .tag(serving.id)
+                            }
                         }
                     }
                     .labelsHidden()
                     .pickerStyle(.menu)
                 }
-                if let quantity, selectedServing != nil {
+                if let quantity, selectedServing != nil, !detail.isPerServingPlaceholder {
                     Text("= \(NutrientRow.format(quantity.baseAmount, unit: "g")) \(food.baseUnit.symbol)")
                         .foregroundStyle(.secondary)
                 }
@@ -151,7 +158,14 @@ struct QuantitySheet: View {
         switch mode {
         case let .log(slot, _):
             slotID = slot
-            apply(detail.suggestedQuantity)
+            let suggested = detail.suggestedQuantity
+            if detail.isPerServingPlaceholder, case .base = suggested,
+               let serving = detail.servings.first(where: { $0.id == food.defaultServingID })
+            {
+                apply(.servings(count: 1, serving: serving.size), servingID: serving.id)
+            } else {
+                apply(suggested)
+            }
         case let .edit(entry):
             slotID = entry.mealSlotID
             // Restore "2 × slice" when the label matches a serving; otherwise show the base amount.
