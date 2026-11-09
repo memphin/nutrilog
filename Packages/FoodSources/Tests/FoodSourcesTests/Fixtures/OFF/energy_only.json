@@ -1,0 +1,16 @@
+{
+  "code": "8000500123454",
+  "product": {
+    "brands": "Mulino Bianco",
+    "code": "8000500123454",
+    "nutriments": {
+      "energy-kcal_100g": 410,
+      "energy-kj_100g": 1730,
+      "energy_100g": 1730
+    },
+    "product_name": "Grissini",
+    "quantity": "125 g"
+  },
+  "status": 1,
+  "status_verbose": "product found"
+}

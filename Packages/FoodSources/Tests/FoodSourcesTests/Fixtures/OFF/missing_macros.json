@@ -1,0 +1,19 @@
+{
+  "code": "7613031234561",
+  "product": {
+    "brands": "Milbona",
+    "code": "7613031234561",
+    "nutriments": {
+      "energy-kcal_100g": 356,
+      "energy-kj_100g": 1476,
+      "fat_100g": 27,
+      "proteins_100g": 25,
+      "saturated-fat_100g": 18,
+      "sodium_100g": 0.32
+    },
+    "product_name": "Gouda Scheiben",
+    "quantity": "400 g"
+  },
+  "status": 1,
+  "status_verbose": "product found"
+}

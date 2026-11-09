@@ -1,0 +1,28 @@
+{
+  "code": "3851005123457",
+  "product": {
+    "allergens_tags": [
+      "en:gluten",
+      "en:milk",
+      "en:soybeans"
+    ],
+    "brands": "Kraš",
+    "code": "3851005123457",
+    "ingredients_text": "pšenično brašno, mliječna čokolada 30% (šećer, kakaov maslac, punomasno mlijeko u prahu, kakaova masa, emulgator: lecitini (soja), aroma), biljna mast (palma), šećer, sredstvo za rahljenje, sol.",
+    "nutriments": {
+      "carbohydrates_serving": 15.5,
+      "energy-kcal_serving": 124,
+      "fat_serving": 6.1,
+      "proteins_serving": 1.6,
+      "salt_serving": "0,08",
+      "sugars_serving": 7.4
+    },
+    "nutrition_data_per": "serving",
+    "product_name": "Domaćica keksi s mliječnom čokoladom",
+    "product_name_hr": "Domaćica keksi s mliječnom čokoladom",
+    "quantity": "250 g",
+    "serving_size": "2 keksa (25 g)"
+  },
+  "status": 1,
+  "status_verbose": "product found"
+}

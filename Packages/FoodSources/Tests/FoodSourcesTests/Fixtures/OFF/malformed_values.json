@@ -1,0 +1,31 @@
+{
+  "code": "4056489123453",
+  "product": {
+    "allergens_tags": "en:milk",
+    "brands": null,
+    "code": "4056489123453",
+    "image_front_small_url": "javascript:alert(1)",
+    "last_modified_t": "yesterday",
+    "nutriments": {
+      "carbohydrates_100g": true,
+      "energy-kcal_100g": "abc",
+      "energy-kj_100g": "1000",
+      "fat_100g": {
+        "value": 3
+      },
+      "fiber_100g": [
+        1,
+        2
+      ],
+      "proteins_100g": -5,
+      "salt_100g": "NaN",
+      "sugars_100g": null
+    },
+    "nutriscore_grade": "unknown",
+    "product_name": 12345,
+    "serving_quantity": "abc",
+    "serving_size": 30
+  },
+  "status": 1,
+  "status_verbose": "product found"
+}
