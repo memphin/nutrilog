@@ -40,6 +40,14 @@ struct Fixture {
         ProfileRepository(db, clock: clock.appClock)
     }
 
+    var water: WaterRepository {
+        WaterRepository(db, clock: clock.appClock)
+    }
+
+    var healthLinks: HealthKitLinkRepository {
+        HealthKitLinkRepository(db, clock: clock.appClock)
+    }
+
     init() throws {
         db = try AppDatabase.inMemory()
         clock = TestClock()

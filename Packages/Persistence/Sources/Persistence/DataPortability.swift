@@ -10,7 +10,7 @@ public struct DataPortability: Sendable {
     public static let format = "nutrilog-export"
 
     /// Tables in foreign-key-safe insertion order. `off_product_cache` is a re-fetchable cache of ODbL data and
-    /// is deliberately excluded.
+    /// is deliberately excluded, as is `healthkit_outbox` (this device's queue of pending Apple Health writes).
     static let tables = [
         "meal_slot", "food", "serving", "food_barcode", "recipe_ingredient", "meal_template", "meal_template_item",
         "diary_entry", "healthkit_link", "day_note", "water_entry", "weight_entry", "daily_metrics", "profile",
@@ -93,16 +93,23 @@ public struct DataPortability: Sendable {
             throw ImportError.unknownTable(unknown)
         }
 
+        let now = clock.now()
         return try database.writer.write { db in
             try db.execute(sql: "PRAGMA defer_foreign_keys = ON")
             var summary = ImportSummary()
+            // Rows whose Apple Health copy must follow the import (backlog #27), queued in this transaction.
+            var healthChanges: [HealthKitOwner: [String]] = [:]
             if mode == .replace {
+                // The wipe drops `healthkit_link`; queue every row that has samples first, so samples of rows the
+                // backup doesn't contain (logged after it was made) are deleted instead of stranded in Health.
+                try HealthKitLinkRepository.enqueueLinkedOwners(db, now: now)
                 for table in Self.tables.reversed() {
                     try db.execute(sql: "DELETE FROM \(table)")
                 }
             }
             for table in Self.tables {
                 guard let rows = file.tables[table] else { continue }
+                let healthOwner = HealthKitOwner(rawValue: table).flatMap { $0 == .weightEntry ? nil : $0 }
                 let pkColumns = try db.primaryKey(table).columns
                 let columns = try Set(db.columns(in: table).map(\.name))
                 let hasUpdatedAt = columns.contains("updated_at")
@@ -125,6 +132,9 @@ public struct DataPortability: Sendable {
                         )
                         if db.changesCount > 0 {
                             summary.inserted += 1
+                            if let healthOwner, let id = values["id"]?.stringValue {
+                                healthChanges[healthOwner, default: []].append(id)
+                            }
                         } else {
                             summary.skipped += 1
                         }
@@ -137,6 +147,9 @@ public struct DataPortability: Sendable {
                         let assignments = names.map { "\($0) = ?" }.joined(separator: ", ")
                         try db.execute(sql: "UPDATE \(table) SET \(assignments) WHERE \(keyClause)", arguments: args + keyArgs)
                         summary.updated += 1
+                        if let healthOwner, let id = values["id"]?.stringValue {
+                            healthChanges[healthOwner, default: []].append(id)
+                        }
                     } else {
                         summary.skipped += 1
                     }
@@ -149,6 +162,13 @@ public struct DataPortability: Sendable {
                 let slots = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM meal_slot") ?? 0
                 if profiles == 0 || slots == 0 {
                     throw ImportError.incompleteBackup // rolls back the transaction
+                }
+                // Every active row is written again (the writer deletes by entry id first, so nothing doubles).
+                try HealthKitLinkRepository.enqueueActiveOwners(db, now: now)
+            } else {
+                // Merge: inserted and newer (updated) diary / water rows — deleted ones included, so their samples go.
+                for (owner, ids) in healthChanges.sorted(by: { $0.key.rawValue < $1.key.rawValue }) {
+                    try HealthKitLinkRepository.enqueue(db, owner: owner, ids: ids, now: now)
                 }
             }
             return summary

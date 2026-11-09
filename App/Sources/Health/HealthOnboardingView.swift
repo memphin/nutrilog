@@ -72,12 +72,12 @@ struct HealthOnboardingView: View {
     }
 
     private func connect() {
-        guard let sync = environment.healthSync else { return }
+        guard environment.healthSync != nil else { return }
         isConnecting = true
         Task {
             defer { isConnecting = false }
             do {
-                try await sync.connect()
+                try await environment.connectHealth()
                 dismiss()
             } catch {
                 errorMessage = "Apple Health couldn't ask for access: \(error.localizedDescription)"

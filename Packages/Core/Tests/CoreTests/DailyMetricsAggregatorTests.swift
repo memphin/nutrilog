@@ -81,6 +81,49 @@ struct DailyMetricsAggregatorTests {
         #expect(rows.count == 3)
     }
 
+    @Test func `water written by Nutrilog itself is not read back`() {
+        let nutrilog = HealthSource(name: "Nutrilog", bundleIdentifier: "hr.ivanjuric.nutrilog", productType: "iPhone17,1")
+        let other = HealthFixtures.healthApp
+        let batch = HealthDataBatch(days: day("2026-11-08") ... day("2026-11-10"), statistics: [
+            .dietaryWater: [
+                // Ours + another app's: only the other app's water is kept.
+                dailyStatistic("2026-11-08", 1250, sources: [
+                    SourceContribution(source: nutrilog, sum: 750), SourceContribution(source: other, sum: 500),
+                ]),
+                // Only ours: no "other apps" water at all.
+                dailyStatistic("2026-11-09", 600, sources: [SourceContribution(source: nutrilog, sum: 600)]),
+                // Only another app's.
+                dailyStatistic("2026-11-10", 330, sources: [SourceContribution(source: other, sum: 330)]),
+            ],
+            .steps: [dailyStatistic("2026-11-09", 100, sources: [SourceContribution(source: nutrilog, sum: 100)])],
+        ])
+        let rows = Dictionary(
+            uniqueKeysWithValues: DailyMetricsAggregator.aggregate(
+                batch, calendar: zagreb, excludingWaterFrom: ["hr.ivanjuric.nutrilog"],
+            ).map { ($0.day, $0) },
+        )
+        #expect(rows[day("2026-11-08")]?.waterMl == 500)
+        #expect(rows[day("2026-11-08")]?.sources[.water] == "Health")
+        #expect(rows[day("2026-11-09")]?.waterMl == nil)
+        #expect(rows[day("2026-11-09")]?.sources[.water] == nil)
+        #expect(rows[day("2026-11-09")]?.steps == 100) // other metrics are not filtered
+        #expect(rows[day("2026-11-10")]?.waterMl == 330)
+        // Without the exclusion everything counts.
+        #expect(aggregate(batch)[day("2026-11-08")]?.waterMl == 1250)
+    }
+
+    @Test func `excluded water never goes negative`() {
+        let nutrilog = HealthSource(name: "Nutrilog", bundleIdentifier: "app", productType: nil)
+        // Per-source sums are taken before de-duplication, so they can exceed the de-duplicated total.
+        let batch = HealthDataBatch(days: day("2026-11-09") ... day("2026-11-09"), statistics: [
+            .dietaryWater: [dailyStatistic("2026-11-09", 500, sources: [
+                SourceContribution(source: nutrilog, sum: 600), SourceContribution(source: HealthFixtures.healthApp, sum: 200),
+            ])],
+        ])
+        let rows = DailyMetricsAggregator.aggregate(batch, calendar: zagreb, excludingWaterFrom: ["app"])
+        #expect(rows.first?.waterMl == 0)
+    }
+
     @Test func `statistics are bucketed by the calendar's time zone`() {
         // A bucket from UTC midnight to midnight starts on 2026-11-08 in New York (19:00); its midpoint decides.
         let utcDay = day("2026-11-09").dateInterval(calendar: HealthFixtures.utc)

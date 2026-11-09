@@ -61,6 +61,9 @@ struct HealthSettingsView: View {
                 }
             } else {
                 connectionSection
+                if let writes = environment.healthWrites {
+                    HealthWriteSection(writes: writes)
+                }
                 if model.isConnected {
                     dataSection
                 }
@@ -71,7 +74,7 @@ struct HealthSettingsView: View {
         .sheet(isPresented: $showOnboarding, onDismiss: reload) {
             HealthOnboardingView()
         }
-        .refreshable { await environment.healthSync?.refresh(force: true) }
+        .refreshable { await environment.refreshHealth() }
     }
 
     private var connectionSection: some View {
@@ -139,6 +142,45 @@ struct HealthSettingsView: View {
 
     private func reload() {
         Task { await model.load(environment: environment) }
+    }
+}
+
+/// Settings → Apple Health → "Write to Apple Health" (backlog #27, FR-43): the global toggle and pending writes.
+struct HealthWriteSection: View {
+    /// Bound straight to the service's property: no `Bool` closures or method references here (Swift 6.2 IRGen
+    /// crashed on a reabstraction thunk for one).
+    @Bindable var writes: HealthWriteService
+
+    var body: some View {
+        Section {
+            Toggle("Write to Apple Health", isOn: $writes.writeToHealth)
+            if writes.isEnabled, writes.failedCount > 0 {
+                VStack(alignment: .leading, spacing: NL.Spacing.xs) {
+                    Text("^[\(writes.failedCount) entry](inflect: true) not yet written to Apple Health")
+                    if let lastError = writes.lastError {
+                        Text(lastError).font(.footnote).foregroundStyle(.secondary)
+                    }
+                }
+                Button("Try again", action: retry)
+            }
+            if let error = writes.settingError {
+                Text(error).foregroundStyle(.red)
+            }
+        } footer: {
+            Text(writes.isEnabled ? Self.onFooter : Self.offFooter)
+        }
+    }
+
+    static let onFooter = "Nutrients of each diary entry and the water you log are written to Apple Health "
+        + "and kept up to date when you edit or delete them."
+    static let offFooter = "Nothing is written to Apple Health; samples written earlier stay there, and entries you "
+        + "change now keep their old values in Health. When you turn this back on, new changes are written again and "
+        + "samples of entries deleted meanwhile are removed."
+
+    private func retry() {
+        Task { @MainActor in
+            await writes.drain()
+        }
     }
 }
 

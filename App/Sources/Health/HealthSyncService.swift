@@ -11,7 +11,11 @@ import Persistence
 ///   (Update now, pull-to-refresh, time or time-zone change) and automatically at most once a day, so access
 ///   granted later and late uploads (a scale or watch syncing days afterwards) still fill the history.
 /// - Recent sync: the last `recentDays` days, on launch and whenever the app returns to the foreground.
+/// - Observer updates (backlog #26): once the user has been asked for access, an `HKObserverQuery` per read type with
+///   hourly background delivery re-reads the recent days whenever Health changes (a morning weigh-in shows up within
+///   the hour without opening the app). Every observer completion handler is called by `HealthObserverDispatcher`.
 /// The calendar (time zone) is read at the start of every sync, so day boundaries follow the device.
+/// Water written by Nutrilog itself is left out of `daily_metrics.water_ml` (it lives in `water_entry`).
 @MainActor
 @Observable
 final class HealthSyncService {
@@ -38,6 +42,9 @@ final class HealthSyncService {
     }
 
     let source: any HealthDataSource
+    private let observer: (any HealthObserving)?
+    /// Nutrilog's own source in Health; its water is not counted as water from other apps.
+    private let ownBundleIdentifier: String?
     private let metrics: DailyMetricsRepository
     private let settings: ProfileRepository
     private let clock: AppClock
@@ -50,17 +57,24 @@ final class HealthSyncService {
     private(set) var lastFullSyncAt: Date?
     @ObservationIgnored private var running: Task<Void, Never>?
     @ObservationIgnored private var pending: Scope?
+    @ObservationIgnored private var dispatcher: HealthObserverDispatcher?
+    /// Observer updates handled (each re-read the recent days) — for tests and diagnostics.
+    private(set) var observerRefreshCount = 0
 
     /// - Parameter calendar: the calendar for day boundaries, read at the start of every sync. Defaults to the
     ///   device's current calendar; tests inject a fixed one.
     init(
         source: any HealthDataSource,
+        observer: (any HealthObserving)? = nil,
+        ownBundleIdentifier: String? = Bundle.main.bundleIdentifier,
         metrics: DailyMetricsRepository,
         settings: ProfileRepository,
         clock: AppClock = .system,
         calendar: @escaping @MainActor () -> Calendar = { Calendar.current },
     ) {
         self.source = source
+        self.observer = observer
+        self.ownBundleIdentifier = ownBundleIdentifier
         self.metrics = metrics
         self.settings = settings
         self.clock = clock
@@ -93,6 +107,48 @@ final class HealthSyncService {
     func connect() async throws {
         try await source.requestAuthorization()
         startSync(.full)
+        await startObserving()
+    }
+
+    /// True while observer queries are registered.
+    var isObserving: Bool {
+        dispatcher != nil
+    }
+
+    /// Registers the observer queries and background delivery (launch, and after `connect`). Does nothing before the
+    /// user has been asked for access, or when already observing. Background delivery that fails to enable for some
+    /// types is not fatal: their queries still update the app while it runs.
+    func startObserving() async {
+        guard source.isAvailable, let observer, dispatcher == nil else { return }
+        if !isBackfillComplete {
+            guard await source.authorizationRequestStatus() == .unnecessary else { return }
+        }
+        guard dispatcher == nil else { return } // started while we were asking
+        let dispatcher = HealthObserverDispatcher { [weak self] _ in
+            await self?.healthDidChange()
+        }
+        self.dispatcher = dispatcher
+        try? await observer.startObserving(HealthReadType.observedTypes, onUpdate: { dispatcher.handle($0) })
+    }
+
+    func stopObserving() async {
+        guard let dispatcher else { return }
+        self.dispatcher = nil
+        await observer?.stopObserving()
+        await dispatcher.stop()
+    }
+
+    /// Pull-to-refresh (dashboard, Settings): re-reads the whole window now. Returns when the data is in.
+    func pullToRefresh() async {
+        await refresh(force: true)
+    }
+
+    /// An observer reported new data: re-read the recent days (queued behind a running sync), ignoring the
+    /// automatic-refresh throttle. Returns when the data is in, so the observer completes after the write.
+    private func healthDidChange() async {
+        observerRefreshCount += 1
+        startSync(.recent)
+        await waitForSync()
     }
 
     /// Automatic refresh (launch, foreground): the recent days, or the full window when the last full sync is a
@@ -131,7 +187,8 @@ final class HealthSyncService {
     func sync(days: ClosedRange<LocalDay>, calendar: Calendar? = nil) async throws -> Int {
         let calendar = calendar ?? calendarProvider()
         let batch = try await source.fetchDailyData(for: days, calendar: calendar)
-        let rows = DailyMetricsAggregator.aggregate(batch, calendar: calendar)
+        let own = ownBundleIdentifier.map { Set([$0]) } ?? []
+        let rows = DailyMetricsAggregator.aggregate(batch, calendar: calendar, excludingWaterFrom: own)
         return try metrics.upsert(rows)
     }
 

@@ -86,6 +86,7 @@ public struct DiaryRepository: Sendable {
                 sortOrder: Self.nextSortOrder(db, day: day, slotID: slotID),
             )
             try entry.insert(db)
+            try Self.queueHealthWrite(db, ids: [entry.id], now: now)
 
             guard var stored = try Food.fetchOne(db, key: food.id) else { throw PersistenceError.notFound(food.id) }
             stored.useCount += 1
@@ -118,6 +119,7 @@ public struct DiaryRepository: Sendable {
                 sortOrder: Self.nextSortOrder(db, day: day, slotID: slotID),
             )
             try entry.insert(db)
+            try Self.queueHealthWrite(db, ids: [entry.id], now: now)
             return entry
         }
     }
@@ -141,6 +143,7 @@ public struct DiaryRepository: Sendable {
             entry.servingLabel = quantity.servingLabel
             entry.stampUpdated(now)
             try entry.update(db)
+            try Self.queueHealthWrite(db, ids: [entry.id], now: now)
         }
     }
 
@@ -155,6 +158,7 @@ public struct DiaryRepository: Sendable {
             entry.nutrients = nutrients
             entry.stampUpdated(now)
             try entry.update(db)
+            try Self.queueHealthWrite(db, ids: [entry.id], now: now)
         }
     }
 
@@ -179,6 +183,7 @@ public struct DiaryRepository: Sendable {
             entry.day = day
             entry.stampUpdated(now)
             try entry.update(db)
+            try Self.queueHealthWrite(db, ids: [entry.id], now: now) // the sample's date follows the day
         }
     }
 
@@ -208,6 +213,7 @@ public struct DiaryRepository: Sendable {
             copy.sortOrder = try Self.nextSortOrder(db, day: source.day, slotID: source.mealSlotID)
             copy.stampCreated(now)
             try copy.insert(db)
+            try Self.queueHealthWrite(db, ids: [copy.id], now: now)
             return copy
         }
     }
@@ -217,11 +223,14 @@ public struct DiaryRepository: Sendable {
     public func softDelete(entryIDs: [String]) throws {
         let now = clock.now()
         try database.writer.write { db in
+            var changed: [String] = []
             for id in entryIDs {
                 guard var entry = try DiaryEntry.fetchOne(db, key: id), entry.deletedAt == nil else { continue }
                 entry.stampDeleted(now)
                 try entry.update(db)
+                changed.append(id)
             }
+            try Self.queueHealthWrite(db, ids: changed, now: now)
         }
     }
 
@@ -229,6 +238,7 @@ public struct DiaryRepository: Sendable {
     public func restore(entryIDs: [String]) throws {
         let now = clock.now()
         try database.writer.write { db in
+            var changed: [String] = []
             for id in entryIDs {
                 guard var entry = try DiaryEntry.fetchOne(db, key: id), entry.deletedAt != nil else { continue }
                 let taken = try Bool.fetchOne(db, sql: """
@@ -241,7 +251,9 @@ public struct DiaryRepository: Sendable {
                 entry.deletedAt = nil
                 entry.stampUpdated(now)
                 try entry.update(db)
+                changed.append(id)
             }
+            try Self.queueHealthWrite(db, ids: changed, now: now)
         }
     }
 
@@ -285,6 +297,7 @@ public struct DiaryRepository: Sendable {
                 try copy.insert(db)
                 created.append(copy.id)
             }
+            try Self.queueHealthWrite(db, ids: created, now: now)
             return created
         }
     }
@@ -316,6 +329,12 @@ public struct DiaryRepository: Sendable {
     }
 
     // MARK: Helpers
+
+    /// Queues entries for the Apple Health writer (backlog #27) in the same transaction as their change, so the
+    /// nutrient samples follow every save, edit, move, delete and undo. Notes and reordering don't touch Health.
+    static func queueHealthWrite(_ db: Database, ids: [String], now: Date) throws {
+        try HealthKitLinkRepository.enqueue(db, owner: .diaryEntry, ids: ids, now: now)
+    }
 
     static func mealSlots(_ db: Database, includeInactive: Bool) throws -> [MealSlot] {
         var request = MealSlot.filter(MealSlot.Columns.deletedAt == nil)

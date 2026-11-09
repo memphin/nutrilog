@@ -8,9 +8,8 @@ import Foundation
 /// must therefore treat "no data" as "no data found — check Health permissions" (`HealthKitClient.noDataMessage`),
 /// never as a confirmed denial.
 ///
-/// Later backlog items extend the client with separate protocols that a source can adopt alongside this one:
-/// observer queries and background delivery (#26), and writing nutrients, water and weight (#27, using
-/// `HealthWriteType` and `healthkit_link`).
+/// Separate protocols that a source adopts alongside this one: `HealthObserving` (observer queries and background
+/// delivery, #26) and `HealthWriting` (writing nutrients and water, #27).
 public protocol HealthDataSource: Sendable {
     /// False on devices without a Health store (some iPads); hide Health features there.
     var isAvailable: Bool { get }

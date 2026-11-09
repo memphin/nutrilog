@@ -39,6 +39,8 @@ final class AppEnvironment {
     private(set) var usda: any USDAClient
     /// The key `usda` was built with.
     private var usdaKey: String?
+    /// Writes diary and water entries to Health (backlog #27); nil when the database could not be opened.
+    let healthWrites: HealthWriteService?
 
     /// Display preference (Settings → Units); persisted in the `setting` table. Change it with `setEnergyUnit(_:)`.
     private(set) var energyUnit: EnergyUnit = .kcal
@@ -57,6 +59,8 @@ final class AppEnvironment {
         bundledIndex: BundledFoodIndex?,
         clock: AppClock = .system,
         health: any HealthDataSource = FakeHealthDataSource(isAvailable: false),
+        healthWriter: (any HealthWriting)? = nil,
+        healthObserver: (any HealthObserving)? = nil,
         usdaKeyStore: any USDAKeyStoring = InMemoryUSDAKeyStore(),
     ) {
         self.database = database
@@ -67,12 +71,22 @@ final class AppEnvironment {
         if case let .ready(db) = database {
             healthSync = HealthSyncService(
                 source: health,
+                observer: healthObserver,
                 metrics: DailyMetricsRepository(db, clock: clock),
+                settings: ProfileRepository(db, clock: clock),
+                clock: clock,
+            )
+            healthWrites = HealthWriteService(
+                writer: healthWriter ?? FakeHealthWriter(isAvailable: false),
+                links: HealthKitLinkRepository(db, clock: clock),
+                diary: DiaryRepository(db, clock: clock),
+                water: WaterRepository(db, clock: clock),
                 settings: ProfileRepository(db, clock: clock),
                 clock: clock,
             )
         } else {
             healthSync = nil
+            healthWrites = nil
         }
         self.usdaKeyStore = usdaKeyStore
         let resolved = Self.resolveUSDAKey(store: usdaKeyStore, config: config)
@@ -113,6 +127,43 @@ final class AppEnvironment {
 
     var dailyMetrics: DailyMetricsRepository? {
         db.map { DailyMetricsRepository($0, clock: clock) }
+    }
+
+    /// Water logged in Nutrilog (FR-46). The day's total is these entries + `daily_metrics.water_ml` (other apps).
+    var water: WaterRepository? {
+        db.map { WaterRepository($0, clock: clock) }
+    }
+
+    // MARK: Health background work (backlog #26, #27)
+
+    /// At launch (also a background launch for Health delivery): register the observer queries once the user has been
+    /// asked for access, start writing queued entries, clean up orphaned samples.
+    func startHealthBackgroundWork() {
+        healthWrites?.start()
+        Task {
+            await healthSync?.startObserving()
+            await healthWrites?.runMaintenance()
+        }
+    }
+
+    /// Back in the foreground: retry failed Health writes and clean up orphans (the Health read refresh runs separately).
+    func healthDidEnterForeground() async {
+        await healthWrites?.runMaintenance()
+    }
+
+    /// Onboarding "Connect": shows the permission sheet, starts the backfill and the observers, then writes the
+    /// entries that were waiting for write permission (plus the last 7 days' unwritten ones). Throws when the sheet
+    /// could not be shown.
+    func connectHealth() async throws {
+        guard let healthSync else { return }
+        try await healthSync.connect()
+        await healthWrites?.writeAccessDidChange()
+    }
+
+    /// Pull-to-refresh (dashboard): retry pending Health writes, then re-read Health. Returns when done.
+    func refreshHealth() async {
+        await healthWrites?.drain()
+        await healthSync?.pullToRefresh()
     }
 
     /// True once per install: Health is available, the user was never asked for access, and the onboarding
@@ -231,11 +282,14 @@ final class AppEnvironment {
                 _ = try? BarcodeLookup.evictExpiredCache(in: db)
             }
         }
+        let health = LiveHealthDataSource()
         return AppEnvironment(
             database: state,
             config: AppConfig(bundle: bundle),
             bundledIndex: BundledFoodIndex.inBundle(bundle),
-            health: LiveHealthDataSource(),
+            health: health,
+            healthWriter: health,
+            healthObserver: health,
             usdaKeyStore: KeychainUSDAKeyStore(),
         )
     }
@@ -246,16 +300,21 @@ final class AppEnvironment {
         sampleData: Bool = false,
         clock: AppClock = .system,
         health: (any HealthDataSource)? = nil,
+        healthWriter: (any HealthWriting)? = nil,
+        healthObserver: (any HealthObserving)? = nil,
     ) -> AppEnvironment {
         let state: DatabaseState
         do { state = try .ready(AppDatabase.inMemory()) } catch { state = .failed(String(describing: error)) }
         let today = LocalDay.today(now: clock.now())
+        let health = health ?? (sampleData ? FakeHealthDataSource.demo(endingOn: today) : FakeHealthDataSource())
         let env = AppEnvironment(
             database: state,
             config: AppConfig(usdaAPIKey: nil, offUserAgent: AppConfig.defaultUserAgent),
             bundledIndex: BundledFoodIndex.inBundle(),
             clock: clock,
-            health: health ?? (sampleData ? FakeHealthDataSource.demo(endingOn: today) : FakeHealthDataSource()),
+            health: health,
+            healthWriter: healthWriter ?? FakeHealthWriter(mirror: health as? FakeHealthDataSource),
+            healthObserver: healthObserver ?? FakeHealthObserver(),
         )
         if sampleData {
             env.insertSampleData()
@@ -331,6 +390,8 @@ enum SettingKey {
     static let healthLastFullSyncAt = "healthLastFullSyncAt"
     /// Bool: the first-launch Health onboarding was shown.
     static let healthOnboardingShown = "healthOnboardingShown"
+    /// Bool: "Write to Apple Health" (Settings → Apple Health, backlog #27); missing means on.
+    static let healthWriteEnabled = "healthWriteEnabled"
 }
 
 /// kcal or kJ for display (Settings → Units). Storage is always kcal.
