@@ -5,6 +5,11 @@ Open Food Facts client, USDA FDC client, bundled food index, barcode lookup pipe
 - `OpenFoodFactsClient` (protocol) / `OpenFoodFactsHTTPClient`: OFF v2 product lookup by barcode — fields
   allowlist, `User-Agent` from Info.plist `OFFUserAgentContact`, 8 s timeout, 2 retries with backoff,
   `OpenFoodFactsError` (`.notFound` for `status: 0`, `.offline`, …).
+- `OpenFoodFactsSearchClient` (protocol) / `OpenFoodFactsSearchHTTPClient`: OFF v1 full-text search
+  (`/cgi/search.pl?search_terms=…&search_simple=1&json=1`, same fields allowlist and `User-Agent`), 5 s timeout and
+  no retries (interactive typing); hits without a code or any nutrition are dropped; HTTP 429/503 (OFF's throttle
+  page) → `.rateLimited`.
+- `FoodNameCasing` / `FoodDraft.displayCased`: title-cases ALL CAPS names and brands (USDA Branded).
 - `OFFFoodMapper`: `OFFProduct` → `FoodDraft` (kcal/kJ, salt → sodium, per-serving scaling, data quality).
 - `USDAClient` (protocol) / `USDAHTTPClient`: FDC `/v1/foods/search` over Foundation, SR Legacy and Branded,
   optional API key (sent in the `X-Api-Key` header, never in a URL, never in a description or `dump`). Without a

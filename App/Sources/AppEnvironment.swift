@@ -29,6 +29,8 @@ final class AppEnvironment {
     let openFoodFacts: any OpenFoodFactsClient
     /// Label photos taken for foods not found by a scan (FR-13); files in the app container, never in the database.
     let labelPhotos: LabelPhotoStore
+    /// Open Food Facts full-text search for the Online segment of Add Food (#22); a stub in tests and previews.
+    let offSearch: any OpenFoodFactsSearchClient
 
     /// The app's one USDA 429 cool-down, shared by every client built here. Reset only when the resolved key changes.
     let usdaRateLimit = USDARateLimit()
@@ -70,6 +72,7 @@ final class AppEnvironment {
         // passes the real ones.
         openFoodFacts: any OpenFoodFactsClient = StubOpenFoodFactsClient(),
         labelPhotos: LabelPhotoStore = .temporary(),
+        offSearch: any OpenFoodFactsSearchClient = StubOpenFoodFactsSearchClient(),
     ) {
         self.database = database
         self.config = config
@@ -99,6 +102,7 @@ final class AppEnvironment {
         self.usdaKeyStore = usdaKeyStore
         self.openFoodFacts = openFoodFacts
         self.labelPhotos = labelPhotos
+        self.offSearch = offSearch
         let resolved = Self.resolveUSDAKey(store: usdaKeyStore, config: config)
         usdaKeySource = resolved.source
         usdaKeychainUnreadable = resolved.unreadable
@@ -309,6 +313,7 @@ final class AppEnvironment {
             usdaKeyStore: KeychainUSDAKeyStore(),
             openFoodFacts: OpenFoodFactsHTTPClient(contact: config.offContact, appVersion: config.appVersion),
             labelPhotos: .live,
+            offSearch: OpenFoodFactsSearchHTTPClient(contact: config.offContact, appVersion: config.appVersion),
         )
     }
 

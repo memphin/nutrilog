@@ -320,23 +320,53 @@ struct DataSettingsView: View {
 // MARK: - Network & about
 
 struct NetworkInfoView: View {
-    static let hosts: [(host: String, purpose: String)] = [
-        ("world.openfoodfacts.org", "Product lookup by barcode and packaged-food search (phase 2)"),
-        ("api.nal.usda.gov", "USDA FoodData Central search — only with your own API key (phase 2)"),
+    struct Host {
+        let host: String
+        let requests: [(path: String, purpose: String)]
+        let sent: String
+    }
+
+    /// Every request the app makes (PRIVACY.md "What leaves the device").
+    static let hosts: [Host] = [
+        Host(
+            host: "world.openfoodfacts.org",
+            requests: [
+                ("/api/v2/product/{barcode}.json", "Product lookup when a barcode isn't in the local cache"),
+                ("/cgi/search.pl", "Packaged-food search in Add Food → Online"),
+            ],
+            sent: "The barcode or the search text, and a User-Agent naming the app (Nutrilog and its version). No account.",
+        ),
+        Host(
+            host: "api.nal.usda.gov",
+            requests: [
+                ("/fdc/v1/foods/search", "Generic and branded food search in Add Food → Online — only with a USDA API key"),
+            ],
+            sent: "The search text and your API key (in a request header, never stored in a cache).",
+        ),
     ]
 
     var body: some View {
         List {
-            Section {
-                ForEach(Self.hosts, id: \.host) { item in
-                    VStack(alignment: .leading, spacing: NL.Spacing.xxs) {
-                        Text(item.host).font(.body.monospaced())
-                        Text(item.purpose).font(.caption).foregroundStyle(.secondary)
+            ForEach(Self.hosts, id: \.host) { item in
+                Section {
+                    ForEach(item.requests, id: \.path) { request in
+                        VStack(alignment: .leading, spacing: NL.Spacing.xxs) {
+                            Text(request.path).font(.footnote.monospaced())
+                            Text(request.purpose).font(.caption).foregroundStyle(.secondary)
+                        }
                     }
+                } header: {
+                    Text(item.host).font(.body.monospaced()).textCase(nil)
+                } footer: {
+                    Text("Sent: \(item.sent)")
                 }
+            }
+            Section {
+                EmptyView()
             } footer: {
                 Text(
-                    "These are the only hosts Nutrilog ever contacts. No analytics, no tracking, no accounts. This version makes no network requests at all.",
+                    "These are the only hosts Nutrilog contacts, and only when you scan a barcode or search online. "
+                        + "Product images are not downloaded. No analytics, no tracking, no accounts.",
                 )
             }
         }
