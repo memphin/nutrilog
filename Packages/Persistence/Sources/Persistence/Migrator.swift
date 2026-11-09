@@ -4,9 +4,10 @@ import GRDB
 /// Registers every schema migration in order. Never edit a shipped migration —
 /// add a new numbered `.sql` file to `Migrations/` and register it here.
 public enum Migrator {
-    static let migrations: [String] = [
+    public static let migrations: [String] = [
         "001_initial",
-        // "002_<description>",
+        "002_food_last_quantity",
+        // "003_<description>",
     ]
 
     public static func make() throws -> DatabaseMigrator {

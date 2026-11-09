@@ -12,12 +12,17 @@ analyzer_rules:
 disabled_rules:
   - trailing_comma   # SwiftFormat owns comma style
   - sorted_imports   # SwiftFormat sorts imports (testable last)
+  - opening_brace    # SwiftFormat puts the brace on its own line after multi-line conditions
 line_length:
   warning: 140
   error: 200
 identifier_name:
-  excluded: [id, db, ml, kg, g, p, c, f]
+  min_length: 1      # short names are fine in closures and math (i, d, s, l, r)
+  excluded: [id, db, ml, kg]
 type_body_length:
   warning: 400
 file_length:
   warning: 600
+large_tuple:
+  warning: 4
+  error: 5
