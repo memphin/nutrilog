@@ -1,0 +1,19 @@
+{
+  "code": "8712345678906",
+  "product": {
+    "code": "8712345678906",
+    "nutriments": {
+      "carbohydrates_serving": 2.7,
+      "energy-kcal_serving": 12,
+      "fat_serving": 0,
+      "proteins_serving": 0,
+      "sugars_serving": 2.5
+    },
+    "nutrition_data_per": "serving",
+    "product_name": "Energy Shot",
+    "quantity": "60 ml",
+    "serving_size": "1 shot"
+  },
+  "status": 1,
+  "status_verbose": "product found"
+}

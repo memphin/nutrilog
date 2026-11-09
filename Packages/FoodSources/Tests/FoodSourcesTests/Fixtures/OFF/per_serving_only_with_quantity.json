@@ -1,0 +1,28 @@
+{
+  "code": "5901234123457",
+  "product": {
+    "brands": "Olimp",
+    "code": "5901234123457",
+    "last_modified_t": 1715000000,
+    "nutriments": {
+      "carbohydrates_serving": 18,
+      "energy-kcal_serving": 216,
+      "energy-kj_serving": 904,
+      "energy_serving": 904,
+      "fat_serving": 7.2,
+      "fiber_serving": 6,
+      "proteins_serving": 20,
+      "salt_serving": 0.3,
+      "saturated-fat_serving": 4.1,
+      "sugars_serving": 1.8
+    },
+    "nutrition_data_per": "serving",
+    "product_name": "Protein Bar Chocolate",
+    "quantity": "60 g",
+    "serving_quantity": 60,
+    "serving_quantity_unit": "g",
+    "serving_size": "1 bar (60 g)"
+  },
+  "status": 1,
+  "status_verbose": "product found"
+}

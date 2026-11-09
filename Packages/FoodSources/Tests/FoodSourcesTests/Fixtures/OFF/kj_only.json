@@ -1,0 +1,31 @@
+{
+  "code": "4006381012348",
+  "product": {
+    "brands": "Wasa",
+    "code": "4006381012348",
+    "last_modified_t": 1701276540,
+    "nutriments": {
+      "carbohydrates_100g": 61,
+      "energy-kj": 1490,
+      "energy-kj_100g": 1490,
+      "energy-kj_unit": "kJ",
+      "energy-kj_value": 1490,
+      "energy_100g": 1490,
+      "energy_unit": "kJ",
+      "fat_100g": 1.6,
+      "fiber_100g": 15,
+      "proteins_100g": 9,
+      "salt_100g": 1.1,
+      "saturated-fat_100g": 0.3,
+      "sugars_100g": 2.5
+    },
+    "nutriscore_grade": "a",
+    "nutrition_data_per": "100g",
+    "product_name": "Knäckebrot Roggen",
+    "quantity": "275 g",
+    "serving_quantity": 10,
+    "serving_size": "1 Scheibe (10 g)"
+  },
+  "status": 1,
+  "status_verbose": "product found"
+}

@@ -1,0 +1,31 @@
+{
+  "code": "5449000000996",
+  "product": {
+    "brands": "Coca-Cola",
+    "code": 5449000000996,
+    "image_front_small_url": "https://images.openfoodfacts.org/images/products/544/900/000/0996/front_hr.402.200.jpg",
+    "last_modified_t": "1731600000",
+    "nutriments": {
+      "carbohydrates_100g": "10,6",
+      "energy-kcal_100g": "42",
+      "energy-kcal_unit": "kcal",
+      "energy-kj_100g": "180",
+      "fat_100g": "0",
+      "proteins_100g": "0",
+      "salt_100g": "< 0.01",
+      "saturated-fat_100g": "",
+      "sugars_100g": "10.6 g"
+    },
+    "nutriscore_grade": "E",
+    "product_name": "Coca-Cola",
+    "product_name_hr": "Coca-Cola",
+    "product_quantity": "500",
+    "product_quantity_unit": "ml",
+    "quantity": "0,5 l",
+    "serving_quantity": "250",
+    "serving_quantity_unit": "ml",
+    "serving_size": "250 ml"
+  },
+  "status": "1",
+  "status_verbose": "product found"
+}

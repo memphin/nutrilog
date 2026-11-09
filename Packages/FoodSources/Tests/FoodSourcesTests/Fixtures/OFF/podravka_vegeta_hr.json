@@ -1,0 +1,30 @@
+{
+  "code": "3850104012341",
+  "product": {
+    "allergens_tags": [
+      "en:celery"
+    ],
+    "brands": "Podravka, Vegeta",
+    "code": "3850104012341",
+    "image_front_small_url": "https://images.openfoodfacts.org/images/products/385/010/401/2341/front_en.7.200.jpg",
+    "ingredients_text": "sol 56%, pojačivači okusa (natrijev glutamat, dinatrijevi ribonukleotidi), sušeno povrće 15,5% (mrkva, pastrnjak, luk, celer, peršinov list), šećer, začini, kukuruzni škrob, riboflavin.",
+    "last_modified_t": 1698231844,
+    "nutriments": {
+      "carbohydrates_100g": 21,
+      "energy-kcal_100g": 160,
+      "energy-kj_100g": 678,
+      "energy_100g": 678,
+      "fat_100g": 0.5,
+      "proteins_100g": 9.1,
+      "salt_100g": 56,
+      "sugars_100g": 15
+    },
+    "nutriscore_grade": "not-applicable",
+    "product_name": "Vegeta food seasoning with vegetables",
+    "product_name_hr": "Vegeta dodatak jelima s povrćem",
+    "quantity": "500 g",
+    "serving_size": "5 g"
+  },
+  "status": 1,
+  "status_verbose": "product found"
+}
