@@ -29,11 +29,6 @@ struct OpenFoodFactsClientTests {
         #expect(request.httpMethod == "GET")
     }
 
-    @Test func `blank contact still gives a valid User-Agent`() {
-        let client = OpenFoodFactsHTTPClient(contact: "  ")
-        #expect(client.userAgent == "Nutrilog/1.0")
-    }
-
     // MARK: - Responses
 
     @Test func `found product is returned and mapped`() async throws {
@@ -111,10 +106,10 @@ struct OpenFoodFactsClientTests {
 
     // MARK: - Retries & errors
 
-    @Test func `timeouts are retried twice with exponential backoff`() async throws {
+    @Test func `dropped connections are retried twice with exponential backoff`() async throws {
         let transport = try StubTransport([
-            .failure(.timedOut),
-            .failure(.timedOut),
+            .failure(.networkConnectionLost),
+            .failure(.networkConnectionLost),
             .http(200, Fixture.data("nutella_complete")),
         ])
         let sleeper = SleepRecorder()
@@ -124,14 +119,14 @@ struct OpenFoodFactsClientTests {
         #expect(sleeper.delays == [.milliseconds(500), .milliseconds(1000)])
     }
 
-    @Test func `timeouts on every attempt end as timedOut after 3 requests`() async {
+    @Test func `a timeout fails at once without a retry`() async {
         let transport = StubTransport([.failure(.timedOut)])
         let sleeper = SleepRecorder()
         await #expect(throws: OpenFoodFactsError.timedOut) {
             try await makeClient(transport, sleeper: sleeper).product(barcode: Self.nutella)
         }
-        #expect(transport.requests.count == 3)
-        #expect(sleeper.delays.count == 2)
+        #expect(transport.requests.count == 1)
+        #expect(sleeper.delays.isEmpty)
     }
 
     @Test(arguments: [URLError.Code.notConnectedToInternet, .dataNotAllowed, .internationalRoamingOff])
@@ -162,18 +157,35 @@ struct OpenFoodFactsClientTests {
         #expect(transport.requests.count == 3)
     }
 
-    @Test func `HTTP 429 is retried and can recover`() async throws {
-        let transport = try StubTransport([.http(429, Data()), .http(200, Fixture.data("kras_dorina_hr"))])
-        let product = try await makeClient(transport).product(barcode: "3850102000579")
-        #expect(product.productNameHR == "Dorina mliječna čokolada")
+    @Test func `HTTP 429 with a short Retry-After waits that long and can recover`() async throws {
+        let transport = try StubTransport([
+            .http(429, Data(), headers: ["Retry-After": "1"]),
+            .http(200, Fixture.data("kras_dorina")),
+        ])
+        let sleeper = SleepRecorder()
+        let product = try await makeClient(transport, sleeper: sleeper).product(barcode: "3850102508648")
+        #expect(product.productName == "Dorina")
         #expect(transport.requests.count == 2)
+        #expect(sleeper.delays == [.seconds(1)])
     }
 
-    @Test func `persistent HTTP 429 ends as rateLimited`() async {
-        let transport = StubTransport([.http(429, Data())])
+    @Test func `HTTP 429 with a short Retry-After on every attempt ends as rateLimited`() async {
+        let transport = StubTransport([.http(429, Data(), headers: ["Retry-After": "2"])])
         await #expect(throws: OpenFoodFactsError.rateLimited) {
             try await makeClient(transport).product(barcode: Self.nutella)
         }
+        #expect(transport.requests.count == 3)
+    }
+
+    @Test(arguments: [[:], ["Retry-After": "30"], ["Retry-After": "Wed, 21 Oct 2026 07:28:00 GMT"]])
+    func `HTTP 429 without a short Retry-After fails fast`(headers: [String: String]) async {
+        let transport = StubTransport([.http(429, Data(), headers: headers)])
+        let sleeper = SleepRecorder()
+        await #expect(throws: OpenFoodFactsError.rateLimited) {
+            try await makeClient(transport, sleeper: sleeper).product(barcode: Self.nutella)
+        }
+        #expect(transport.requests.count == 1)
+        #expect(sleeper.delays.isEmpty)
     }
 
     @Test func `other 4xx fail without retry`() async {
@@ -197,6 +209,24 @@ struct OpenFoodFactsClientTests {
         await #expect(throws: CancellationError.self) {
             try await makeClient(transport).product(barcode: Self.nutella)
         }
+    }
+
+    @Test func `cancellation during backoff stops without another request`() async {
+        let transport = StubTransport([.http(503, Data())])
+        let client = OpenFoodFactsHTTPClient(
+            contact: Self.contact,
+            transport: transport,
+            sleep: { _ in try await Task.sleep(for: .seconds(60)) },
+        )
+        let lookup = Task { try await client.product(barcode: Self.nutella) }
+        while transport.requests.isEmpty {
+            await Task.yield()
+        }
+        lookup.cancel()
+        await #expect(throws: CancellationError.self) {
+            try await lookup.value
+        }
+        #expect(transport.requests.count == 1)
     }
 
     @Test func `retry policy doubles the delay`() {

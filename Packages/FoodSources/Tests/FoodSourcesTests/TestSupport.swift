@@ -6,10 +6,7 @@ import Testing
 /// OFF v2 JSON payloads in `Fixtures/OFF`, shaped like real responses.
 enum Fixture {
     static func data(_ name: String) throws -> Data {
-        let url = try #require(
-            Bundle.module.url(forResource: name, withExtension: "json", subdirectory: "Fixtures/OFF"),
-            "missing fixture \(name).json",
-        )
+        let url = try #require(Bundle.module.url(forResource: name, withExtension: "json", subdirectory: "Fixtures/OFF"))
         return try Data(contentsOf: url)
     }
 
@@ -31,7 +28,7 @@ func isClose(_ value: Double?, _ expected: Double, tolerance: Double = 0.01) -> 
 /// Scripted ``HTTPTransport``: answers with `replies` in order (the last one repeats) and records every request.
 final class StubTransport: HTTPTransport {
     enum Reply: Sendable {
-        case http(Int, Data)
+        case http(Int, Data, headers: [String: String] = [:])
         case failure(URLError.Code)
     }
 
@@ -57,9 +54,9 @@ final class StubTransport: HTTPTransport {
             return state.replies.count > 1 ? state.replies.removeFirst() : state.replies[0]
         }
         switch reply {
-        case let .http(status, body):
+        case let .http(status, body, headers):
             let url = try #require(request.url)
-            let response = try #require(HTTPURLResponse(url: url, statusCode: status, httpVersion: "HTTP/1.1", headerFields: nil))
+            let response = try #require(HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: headers))
             return (body, response)
         case let .failure(code):
             throw URLError(code)

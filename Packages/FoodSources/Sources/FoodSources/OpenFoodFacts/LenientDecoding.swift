@@ -3,16 +3,40 @@ import Foundation
 /// Number parsing for Open Food Facts JSON, which sends the same field as a JSON number in one product and as a
 /// string in the next ("12.5", "12,5", "< 0.5", "12 g", ""). Nothing here throws or traps: anything unusable is `nil`.
 enum LenientNumber {
-    /// Leading number of `text`, accepting a decimal comma and a leading `<`, `>`, `~` or `≈` (OFF's "traces"
-    /// notation). `nil` for empty, non-numeric or non-finite input.
+    /// The number in `text`, accepting a decimal comma, exponents ("4e-05"), thousands separators ("1.234,5",
+    /// "1,234.5"), a leading `<`, `>`, `~` or `≈` (OFF's "traces" notation) and a trailing unit ("12 g").
+    /// `nil` for empty, non-numeric or non-finite input.
     static func parse(_ text: String) -> Double? {
-        var rest = Substring(text.trimmingCharacters(in: .whitespacesAndNewlines))
-        while let first = rest.first, "<>~≈≤≥".contains(first) || first.isWhitespace {
-            rest = rest.dropFirst()
+        var token = Substring(text.trimmingCharacters(in: .whitespacesAndNewlines))
+        while let first = token.first, "<>~≈≤≥".contains(first) || first.isWhitespace {
+            token = token.dropFirst()
         }
+        if !token.isEmpty, token.allSatisfy({ "0123456789.,-+eE".contains($0) }),
+           let value = Double(normalizingSeparators(token))
+        {
+            return value.isFinite ? value : nil
+        }
+        return leadingNumber(token)
+    }
+
+    /// One decimal separator, as a dot. With both "," and ".", the last one is the decimal separator and the other
+    /// separates thousands; a lone "," is a decimal comma.
+    private static func normalizingSeparators(_ token: Substring) -> String {
+        guard let lastComma = token.lastIndex(of: ",") else { return String(token) }
+        guard let lastDot = token.lastIndex(of: ".") else {
+            return token.replacingOccurrences(of: ",", with: ".")
+        }
+        if lastComma > lastDot {
+            return token.replacingOccurrences(of: ".", with: "").replacingOccurrences(of: ",", with: ".")
+        }
+        return token.replacingOccurrences(of: ",", with: "")
+    }
+
+    /// Leading number of `text` ("12 g" → 12), with "." or "," as the decimal separator.
+    private static func leadingNumber(_ text: Substring) -> Double? {
         var digits = ""
         var seenSeparator = false
-        for (index, char) in rest.enumerated() {
+        for (index, char) in text.enumerated() {
             if ("0" ... "9").contains(char) {
                 digits.append(char)
             } else if char == "." || char == ",", !seenSeparator {

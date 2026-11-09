@@ -7,20 +7,27 @@ import Foundation
 /// - Sodium: `salt_100g` × 400 mg, else `sodium_100g` (g) × 1000.
 /// - Each value prefers its `_100g` key; a `_serving` value is scaled to 100 g/ml when the serving weight is known
 ///   (`serving_quantity`, else parsed from `serving_size`).
-/// - Products with per-serving values only and no serving weight keep per-serving values (`basis = .perServing`,
-///   data quality partial).
-/// - Negative and non-finite values count as missing.
+/// - When per-100 and per-serving values are both usable, the basis that leaves fewer mandatory nutrients missing
+///   wins (ties go to per 100). Per-serving values without a usable serving weight stay per serving
+///   (`basis = .perServing`, data quality partial).
+/// - Negative, non-finite and physically impossible values count as missing (see ``NutrientValues``), so a
+///   product with a typo is never classified complete.
 public enum OFFFoodMapper {
     public static let kJPerKcal = 4.184
+    /// Servings lighter than this (g/ml) are not scaled to 100 g: a rounded "10 kcal" on "1 tablet (500 mg)"
+    /// would become 2000 kcal/100 g.
+    public static let minimumScalableServing = 1.0
 
     public static func map(_ product: OFFProduct) -> FoodDraft {
         let isLiquid = isLiquid(product)
         let servingAmount = servingAmount(product)
         let servingDescription = clean(product.servingSize)
 
-        let per100 = NutrientValues(product.nutriments, servingGrams: servingAmount)
-        let perServing = NutrientValues(product.nutriments, servingOnly: true)
-        let useServing = per100.isEmpty && !perServing.isEmpty
+        let scalableServing = servingAmount.flatMap { $0 >= minimumScalableServing ? $0 : nil }
+        let per100 = NutrientValues(per100From: product.nutriments, servingAmount: scalableServing).plausiblePer100()
+        let perServing = NutrientValues(perServingFrom: product.nutriments)
+        let useServing = !perServing.isEmpty
+            && (per100.isEmpty || perServing.missing.count < per100.missing.count)
         let values = useServing ? perServing : per100
 
         let serving = servingAmount.map { amount in
@@ -74,10 +81,19 @@ public enum OFFFoodMapper {
 
     // MARK: - Serving & liquid
 
-    /// Serving weight in the base unit: `serving_quantity` when positive, else parsed from `serving_size`.
+    /// Serving amount in g or ml: `serving_quantity` when positive and its unit is absent, g or ml; converted when
+    /// its unit is another known one (kg, cl, oz, …); else parsed from `serving_size`.
+    ///
+    /// A serving in ml on a food measured in g (or the other way round) is used as is: like the rest of the app we
+    /// accept a density of ≈ 1.
     static func servingAmount(_ product: OFFProduct) -> Double? {
         if let quantity = product.servingQuantity, quantity > 0, quantity.isFinite {
-            return quantity
+            guard let unit = product.servingQuantityUnit?.lowercased(), unit != "g", unit != "ml" else {
+                return quantity
+            }
+            if let converted = MeasureParser.convert(quantity, unit: unit) {
+                return converted.amount
+            }
         }
         return product.servingSize.flatMap(MeasureParser.parse)?.amount
     }
@@ -121,19 +137,26 @@ public enum OFFFoodMapper {
 // MARK: - Nutrient resolution
 
 /// The mapped nutrient values of one basis (per 100 or per serving).
-private struct NutrientValues {
-    let kcal: Double?
-    let protein: Double?
-    let carbs: Double?
-    let fat: Double?
-    let fiber: Double?
-    let sugar: Double?
-    let satFat: Double?
-    let sodiumMg: Double?
+struct NutrientValues {
+    /// Above this, energy per 100 g is impossible (pure fat is 900 kcal; slack for kJ rounding).
+    static let maxKcalPer100 = 902.0
+    /// Above this, protein + carbs + fat per 100 g is impossible (slack for label rounding).
+    static let maxMacroSumPer100 = 105.0
+    /// Salt above 100 g per 100 g is impossible: 100 g × 400 mg.
+    static let maxSodiumMgPer100 = 40000.0
 
-    /// Per-100 values: each `<key>_100g`, else `<key>_serving` × 100 / `servingGrams`.
-    init(_ nutriments: [String: Double], servingGrams: Double?) {
-        let scale = servingGrams.flatMap { $0 > 0 ? 100 / $0 : nil }
+    var kcal: Double?
+    var protein: Double?
+    var carbs: Double?
+    var fat: Double?
+    var fiber: Double?
+    var sugar: Double?
+    var satFat: Double?
+    var sodiumMg: Double?
+
+    /// Per-100 values: each `<key>_100g`, else `<key>_serving` × 100 / `servingAmount`.
+    init(per100From nutriments: [String: Double], servingAmount: Double?) {
+        let scale = servingAmount.flatMap { $0 > 0 ? 100 / $0 : nil }
         self.init(nutriments) { key in
             if let value = Self.valid(nutriments["\(key)_100g"]) {
                 return value
@@ -144,12 +167,12 @@ private struct NutrientValues {
     }
 
     /// Per-serving values: `<key>_serving` as given.
-    init(_ nutriments: [String: Double], servingOnly _: Bool) {
+    init(perServingFrom nutriments: [String: Double]) {
         self.init(nutriments) { key in Self.valid(nutriments["\(key)_serving"]) }
     }
 
     private init(_: [String: Double], value: (String) -> Double?) {
-        kcal = value("energy-kcal") ?? (value("energy-kj") ?? value("energy")).map { $0 / OFFFoodMapper.kJPerKcal }
+        kcal = Self.energy(kcal: value("energy-kcal"), kJ: value("energy-kj") ?? value("energy"))
         protein = value("proteins")
         carbs = value("carbohydrates")
         fat = value("fat")
@@ -157,6 +180,36 @@ private struct NutrientValues {
         sugar = value("sugars")
         satFat = value("saturated-fat")
         sodiumMg = value("salt").map(Salt.sodiumMg(fromSaltG:)) ?? value("sodium").map { $0 * 1000 }
+    }
+
+    /// kcal, else kJ ÷ 4.184. When kcal ≈ kJ the contributor typed the kJ figure into the kcal field: use kJ ÷ 4.184.
+    static func energy(kcal: Double?, kJ: Double?) -> Double? {
+        if let kcal, let kJ, kJ > 0, abs(kcal - kJ) <= kJ * 0.1 {
+            return kJ / OFFFoodMapper.kJPerKcal
+        }
+        return kcal ?? kJ.map { $0 / OFFFoodMapper.kJPerKcal }
+    }
+
+    /// Drops per-100 values that can't be true: energy > ~900 kcal, any macro > 100 g, protein + carbs + fat
+    /// > ~105 g (all three dropped — there's no telling which is wrong), salt > 100 g.
+    func plausiblePer100() -> NutrientValues {
+        var values = self
+        let atMost100: (Double?) -> Double? = { value in value.flatMap { $0 <= 100 ? $0 : nil } }
+        values.kcal = kcal.flatMap { $0 <= Self.maxKcalPer100 ? $0 : nil }
+        values.protein = atMost100(protein)
+        values.carbs = atMost100(carbs)
+        values.fat = atMost100(fat)
+        values.fiber = atMost100(fiber)
+        values.sugar = atMost100(sugar)
+        values.satFat = atMost100(satFat)
+        values.sodiumMg = sodiumMg.flatMap { $0 <= Self.maxSodiumMgPer100 ? $0 : nil }
+        let macroSum = (values.protein ?? 0) + (values.carbs ?? 0) + (values.fat ?? 0)
+        if macroSum > Self.maxMacroSumPer100 {
+            values.protein = nil
+            values.carbs = nil
+            values.fat = nil
+        }
+        return values
     }
 
     private static func valid(_ value: Double?) -> Double? {
@@ -212,6 +265,15 @@ enum MeasureParser {
         "g": (1, .grams), "gr": (1, .grams), "gram": (1, .grams), "grams": (1, .grams),
         "ml": (1, .milliliters), "cl": (10, .milliliters), "dl": (100, .milliliters), "l": (1000, .milliliters),
     ]
+
+    /// `amount` of `unit` ("kg", "cl", "oz", …) in g or ml; `nil` for unknown units.
+    static func convert(_ amount: Double, unit: String) -> (amount: Double, unit: BaseUnit)? {
+        let unit = unit.lowercased()
+        if unit == "oz" {
+            return (amount * gramsPerOunce, .grams)
+        }
+        return metricUnits[unit].map { (amount * $0.factor, $0.unit) }
+    }
 
     static func parse(_ text: String) -> (amount: Double, unit: BaseUnit)? {
         let pattern = #/(?i)(\d+(?:[.,]\d+)?)\s*(kg|mg|grams|gram|gr|g|ml|cl|dl|l|oz)\b/#

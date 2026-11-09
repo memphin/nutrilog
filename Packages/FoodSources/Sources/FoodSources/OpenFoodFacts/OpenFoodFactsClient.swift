@@ -8,9 +8,9 @@ public enum OpenFoodFactsError: Error, Hashable, Sendable {
     case notFound
     /// No connection, or OFF couldn't be reached after the retries.
     case offline
-    /// Every attempt hit the request timeout.
+    /// The request hit the 8 s timeout (not retried).
     case timedOut
-    /// HTTP 429 after the retries.
+    /// HTTP 429 without a short `Retry-After`, or still 429 after the retries.
     case rateLimited
     /// An HTTP error status other than 404/429 (5xx after the retries).
     case server(status: Int)
@@ -39,18 +39,23 @@ public extension OpenFoodFactsClient {
 /// ``OpenFoodFactsClient`` over the OFF v2 REST API (SPEC §3.1, §9, §15).
 ///
 /// `GET {baseURL}/api/v2/product/{code}.json?fields=<OFFProduct.fields>` with a descriptive `User-Agent`
-/// (OFF terms, SPEC §10), an 8 s timeout and up to 2 retries with exponential backoff for timeouts, dropped
-/// connections, HTTP 429 and 5xx. No connection at all fails at once with ``OpenFoodFactsError/offline``.
+/// (OFF terms, SPEC §10) and an 8 s timeout. Only fast failures are retried (up to 2 times, exponential backoff):
+/// dropped or refused connections and HTTP 5xx. HTTP 429 is retried only when `Retry-After` is ≤ 2 s.
+/// A timeout is not retried — one 8 s wait is enough for someone standing at a shelf — and no connection at all
+/// fails at once with ``OpenFoodFactsError/offline``.
 public struct OpenFoodFactsHTTPClient: OpenFoodFactsClient {
     public struct RetryPolicy: Hashable, Sendable {
         /// Extra attempts after the first.
         public var maxRetries: Int
         /// Delay before the first retry; doubles for each further retry.
         public var baseDelay: Duration
+        /// Longest `Retry-After` on HTTP 429 still worth waiting for; longer ones fail with `.rateLimited`.
+        public var maxRetryAfter: Duration
 
-        public init(maxRetries: Int = 2, baseDelay: Duration = .milliseconds(500)) {
+        public init(maxRetries: Int = 2, baseDelay: Duration = .milliseconds(500), maxRetryAfter: Duration = .seconds(2)) {
             self.maxRetries = maxRetries
             self.baseDelay = baseDelay
+            self.maxRetryAfter = maxRetryAfter
         }
 
         public static let standard = RetryPolicy()
@@ -73,10 +78,11 @@ public struct OpenFoodFactsHTTPClient: OpenFoodFactsClient {
 
     /// - Parameters:
     ///   - contact: How OFF can reach the app's maintainer: Info.plist `OFFUserAgentContact`, e.g.
-    ///     "https://github.com/memphin/nutrilog".
+    ///     "https://github.com/memphin/nutrilog". Must not be blank (asserted; release builds fall back to
+    ///     `Nutrilog/<appVersion>`).
     ///   - appVersion: Goes into the User-Agent, `Nutrilog/<appVersion> (<contact>)`.
     ///   - transport: Defaults to a `URLSession` with the 8 s timeout.
-    ///   - sleep: Backoff wait; tests pass a no-op.
+    ///   - sleep: Backoff wait; tests pass a recorder.
     public init(
         contact: String,
         appVersion: String = "1.0",
@@ -86,6 +92,7 @@ public struct OpenFoodFactsHTTPClient: OpenFoodFactsClient {
         sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) },
     ) {
         let contact = contact.trimmingCharacters(in: .whitespacesAndNewlines)
+        assert(!contact.isEmpty, "OFF requires a contact in the User-Agent: set OFFUserAgentContact in Info.plist")
         userAgent = contact.isEmpty ? "Nutrilog/\(appVersion)" : "Nutrilog/\(appVersion) (\(contact))"
         self.baseURL = baseURL
         self.transport = transport
@@ -104,7 +111,7 @@ public struct OpenFoodFactsHTTPClient: OpenFoodFactsClient {
             let outcome: Outcome
             do {
                 let (data, response) = try await transport.data(for: request)
-                outcome = Self.outcome(data: data, response: response, barcode: barcode)
+                outcome = self.outcome(data: data, response: response, barcode: barcode)
             } catch let error as URLError {
                 if error.code == .cancelled {
                     throw CancellationError()
@@ -121,9 +128,9 @@ public struct OpenFoodFactsHTTPClient: OpenFoodFactsClient {
                 return product
             case let .failure(error):
                 throw error
-            case let .retryable(error):
+            case let .retryable(error, retryAfter):
                 guard retry < retryPolicy.maxRetries else { throw error }
-                try await sleep(retryPolicy.delay(beforeRetry: retry))
+                try await sleep(retryAfter ?? retryPolicy.delay(beforeRetry: retry))
                 retry += 1
             }
         }
@@ -152,11 +159,12 @@ public struct OpenFoodFactsHTTPClient: OpenFoodFactsClient {
     private enum Outcome {
         case success(OFFProduct)
         case failure(OpenFoodFactsError)
-        case retryable(OpenFoodFactsError)
+        /// Worth another attempt, after `retryAfter` when the server said so, else after the backoff delay.
+        case retryable(OpenFoodFactsError, retryAfter: Duration?)
     }
 
     /// OFF signals "not found" with `status: 0`, with HTTP 200 or 404 — the body wins over the HTTP status (SPEC §3.1).
-    private static func outcome(data: Data, response: HTTPURLResponse, barcode: String) -> Outcome {
+    private func outcome(data: Data, response: HTTPURLResponse, barcode: String) -> Outcome {
         let body = OFFProductResponse.parse(data)
         if body?.status == 0 {
             return .failure(.notFound)
@@ -173,12 +181,25 @@ public struct OpenFoodFactsHTTPClient: OpenFoodFactsClient {
         case 404:
             return .failure(.notFound)
         case 429:
-            return .retryable(.rateLimited)
+            guard let retryAfter = Self.retryAfter(response), retryAfter <= retryPolicy.maxRetryAfter else {
+                return .failure(.rateLimited)
+            }
+            return .retryable(.rateLimited, retryAfter: retryAfter)
         case 500 ..< 600:
-            return .retryable(.server(status: response.statusCode))
+            return .retryable(.server(status: response.statusCode), retryAfter: nil)
         default:
             return .failure(.server(status: response.statusCode))
         }
+    }
+
+    /// `Retry-After` in seconds; `nil` when absent or an HTTP date (treated as too long to wait).
+    private static func retryAfter(_ response: HTTPURLResponse) -> Duration? {
+        guard let text = response.value(forHTTPHeaderField: "Retry-After")?.trimmingCharacters(in: .whitespaces),
+              let seconds = Int(text), seconds >= 0
+        else {
+            return nil
+        }
+        return .seconds(seconds)
     }
 
     private static func outcome(_ error: URLError) -> Outcome {
@@ -186,9 +207,9 @@ public struct OpenFoodFactsHTTPClient: OpenFoodFactsClient {
         case .notConnectedToInternet, .dataNotAllowed, .internationalRoamingOff, .callIsActive:
             .failure(.offline)
         case .timedOut:
-            .retryable(.timedOut)
-        case .networkConnectionLost, .cannotConnectToHost, .cannotFindHost, .dnsLookupFailed, .secureConnectionFailed:
-            .retryable(.offline)
+            .failure(.timedOut)
+        case .networkConnectionLost, .cannotConnectToHost, .cannotFindHost, .dnsLookupFailed:
+            .retryable(.offline, retryAfter: nil)
         default:
             .failure(.network(error.code))
         }

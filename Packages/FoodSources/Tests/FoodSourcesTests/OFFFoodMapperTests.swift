@@ -3,16 +3,17 @@ import Foundation
 import Testing
 @testable import FoodSources
 
-/// Mapper tests against fixture payloads shaped like real OFF v2 responses.
+/// Mapper tests against fixture payloads. `nutella_complete`, `coca_cola_can` and `kras_dorina` are real OFF v2
+/// responses (captured Nov 2026, trimmed to the fields allowlist); the others are hand-built in the same shape.
 struct OFFFoodMapperTests {
-    @Test func `complete product with kcal, kJ and per-serving values maps per 100 g`() throws {
+    @Test func `real Nutella payload maps per 100 g and complete`() throws {
         let draft = try Fixture.draft("nutella_complete")
         #expect(draft.origin == .off)
         #expect(draft.sourceID == "3017620422003")
         #expect(draft.barcode == "3017620422003")
         #expect(draft.name == "Nutella")
         #expect(draft.nameLocal == nil)
-        #expect(draft.brand == "Nutella")
+        #expect(draft.brand == "Ferrero")
         #expect(draft.basis == .per100)
         #expect(draft.dataQuality == .complete)
         #expect(draft.missingNutrients.isEmpty)
@@ -25,26 +26,45 @@ struct OFFFoodMapperTests {
         #expect(draft.nutrients.satFatG == 10.6)
         #expect(isClose(draft.nutrients.sodiumMg, 42.8)) // salt 0.107 g × 400
         #expect(draft.isLiquid == false)
-        #expect(draft.serving == ServingSize(label: "15 g", amount: 15))
-        #expect(draft.packageDescription == "400 g")
+        #expect(draft.serving == nil) // serving_quantity_unit without serving_quantity or serving_size
+        #expect(draft.packageDescription == "400 g e")
         #expect(draft.nutriscore == "e")
         #expect(draft.imageURL?.host == "images.openfoodfacts.org")
         #expect(draft.productURL?.absoluteString == "https://world.openfoodfacts.org/product/3017620422003")
         #expect(draft.allergens == ["en:milk", "en:nuts", "en:soybeans"])
-        #expect(draft.lastModified == Date(timeIntervalSince1970: 1_730_813_227))
+        #expect(draft.lastModified == Date(timeIntervalSince1970: 1_794_233_882))
     }
 
-    @Test func `a Croatian Kraš product keeps its Croatian name`() throws {
-        let draft = try Fixture.draft("kras_dorina_hr")
-        #expect(draft.name == "Dorina mliječna čokolada")
-        #expect(draft.nameLocal == nil) // same as the main name
-        #expect(draft.brand == "Kraš")
+    @Test func `real Coca-Cola can payload is a liquid with a 330 ml serving`() throws {
+        let draft = try Fixture.draft("coca_cola_can")
+        #expect(draft.name == "Coca-Cola Original")
+        #expect(draft.brand == "COCA-COLA SERVICES SA/NV")
         #expect(draft.dataQuality == .complete)
-        #expect(draft.nutrients.kcal == 537)
-        #expect(draft.nutrients.fiberG == 2.1)
-        #expect(isClose(draft.nutrients.sodiumMg, 100)) // salt 0.25 g wins over sodium_100g
-        #expect(draft.serving == ServingSize(label: "4 kockice (20 g)", amount: 20))
-        #expect(draft.ingredientsText?.hasPrefix("šećer, kakaov maslac") == true)
+        #expect(draft.nutrients.kcal == 42.4)
+        #expect(draft.nutrients.carbsG == 10.6)
+        #expect(draft.nutrients.proteinG == 0)
+        #expect(draft.nutrients.fatG == 0)
+        #expect(draft.nutrients.sodiumMg == 0)
+        #expect(draft.isLiquid)
+        #expect(draft.baseUnit == .milliliters)
+        #expect(draft.serving == ServingSize(label: "1 portion (330 ml)", amount: 330))
+        #expect(draft.packageDescription == "330 ml")
+    }
+
+    @Test func `real Kraš Dorina payload maps complete`() throws {
+        let draft = try Fixture.draft("kras_dorina")
+        #expect(draft.sourceID == "3850102508648")
+        #expect(draft.name == "Dorina")
+        #expect(draft.brand == "Kras")
+        #expect(draft.dataQuality == .complete)
+        #expect(draft.nutrients.kcal == 536) // kJ 2202.3 is consistent, so kcal is kept
+        #expect(draft.nutrients.proteinG == 5.7)
+        #expect(draft.nutrients.carbsG == 50.5)
+        #expect(draft.nutrients.fatG == 33.7)
+        #expect(isClose(draft.nutrients.sodiumMg, 16)) // salt 0.04 g
+        #expect(draft.nutriscore == nil) // "unknown"
+        #expect(draft.serving == nil)
+        #expect(draft.allergens.isEmpty)
     }
 
     @Test func `a Podravka product with English main name gets the Croatian name as local name`() throws {
@@ -52,7 +72,7 @@ struct OFFFoodMapperTests {
         #expect(draft.name == "Vegeta food seasoning with vegetables")
         #expect(draft.nameLocal == "Vegeta dodatak jelima s povrćem")
         #expect(draft.brand == "Podravka")
-        #expect(isClose(draft.nutrients.sodiumMg, 22400)) // salt 56 g × 400
+        #expect(isClose(draft.nutrients.sodiumMg, 22400)) // salt 56 g × 400 wins over sodium_100g 22.4 g
         #expect(draft.serving == ServingSize(label: "5 g", amount: 5)) // parsed from serving_size
         #expect(draft.nutriscore == nil) // "not-applicable"
         #expect(draft.dataQuality == .complete)
@@ -187,7 +207,7 @@ struct OFFFoodMapperTests {
     }
 
     @Test func `OFFProduct survives an encode-decode round trip for caching`() throws {
-        for name in ["nutella_complete", "string_numbers", "malformed_values", "no_nutrition"] {
+        for name in ["nutella_complete", "coca_cola_can", "string_numbers", "malformed_values", "no_nutrition"] {
             let product = try Fixture.product(name)
             let decoded = try JSONDecoder().decode(OFFProduct.self, from: JSONEncoder().encode(product))
             #expect(decoded == product, "\(name)")
@@ -234,12 +254,17 @@ struct LenientParsingTests {
         ("12 g", 12.0),
         ("0.", 0.0),
         ("-2", -2.0),
+        ("4e-05", 0.00004),
+        ("1.5E+2", 150.0),
+        ("1.234,5", 1234.5),
+        ("1,234.5", 1234.5),
+        ("< 1,5e-3", 0.0015),
     ])
     func `numbers in strings`(text: String, expected: Double) {
         #expect(LenientNumber.parse(text) == expected)
     }
 
-    @Test(arguments: ["", "abc", "NaN", "inf", "-", ".", "g 12"])
+    @Test(arguments: ["", "abc", "NaN", "inf", "-", ".", "g 12", "1e400"])
     func `non-numbers are nil`(text: String) {
         #expect(LenientNumber.parse(text) == nil)
     }
