@@ -49,7 +49,7 @@ The app works without one (bundled foods + Open Food Facts). For online USDA sea
 
 ```
 App/            SwiftUI app, DI, navigation
-Packages/       Swift packages: Core, Persistence (GRDB), FoodSources, HealthKitClient, Scanner, DesignSystem
+Packages/       Swift packages: Core, Persistence (GRDB), FoodSources, FoodLookup, HealthKitClient, Scanner, DesignSystem
 Widgets/        WidgetKit extension (post-v1)
 Intents/        App Intents (Siri / Shortcuts)
 Resources/      Bundled food index, licenses

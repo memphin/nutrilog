@@ -36,6 +36,15 @@ struct BarcodeTests {
         #expect(Barcode.normalize("01234566", symbology: .upcE) == nil)
     }
 
+    @Test func `candidates list every reading most likely first`() {
+        // Ambiguous 8 digits: EAN-8 first without a hint, UPC-E first with a UPC-E hint, EAN-8 only with an EAN-8 hint.
+        #expect(Barcode.candidates("01234565") == ["01234565", "0012345000065"])
+        #expect(Barcode.candidates("01234565", symbology: .upcE) == ["0012345000065", "01234565"])
+        #expect(Barcode.candidates("01234565", symbology: .ean8) == ["01234565"])
+        #expect(Barcode.candidates("036000291452", symbology: .upcA) == ["0036000291452"])
+        #expect(Barcode.candidates("garbage").isEmpty)
+    }
+
     @Test func `check digit`() {
         #expect(Barcode.checkDigit(forPayload: "400638133393") == 1)
         #expect(Barcode.checkDigit(forPayload: "03600029145") == 2)

@@ -45,6 +45,9 @@ public struct Food: Codable, Hashable, Identifiable, Sendable, SyncedRecord {
     public var servingsCount: Double?
     public var lastServingID: String?
     public var lastAmount: Double?
+    /// The per-100 values are really the values of one serving whose weight is unknown (a copy of a per-serving-only
+    /// online food); the default serving is a stand-in of 100 g/ml. See ``FoodDetail/isPerServingPlaceholder``.
+    public var perServingOnly: Bool
     public var createdAt: Date
     public var updatedAt: Date
     public var deletedAt: Date?
@@ -74,6 +77,7 @@ public struct Food: Codable, Hashable, Identifiable, Sendable, SyncedRecord {
         case servingsCount = "servings_count"
         case lastServingID = "last_serving_id"
         case lastAmount = "last_amount"
+        case perServingOnly = "per_serving_only"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case deletedAt = "deleted_at"
@@ -111,6 +115,7 @@ public struct Food: Codable, Hashable, Identifiable, Sendable, SyncedRecord {
         self.dataQuality = dataQuality
         isFavorite = false
         useCount = 0
+        perServingOnly = false
         self.notes = notes
         let now = Date()
         createdAt = now
@@ -218,6 +223,13 @@ public struct FoodDetail: Hashable, Sendable {
         self.food = food
         self.servings = servings
         self.barcodes = barcodes
+    }
+
+    /// True for a copy of a per-serving-only online food: its values are per serving with an unknown serving weight
+    /// and its default serving is a 100 g/ml stand-in. Log it by servings only (hide gram entry) and offer to set the
+    /// real serving weight.
+    public var isPerServingPlaceholder: Bool {
+        food.perServingOnly && food.defaultServingID.map { id in servings.contains { $0.id == id } } == true
     }
 
     /// The quantity to prefill: last used, else the default serving, else 100 g/ml.

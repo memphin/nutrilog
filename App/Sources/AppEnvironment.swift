@@ -1,4 +1,5 @@
 import Core
+import FoodLookup
 import Foundation
 import HealthKitClient
 import Observation
@@ -150,6 +151,12 @@ final class AppEnvironment {
             state = try .ready(AppDatabase.onDisk(directory: dir))
         } catch {
             state = .failed(String(describing: error))
+        }
+        if case let .ready(db) = state {
+            Task.detached(priority: .background) {
+                // The OFF product cache only holds re-fetchable data: drop entries older than 90 days (backlog #19).
+                _ = try? BarcodeLookup.evictExpiredCache(in: db)
+            }
         }
         return AppEnvironment(
             database: state,

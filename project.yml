@@ -17,6 +17,7 @@ packages:
   Core: { path: Packages/Core }
   Persistence: { path: Packages/Persistence }
   FoodSources: { path: Packages/FoodSources }
+  FoodLookup: { path: Packages/FoodLookup }
   HealthKitClient: { path: Packages/HealthKitClient }
   Scanner: { path: Packages/Scanner }
   DesignSystem: { path: Packages/DesignSystem }
@@ -62,6 +63,7 @@ targets:
       - package: Core
       - package: Persistence
       - package: FoodSources
+      - package: FoodLookup
       - package: HealthKitClient
       - package: Scanner
       - package: DesignSystem

@@ -47,6 +47,22 @@ public enum Barcode {
         }
     }
 
+    /// Every normalized key `raw` can stand for, most likely first; empty when it isn't a valid retail code.
+    ///
+    /// Usually one key. An 8-digit code can read both as EAN-8 and as UPC-E (expanded to EAN-13), so lookups try
+    /// each in order: the hinted reading, then the unhinted one, then UPC-E. An explicit EAN-8 hint is trusted as
+    /// is: EAN-8 and UPC-E are separate code spaces that can share the same 8 digits.
+    public static func candidates(_ raw: String, symbology: Symbology = .unknown) -> [String] {
+        let hints: [Symbology] = symbology == .ean8 ? [.ean8] : [symbology, .unknown, .upcE]
+        var result: [String] = []
+        for hint in hints {
+            if let code = normalize(raw, symbology: hint), !result.contains(code) {
+                result.append(code)
+            }
+        }
+        return result
+    }
+
     /// True when the last digit is the correct GS1 mod-10 check digit.
     public static func hasValidCheckDigit(_ digits: String) -> Bool {
         guard digits.count >= 8, let check = digits.last?.wholeNumberValue else { return false }

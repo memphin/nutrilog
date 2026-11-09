@@ -266,7 +266,8 @@ Nutrilog/
 ├── Packages/
 │   ├── Core/                 # Domain models, nutrient math, TDEE, date windows (pure Swift, 100% testable)
 │   ├── Persistence/          # GRDB (SQLite + FTS5); migrations; repositories; export/import
-│   ├── FoodSources/          # OpenFoodFactsClient, USDAClient, BundledFoodIndex, LookupPipeline
+│   ├── FoodSources/          # OpenFoodFactsClient, USDAClient, BundledFoodIndex
+│   ├── FoodLookup/           # Barcode lookup pipeline + OFF cache policy, saving copies of online foods (Persistence + FoodSources)
 │   ├── HealthKitClient/      # Authorization, queries, writers, observers
 │   ├── Scanner/              # VisionKit DataScannerViewController wrapper
 │   └── DesignSystem/         # Colors, typography, components, charts
