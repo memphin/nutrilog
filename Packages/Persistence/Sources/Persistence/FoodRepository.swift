@@ -22,66 +22,71 @@ public struct FoodRepository: Sendable {
         let now = clock.now()
         let barcodes = try normalizedBarcodes(detail.barcodes)
         return try database.writer.write { db in
-            var food = detail.food
-            if let existing = try Food.fetchOne(db, key: food.id) {
-                food.createdAt = existing.createdAt
-                food.revision = existing.revision
-                food.useCount = existing.useCount
-                food.lastUsedAt = existing.lastUsedAt
-                food.stampUpdated(now)
-                try food.update(db)
-            } else {
-                food.stampCreated(now)
-                try food.insert(db)
-            }
-
-            // Servings
-            let existingServings = try Serving.filter(Serving.Columns.foodID == food.id).fetchAll(db)
-            var kept: [Serving] = []
-            for (index, var serving) in detail.servings.enumerated() {
-                serving.foodID = food.id
-                serving.sortOrder = index
-                if let old = existingServings.first(where: { $0.id == serving.id }) {
-                    serving.createdAt = old.createdAt
-                    serving.revision = old.revision
-                    if old.label != serving.label || old.grams != serving.grams || old.sortOrder != index || old.deletedAt != nil {
-                        serving.deletedAt = nil
-                        serving.stampUpdated(now)
-                    } else {
-                        serving.updatedAt = old.updatedAt
-                    }
-                    try serving.update(db)
-                } else {
-                    serving.stampCreated(now)
-                    try serving.insert(db)
-                }
-                kept.append(serving)
-            }
-            for var old in existingServings where old.deletedAt == nil && !kept.contains(where: { $0.id == old.id }) {
-                old.stampDeleted(now)
-                try old.update(db)
-            }
-            if let defaultID = food.defaultServingID, !kept.contains(where: { $0.id == defaultID }) {
-                food.defaultServingID = nil
-                try food.update(db)
-            }
-
-            // Barcodes
-            for code in barcodes {
-                if let owner = try FoodBarcode.fetchOne(db, key: code), owner.foodID != food.id {
-                    let ownerFood = try Food.fetchOne(db, key: owner.foodID)
-                    if ownerFood?.deletedAt == nil {
-                        throw PersistenceError.barcodeInUse(barcode: code, foodID: owner.foodID)
-                    }
-                    try owner.delete(db) // previous owner was deleted: take the barcode over
-                }
-            }
-            try FoodBarcode.filter(FoodBarcode.Columns.foodID == food.id).deleteAll(db)
-            for code in barcodes {
-                try FoodBarcode(barcode: code, foodID: food.id, createdAt: now).insert(db)
-            }
-            return FoodDetail(food: food, servings: kept, barcodes: barcodes)
+            try Self.save(db, detail: detail, barcodes: barcodes, now: now)
         }
+    }
+
+    /// Body of ``save(_:)`` inside a write transaction; `barcodes` are already normalized and deduplicated.
+    private static func save(_ db: Database, detail: FoodDetail, barcodes: [String], now: Date) throws -> FoodDetail {
+        var food = detail.food
+        if let existing = try Food.fetchOne(db, key: food.id) {
+            food.createdAt = existing.createdAt
+            food.revision = existing.revision
+            food.useCount = existing.useCount
+            food.lastUsedAt = existing.lastUsedAt
+            food.stampUpdated(now)
+            try food.update(db)
+        } else {
+            food.stampCreated(now)
+            try food.insert(db)
+        }
+
+        // Servings
+        let existingServings = try Serving.filter(Serving.Columns.foodID == food.id).fetchAll(db)
+        var kept: [Serving] = []
+        for (index, var serving) in detail.servings.enumerated() {
+            serving.foodID = food.id
+            serving.sortOrder = index
+            if let old = existingServings.first(where: { $0.id == serving.id }) {
+                serving.createdAt = old.createdAt
+                serving.revision = old.revision
+                if old.label != serving.label || old.grams != serving.grams || old.sortOrder != index || old.deletedAt != nil {
+                    serving.deletedAt = nil
+                    serving.stampUpdated(now)
+                } else {
+                    serving.updatedAt = old.updatedAt
+                }
+                try serving.update(db)
+            } else {
+                serving.stampCreated(now)
+                try serving.insert(db)
+            }
+            kept.append(serving)
+        }
+        for var old in existingServings where old.deletedAt == nil && !kept.contains(where: { $0.id == old.id }) {
+            old.stampDeleted(now)
+            try old.update(db)
+        }
+        if let defaultID = food.defaultServingID, !kept.contains(where: { $0.id == defaultID }) {
+            food.defaultServingID = nil
+            try food.update(db)
+        }
+
+        // Barcodes
+        for code in barcodes {
+            if let owner = try FoodBarcode.fetchOne(db, key: code), owner.foodID != food.id {
+                let ownerFood = try Food.fetchOne(db, key: owner.foodID)
+                if ownerFood?.deletedAt == nil {
+                    throw PersistenceError.barcodeInUse(barcode: code, foodID: owner.foodID)
+                }
+                try owner.delete(db) // previous owner was deleted: take the barcode over
+            }
+        }
+        try FoodBarcode.filter(FoodBarcode.Columns.foodID == food.id).deleteAll(db)
+        for code in barcodes {
+            try FoodBarcode(barcode: code, foodID: food.id, createdAt: now).insert(db)
+        }
+        return FoodDetail(food: food, servings: kept, barcodes: barcodes)
     }
 
     /// Soft delete: sets `deleted_at`, bumps `revision`. Diary history is unaffected (entries keep snapshots).
@@ -119,26 +124,15 @@ public struct FoodRepository: Sendable {
     /// Active (non-deleted) food carrying `barcode`; the input is normalized first.
     public func food(barcode raw: String, symbology: Barcode.Symbology = .unknown) throws -> FoodDetail? {
         // Saved codes are normalized without a symbology hint, so an 8-digit code may be stored as EAN-8 while the
-        // scanner reports UPC-E (or vice versa). Try every reading, the hinted one first. An explicit EAN-8 hint is
-        // trusted as is: EAN-8 and UPC-E are separate code spaces that can share the same 8 digits.
-        var candidates: [String] = []
-        let hints: [Barcode.Symbology] = symbology == .ean8 ? [.ean8] : [symbology, .unknown, .upcE]
-        for hint in hints {
-            if let code = Barcode.normalize(raw, symbology: hint), !candidates.contains(code) {
-                candidates.append(code)
-            }
-        }
+        // scanner reports UPC-E (or vice versa). Try every reading, the hinted one first (`Barcode.candidates`).
+        try food(barcodes: Barcode.candidates(raw, symbology: symbology))
+    }
+
+    /// Active (non-deleted) food carrying the first of `candidates` that any food carries. `candidates` are
+    /// normalized keys, most likely first, e.g. `Barcode.candidates(_:symbology:)` or the scanner's candidates.
+    public func food(barcodes candidates: [String]) throws -> FoodDetail? {
         guard !candidates.isEmpty else { return nil }
-        return try database.reader.read { db in
-            for code in candidates {
-                if let link = try FoodBarcode.fetchOne(db, key: code), let detail = try Self.detail(db, id: link.foodID),
-                   detail.food.deletedAt == nil
-                {
-                    return detail
-                }
-            }
-            return nil
-        }
+        return try database.reader.read { db in try Self.activeFood(db, barcodes: candidates) }
     }
 
     public func favorites() throws -> [Food] {
@@ -215,7 +209,88 @@ public struct FoodRepository: Sendable {
         }
     }
 
+    // MARK: Copies of online foods
+
+    /// Saves a copy of a food from an online source (Open Food Facts, USDA) unless one is already stored, in one
+    /// transaction so repeated or concurrent calls never create duplicates. Idempotent:
+    ///
+    /// 1. An active food already carrying one of `detail.barcodes` is returned as is (the user's own food for a
+    ///    code wins).
+    /// 2. Otherwise a food with the same `source` + `sourceID` is reused: returned as is when active (with
+    ///    `detail.barcodes` linked to it, taking them over from deleted foods), or revived with `detail`'s values when deleted.
+    /// 3. Otherwise `detail` is inserted.
+    ///
+    /// Barcodes that aren't valid retail codes are dropped rather than failing the save.
+    @discardableResult
+    public func saveCopy(_ detail: FoodDetail) throws -> FoodDetail {
+        let now = clock.now()
+        let barcodes = detail.barcodes.compactMap { Barcode.normalize($0) }.reduce(into: [String]()) { result, code in
+            if !result.contains(code) {
+                result.append(code)
+            }
+        }
+        return try database.writer.write { db in
+            if let owner = try Self.activeFood(db, barcodes: barcodes) {
+                return owner
+            }
+            if let sourceID = detail.food.sourceID, detail.food.source != .custom,
+               let existing = try Food
+                   .filter(Food.Columns.source == detail.food.source && Food.Columns.sourceID == sourceID)
+                   .order(Food.Columns.deletedAt != nil, Food.Columns.createdAt)
+                   .fetchOne(db),
+               let existingDetail = try Self.detail(db, id: existing.id)
+            {
+                if existing.deletedAt == nil {
+                    guard !barcodes.isEmpty else { return existingDetail }
+                    for code in barcodes {
+                        // An active owner was returned above, so only a deleted food can still hold the code.
+                        try FoodBarcode.deleteOne(db, key: code)
+                        try FoodBarcode(barcode: code, foodID: existing.id, createdAt: now).insert(db)
+                    }
+                    return try Self.detail(db, id: existing.id) ?? existingDetail
+                }
+                var revived = detail
+                revived.food.id = existing.id
+                revived.food.isFavorite = existing.isFavorite
+                revived.food.lastServingID = existing.lastServingID
+                revived.food.lastAmount = existing.lastAmount
+                revived.food.deletedAt = nil
+                revived.servings = Self.reusingServingIDs(detail.servings, from: existingDetail.servings)
+                if let defaultID = detail.food.defaultServingID,
+                   let index = detail.servings.firstIndex(where: { $0.id == defaultID })
+                {
+                    revived.food.defaultServingID = revived.servings[index].id
+                }
+                return try Self.save(db, detail: revived, barcodes: barcodes, now: now)
+            }
+            return try Self.save(db, detail: detail, barcodes: barcodes, now: now)
+        }
+    }
+
+    /// `servings` with the IDs of same-label servings in `existing`, so a revived food keeps its serving rows.
+    private static func reusingServingIDs(_ servings: [Serving], from existing: [Serving]) -> [Serving] {
+        var unused = existing
+        return servings.map { serving in
+            guard let index = unused.firstIndex(where: { $0.label == serving.label }) else { return serving }
+            var reused = serving
+            reused.id = unused.remove(at: index).id
+            return reused
+        }
+    }
+
     // MARK: Helpers
+
+    /// First active food carrying one of the normalized `barcodes`, tried in order.
+    static func activeFood(_ db: Database, barcodes: [String]) throws -> FoodDetail? {
+        for code in barcodes {
+            if let link = try FoodBarcode.fetchOne(db, key: code), let detail = try detail(db, id: link.foodID),
+               detail.food.deletedAt == nil
+            {
+                return detail
+            }
+        }
+        return nil
+    }
 
     static func detail(_ db: Database, id: String) throws -> FoodDetail? {
         guard let food = try Food.fetchOne(db, key: id) else { return nil }

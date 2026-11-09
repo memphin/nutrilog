@@ -7,7 +7,8 @@ public enum Migrator {
     public static let migrations: [String] = [
         "001_initial",
         "002_food_last_quantity",
-        // "003_<description>",
+        "003_off_product_cache_not_found",
+        // "004_<description>",
     ]
 
     public static func make() throws -> DatabaseMigrator {

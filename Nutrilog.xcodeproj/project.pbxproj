@@ -19,10 +19,10 @@
 		4B6FE28F847FE3FB45F70F18 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = A889B4CD67F814724B977510 /* Persistence */; };
 		4C8B1351185B5B231D206824 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02B31E9560DA95F7E191A672 /* AppConfig.swift */; };
 		52BE128D0BBB8486593D5D4F /* DiaryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0AF9328875CE64DEC3A2E2D /* DiaryModel.swift */; };
-		68184A1CAA4FB02029B16A52 /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 080725B27DAA3A8B4B5726A4 /* DesignSystem */; };
+		68184A1CAA4FB02029B16A52 /* Scanner in Frameworks */ = {isa = PBXBuildFile; productRef = 1027AC8891CFCD49FA5F02E6 /* Scanner */; };
 		72B1AAC9BB066C4C509D2E3F /* HealthSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89A65223A0724F7BB3C9AEB6 /* HealthSettingsView.swift */; };
 		75B76BE28FEF56116F1AB41E /* FoodEditorModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C7A62EC62945A0E3012FC0D /* FoodEditorModel.swift */; };
-		7CFFB861685166190159B1AF /* Scanner in Frameworks */ = {isa = PBXBuildFile; productRef = 1027AC8891CFCD49FA5F02E6 /* Scanner */; };
+		7CFFB861685166190159B1AF /* HealthKitClient in Frameworks */ = {isa = PBXBuildFile; productRef = 82AE5DAB28DD19241D0B72AD /* HealthKitClient */; };
 		7F0BD5C3AA31BFE9476F53D5 /* DiarySheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88C0F2A65D5766E267236619 /* DiarySheets.swift */; };
 		81534A8EE21DC5652C4025F6 /* TestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFA022929D750396EDF97E64 /* TestSupport.swift */; };
 		924B13C90B00812AD3829D7F /* Core in Frameworks */ = {isa = PBXBuildFile; productRef = AB9209C5C9EF92BFDB397212 /* Core */; };
@@ -32,11 +32,12 @@
 		A35CBFEC41A92533C258D56A /* DebugScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7E75BCA9037F92033C1EC6D /* DebugScreens.swift */; };
 		AB84906D2EDE73BDCC4044B4 /* UndoToast.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B7A03C9A4FE723D7A3BF9C /* UndoToast.swift */; };
 		B200F0D22BD2251C0881D5EF /* FoodEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0327B675F549F53BEA13BD28 /* FoodEditorView.swift */; };
-		B2A7F52D53D7CC4052A9D352 /* HealthKitClient in Frameworks */ = {isa = PBXBuildFile; productRef = 82AE5DAB28DD19241D0B72AD /* HealthKitClient */; };
+		B2A7F52D53D7CC4052A9D352 /* FoodLookup in Frameworks */ = {isa = PBXBuildFile; productRef = F7DEB2EA73052A436B6C7707 /* FoodLookup */; };
 		B318D26F17E6B8CD774C9E64 /* FoodSources in Frameworks */ = {isa = PBXBuildFile; productRef = 31C0B385FA81090C31C324EA /* FoodSources */; };
 		BC7BC71995D1614AD56B4D84 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E654260AEEB47CC4E408FEBB /* RootView.swift */; };
 		CAF0ED85767DB9B2600F5738 /* QuantitySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F50396E834D499DFEF4D8B6 /* QuantitySheet.swift */; };
 		CF7335C7FD8411978B9DBA15 /* HealthTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61AEE6266270978795C272EF /* HealthTests.swift */; };
+		CFA34818EFB1ED1B551F03A6 /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 080725B27DAA3A8B4B5726A4 /* DesignSystem */; };
 		D63FFCA9058D3B3B24A31E40 /* QuickAddView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62FB67E26CA995E485714116 /* QuickAddView.swift */; };
 		DF3E1A7AFED9764A1158B47E /* NutrilogApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D095BF32FF994BA5E303CEFE /* NutrilogApp.swift */; };
 		E137C48EA41D048FAC019CE0 /* ProfileTargetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F71079C582044C8F4ED01E8F /* ProfileTargetsView.swift */; };
@@ -62,6 +63,7 @@
 		180130317CF5FAF7AE910FE2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1C7A62EC62945A0E3012FC0D /* FoodEditorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodEditorModel.swift; sourceTree = "<group>"; };
 		2137916B6A16402C94700DF7 /* NutrilogTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = NutrilogTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		29307B4DBBBE49DA22C8C06A /* FoodLookup */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FoodLookup; path = Packages/FoodLookup; sourceTree = SOURCE_ROOT; };
 		2A3BD94B01534D020D210090 /* DiaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryView.swift; sourceTree = "<group>"; };
 		332BBFC896239C9D6395BAE6 /* Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formatting.swift; sourceTree = "<group>"; };
 		34B1B04B40C3BCA84C756B6C /* App.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = App.xcconfig; sourceTree = "<group>"; };
@@ -103,9 +105,10 @@
 				924B13C90B00812AD3829D7F /* Core in Frameworks */,
 				4B6FE28F847FE3FB45F70F18 /* Persistence in Frameworks */,
 				B318D26F17E6B8CD774C9E64 /* FoodSources in Frameworks */,
-				B2A7F52D53D7CC4052A9D352 /* HealthKitClient in Frameworks */,
-				7CFFB861685166190159B1AF /* Scanner in Frameworks */,
-				68184A1CAA4FB02029B16A52 /* DesignSystem in Frameworks */,
+				B2A7F52D53D7CC4052A9D352 /* FoodLookup in Frameworks */,
+				7CFFB861685166190159B1AF /* HealthKitClient in Frameworks */,
+				68184A1CAA4FB02029B16A52 /* Scanner in Frameworks */,
+				CFA34818EFB1ED1B551F03A6 /* DesignSystem in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -202,6 +205,7 @@
 			children = (
 				96D590C88C38803CC71E2F8E /* Core */,
 				63407E42DD103C94C747FC3E /* DesignSystem */,
+				29307B4DBBBE49DA22C8C06A /* FoodLookup */,
 				6383EA51CBC1C56DC110D389 /* FoodSources */,
 				9D49D6FA80ED906B28795E67 /* HealthKitClient */,
 				3AF39B0F528153E0E26659AE /* Persistence */,
@@ -314,6 +318,7 @@
 				AB9209C5C9EF92BFDB397212 /* Core */,
 				A889B4CD67F814724B977510 /* Persistence */,
 				31C0B385FA81090C31C324EA /* FoodSources */,
+				F7DEB2EA73052A436B6C7707 /* FoodLookup */,
 				82AE5DAB28DD19241D0B72AD /* HealthKitClient */,
 				1027AC8891CFCD49FA5F02E6 /* Scanner */,
 				080725B27DAA3A8B4B5726A4 /* DesignSystem */,
@@ -348,6 +353,7 @@
 			packageReferences = (
 				7969964021A3BE1E31137B3E /* XCLocalSwiftPackageReference "Packages/Core" */,
 				49ACD108EC159EBBE35D5E06 /* XCLocalSwiftPackageReference "Packages/DesignSystem" */,
+				6EF6E77C2FA3D02C52F49C1B /* XCLocalSwiftPackageReference "Packages/FoodLookup" */,
 				E9D14AB61FB6B4C1CC44F9A6 /* XCLocalSwiftPackageReference "Packages/FoodSources" */,
 				509288BABE461587ED136C71 /* XCLocalSwiftPackageReference "Packages/HealthKitClient" */,
 				1C6FC7812376B8DCD4974008 /* XCLocalSwiftPackageReference "Packages/Persistence" */,
@@ -675,6 +681,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/HealthKitClient;
 		};
+		6EF6E77C2FA3D02C52F49C1B /* XCLocalSwiftPackageReference "Packages/FoodLookup" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/FoodLookup;
+		};
 		7969964021A3BE1E31137B3E /* XCLocalSwiftPackageReference "Packages/Core" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Core;
@@ -713,6 +723,10 @@
 		AB9209C5C9EF92BFDB397212 /* Core */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Core;
+		};
+		F7DEB2EA73052A436B6C7707 /* FoodLookup */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FoodLookup;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
