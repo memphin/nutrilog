@@ -4,7 +4,7 @@ import Persistence
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Settings: profile & targets, meal slots, units, data export/import, network, attributions (backlog #15).
+/// Settings: profile & targets, meal slots, Apple Health, units, data export/import, network, attributions (backlog #15).
 struct SettingsView: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var waterGoal = 2500.0
@@ -16,6 +16,7 @@ struct SettingsView: View {
                 Section {
                     NavigationLink("Profile & targets") { ProfileTargetsView() }
                     NavigationLink("Meal slots") { MealSlotsEditor() }
+                    NavigationLink("Apple Health") { HealthSettingsView() }
                 }
 
                 Section("Units") {

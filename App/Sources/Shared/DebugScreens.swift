@@ -26,6 +26,10 @@
                 SettingsView()
             case "foods":
                 FoodsListView()
+            case "health":
+                NavigationStack { HealthSettingsView() }
+            case "healthOnboarding":
+                HealthOnboardingView()
             case "quantity":
                 NavigationStack {
                     if let food = try? environment.foods?.recents(slotID: "breakfast").first,

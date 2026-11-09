@@ -5,6 +5,7 @@ GRDB.swift-based SQLite store. Schema lives in plain SQL files under `Sources/Pe
 - `AppDatabase` — opens the pool (WAL, foreign keys, Data Protection) and runs migrations.
 - `Migrator` — ordered list of migration files.
 - `Migrations/001_initial.sql` — schema v1 (see `docs/SPEC.md` §8).
+- Repositories: `FoodRepository`, `DiaryRepository`, `ProfileRepository`, `DailyMetricsRepository` (the `daily_metrics` cache of Apple Health).
 
 Rules: see `CONTRIBUTING.md` → *Database changes*.
 

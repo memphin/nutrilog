@@ -1,5 +1,6 @@
 import Core
 import Foundation
+import HealthKitClient
 import Observation
 import Persistence
 
@@ -16,6 +17,10 @@ final class AppEnvironment {
     let config: AppConfig
     let bundledIndex: BundledFoodIndex?
     let clock: AppClock
+    /// Apple Health (live on device, a fake in tests and previews).
+    let health: any HealthDataSource
+    /// Keeps `daily_metrics` in sync with Health; nil when the database could not be opened.
+    let healthSync: HealthSyncService?
 
     /// Display preference (Settings → Units); persisted in the `setting` table. Change it with `setEnergyUnit(_:)`.
     private(set) var energyUnit: EnergyUnit = .kcal
@@ -28,11 +33,28 @@ final class AppEnvironment {
     /// state that may no longer match the data, such as a pending undo.
     private(set) var dataGeneration = 0
 
-    init(database: DatabaseState, config: AppConfig, bundledIndex: BundledFoodIndex?, clock: AppClock = .system) {
+    init(
+        database: DatabaseState,
+        config: AppConfig,
+        bundledIndex: BundledFoodIndex?,
+        clock: AppClock = .system,
+        health: any HealthDataSource = FakeHealthDataSource(isAvailable: false),
+    ) {
         self.database = database
         self.config = config
         self.bundledIndex = bundledIndex
         self.clock = clock
+        self.health = health
+        if case let .ready(db) = database {
+            healthSync = HealthSyncService(
+                source: health,
+                metrics: DailyMetricsRepository(db, clock: clock),
+                settings: ProfileRepository(db, clock: clock),
+                clock: clock,
+            )
+        } else {
+            healthSync = nil
+        }
         today = LocalDay.today(now: clock.now())
         try? reloadSettings() // unreadable settings fall back to the defaults
     }
@@ -62,6 +84,31 @@ final class AppEnvironment {
 
     var portability: DataPortability? {
         db.map { DataPortability($0, clock: clock) }
+    }
+
+    var dailyMetrics: DailyMetricsRepository? {
+        db.map { DailyMetricsRepository($0, clock: clock) }
+    }
+
+    /// True once per install: Health is available, the user was never asked for access, and the onboarding
+    /// explanation has not been shown yet.
+    func shouldShowHealthOnboarding() async -> Bool {
+        guard health.isAvailable, let profiles,
+              (try? profiles.setting(SettingKey.healthOnboardingShown, as: Bool.self)) != true
+        else { return false }
+        return await health.authorizationRequestStatus() == .shouldRequest
+    }
+
+    /// Remembers that the first-launch Health onboarding was shown (whatever the user chose).
+    func markHealthOnboardingShown() {
+        try? profiles?.setSetting(SettingKey.healthOnboardingShown, true)
+    }
+
+    /// The clock jumped or the time zone changed (`significantTimeChangeNotification`, system time zone change):
+    /// re-read "today" and re-sync every Health day, since day boundaries may have moved.
+    func systemTimeDidChange() async {
+        refreshToday()
+        await healthSync?.refresh(force: true)
     }
 
     /// Re-reads the clock; returns true when the local day changed.
@@ -104,18 +151,30 @@ final class AppEnvironment {
         } catch {
             state = .failed(String(describing: error))
         }
-        return AppEnvironment(database: state, config: AppConfig(bundle: bundle), bundledIndex: BundledFoodIndex.inBundle(bundle))
+        return AppEnvironment(
+            database: state,
+            config: AppConfig(bundle: bundle),
+            bundledIndex: BundledFoodIndex.inBundle(bundle),
+            health: LiveHealthDataSource(),
+        )
     }
 
-    /// In-memory environment for tests and previews, optionally with sample data.
-    static func preview(sampleData: Bool = false, clock: AppClock = .system) -> AppEnvironment {
+    /// In-memory environment for tests and previews, optionally with sample data. Health is a fake: with sample
+    /// data it is already connected and holds demo values, otherwise it is empty and not yet authorized.
+    static func preview(
+        sampleData: Bool = false,
+        clock: AppClock = .system,
+        health: (any HealthDataSource)? = nil,
+    ) -> AppEnvironment {
         let state: DatabaseState
         do { state = try .ready(AppDatabase.inMemory()) } catch { state = .failed(String(describing: error)) }
+        let today = LocalDay.today(now: clock.now())
         let env = AppEnvironment(
             database: state,
             config: AppConfig(usdaAPIKey: nil, offUserAgent: AppConfig.defaultUserAgent),
             bundledIndex: BundledFoodIndex.inBundle(),
             clock: clock,
+            health: health ?? (sampleData ? FakeHealthDataSource.demo(endingOn: today) : FakeHealthDataSource()),
         )
         if sampleData {
             env.insertSampleData()
@@ -160,6 +219,12 @@ final class AppEnvironment {
 enum SettingKey {
     static let energyUnit = "energyUnit"
     static let waterQuickAddSizes = "waterQuickAddSizes"
+    /// Date: when the last Health sync finished successfully (backlog #24).
+    static let healthLastSyncedAt = "healthLastSyncedAt"
+    /// Date: when the last full 90-day Health sync finished successfully.
+    static let healthLastFullSyncAt = "healthLastFullSyncAt"
+    /// Bool: the first-launch Health onboarding was shown.
+    static let healthOnboardingShown = "healthOnboardingShown"
 }
 
 /// kcal or kJ for display (Settings → Units). Storage is always kcal.
