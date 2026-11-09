@@ -204,8 +204,7 @@ final class OnlineSearchModel {
     func select(_ result: OnlineFoodResult, in foods: FoodRepository) throws -> Selection {
         let detail = try foods.saveRemoteCopy(result.draft)
         guard detail.isPerServingPlaceholder else { return .open(detail) }
-        let quality = FoodDraft.classify(basis: .per100, missing: result.draft.missingNutrients)
-        return .askServingWeight(PendingServingWeight(detail: detail, qualityWithWeight: DataQuality(quality)))
+        return .askServingWeight(PendingServingWeight(detail: detail))
     }
 
     // MARK: - Private

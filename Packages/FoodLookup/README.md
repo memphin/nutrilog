@@ -15,5 +15,9 @@ FoodSources stay independent of each other (it depends on Core, Persistence and 
   (barcode scan or online search) before logging it. Idempotent by barcode and by source + source ID.
   A per-serving-only draft (no usable serving weight) becomes a food with `perServingOnly` set and a 100 g/ml
   stand-in serving; `FoodDetail.isPerServingPlaceholder` tells the UI to log it by servings only.
+- `FoodDetail.convertingPerServingPlaceholder(servingWeight:missing:)`: the one conversion used by the scan flow
+  and online search once the serving weight is known — values to per 100, real serving weight, only the automatic
+  per-serving note cleared, quality from the stored food (complete when nothing is missing), and a plausibility
+  guard (`ServingWeightError`: ≤ 900 kcal and ≤ 105 g protein + carbs + fat per 100).
 
 Run tests: `cd Packages/FoodLookup && swift test`

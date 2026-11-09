@@ -12,6 +12,7 @@ Nutrilog is built for one person's private use. The design rule is simple: **dat
 | Destination | When | What is sent |
 |---|---|---|
 | `world.openfoodfacts.org` | You scan a barcode not already cached, or search packaged foods online | The barcode / search text and a `User-Agent` header identifying the app |
+| `images.openfoodfacts.org` | A scanned product's card shows its photo | The image address (which names the product's barcode) |
 | `api.nal.usda.gov` | Only if you added a USDA key and search online | The search text and your key |
 | Apple Health (on-device) | You log food or water, or enter weight | Nutrient / water / weight samples, written only with your permission |
 

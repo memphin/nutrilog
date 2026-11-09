@@ -3,16 +3,17 @@ import Testing
 @testable import FoodSources
 
 struct OpenFoodFactsSearchClientTests {
+    private static let contact = "https://github.com/memphin/nutrilog"
     private static let userAgent = "Nutrilog/1.2 (https://github.com/memphin/nutrilog)"
 
     private func makeClient(_ transport: StubTransport) -> OpenFoodFactsSearchHTTPClient {
-        OpenFoodFactsSearchHTTPClient(userAgent: Self.userAgent, transport: transport)
+        OpenFoodFactsSearchHTTPClient(contact: Self.contact, appVersion: "1.2", transport: transport)
     }
 
     // MARK: - Request
 
     @Test func `request uses v1 full-text search with the fields allowlist, User-Agent and 5 s timeout`() throws {
-        let client = OpenFoodFactsSearchHTTPClient(userAgent: Self.userAgent, pageSize: 15)
+        let client = OpenFoodFactsSearchHTTPClient(contact: Self.contact, appVersion: "1.2", pageSize: 15)
         let request = client.request(query: "kraš dorina")
         let url = try #require(request.url)
         let components = try #require(URLComponents(url: url, resolvingAgainstBaseURL: false))
@@ -36,8 +37,8 @@ struct OpenFoodFactsSearchClientTests {
         #expect(query.contains("search_terms=c%2B%20juice"))
     }
 
-    @Test func `blank User-Agent falls back to the app name`() {
-        #expect(OpenFoodFactsSearchHTTPClient(userAgent: "  ").userAgent == "Nutrilog/1.0")
+    @Test func `blank contact falls back to the app name and version`() {
+        #expect(OpenFoodFactsSearchHTTPClient(contact: "  ", appVersion: "2.0").userAgent == "Nutrilog/2.0")
     }
 
     @Test func `blank query returns nothing without a request`() async throws {
@@ -157,11 +158,11 @@ struct OpenFoodFactsSearchClientTests {
 
 struct OpenFoodFactsSearchThrottleTests {
     private func makeClient(_ transport: StubTransport, clock: TestClock, sleeper: SleepRecorder) -> OpenFoodFactsSearchHTTPClient {
-        OpenFoodFactsSearchHTTPClient(userAgent: "Nutrilog/1.0", transport: transport, now: { clock.now }, sleep: sleeper.sleep)
+        OpenFoodFactsSearchHTTPClient(contact: "x", transport: transport, now: { clock.now }, sleep: sleeper.sleep)
     }
 
     @Test func `responses are never read from or kept for URLCache`() {
-        let request = OpenFoodFactsSearchHTTPClient(userAgent: "Nutrilog/1.0").request(query: "nutella")
+        let request = OpenFoodFactsSearchHTTPClient(contact: "x").request(query: "nutella")
         #expect(request.cachePolicy == .reloadIgnoringLocalCacheData)
     }
 
@@ -207,8 +208,8 @@ struct OpenFoodFactsSearchThrottleTests {
         let clock = TestClock()
         let throttle = OFFSearchThrottle()
         let transport = StubTransport([.http(503, Data())])
-        let first = OpenFoodFactsSearchHTTPClient(userAgent: "a", transport: transport, throttle: throttle, now: { clock.now })
-        let second = OpenFoodFactsSearchHTTPClient(userAgent: "a", transport: transport, throttle: throttle, now: { clock.now })
+        let first = OpenFoodFactsSearchHTTPClient(contact: "a", transport: transport, throttle: throttle, now: { clock.now })
+        let second = OpenFoodFactsSearchHTTPClient(contact: "a", transport: transport, throttle: throttle, now: { clock.now })
         await #expect(throws: OpenFoodFactsError.rateLimited) { try await first.search(query: "x") }
         #expect(second.rateLimitedUntil != nil)
     }

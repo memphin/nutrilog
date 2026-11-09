@@ -98,3 +98,105 @@ public extension FoodRepository {
         try saveCopy(FoodDetail(draft: draft))
     }
 }
+
+// MARK: - Serving weight for a per-serving placeholder
+
+/// Why a serving weight can't be used to convert a per-serving placeholder.
+public enum ServingWeightError: LocalizedError, Hashable, Sendable {
+    /// Not a positive, finite amount.
+    case notPositive
+    /// The weight would give more energy per 100 than pure fat.
+    case implausibleEnergy(kcalPer100: Double)
+    /// The weight would give more than ~100 g of protein + carbs + fat per 100 g.
+    case implausibleMacros(gramsPer100: Double)
+
+    public var errorDescription: String? {
+        switch self {
+        case .notPositive:
+            "Enter a weight above 0."
+        case let .implausibleEnergy(kcal):
+            "That weight would mean \(Int(kcal.rounded())) kcal per 100 — more than pure fat. Check the weight."
+        case let .implausibleMacros(grams):
+            "That weight would mean \(Int(grams.rounded())) g of protein, carbs and fat per 100. Check the weight."
+        }
+    }
+}
+
+public extension FoodDetail {
+    /// Highest believable energy density (pure fat is ~900 kcal/100 g).
+    static let maximumKcalPer100 = 900.0
+    /// Highest believable protein + carbs + fat per 100 g (a little over 100 for label rounding).
+    static let maximumMacroGramsPer100 = 105.0
+
+    /// Whether `note` is one of the notes ``init(draft:)`` stores on a per-serving placeholder (and nothing the user
+    /// wrote).
+    static func isPerServingPlaceholderNote(_ note: String?) -> Bool {
+        guard let note else { return false }
+        return note == perServingUnknownWeightNote
+            || (note.hasPrefix("Nutrition per serving; the serving weight given (")
+                && note.hasSuffix("so 1 serving is counted as 100 g/ml."))
+    }
+
+    /// This per-serving placeholder (``isPerServingPlaceholder``: values per serving, stored as per 100 with a
+    /// 100 g/ml stand-in serving) converted once the real serving weight is known — used by the scan flow and
+    /// online search alike.
+    ///
+    /// - Values are scaled to per 100 for a serving of `servingWeight` g/ml; the default serving gets that weight
+    ///   and `perServingOnly` is cleared.
+    /// - Only the automatic per-serving note is removed; a note the user wrote stays.
+    /// - Quality comes from the stored food: complete when no mandatory value is missing, otherwise the stored
+    ///   quality is kept. `missing` is what the source lacks when known; `nil` infers it from the stored food
+    ///   (a mandatory value of 0 counts as missing — a real 0 just keeps the food partial).
+    /// - Throws ``ServingWeightError`` for a non-positive weight or one that gives implausible values per 100
+    ///   (energy above ``maximumKcalPer100``, protein + carbs + fat above ``maximumMacroGramsPer100``).
+    func convertingPerServingPlaceholder(
+        servingWeight: Double,
+        missing: Set<FoodDraft.MandatoryNutrient>? = nil,
+    ) throws -> FoodDetail {
+        guard servingWeight > 0, servingWeight.isFinite else { throw ServingWeightError.notPositive }
+        let per100 = Nutrients.per100(fromServing: food.per100, servingGrams: servingWeight)
+        guard per100.kcal <= Self.maximumKcalPer100 else {
+            throw ServingWeightError.implausibleEnergy(kcalPer100: per100.kcal)
+        }
+        let macros = per100.proteinG + per100.carbsG + per100.fatG
+        guard macros <= Self.maximumMacroGramsPer100 else {
+            throw ServingWeightError.implausibleMacros(gramsPer100: macros)
+        }
+
+        var result = self
+        result.food.per100 = per100
+        result.food.perServingOnly = false
+        if Self.isPerServingPlaceholderNote(food.notes) {
+            result.food.notes = nil
+        }
+        let missing = missing ?? Self.zeroMandatoryNutrients(food)
+        if missing.isEmpty {
+            result.food.dataQuality = .complete
+        }
+        result.servings = servings.map { serving in
+            guard serving.id == food.defaultServingID else { return serving }
+            var updated = serving
+            updated.grams = servingWeight
+            return updated
+        }
+        return result
+    }
+
+    /// Mandatory values stored as 0.
+    private static func zeroMandatoryNutrients(_ food: Food) -> Set<FoodDraft.MandatoryNutrient> {
+        var missing: Set<FoodDraft.MandatoryNutrient> = []
+        if food.kcal100 == 0 {
+            missing.insert(.energy)
+        }
+        if food.proteinG100 == 0 {
+            missing.insert(.protein)
+        }
+        if food.carbsG100 == 0 {
+            missing.insert(.carbs)
+        }
+        if food.fatG100 == 0 {
+            missing.insert(.fat)
+        }
+        return missing
+    }
+}

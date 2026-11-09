@@ -1,73 +1,23 @@
 import Core
 import DesignSystem
+import FoodLookup
 import Persistence
 import SwiftUI
-
-extension FoodDetail {
-    /// Why a serving weight can't be used.
-    enum ServingWeightError: LocalizedError, Equatable {
-        case notPositive
-        case implausible(kcalPer100: Double)
-        case implausibleMacros(gramsPer100: Double)
-
-        var errorDescription: String? {
-            switch self {
-            case .notPositive:
-                "Enter a weight above 0."
-            case let .implausible(kcal):
-                "That weight would mean \(Int(kcal.rounded())) kcal per 100 — more than pure fat. Check the weight."
-            case let .implausibleMacros(grams):
-                "That weight would mean \(Int(grams.rounded())) g of protein, carbs and fat per 100 g. Check the weight."
-            }
-        }
-    }
-
-    /// Highest believable energy density (pure fat is ~900 kcal/100 g).
-    static let maximumKcalPer100 = 900.0
-    /// Highest believable protein + carbs + fat per 100 g (a little over 100 for rounding on labels).
-    static let maximumMacroGramsPer100 = 105.0
-
-    /// A per-serving placeholder copy (``isPerServingPlaceholder``) converted to real per-100 values once the user
-    /// knows what one serving weighs: values are scaled by 100 ÷ `grams`, the default serving gets that weight, the
-    /// per-serving flag and its note are cleared and the data quality becomes `quality`.
-    func withServingWeight(_ grams: Double, quality: DataQuality) throws -> FoodDetail {
-        guard grams > 0, grams.isFinite else { throw ServingWeightError.notPositive }
-        let per100 = Nutrients.per100(fromServing: food.per100, servingGrams: grams)
-        guard per100.kcal <= Self.maximumKcalPer100 else {
-            throw ServingWeightError.implausible(kcalPer100: per100.kcal)
-        }
-        let macros = per100.proteinG + per100.carbsG + per100.fatG
-        guard macros <= Self.maximumMacroGramsPer100 else {
-            throw ServingWeightError.implausibleMacros(gramsPer100: macros)
-        }
-        var detail = self
-        detail.food.per100 = per100
-        detail.food.perServingOnly = false
-        detail.food.notes = nil
-        detail.food.dataQuality = quality
-        if let id = food.defaultServingID, let index = servings.firstIndex(where: { $0.id == id }) {
-            detail.servings[index].grams = grams
-        }
-        return detail
-    }
-}
 
 /// A saved per-serving placeholder copy waiting for its serving weight (drives the prompt sheet).
 struct PendingServingWeight: Identifiable {
     let detail: FoodDetail
-    let qualityWithWeight: DataQuality
 
     var id: String {
         detail.food.id
     }
 }
 
-/// Asks for the weight of one serving when an online food only has per-serving values (backlog #22). "Skip" keeps
-/// the placeholder (1 serving counted as 100 g/ml), which still logs correctly by servings.
+/// Asks for the weight of one serving when an online food only has per-serving values (backlog #22). Saving
+/// converts the stored copy with ``FoodDetail/convertingPerServingPlaceholder(servingWeight:missing:)`` (shared
+/// with the scan flow). "Skip" keeps the placeholder; ``QuantitySheet`` then logs it by servings only.
 struct ServingWeightPrompt: View {
     let detail: FoodDetail
-    /// Data quality once the weight is known (from the source's missing nutrients).
-    let qualityWithWeight: DataQuality
     let onDone: (FoodDetail) -> Void
 
     @Environment(AppEnvironment.self) private var environment
@@ -121,7 +71,8 @@ struct ServingWeightPrompt: View {
     private func save() {
         guard let grams = Format.number(weightText), let foods = environment.foods else { return }
         do {
-            let updated = try detail.withServingWeight(grams, quality: qualityWithWeight)
+            // Quality follows the stored copy (it may predate this search result), not the tapped draft.
+            let updated = try detail.convertingPerServingPlaceholder(servingWeight: grams)
             try onDone(foods.save(updated))
         } catch {
             errorMessage = error.localizedDescription

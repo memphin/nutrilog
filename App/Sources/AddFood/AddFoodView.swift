@@ -121,7 +121,7 @@ struct AddFoodView: View {
                 await online.search(query, offSearch: environment.offSearch, usda: environment.usda)
             }
             .sheet(item: $servingPrompt) { pending in
-                ServingWeightPrompt(detail: pending.detail, qualityWithWeight: pending.qualityWithWeight) { detail in
+                ServingWeightPrompt(detail: pending.detail) { detail in
                     servingPrompt = nil
                     path.append(detail)
                 }

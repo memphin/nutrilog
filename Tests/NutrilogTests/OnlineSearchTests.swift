@@ -465,9 +465,9 @@ struct OnlineSelectionTests {
             return
         }
         #expect(pending.detail.isPerServingPlaceholder)
-        #expect(pending.qualityWithWeight == .complete)
 
-        let converted = try pending.detail.withServingWeight(40, quality: pending.qualityWithWeight)
+        // Same conversion as the scan flow; quality follows the stored copy (nothing stored as 0 → complete).
+        let converted = try pending.detail.convertingPerServingPlaceholder(servingWeight: 40)
         let saved = try foods.save(converted)
         #expect(!saved.isPerServingPlaceholder)
         #expect(saved.food.per100.kcal == 525) // 210 kcal per 40 g bar
@@ -483,19 +483,44 @@ struct OnlineSelectionTests {
         }
     }
 
-    @Test func `implausible or empty serving weights are rejected`() throws {
-        var bar = draft(.off, "1", "Bar", kcal: 210)
+    @Test func `a skipped serving weight still logs one serving correctly`() throws {
+        let env = AppEnvironment.preview()
+        let foods = try #require(env.foods)
+        let diary = try #require(env.diary)
+        var bar = draft(.off, "3850000000048", "Energy bar", barcode: "3850000000048", kcal: 210)
         bar.basis = .perServing
-        let detail = FoodDetail(draft: bar)
-        #expect(throws: FoodDetail.ServingWeightError.notPositive) { try detail.withServingWeight(0, quality: .complete) }
-        #expect(throws: FoodDetail.ServingWeightError.self) { try detail.withServingWeight(10, quality: .complete) }
+        bar.servingDescription = "1 bar"
+        guard case let .askServingWeight(pending) = try OnlineSearchModel().select(OnlineFoodResult(bar), in: foods) else {
+            Issue.record("expected the serving-weight prompt")
+            return
+        }
 
-        // 30 g of macros in a 20 g serving = 150 g per 100 g, though only 300 kcal per 100.
+        // "Skip" opens the quantity sheet with the placeholder: servings only, 1 serving prefilled.
+        let detail = pending.detail
+        #expect(!QuantitySheet.offersBaseUnit(detail))
+        let serving = try #require(detail.servings.first { $0.id == detail.food.defaultServingID })
+        let initial = QuantitySheet.initialLogQuantity(detail)
+        #expect(initial.quantity == .servings(count: 1, serving: serving.size))
+        #expect(QuantitySheet.quantity(amountText: "100", unitChoice: "base", detail: detail) == nil)
+
+        let entry = try diary.log(
+            food: detail.food, quantity: initial.quantity, servingID: serving.id,
+            slotID: "breakfast", day: env.today,
+        )
+        #expect(entry.nutrients.kcal == 210)
+        #expect(entry.nutrients.proteinG == 5)
+        #expect(entry.servingLabel?.contains("1 bar") == true)
+    }
+
+    @Test func `the prompt's conversion rejects implausible weights`() {
         var gummy = draft(.off, "2", "Gummies", kcal: 60)
         gummy.basis = .perServing
         gummy.nutrients = Nutrients(kcal: 60, proteinG: 0, carbsG: 30, fatG: 0)
-        #expect(throws: FoodDetail.ServingWeightError.implausibleMacros(gramsPer100: 150)) {
-            try FoodDetail(draft: gummy).withServingWeight(20, quality: .complete)
+        let detail = FoodDetail(draft: gummy)
+        #expect(throws: ServingWeightError.notPositive) { try detail.convertingPerServingPlaceholder(servingWeight: 0) }
+        // 30 g of carbs in a 20 g serving = 150 g per 100 g, though only 300 kcal per 100.
+        #expect(throws: ServingWeightError.implausibleMacros(gramsPer100: 150)) {
+            try detail.convertingPerServingPlaceholder(servingWeight: 20)
         }
     }
 
@@ -515,7 +540,22 @@ struct NetworkInfoTests {
         #expect(paths == [
             "world.openfoodfacts.org/api/v2/product/{barcode}.json",
             "world.openfoodfacts.org/cgi/search.pl",
+            "images.openfoodfacts.org/images/products/…",
             "api.nal.usda.gov/fdc/v1/foods/search",
         ])
+    }
+
+    @Test func `network screen covers the hosts of product images`() throws {
+        // What OFF returns in `image_front_small_url` and the product card loads (AsyncImage).
+        let product = OFFProduct(
+            code: "3017620422003",
+            productName: "Nutella",
+            imageFrontSmallURL: "https://images.openfoodfacts.org/images/products/301/762/042/2003/front_en.633.200.jpg",
+        )
+        let imageURL = try #require(OFFFoodMapper.map(product).imageURL)
+        let host = try #require(imageURL.host())
+        #expect(NetworkInfoView.hosts.map(\.host).contains(host))
+        let productURL = try #require(OFFFoodMapper.map(product).productURL?.host())
+        #expect(NetworkInfoView.hosts.map(\.host).contains(productURL))
     }
 }

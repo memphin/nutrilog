@@ -87,15 +87,18 @@ public struct OpenFoodFactsSearchHTTPClient: OpenFoodFactsSearchClient {
     private let sleep: @Sendable (Duration) async throws -> Void
 
     /// - Parameters:
-    ///   - userAgent: Full `User-Agent`, e.g. `Nutrilog/1.0 (https://github.com/memphin/nutrilog)` (OFF terms,
-    ///     SPEC §10). A blank value falls back to `Nutrilog/1.0`.
+    ///   - contact: How OFF can reach the app's maintainer, as for ``OpenFoodFactsHTTPClient``: Info.plist
+    ///     `OFFUserAgentContact`, e.g. "https://github.com/memphin/nutrilog". Blank falls back to
+    ///     `Nutrilog/<appVersion>`.
+    ///   - appVersion: Goes into the User-Agent, `Nutrilog/<appVersion> (<contact>)`.
     ///   - pageSize: Results per search (1…100).
     ///   - transport: Defaults to an uncached `URLSession` with the 5 s timeout.
     ///   - throttle: Shared pacing and cool-down state.
     ///   - now: Clock for the throttle; tests pass a fixed one.
     ///   - sleep: Wait before a paced request; tests pass a recorder.
     public init(
-        userAgent: String,
+        contact: String,
+        appVersion: String = "1.0",
         baseURL: URL = OpenFoodFactsHTTPClient.defaultBaseURL,
         pageSize: Int = OpenFoodFactsSearchHTTPClient.defaultPageSize,
         transport: any HTTPTransport = URLSessionTransport.uncached(timeout: OpenFoodFactsSearchHTTPClient.requestTimeout),
@@ -103,8 +106,8 @@ public struct OpenFoodFactsSearchHTTPClient: OpenFoodFactsSearchClient {
         now: @escaping @Sendable () -> Date = { Date() },
         sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) },
     ) {
-        let userAgent = userAgent.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.userAgent = userAgent.isEmpty ? "Nutrilog/1.0" : userAgent
+        let contact = contact.trimmingCharacters(in: .whitespacesAndNewlines)
+        userAgent = contact.isEmpty ? "Nutrilog/\(appVersion)" : "Nutrilog/\(appVersion) (\(contact))"
         self.baseURL = baseURL
         self.pageSize = min(max(pageSize, 1), 100)
         self.transport = transport

@@ -337,6 +337,13 @@ struct NetworkInfoView: View {
             sent: "The barcode or the search text, and a User-Agent naming the app (Nutrilog and its version). No account.",
         ),
         Host(
+            host: "images.openfoodfacts.org",
+            requests: [
+                ("/images/products/…", "Product photo on the scanned product's card"),
+            ],
+            sent: "The image address only (it names the product's barcode).",
+        ),
+        Host(
             host: "api.nal.usda.gov",
             requests: [
                 ("/fdc/v1/foods/search", "Generic and branded food search in Add Food → Online — only with a USDA API key"),
@@ -366,7 +373,7 @@ struct NetworkInfoView: View {
             } footer: {
                 Text(
                     "These are the only hosts Nutrilog contacts, and only when you scan a barcode or search online. "
-                        + "Product images are not downloaded. No analytics, no tracking, no accounts.",
+                        + "No analytics, no tracking, no accounts.",
                 )
             }
         }
