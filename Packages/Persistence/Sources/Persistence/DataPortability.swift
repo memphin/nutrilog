@@ -34,6 +34,8 @@ public struct DataPortability: Sendable {
         case notAnExport
         case newerSchema(file: Int, supported: Int)
         case unknownTable(String)
+        /// Replace would leave no profile or no meal slots (partial or hand-edited file); nothing was changed.
+        case incompleteBackup
     }
 
     let database: AppDatabase
@@ -113,11 +115,19 @@ public struct DataPortability: Sendable {
                     let args = StatementArguments(names.map { values[$0]!.databaseValue })
                     if existing == nil {
                         let placeholders = Array(repeating: "?", count: names.count).joined(separator: ", ")
+                        // Merge: a row clashing with a local row on another unique key (e.g. healthkit_link.hk_uuid)
+                        // is skipped instead of aborting the whole import; local data wins. `ON CONFLICT DO NOTHING`
+                        // (unlike `OR IGNORE`) only covers uniqueness, so NOT NULL / CHECK violations still abort.
+                        let onConflict = mode == .merge ? " ON CONFLICT DO NOTHING" : ""
                         try db.execute(
-                            sql: "INSERT INTO \(table) (\(names.joined(separator: ", "))) VALUES (\(placeholders))",
+                            sql: "INSERT INTO \(table) (\(names.joined(separator: ", "))) VALUES (\(placeholders))\(onConflict)",
                             arguments: args,
                         )
-                        summary.inserted += 1
+                        if db.changesCount > 0 {
+                            summary.inserted += 1
+                        } else {
+                            summary.skipped += 1
+                        }
                     } else if hasUpdatedAt,
                               let incoming = values["updated_at"]?.stringValue,
                               let local: String = existing?["updated_at"],
@@ -130,6 +140,15 @@ public struct DataPortability: Sendable {
                     } else {
                         summary.skipped += 1
                     }
+                }
+            }
+            // Replace wipes every table, so a partial file must not leave the app without a profile or meal slots.
+            // Checking the result (not the file's keys) keeps older, smaller-schema backups importable.
+            if mode == .replace {
+                let profiles = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM profile") ?? 0
+                let slots = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM meal_slot") ?? 0
+                if profiles == 0 || slots == 0 {
+                    throw ImportError.incompleteBackup // rolls back the transaction
                 }
             }
             return summary
@@ -182,11 +201,21 @@ public struct DataPortability: Sendable {
 
     static func csv(_ rows: [[String]]) -> String {
         rows.map { fields in
-            fields.map { field in
+            fields.map { raw in
+                let field = neutralizeFormula(raw)
                 guard field.contains(where: { $0 == "," || $0 == "\"" || $0 == "\n" || $0 == "\r" }) else { return field }
                 return "\"" + field.replacingOccurrences(of: "\"", with: "\"\"") + "\""
             }.joined(separator: ",")
         }.joined(separator: "\r\n") + "\r\n"
+    }
+
+    /// Spreadsheets execute cells starting with `= + - @` (or tab/CR) as formulas; prefix such text with `'`.
+    /// Plain numbers (e.g. "-5") are left alone.
+    static func neutralizeFormula(_ field: String) -> String {
+        let trimmed = field.drop(while: { $0 == " " })
+        guard let first = trimmed.unicodeScalars.first, "=+-@\t\r\n＝＋－＠".unicodeScalars.contains(first),
+              Double(field) == nil else { return field }
+        return "'" + field
     }
 }
 

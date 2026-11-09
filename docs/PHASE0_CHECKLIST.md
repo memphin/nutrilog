@@ -1,6 +1,6 @@
 # Phase 0 checklist
 
-- [ ] Create public GitHub repo, push these files (`main` protected, squash merges, require CI)
+- [x] Create public GitHub repo, push these files (`main` protected, squash merges, require CI)
 - [x] Replace `<YOUR NAME>` in `LICENSE`, `<you>` in README/xcconfig template
 - [x] Decide final app name & bundle ID → **Nutrilog**, `hr.ivanjuric.nutrilog`
 - [x] Xcode 26: `Nutrilog.xcodeproj` generated from `project.yml` (XcodeGen), local packages linked
@@ -10,5 +10,5 @@
 - [x] Add SwiftFormat + SwiftLint configs
 - [x] Run `swift test` in `Packages/Persistence` → green (done locally); CI green on first PR — pending push
 - [x] Download FDC CSVs, run `tools/build_food_index.py`, commit `Resources/FoodIndex/bundled_foods.sqlite`
-- [ ] App Store Connect: create app record, TestFlight internal group; store API key in GitHub secrets; enable `testflight` job
-- [ ] Run `tools/import_issues.sh` to create labels, milestones and Phase 1–3 issues; add them to a Project board
+- [ ] (Phase 2) App Store Connect: create app record, TestFlight internal group; store API key in GitHub secrets; enable `testflight` job
+- [x] Run `tools/import_issues.sh` to create labels, milestones and Phase 1–3 issues (Project board: optional, not created)

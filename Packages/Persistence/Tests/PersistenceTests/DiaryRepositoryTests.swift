@@ -102,11 +102,16 @@ struct DiaryRepositoryTests {
         #expect(updated.grams == 150)
         #expect(updated.kcal == 525)
         #expect(updated.servingLabel == "1.5 × plate")
+    }
 
-        // From zero grams the food's current values are used.
-        try f.diary.updateQuantity(entryID: e.id, quantity: .base(0))
-        try f.diary.updateQuantity(entryID: e.id, quantity: .base(100))
-        #expect(try f.diary.entry(id: e.id)?.kcal == 999)
+    @Test func `zero or negative amounts are rejected`() throws {
+        let f = try Fixture()
+        let d = day("2026-11-09")
+        let food = try f.makeFood("Oats", kcal: 380)
+        #expect(throws: PersistenceError.self) { try f.diary.log(food: food, quantity: .base(0), slotID: "breakfast", day: d) }
+        let e = try f.diary.log(food: food, quantity: .base(50), slotID: "breakfast", day: d)
+        #expect(throws: PersistenceError.self) { try f.diary.updateQuantity(entryID: e.id, quantity: .base(0)) }
+        #expect(try f.diary.entry(id: e.id)?.grams == 50)
     }
 
     @Test func `quick add edits`() throws {
@@ -146,6 +151,33 @@ struct DiaryRepositoryTests {
         try f.diary.restore(entryIDs: [e.id])
         #expect(try f.diary.diary(for: d).totals.kcal == 180)
         #expect(try f.diary.entry(id: e.id)?.revision == 3)
+    }
+
+    @Test func `undo after delete and add keeps sort orders unique`() throws {
+        let f = try Fixture()
+        let d = day("2026-11-09")
+        let food = try f.makeFood("Nuts")
+        let a = try f.diary.log(food: food, quantity: .base(10), slotID: "snacks", day: d)
+        let b = try f.diary.log(food: food, quantity: .base(20), slotID: "snacks", day: d)
+        try f.diary.softDelete(entryIDs: [b.id])
+        let c = try f.diary.log(food: food, quantity: .base(30), slotID: "snacks", day: d)
+        try f.diary.restore(entryIDs: [b.id])
+        let orders = try [a, b, c].map { try #require(try f.diary.entry(id: $0.id)).sortOrder }
+        #expect(Set(orders).count == 3)
+    }
+
+    @Test func `undo after reorder takes a free sort order`() throws {
+        let f = try Fixture()
+        let d = day("2026-11-09")
+        let food = try f.makeFood("Nuts")
+        let a = try f.diary.log(food: food, quantity: .base(10), slotID: "snacks", day: d)
+        let b = try f.diary.log(food: food, quantity: .base(20), slotID: "snacks", day: d)
+        let c = try f.diary.log(food: food, quantity: .base(30), slotID: "snacks", day: d)
+        try f.diary.softDelete(entryIDs: [b.id])
+        try f.diary.reorder(day: d, slotID: "snacks", orderedIDs: [c.id, a.id]) // c=0, a=1 (b's old slot)
+        try f.diary.restore(entryIDs: [b.id])
+        let orders = try [a, b, c].map { try #require(try f.diary.entry(id: $0.id)).sortOrder }
+        #expect(Set(orders).count == 3)
     }
 
     @Test func `copy meal and day recomputes snapshot from current food`() throws {

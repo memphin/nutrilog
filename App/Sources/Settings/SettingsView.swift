@@ -257,6 +257,8 @@ struct DataSettingsView: View {
             message = "This file was made by a newer version of Nutrilog. Update the app first."
         } catch DataPortability.ImportError.notAnExport {
             message = "This isn't a Nutrilog export file."
+        } catch DataPortability.ImportError.incompleteBackup {
+            message = "This file is incomplete (no profile or meal slots), so nothing was replaced. Try Merge instead."
         } catch {
             message = error.localizedDescription
         }

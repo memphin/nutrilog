@@ -4,7 +4,7 @@
 
 Log what you eat (barcode scan, search, recipes, saved meals) and see it next to how your body responds — weight trend, body fat, steps, sleep, resting heart rate, HRV — all pulled from Apple Health. No account, no cloud, no telemetry.
 
-> Status: **Phase 0 — project foundation.** The app launches but has no features yet. See the [roadmap](docs/SPEC.md#13-roadmap).
+> Status: **Phase 1 — MVP diary.** Food diary, custom foods, offline search, targets and export work; barcode scanning and Apple Health arrive in phase 2. See the [roadmap](docs/SPEC.md#13-roadmap).
 
 ## Features (planned for v1)
 
