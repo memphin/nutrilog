@@ -28,8 +28,17 @@ public extension FoodDetail {
     /// Label of the stand-in serving used when a draft only has per-serving values and no usable serving weight.
     static let perServingFallbackLabel = "1 serving"
 
-    /// Note stored on a food whose values are per serving with an unknown serving weight.
-    static let perServingNote = "Nutrition per serving; the serving weight is unknown, so 1 serving is counted as 100 g/ml."
+    /// Note stored on a copy whose values are per serving and whose source gives no serving weight.
+    static let perServingUnknownWeightNote =
+        "Nutrition per serving; the serving weight is unknown, so 1 serving is counted as 100 g/ml."
+
+    /// Note stored on a copy whose values are per serving and whose serving weight (e.g. "0.5 g") is too small, or
+    /// gives implausible per-100 values, to convert with.
+    static func perServingUnusableWeightNote(_ size: ServingSize, isLiquid: Bool) -> String {
+        let weight = "\(NumberFormatting.compact(size.amount)) \(BaseUnit(isLiquid: isLiquid).symbol)"
+        return "Nutrition per serving; the serving weight given (\(weight)) can't be used to work out values per 100, "
+            + "so 1 serving is counted as 100 g/ml."
+    }
 
     /// A new, unsaved local food copied from an online `draft`, for ``FoodRepository/saveRemoteCopy(_:)`` (or
     /// `FoodRepository.saveCopy(_:)` after the caller edits it).
@@ -38,7 +47,8 @@ public extension FoodDetail {
     /// - Per-100 values are stored as is, with the draft's serving (when its weight is known) as the default serving.
     /// - Per-serving values (``FoodDraft/NutrientBasis/perServing``: no usable serving weight) are stored as if one
     ///   serving weighed 100 g/ml, with a stand-in default serving of 100 g/ml named after the printed serving, so
-    ///   logging "1 serving" gives the right nutrients; data quality stays partial and ``perServingNote`` explains it.
+    ///   logging "1 serving" gives the right nutrients. `Food.perServingOnly` marks it
+    ///   (``FoodDetail/isPerServingPlaceholder``), data quality stays partial, and a note says why.
     init(draft: FoodDraft) {
         let name = [draft.name, draft.brand, draft.sourceID]
             .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -65,7 +75,12 @@ public extension FoodDetail {
         case .perServing:
             let label = draft.servingDescription ?? draft.serving?.label ?? Self.perServingFallbackLabel
             serving = Serving(label: label, grams: 100)
-            food.notes = Self.perServingNote
+            food.perServingOnly = true
+            if let size = draft.serving, size.amount > 0, size.amount.isFinite {
+                food.notes = Self.perServingUnusableWeightNote(size, isLiquid: draft.isLiquid)
+            } else {
+                food.notes = Self.perServingUnknownWeightNote
+            }
         }
         if let serving {
             food.defaultServingID = serving.id

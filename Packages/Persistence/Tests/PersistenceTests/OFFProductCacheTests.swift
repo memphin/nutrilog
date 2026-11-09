@@ -153,6 +153,76 @@ struct FoodCopyTests {
         #expect(try f.foods.food(barcode: "3017620422003")?.food.id == first.food.id)
     }
 
+    @Test func `linking a barcode bumps the copy and the deleted previous owner`() throws {
+        var withoutBarcode = offCopy()
+        withoutBarcode.barcodes = []
+        let copy = try f.foods.saveCopy(withoutBarcode)
+        let old = try f.makeFood("Old custom food", barcodes: ["3017620422003"])
+        try f.foods.softDelete(id: old.id)
+        let oldRevision = try #require(try f.foods.food(id: old.id)).revision
+        f.clock.advance(60)
+        let linked = try f.foods.saveCopy(offCopy())
+        let copyRevision = copy.food.revision + 1
+        #expect(linked.food.revision == copyRevision)
+        #expect(linked.food.updatedAt == f.clock.now)
+        let oldAfter = try #require(try f.foods.food(id: old.id))
+        let bumpedOldRevision = oldRevision + 1
+        #expect(oldAfter.revision == bumpedOldRevision)
+        #expect(oldAfter.updatedAt == f.clock.now)
+
+        f.clock.advance(60) // nothing to link: unchanged
+        #expect(try f.foods.saveCopy(offCopy()).food.revision == linked.food.revision)
+    }
+
+    @Test func `revived copy keeps the last serving only while it still exists`() throws {
+        let first = try f.foods.saveCopy(offCopy())
+        let serving = try #require(first.servings.first)
+        try f.db.writer.write { db in
+            try db.execute(sql: "UPDATE food SET last_serving_id = ?, last_amount = 2 WHERE id = ?", arguments: [serving.id, first.food.id])
+        }
+        try f.foods.softDelete(id: first.food.id)
+        let same = try f.foods.saveCopy(offCopy()) // same serving label → same serving row
+        #expect(same.food.lastServingID == serving.id)
+        #expect(same.food.lastAmount == 2)
+
+        try f.foods.softDelete(id: first.food.id)
+        var changed = offCopy()
+        changed.servings = [Serving(label: "1 jar (400 g)", grams: 400)]
+        let revived = try f.foods.saveCopy(changed)
+        #expect(revived.food.id == first.food.id)
+        #expect(revived.food.lastServingID == nil)
+        #expect(revived.food.lastAmount == nil)
+    }
+
+    @Test func `revived copy keeps a remembered base amount`() throws {
+        let first = try f.foods.saveCopy(offCopy())
+        try f.db.writer.write { db in
+            try db.execute(sql: "UPDATE food SET last_amount = 40 WHERE id = ?", arguments: [first.food.id])
+        }
+        try f.foods.softDelete(id: first.food.id)
+        var changed = offCopy()
+        changed.servings = []
+        let revived = try f.foods.saveCopy(changed)
+        #expect(revived.food.lastServingID == nil)
+        #expect(revived.food.lastAmount == 40)
+    }
+
+    @Test func `concurrent copies produce one food`() async throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("nutrilog-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let foods = try FoodRepository(AppDatabase.onDisk(directory: dir)) // a pool: real concurrent writers
+        let detail = offCopy()
+        let ids = try await withThrowingTaskGroup(of: String.self) { group in
+            for _ in 0 ..< 8 {
+                group.addTask { try foods.saveCopy(detail).food.id }
+            }
+            return try await group.reduce(into: Set<String>()) { $0.insert($1) }
+        }
+        #expect(ids.count == 1)
+        let count = try await foods.database.reader.read { db in try Food.fetchCount(db) }
+        #expect(count == 1)
+    }
+
     @Test func `drops invalid barcodes instead of failing`() throws {
         var detail = offCopy()
         detail.barcodes = ["3017620422003", "12345", "3017620422003"]

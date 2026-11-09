@@ -122,13 +122,16 @@ public struct BarcodeLookup: Sendable {
     }
 
     /// Resolves a code given as its normalized candidate keys, most likely first, e.g. the scanner's
-    /// `ScannedBarcode.candidates`.
+    /// `ScannedBarcode.candidates`. Each key is normalized again (a no-op for normalized keys); invalid ones are dropped.
     ///
     /// Throws ``BarcodeLookupError``, `CancellationError`, or a database error.
     public func resolve(candidates: [String]) async throws -> BarcodeLookupResult {
         var keys: [String] = []
-        for key in candidates where !key.isEmpty && !keys.contains(key) {
-            keys.append(key)
+        for candidate in candidates {
+            // Already-normalized keys stay as they are; anything else is normalized, and invalid codes are dropped.
+            if let key = Barcode.normalize(candidate), !keys.contains(key) {
+                keys.append(key)
+            }
         }
         guard let primary = keys.first else { throw BarcodeLookupError.invalidBarcode }
 
@@ -157,7 +160,8 @@ public struct BarcodeLookup: Sendable {
     /// can't be reached and nothing usable is cached. Records the first network failure in `failure`; once it is
     /// set, OFF is not asked again (one 8 s timeout per scan is enough).
     private func remoteProduct(for key: String, failure: inout OpenFoodFactsError?) async throws -> RemoteProduct? {
-        let entry = try cache.entry(barcode: key)
+        // A broken cache row is treated as missing: the network answer replaces it.
+        let entry = (try? cache.entry(barcode: key)) ?? nil
         let cached = entry.flatMap(Self.product(from:))
         if let entry, isFresh(entry) {
             if let cached {

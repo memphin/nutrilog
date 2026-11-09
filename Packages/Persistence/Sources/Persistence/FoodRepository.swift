@@ -79,7 +79,7 @@ public struct FoodRepository: Sendable {
                 if ownerFood?.deletedAt == nil {
                     throw PersistenceError.barcodeInUse(barcode: code, foodID: owner.foodID)
                 }
-                try owner.delete(db) // previous owner was deleted: take the barcode over
+                try Self.takeOver(owner, from: ownerFood, db: db, now: now) // previous owner was deleted
             }
         }
         try FoodBarcode.filter(FoodBarcode.Columns.foodID == food.id).deleteAll(db)
@@ -244,18 +244,27 @@ public struct FoodRepository: Sendable {
                     guard !barcodes.isEmpty else { return existingDetail }
                     for code in barcodes {
                         // An active owner was returned above, so only a deleted food can still hold the code.
-                        try FoodBarcode.deleteOne(db, key: code)
+                        if let owner = try FoodBarcode.fetchOne(db, key: code) {
+                            try Self.takeOver(owner, from: Food.fetchOne(db, key: owner.foodID), db: db, now: now)
+                        }
                         try FoodBarcode(barcode: code, foodID: existing.id, createdAt: now).insert(db)
                     }
+                    var linked = existing
+                    linked.stampUpdated(now) // its barcodes changed
+                    try linked.update(db)
                     return try Self.detail(db, id: existing.id) ?? existingDetail
                 }
                 var revived = detail
                 revived.food.id = existing.id
                 revived.food.isFavorite = existing.isFavorite
-                revived.food.lastServingID = existing.lastServingID
-                revived.food.lastAmount = existing.lastAmount
                 revived.food.deletedAt = nil
                 revived.servings = Self.reusingServingIDs(detail.servings, from: existingDetail.servings)
+                // Keep the remembered quantity only while it still means something: a base amount, or a serving
+                // that the revived food still has.
+                if existing.lastServingID == nil || revived.servings.contains(where: { $0.id == existing.lastServingID }) {
+                    revived.food.lastServingID = existing.lastServingID
+                    revived.food.lastAmount = existing.lastAmount
+                }
                 if let defaultID = detail.food.defaultServingID,
                    let index = detail.servings.firstIndex(where: { $0.id == defaultID })
                 {
@@ -279,6 +288,16 @@ public struct FoodRepository: Sendable {
     }
 
     // MARK: Helpers
+
+    /// Removes `link` from its deleted owner so another food can take the barcode; the owner's barcodes changed, so
+    /// it gets a new `updated_at` / `revision`.
+    private static func takeOver(_ link: FoodBarcode, from owner: Food?, db: Database, now: Date) throws {
+        try link.delete(db)
+        if var owner {
+            owner.stampUpdated(now)
+            try owner.update(db)
+        }
+    }
 
     /// First active food carrying one of the normalized `barcodes`, tried in order.
     static func activeFood(_ db: Database, barcodes: [String]) throws -> FoodDetail? {

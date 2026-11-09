@@ -68,13 +68,38 @@ struct RemoteFoodCopyTests {
         let detail = FoodDetail(draft: draft(basis: .perServing, serving: nil, servingDescription: "1 bar"))
         #expect(detail.food.dataQuality == .partialMacros)
         #expect(detail.food.kcal100 == 539) // per serving, counted as 100 g
-        #expect(detail.food.notes == FoodDetail.perServingNote)
+        #expect(detail.food.notes == FoodDetail.perServingUnknownWeightNote)
+        #expect(detail.food.perServingOnly)
+        #expect(detail.isPerServingPlaceholder)
         let serving = try #require(detail.servings.first)
         #expect(serving.label == "1 bar")
         #expect(serving.grams == 100)
         #expect(detail.food.defaultServingID == serving.id)
         #expect(FoodDetail(draft: draft(basis: .perServing, serving: nil, servingDescription: nil)).servings.first?.label
             == FoodDetail.perServingFallbackLabel)
+    }
+
+    @Test func `per serving draft with an unusable serving weight says so`() {
+        let tablet = ServingSize(label: "1 tablet (500 mg)", amount: 0.5)
+        let detail = FoodDetail(draft: draft(basis: .perServing, serving: tablet, servingDescription: "1 tablet (500 mg)"))
+        #expect(detail.food.notes == FoodDetail.perServingUnusableWeightNote(tablet, isLiquid: false))
+        #expect(detail.food.notes?.contains("(0.5 g)") == true)
+        #expect(detail.isPerServingPlaceholder)
+        #expect(detail.servings.first?.label == "1 tablet (500 mg)")
+    }
+
+    @Test func `per 100 draft is not a per serving placeholder`() {
+        let detail = FoodDetail(draft: draft())
+        #expect(!detail.food.perServingOnly)
+        #expect(!detail.isPerServingPlaceholder)
+    }
+
+    @Test func `per serving marker survives a save`() throws {
+        let foods = try FoodRepository(AppDatabase.inMemory())
+        let saved = try foods.saveRemoteCopy(draft(basis: .perServing, serving: nil))
+        let reread = try #require(try foods.detail(id: saved.food.id))
+        #expect(reread.food.perServingOnly)
+        #expect(reread.isPerServingPlaceholder)
     }
 
     @Test func `missing macros keep the partial quality`() {

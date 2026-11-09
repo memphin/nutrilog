@@ -13,5 +13,7 @@ FoodSources stay independent of each other (it depends on Core, Persistence and 
     order at each step.
 - `FoodDetail(draft:)` and `FoodRepository.saveRemoteCopy(_:)`: store a local copy of an online `FoodDraft`
   (barcode scan or online search) before logging it. Idempotent by barcode and by source + source ID.
+  A per-serving-only draft (no usable serving weight) becomes a food with `perServingOnly` set and a 100 g/ml
+  stand-in serving; `FoodDetail.isPerServingPlaceholder` tells the UI to log it by servings only.
 
 Run tests: `cd Packages/FoodLookup && swift test`

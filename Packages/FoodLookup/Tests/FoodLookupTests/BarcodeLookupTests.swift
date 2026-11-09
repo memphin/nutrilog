@@ -118,6 +118,25 @@ struct BarcodeLookupTests {
         #expect(try await f.lookup.resolve(nutella).remote?.origin == .cache) // and the cache was repaired
     }
 
+    @Test func `broken cache row falls through to the network`() async throws {
+        let f = try Fixture([nutella: .product(offProduct(nutella))])
+        try await f.db.writer.write { db in
+            try db.execute(sql: """
+            INSERT INTO off_product_cache (barcode, status, json, fetched_at) VALUES (?, 'found', '{}', 'not a date')
+            """, arguments: [nutella])
+        }
+        #expect(throws: (any Error).self) { try f.cache.entry(barcode: nutella) } // the row really is unreadable
+        #expect(try await f.lookup.resolve(nutella).remote?.origin == .network)
+        #expect(try f.cache.entry(barcode: nutella) != nil) // replaced by a readable row
+    }
+
+    @Test func `candidates are normalized and invalid ones dropped`() async throws {
+        let f = try Fixture(["0036000291452": .product(offProduct("0036000291452", name: "Cola"))])
+        let remote = try #require(try await f.lookup.resolve(candidates: ["123", "036000291452", "0036000291452"]).remote)
+        #expect(remote.barcode == "0036000291452")
+        #expect(f.client.requests == ["0036000291452"])
+    }
+
     // MARK: Not found and failures
 
     @Test func `not found is cached for seven days`() async throws {
@@ -178,6 +197,16 @@ struct BarcodeLookupTests {
             try await f.lookup.resolve(candidates: [])
         }
         #expect(f.client.requests.isEmpty)
+    }
+
+    @Test func `cancellation with a stale entry propagates instead of serving it`() async throws {
+        let f = try Fixture([nutella: .product(offProduct(nutella))])
+        _ = try await f.lookup.resolve(nutella)
+        f.clock.advance(days: 31)
+        f.client.set(nutella, .cancelled)
+        await #expect(throws: CancellationError.self) {
+            try await f.lookup.resolve(nutella)
+        }
     }
 
     @Test func `cancellation propagates`() async throws {
