@@ -106,15 +106,15 @@ jobs:
     concurrency:
       group: testflight
       cancel-in-progress: false
-    env:
-      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
-      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-      USDA_FDC_API_KEY: ${{ secrets.USDA_FDC_API_KEY }}
-      OFF_USER_AGENT_CONTACT: ${{ secrets.OFF_USER_AGENT_CONTACT }}
+    # Secrets are passed per step, only to the steps that need them.
     steps:
       - name: Check secrets
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          USDA_FDC_API_KEY: ${{ secrets.USDA_FDC_API_KEY }}
         run: |
           missing=()
           for name in ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8 APPLE_TEAM_ID; do
@@ -150,7 +150,14 @@ jobs:
       - name: Show toolchain
         run: xcodebuild -version
       - name: Write build secrets, API key and export options
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          USDA_FDC_API_KEY: ${{ secrets.USDA_FDC_API_KEY }}
+          OFF_USER_AGENT_CONTACT: ${{ secrets.OFF_USER_AGENT_CONTACT }}
         run: |
+          umask 077  # the key file and the xcconfig are readable by this user only
           # Secrets.xcconfig is git-ignored: the template's defaults, then this build's values (later lines win).
           cp Config/Secrets.xcconfig.template Config/Secrets.xcconfig
           {
@@ -172,6 +179,9 @@ jobs:
           plutil -insert teamID -string "$APPLE_TEAM_ID" "$RUNNER_TEMP/ExportOptions.plist"
       - name: Archive
         env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           VERSION: ${{ steps.version.outputs.version }}
           BUILD: ${{ steps.version.outputs.build }}
         run: |
@@ -193,6 +203,8 @@ jobs:
             -quiet
       - name: Export and upload to TestFlight
         env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           VERSION: ${{ steps.version.outputs.version }}
           BUILD: ${{ steps.version.outputs.build }}
         run: |

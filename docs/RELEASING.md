@@ -37,6 +37,10 @@ Account Holder or Admin role.
 
 If the ID already exists from running the app on your phone, make sure HealthKit is enabled on it.
 
+The team also needs **at least one registered device**. Without one, automatic signing can't make the development
+profile that the archive step uses, and fails with "Your team has no devices". To register your iPhone, run the app on
+it once from Xcode with your team selected, or add it under **Devices**.
+
 ### 2. Create the App Store Connect app record
 
 1. Open [appstoreconnect.apple.com](https://appstoreconnect.apple.com) and go to **Apps**. Click **+**, then **New App**.
@@ -119,6 +123,8 @@ TestFlight builds expire after 90 days. To keep the app on your phone, push a ne
 
 - **"Cloud signing permission error" or "No profiles for 'hr.ivanjuric.nutrilog'":** the API key needs the **Admin**
   role (step 3), and the App ID must exist with HealthKit enabled (step 1).
+- **"Your team has no devices from which to generate a provisioning profile":** register a device first. Running
+  the app once on your iPhone from Xcode does this (see step 1).
 - **"The bundle version must be higher than the previously uploaded version":** the build number comes from the commit
   count. Re-running the job for a tag that already uploaded reuses the same number. Make a new commit and tag a new
   version instead.

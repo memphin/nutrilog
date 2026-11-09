@@ -100,9 +100,79 @@ struct ScanLogTests {
         #expect(try events(env).map(\.outcome) == [.offline, .offNetwork])
     }
 
+    @Test func `a food made in the Foods tab after a miss excuses it`() async throws {
+        let (env, _) = environment()
+        let model = ScanFlowModel(environment: env)
+        await model.handle([Codes.unknownCode])
+        model.resumeScanning() // closed the not-found screen without creating the food
+
+        // Later, from the Foods tab: no `created` event is logged.
+        let editor = FoodEditorModel(energyUnit: .kcal, barcode: Codes.unknownCode)
+        editor.name = "Domaći ajvar"
+        editor.energy = "80"
+        editor.protein = "1.5"
+        editor.carbs = "8"
+        editor.fat = "4.5"
+        try #require(env.foods).save(#require(editor.makeDetail()))
+
+        await model.handle([Codes.unknownCode])
+        #expect(model.product != nil)
+        #expect(try events(env).map(\.outcome) == [.notFound, .local])
+        let stats = try #require(env.scanLog).stats()
+        #expect(stats.excusedMisses == 1)
+        #expect(stats.regularRate == 1)
+    }
+
+    @Test func `creating the food after an offline failure logs it`() async throws {
+        let (env, _) = environment(failure: .offline)
+        let model = ScanFlowModel(environment: env)
+        await model.handle([Codes.unknownCode])
+        #expect(model.phase == .failed(.offline, candidates: [Codes.unknownCode]))
+        let saved = try #require(env.foods).save(FoodDetail(
+            food: Food(name: "Pita", per100: Nutrients(kcal: 250, proteinG: 8, carbsG: 30, fatG: 10)),
+            barcodes: [Codes.unknownCode],
+        ))
+        model.foodCreated(saved)
+
+        let logged = try events(env)
+        #expect(logged.map(\.outcome) == [.offline, .created])
+        #expect(logged.map(\.barcode) == [Codes.unknownCode, Codes.unknownCode])
+        let stats = try #require(env.scanLog).stats()
+        #expect(stats.scanRate == nil) // offline isn't conclusive, `created` isn't a scan
+    }
+
+    @Test func `a local hit under a later candidate key is logged under that key`() async throws {
+        let (env, client) = environment(failure: .offline)
+        let upce = "0012345000065" // the UPC-E reading of 01234565, expanded to EAN-13
+        try #require(env.foods).save(FoodDetail(
+            food: Food(name: "UPC-E product", per100: Nutrients(kcal: 100, proteinG: 1, carbsG: 1, fatG: 1)),
+            barcodes: [upce],
+        ))
+        let model = ScanFlowModel(environment: env)
+        await model.handle(["01234565", upce])
+        #expect(model.product != nil)
+        #expect(client.requests.isEmpty)
+        #expect(try events(env).map(\.barcode) == [upce])
+        #expect(try events(env).map(\.outcome) == [.local])
+    }
+
+    @Test func `the headline never rounds up to the target`() {
+        let en = Locale(identifier: "en_US")
+        let rate = 26.0 / 29.0 // 89.66 %
+        #expect(BarcodeResolutionView.percent(rate, locale: en) == "89.6%")
+        #expect(BarcodeResolutionView.percent(0.8999, locale: en) == "89.9%")
+        #expect(BarcodeResolutionView.percent(0.9, locale: en) == "90.0%")
+        #expect(BarcodeResolutionView.percent(1, locale: en) == "100.0%")
+
+        var stats = BarcodeResolutionStats(events: [], now: .now)
+        stats.regularResolvedScans = 26
+        stats.regularCountedScans = 29
+        #expect(stats.meetsTarget == false)
+        #expect(BarcodeResolutionView.summary(stats).hasPrefix("Below"))
+    }
+
     @Test func `outcome labels and percentages`() {
         #expect(BarcodeResolutionView.percent(nil) == "—")
-        #expect(BarcodeResolutionView.percent(0.9).hasPrefix("90"))
         #expect(BarcodeResolutionView.qualityLabel("partial_macros") == "partial macros")
         #expect(Set(ScanOutcome.allCases.map(BarcodeResolutionView.label)).count == ScanOutcome.allCases.count)
     }

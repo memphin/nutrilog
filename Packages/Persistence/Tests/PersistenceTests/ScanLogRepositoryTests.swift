@@ -11,7 +11,8 @@ struct ScanLogRepositoryTests {
 
     @Test func `scan log is migrated (006) and not exported`() throws {
         let f = try Fixture()
-        #expect(Migrator.migrations.contains("006_barcode_scan_log"))
+        #expect(Migrator.migrations.last == "006_barcode_scan_log")
+        #expect(DataPortability.schemaVersion == 6)
         try log(f).record(barcode: "4006381333931", outcome: .local)
         let data = try DataPortability(f.db, clock: f.clock.appClock).exportJSON()
         let object = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
@@ -40,6 +41,39 @@ struct ScanLogRepositoryTests {
         #expect(stats.excusedMisses == 1)
         #expect(stats.scanRate == 1)
         #expect(stats.count(.created) == 1)
+    }
+
+    @Test func `a food entered outside the scan flow after a miss excuses it`() throws {
+        let f = try Fixture()
+        let repo = log(f)
+        let code = "5901234123457"
+        try repo.record(barcode: code, outcome: .notFound)
+        f.clock.advance(3600)
+        // Created later in the Foods tab: no `created` event in the log.
+        try f.makeFood("Domaći ajvar", barcodes: [code])
+        f.clock.advance(3600)
+        try repo.record(barcode: code, outcome: .local)
+
+        let stats = try repo.stats()
+        #expect(stats.excusedMisses == 1)
+        #expect(stats.scanRate == 1)
+        #expect(stats.regularRate == 1)
+    }
+
+    @Test func `a deleted food or one known before the miss doesn't excuse it`() throws {
+        let f = try Fixture()
+        let repo = log(f)
+        try f.makeFood("Known before", barcodes: ["4006381333931"])
+        f.clock.advance(60)
+        try repo.record(barcode: "4006381333931", outcome: .notFound) // e.g. a scan misread
+        try repo.record(barcode: "3017620422003", outcome: .notFound)
+        f.clock.advance(60)
+        let deleted = try f.makeFood("Deleted again", barcodes: ["3017620422003"])
+        try f.foods.softDelete(id: deleted.id)
+
+        let known = try repo.knownSince(["4006381333931", "3017620422003"])
+        #expect(Array(known.keys) == ["4006381333931"])
+        #expect(try repo.stats().excusedMisses == 0)
     }
 
     @Test func `the database rejects unknown outcomes`() throws {

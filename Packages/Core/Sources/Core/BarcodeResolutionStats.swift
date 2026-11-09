@@ -58,9 +58,11 @@ public struct ScanEvent: Hashable, Sendable {
 /// - Only events inside the window (`now - days … now`) count.
 /// - A scan is **resolved** when a local food or Open Food Facts (network, cache or stale cache) answered.
 /// - **Offline / unavailable** scans got no answer and are left out of every rate (they are only counted).
-/// - A **not-found** scan is **excused** when a food was created for that barcode at or after the scan (a `created`
-///   event in the window): that miss *is* the one-time manual entry, so it leaves the denominator. Later scans of the
-///   code then hit the local food and count as resolved on their own. A miss that never led to a new food counts.
+/// - A **not-found** scan is **excused** when the barcode became known locally at or after the scan: that miss *is*
+///   the one-time manual entry, so it leaves the denominator. "Known locally" comes from the data, not from how the
+///   food was made: `knownSince` (an active food carries the code; from the database, so a food created in the Foods
+///   tab, in Add Food or by an import counts too) or a `created` event logged by the scan flow. Later scans of the
+///   code then hit the local food and count as resolved on their own. A miss that never led to a food counts.
 /// - ``scanRate``: resolved ÷ (conclusive scans − excused misses). ``rawScanRate`` is the same without excusing.
 /// - ``barcodeRate``: per distinct barcode, judged by its latest conclusive scan in the window (resolved or excused
 ///   → resolved), i.e. "does this product scan now".
@@ -119,20 +121,23 @@ public struct BarcodeResolutionStats: Hashable, Sendable {
     }
 
     /// Stats for the events in the last `days` days before `now` (events outside the window are ignored).
-    public init(events: [ScanEvent], now: Date, days: Int = defaultDays) {
+    ///
+    /// `knownSince`: for barcodes an active local food carries now, when that became so (the later of the barcode
+    /// link's and the food's last change).
+    public init(events: [ScanEvent], now: Date, days: Int = defaultDays, knownSince: [String: Date] = [:]) {
         let start = now.addingTimeInterval(-Double(days) * 86400)
         let window = events.filter { $0.date >= start && $0.date <= now }.sorted { $0.date < $1.date }
 
         var counts: [ScanOutcome: Int] = [:]
         var quality: [String: Int] = [:]
-        var lastCreated: [String: Date] = [:]
+        var knownAt = knownSince
         for event in window {
             counts[event.outcome, default: 0] += 1
             if event.outcome.isResolved, event.outcome != .local, let q = event.dataQuality {
                 quality[q, default: 0] += 1
             }
             if event.outcome == .created {
-                lastCreated[event.barcode] = event.date
+                knownAt[event.barcode] = max(knownAt[event.barcode] ?? event.date, event.date)
             }
         }
 
@@ -144,7 +149,7 @@ public struct BarcodeResolutionStats: Hashable, Sendable {
                 tally.resolved += 1
                 tally.counted += 1
                 tally.latestOK = true
-            } else if let created = lastCreated[event.barcode], created >= event.date {
+            } else if let known = knownAt[event.barcode], known >= event.date {
                 tally.excused += 1
                 tally.latestOK = true
             } else {

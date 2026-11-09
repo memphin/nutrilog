@@ -32,8 +32,8 @@ struct BarcodeResolutionView: View {
                 } footer: {
                     Text("""
                     Resolved means a food on this iPhone or Open Food Facts had the barcode. A miss is not counted when \
-                    you then created the food for it: that's the one-time manual entry, and later scans find it on \
-                    this iPhone. Offline scans aren't counted either.
+                    a food with that barcode was added afterwards (anywhere in the app, or by an import): that's the \
+                    one-time manual entry, and later scans find it on this iPhone. Offline scans aren't counted either.
                     """)
                 }
 
@@ -91,13 +91,15 @@ struct BarcodeResolutionView: View {
 
     // MARK: Formatting
 
-    static func percent(_ rate: Double?) -> String {
+    /// One decimal, rounded toward zero, so a rate just below the target never reads as the target (26/29 is 89.6 %,
+    /// not 90 %).
+    static func percent(_ rate: Double?, locale: Locale = .current) -> String {
         guard let rate else { return "—" }
-        return rate.formatted(.percent.precision(.fractionLength(0)))
+        return rate.formatted(.percent.precision(.fractionLength(1)).rounded(rule: .towardZero).locale(locale))
     }
 
     static func summary(_ stats: BarcodeResolutionStats) -> String {
-        let target = percent(BarcodeResolutionStats.target)
+        let target = BarcodeResolutionStats.target.formatted(.percent.precision(.fractionLength(0)))
         switch stats.meetsTarget {
         case true?: return "On target: at least \(target) of regularly bought products resolve."
         case false?: return "Below the \(target) target for regularly bought products."

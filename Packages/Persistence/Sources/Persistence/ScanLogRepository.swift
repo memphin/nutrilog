@@ -43,7 +43,30 @@ public struct ScanLogRepository: Sendable {
     public func stats(days: Int = BarcodeResolutionStats.defaultDays) throws -> BarcodeResolutionStats {
         let now = clock.now()
         let events = try events(since: now.addingTimeInterval(-Double(days) * 86400))
-        return BarcodeResolutionStats(events: events, now: now, days: days)
+        let missed = Set(events.filter { $0.outcome == .notFound }.map(\.barcode))
+        return try BarcodeResolutionStats(events: events, now: now, days: days, knownSince: knownSince(missed))
+    }
+
+    /// For each of `barcodes` an active local food carries, when that became so: the later of the barcode link's
+    /// `created_at` and the food's `updated_at`. Covers foods made anywhere (scan flow, Foods tab, Add Food, import),
+    /// so a miss followed by a manual entry is excused however the food was entered.
+    func knownSince(_ barcodes: Set<String>) throws -> [String: Date] {
+        guard !barcodes.isEmpty else { return [:] }
+        let placeholders = Array(repeating: "?", count: barcodes.count).joined(separator: ",")
+        let rows = try database.reader.read { db in
+            try GRDB.Row.fetchAll(db, sql: """
+            SELECT fb.barcode AS barcode, MAX(fb.created_at, f.updated_at) AS known_at
+            FROM food_barcode fb JOIN food f ON f.id = fb.food_id
+            WHERE f.deleted_at IS NULL AND fb.barcode IN (\(placeholders))
+            """, arguments: StatementArguments(Array(barcodes)))
+        }
+        var result: [String: Date] = [:]
+        for row in rows {
+            if let barcode: String = row["barcode"], let text: String = row["known_at"], let date = Timestamp.date(text) {
+                result[barcode] = date
+            }
+        }
+        return result
     }
 
     /// Deletes the whole log.

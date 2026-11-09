@@ -61,6 +61,22 @@ struct BarcodeResolutionStatsTests {
         #expect(stats.count(.created) == 1)
     }
 
+    @Test func `a food made outside the scan flow after the miss excuses it`() {
+        let events = [
+            event("X", .notFound, hoursAgo: 48),
+            event("X", .local, hoursAgo: 1),
+            event("Y", .notFound, hoursAgo: 10), // known before the miss: e.g. a food restored with an old link
+        ]
+        let known = [
+            "X": now.addingTimeInterval(-40 * hour), // created in the Foods tab, no `created` event
+            "Y": now.addingTimeInterval(-20 * hour),
+        ]
+        let stats = BarcodeResolutionStats(events: events, now: now, knownSince: known)
+        #expect(stats.excusedMisses == 1)
+        #expect(stats.scanRate == 0.5)
+        #expect(stats.resolvedBarcodes == 1)
+    }
+
     @Test func `a miss after the manual entry still counts`() {
         let events = [
             event("X", .created, hoursAgo: 48),
