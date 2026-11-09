@@ -5,7 +5,7 @@
 | Document version | 1.0 (approved baseline) |
 | Date | 2026-11-09 |
 | Status | **Approved** — development starts with Phase 0. Changes go through PRs to `docs/SPEC.md` with a change-log entry. |
-| Working name | **NutriLog** (rename at any time before the first TestFlight build) |
+| Working name | **Nutrilog** (rename at any time before the first TestFlight build) |
 | Audience | Single owner/developer; open-source contributors later |
 | License | Code: **MIT**; bundled/derived data keeps its own license (CC0 for USDA subset; ODbL attribution for OFF) |
 
@@ -261,7 +261,7 @@ Why not A: it locks the web story. Why not C: your three hardest integrations (H
 
 ### 7.3 iOS app structure (Option B, v1)
 ```
-NutriLog/
+Nutrilog/
 ├── App/                      # SwiftUI app entry, DI container, navigation
 ├── Packages/
 │   ├── Core/                 # Domain models, nutrient math, TDEE, date windows (pure Swift, 100% testable)
@@ -347,7 +347,7 @@ Nutrient mapping notes: prefer `energy-kcal_100g`, else `energy_100g` (kJ) / 4.1
 
 ## 10. Secrets, Keys & Open-Source Hygiene
 
-- **Open Food Facts**: no key; set `User-Agent: NutriLog/1.0 (github.com/<user>/nutrilog)`.
+- **Open Food Facts**: no key; set `User-Agent: Nutrilog/1.0 (github.com/memphin/nutrilog)`.
 - **USDA FDC key** — three supported modes (choose per build):
   1. **User-provided** (default for forks): Settings → paste your own free key (stored in Keychain). The app works without it using the bundled subset + OFF.
   2. **CI-injected**: GitHub Actions secret written into an `.xcconfig` at build time; `.xcconfig` is git-ignored; only the owner's TestFlight/personal builds get it.
@@ -399,7 +399,7 @@ Estimates assume part-time (evenings/weekends) solo development by someone comfo
 All blocking decisions are made (D1–D9). The following defaults may be changed during Phase 0 without a spec revision:
 
 1. **Units**: metric only (kg, cm, g, ml, kcal); kJ display off by default.
-2. **App name & bundle ID** (working: NutriLog, `hr.<yourname>.nutrilog`).
+2. **App name & bundle ID** (working: Nutrilog, `hr.ivanjuric.nutrilog`).
 3. **Water goal default** (assume 2,500 ml) and quick-add sizes.
 4. **Contribute scans back to Open Food Facts** — COULD, phase 4, needs an OFF account.
 5. **Phase 4 hosting**: self-hosted (home server / VPS) vs. hosted free tier — decide at end of phase 3.

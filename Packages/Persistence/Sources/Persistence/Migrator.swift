@@ -12,11 +12,11 @@ public enum Migrator {
     public static func make() throws -> DatabaseMigrator {
         var migrator = DatabaseMigrator()
         #if DEBUG
-        migrator.eraseDatabaseOnSchemaChange = false // keep false: we want real migrations even in debug
+            migrator.eraseDatabaseOnSchemaChange = false // keep false: we want real migrations even in debug
         #endif
         for name in migrations {
             migrator.registerMigration(name) { db in
-                try db.execute(sql: try Self.sql(named: name))
+                try db.execute(sql: Self.sql(named: name))
             }
         }
         return migrator

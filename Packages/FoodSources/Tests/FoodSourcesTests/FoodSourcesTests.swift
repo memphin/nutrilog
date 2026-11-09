@@ -1,8 +1,8 @@
 import Testing
 @testable import FoodSources
 
-@Suite struct FoodSourcesTests {
-    @Test func moduleLoads() {
+struct FoodSourcesTests {
+    @Test func `module loads`() {
         #expect(FoodSources.moduleName == "FoodSources")
     }
 }

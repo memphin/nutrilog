@@ -1,32 +1,297 @@
 # One substring (case-insensitive, matched against the FDC description) or exact fdc_id per line.
-# Start small; grow from "not found" searches in daily use.
-chicken, broiler or fryers, breast
-egg, whole, raw
-oats
-rice, white, long-grain
-rice, brown
-potatoes, raw
-banana, raw
-apple, raw
-milk, whole
-yogurt, plain
-cheese, mozzarella
-olive oil
-butter, salted
-bread, whole-wheat
-pasta, dry
-beef, ground
-salmon, atlantic
-tuna, light, canned
-beans, black
-lentils
+# Patterns follow USDA naming ("Bananas, raw", "Fish, salmon, ..."). Grow from "not found" searches in daily use.
+
+# Fruit
+apples, raw
+bananas, raw
+oranges, raw
+tangerines, (mandarin oranges), raw
+lemons, raw
+grapes, red or green
+pears, raw
+peaches, yellow, raw
+plums, raw
+apricots, raw
+cherries, sweet, raw
+strawberries, raw
+raspberries, raw
+blueberries, raw
+blackberries
+watermelon, raw
+melons, cantaloupe, raw
+kiwifruit, green, raw
+pineapple, raw
+figs, raw
+figs, dried
+dates, medjool
+168164
+2758979
+plums, dried
+apricots, dried
+avocados, raw
+pomegranates, raw
+grapefruit, raw
+
+# Vegetables
 tomatoes, red, ripe, raw
-cucumber
+cucumber, with peel, raw
+peppers, sweet, red, raw
+peppers, sweet, green, raw
+peppers, sweet, yellow, raw
 onions, raw
+onions, spring or scallions
+garlic, raw
 carrots, raw
 broccoli, raw
+cauliflower, raw
+cabbage, raw
+cabbage, red, raw
+sauerkraut
 spinach, raw
-almonds
-walnuts
-peanut butter
-honey
+lettuce, iceberg
+lettuce, cos or romaine
+arugula, raw
+kale, raw
+zucchini
+squash, summer
+eggplant, raw
+mushrooms, white, raw
+beets, raw
+celery, raw
+radishes, raw
+leeks
+pumpkin, raw
+sweet potato, raw
+potatoes, raw, skin
+potatoes, boiled
+potatoes, baked
+peas, green, raw
+peas, green, frozen
+corn, sweet, yellow, raw
+beans, snap, green, raw
+asparagus, raw
+brussels sprouts, raw
+olives, ripe, canned
+pickles, cucumber, dill
+chard, swiss, raw
+
+# Legumes
+beans, black, mature seeds, cooked
+beans, kidney, red, mature seeds, cooked
+beans, pinto, mature seeds, cooked
+beans, white, mature seeds, cooked
+beans, navy, mature seeds, cooked
+chickpeas (garbanzo beans, bengal gram), mature seeds, cooked
+chickpeas (garbanzo beans, bengal gram), mature seeds, canned
+lentils, mature seeds, cooked
+lentils, raw
+hummus
+tofu, firm
+soybeans, mature seeds, cooked
+edamame
+
+# Grains, bread, pasta
+cereals, oats
+oat bran
+rice, white, long-grain, regular, raw
+rice, white, long-grain, regular, enriched, cooked
+rice, brown, long-grain, raw
+rice, brown, long-grain, cooked
+rice, white, short-grain
+buckwheat groats
+bulgur, cooked
+couscous, cooked
+quinoa, cooked
+quinoa, uncooked
+millet, cooked
+barley, pearled
+pasta, dry, enriched
+pasta, cooked, enriched
+pasta, whole-wheat
+spaghetti, cooked
+noodles, egg
+bread, white, commercially prepared
+bread, whole-wheat
+bread, rye
+bread, multi-grain
+bread, french or vienna
+bread, pita
+tortillas, ready-to-bake or -fry, flour
+crackers, whole-wheat
+rolls, hamburger
+wheat flour, white, all-purpose
+wheat flour, whole-grain
+cornmeal, whole-grain
+semolina, enriched
+cornmeal, whole-grain, yellow
+popcorn, air-popped
+
+# Dairy & eggs
+egg, whole, raw, fresh
+egg, whole, cooked, hard-boiled
+egg, whole, cooked, fried
+egg, whole, cooked, scrambled
+egg, white, raw
+egg, yolk, raw
+milk, whole, 3.25%
+milk, reduced fat, fluid, 2%
+milk, lowfat, fluid, 1%
+milk, nonfat, fluid
+milk, buttermilk
+yogurt, plain, whole milk
+yogurt, plain, low fat
+yogurt, greek, plain
+170904
+
+cheese, cottage
+cheese, cream
+cheese, mozzarella, whole milk
+cheese, mozzarella, part skim
+cheese, cheddar
+cheese, parmesan, grated
+cheese, parmesan, hard
+cheese, feta
+cheese, gouda
+cheese, edam
+cheese, swiss
+cheese, ricotta
+cheese, goat
+cream, fluid, heavy whipping
+cream, sour, cultured
+cream, fluid, light
+butter, salted
+butter, without salt
+ice creams, vanilla
+
+# Meat & poultry
+chicken, broiler or fryers, breast, skinless, boneless, meat only, raw
+chicken, broilers or fryers, breast, meat only, cooked, roasted
+chicken, broilers or fryers, thigh, meat only
+chicken, broilers or fryers, thigh, meat only, cooked, roasted
+chicken, broilers or fryers, drumstick, meat only
+chicken, broilers or fryers, wing, meat and skin
+chicken, ground, raw
+turkey, ground
+turkey, retail parts, breast, meat only
+beef, ground, 80% lean meat / 20% fat, raw
+beef, ground, 85% lean meat / 15% fat, raw
+beef, ground, 90% lean meat / 10% fat, raw
+beef, ground, 95% lean meat / 5% fat, raw
+beef, ground, 85% lean meat / 15% fat, patty, cooked, broiled
+beef, tenderloin, steak, separable lean only
+beef, top sirloin, steak, separable lean only, trimmed to 1/8" fat, choice, raw
+beef, rib eye steak, boneless, lip off, separable lean only, trimmed to 0" fat, choice, raw
+beef, chuck, under blade pot roast
+pork, fresh, loin, tenderloin, separable lean only, raw
+pork, fresh, loin, tenderloin, separable lean only, cooked, roasted
+pork, fresh, loin, center loin (chops), bone-in, separable lean only, raw
+pork, fresh, ground, raw
+pork, fresh, shoulder, blade, boston (steaks)
+pork, cured, bacon, unprepared
+pork, cured, bacon, pre-sliced, cooked, pan-fried
+pork, cured, ham, boneless, extra lean
+lamb, ground, raw
+veal, ground
+sausage, pork
+frankfurter, beef
+salami, cooked, beef and pork
+bologna, beef and pork
+liver, raw
+chicken, liver, all classes, raw
+
+# Fish & seafood
+fish, salmon, atlantic, farmed, raw
+fish, salmon, atlantic, farmed, cooked
+fish, salmon, atlantic, wild, raw
+fish, tuna, light, canned in water
+fish, tuna, light, canned in oil
+fish, tuna, fresh, yellowfin, raw
+fish, cod, atlantic, raw
+fish, cod, atlantic, cooked
+fish, mackerel, atlantic, raw
+fish, sardine, atlantic, canned in oil
+fish, anchovy, european, canned in oil
+fish, trout, rainbow, farmed, raw
+fish, haddock, raw
+fish, sea bass, mixed species, raw
+fish, tilapia, raw
+fish, herring, atlantic, raw
+crustaceans, shrimp, raw
+crustaceans, shrimp, cooked
+mollusks, mussel, blue, raw
+mollusks, squid, mixed species, raw
+mollusks, octopus, common, raw
+
+# Nuts & seeds
+nuts, almonds
+nuts, walnuts, english
+nuts, hazelnuts or filberts
+nuts, cashew nuts, raw
+nuts, pistachio nuts, raw
+nuts, brazilnuts
+nuts, macadamia nuts, raw
+nuts, pecans
+nuts, mixed nuts, dry roasted, with peanuts
+peanuts, all types, raw
+peanuts, all types, dry-roasted
+peanut butter, smooth style
+seeds, sunflower seed kernels, dried
+seeds, pumpkin and squash seed kernels, dried
+seeds, chia seeds, dried
+seeds, flaxseed
+seeds, sesame seeds, whole, dried
+nuts, coconut meat, raw
+nuts, coconut meat, dried (desiccated)
+tahini
+
+# Fats & oils
+oil, olive, salad or cooking
+oil, sunflower, linoleic
+172336
+748278
+oil, coconut
+margarine, regular
+mayonnaise, regular
+lard
+
+# Sweets, spreads, condiments
+# Honey (exact id — the substring 'honey' matches dozens of honey-flavoured foods)
+169640
+sugars, granulated
+sugars, brown
+sugars, powdered
+jams and preserves
+syrups, maple
+chocolate, dark, 70-85% cacao solids
+chocolate, dark, 60-69% cacao solids
+candies, milk chocolate
+cocoa, dry powder, unsweetened
+chocolate-flavored hazelnut spread
+ketchup
+mustard, prepared, yellow
+catsup
+soy sauce made from soy (tamari)
+vinegar, balsamic
+vinegar, cider
+salt, table
+tomato products, canned, paste
+tomato products, canned, sauce
+tomatoes, crushed, canned
+salsa, ready-to-serve
+
+# Beverages
+beverages, coffee, brewed, prepared with tap water
+beverages, coffee, brewed, espresso
+beverages, tea, black, brewed
+beverages, tea, green, brewed
+orange juice, raw
+apple juice, canned or bottled, unsweetened
+beverages, carbonated, cola
+beverages, almond milk, unsweetened
+soymilk, original and vanilla, unfortified
+alcoholic beverage, beer, regular
+alcoholic beverage, wine, table, red
+alcoholic beverage, wine, table, white
+alcoholic beverage, distilled, all (gin, rum, vodka, whiskey) 80 proof
+beverages, whey protein powder isolate
+beverages, protein powder whey based

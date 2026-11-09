@@ -18,16 +18,57 @@ NUTRIENTS = {
     1079: "fiber_g_100", 2000: "sugar_g_100", 1258: "sat_fat_g_100", 1093: "sodium_mg_100",
 }
 
-def load(raw: Path):
-    food = pd.read_csv(raw / "food.csv", usecols=["fdc_id", "data_type", "description"])
+# Foundation foods often report energy only as Atwater general (2047) / specific (2048) factors.
+ENERGY_FALLBACKS = (2048, 2047)
+
+def find_csv_dir(raw: Path) -> Path:
+    """Accept either the unzipped folder itself or a parent containing it."""
+    if (raw / "food.csv").exists():
+        return raw
+    hits = sorted(p.parent for p in raw.rglob("food.csv"))
+    if not hits:
+        sys.exit(f"no food.csv under {raw}")
+    return hits[0]
+
+def load_one(raw: Path):
+    d = find_csv_dir(raw)
+    food = pd.read_csv(d / "food.csv", usecols=["fdc_id", "data_type", "description"])
     food = food[food.data_type.isin(["foundation_food", "sr_legacy_food"])]
-    fn = pd.read_csv(raw / "food_nutrient.csv", usecols=["fdc_id", "nutrient_id", "amount"])
-    fn = fn[fn.nutrient_id.isin(NUTRIENTS)]
+    fn = pd.read_csv(d / "food_nutrient.csv", usecols=["fdc_id", "nutrient_id", "amount"])
+    fn = fn[fn.nutrient_id.isin(list(NUTRIENTS) + list(ENERGY_FALLBACKS)) & fn.fdc_id.isin(food.fdc_id)]
     wide = fn.pivot_table(index="fdc_id", columns="nutrient_id", values="amount", aggfunc="first")
-    wide = wide.rename(columns=NUTRIENTS)
+    for nid in list(NUTRIENTS) + list(ENERGY_FALLBACKS):
+        if nid not in wide.columns:
+            wide[nid] = float("nan")
+    for nid in ENERGY_FALLBACKS:
+        wide[1008] = wide[1008].fillna(wide[nid])
+    wide = wide[list(NUTRIENTS)].rename(columns=NUTRIENTS)
     return food.merge(wide, left_on="fdc_id", right_index=True, how="inner")
 
+def load(raws: list[Path]):
+    df = pd.concat([load_one(r) for r in raws], ignore_index=True)
+    # Prefer rows with complete macros, then Foundation over SR Legacy, when both describe the same food.
+    macros = ["kcal_100", "protein_g_100", "carbs_g_100", "fat_g_100"]
+    df["_rank"] = df[macros].isna().any(axis=1).astype(int) * 2 + (df.data_type != "foundation_food").astype(int)
+    df = df.sort_values(["_rank", "description"]).drop_duplicates("description").drop(columns="_rank")
+    return df
+
+# Drop SR Legacy brand-name items (brands are written in CAPS, e.g. "POST HONEY BUNCHES OF OATS")
+# and regional/program-specific variants that only add noise to a generic-food index.
+PROGRAM_NOTE = r"\s*\((?:[Ii]ncludes|[Ff]ormerly)[^)]*\)"
+EXCLUDE_REGEX = (r"\b(?!USDA\b|NFS\b|USA\b)[A-Z]{3,}\b|Alaska Native|Navajo|Hopi|Shoshone|Apache|"
+                 r"Northern Plains Indians|Babyfood|Oscar Mayer|Restaurant|Fast foods")
+
+def _allow_ids(allowlist: Path | None) -> set[int]:
+    """Explicit fdc_ids in the allowlist bypass the brand/noise filter."""
+    if not allowlist:
+        return set()
+    return {int(l.strip()) for l in allowlist.read_text().splitlines() if l.strip().isdigit()}
+
 def apply_allowlist(df: pd.DataFrame, allowlist: Path | None):
+    df = df.assign(description=df.description.str.replace(PROGRAM_NOTE, "", regex=True).str.strip())
+    df = df[~df.description.str.contains(EXCLUDE_REGEX, regex=True) | df.fdc_id.isin(_allow_ids(allowlist))]
+    df = df.drop_duplicates("description")  # cleaning can make names collide; first (Foundation) wins
     if not allowlist:
         return df
     terms, ids = [], set()
@@ -70,7 +111,7 @@ def write(df: pd.DataFrame, out: Path):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--raw", type=Path, required=True)
+    ap.add_argument("--raw", type=Path, nargs="+", required=True, help="one or more unzipped FDC CSV folders")
     ap.add_argument("--allowlist", type=Path)
     ap.add_argument("--out", type=Path, required=True)
     a = ap.parse_args()

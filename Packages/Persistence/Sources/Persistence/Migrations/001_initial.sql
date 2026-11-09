@@ -1,4 +1,4 @@
--- NutriLog schema v1 (Phase 0). Portable SQL: TEXT UUIDs, ISO-8601 TEXT timestamps,
+-- Nutrilog schema v1 (Phase 0). Portable SQL: TEXT UUIDs, ISO-8601 TEXT timestamps,
 -- INTEGER 0/1 booleans, REAL for quantities. Every user-data table carries the sync
 -- columns created_at / updated_at / deleted_at / revision (see ADR-0003).
 

@@ -1,8 +1,8 @@
 import Testing
 @testable import HealthKitClient
 
-@Suite struct HealthKitClientTests {
-    @Test func moduleLoads() {
+struct HealthKitClientTests {
+    @Test func `module loads`() {
         #expect(HealthKitClient.moduleName == "HealthKitClient")
     }
 }

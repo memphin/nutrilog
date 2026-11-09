@@ -7,8 +7,11 @@ excluded:
 opt_in_rules:
   - empty_count
   - first_where
-  - sorted_imports
+analyzer_rules:
   - unused_import
+disabled_rules:
+  - trailing_comma   # SwiftFormat owns comma style
+  - sorted_imports   # SwiftFormat sorts imports (testable last)
 line_length:
   warning: 140
   error: 200

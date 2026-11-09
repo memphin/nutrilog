@@ -30,8 +30,8 @@ jobs:
         package: [Core, Persistence, FoodSources, DesignSystem]  # HealthKitClient & Scanner are iOS-only — tested via the app scheme
     steps:
       - uses: actions/checkout@v4
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_26.app
+      - name: Show toolchain
+        run: xcodebuild -version && swift --version
       - name: Cache SwiftPM
         uses: actions/cache@v4
         with:
@@ -49,19 +49,27 @@ jobs:
     needs: packages
     steps:
       - uses: actions/checkout@v4
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_26.app
+      - name: Show toolchain
+        run: xcodebuild -version
       - name: Create placeholder secrets
         run: cp Config/Secrets.xcconfig.template Config/Secrets.xcconfig
+      - name: Pick an iPhone simulator
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available -j \
+            | jq -r '[.devices | to_entries[] | select(.key | contains("iOS")) | .value[] | select(.name | startswith("iPhone"))] | last | .udid')
+          echo "Using simulator $UDID"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
       - name: Build & test
         run: |
           set -o pipefail
           xcodebuild test \
-            -project NutriLog.xcodeproj \
-            -scheme NutriLog \
-            -destination 'platform=iOS Simulator,name=iPhone 17' \
+            -project Nutrilog.xcodeproj \
+            -scheme Nutrilog \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
             -resultBundlePath TestResults.xcresult \
-            CODE_SIGNING_ALLOWED=NO | xcpretty
+            CODE_SIGNING_ALLOWED=NO \
+            -quiet
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4

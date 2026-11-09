@@ -22,9 +22,10 @@ public final class AppDatabase: Sendable {
         }
         let pool = try DatabasePool(path: url.path, configuration: config)
         #if os(iOS)
-        try FileManager.default.setAttributes(
-            [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
-            ofItemAtPath: url.path)
+            try FileManager.default.setAttributes(
+                [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
+                ofItemAtPath: url.path,
+            )
         #endif
         return try AppDatabase(pool)
     }
@@ -36,5 +37,7 @@ public final class AppDatabase: Sendable {
         return try AppDatabase(DatabaseQueue(configuration: config))
     }
 
-    public var reader: any DatabaseReader { writer }
+    public var reader: any DatabaseReader {
+        writer
+    }
 }

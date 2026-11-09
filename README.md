@@ -1,10 +1,10 @@
-# NutriLog
+# Nutrilog
 
 **A free, ad-free, open-source, privacy-first nutrition & health tracker for iOS.**
 
 Log what you eat (barcode scan, search, recipes, saved meals) and see it next to how your body responds — weight trend, body fat, steps, sleep, resting heart rate, HRV — all pulled from Apple Health. No account, no cloud, no telemetry.
 
-> Status: **Phase 0 — project foundation.** Nothing to install yet. See the [roadmap](docs/SPEC.md#13-roadmap).
+> Status: **Phase 0 — project foundation.** The app launches but has no features yet. See the [roadmap](docs/SPEC.md#13-roadmap).
 
 ## Features (planned for v1)
 
@@ -27,15 +27,19 @@ Not planned: ads, subscriptions, social features, coaching, analytics SDKs.
 ## Build
 
 ```bash
-git clone https://github.com/<you>/nutrilog.git
+git clone https://github.com/memphin/nutrilog.git
 cd nutrilog
-cp Config/Secrets.xcconfig.template Config/Secrets.xcconfig   # optional: add your USDA key
-open NutriLog.xcodeproj
+cp Config/Secrets.xcconfig.template Config/Secrets.xcconfig   # optional: USDA key, Team ID
+open Nutrilog.xcodeproj
 ```
 
-1. Select the `NutriLog` target → Signing & Capabilities → choose your team.
-2. Confirm the **HealthKit** capability (with *Background Delivery*) is enabled.
-3. Run on a real iPhone (HealthKit is limited in the simulator).
+1. Put your Apple Developer Team ID in `Config/Secrets.xcconfig` (`DEVELOPMENT_TEAM = ...`) or pick your team in Xcode → `Nutrilog` target → Signing & Capabilities.
+2. HealthKit (with *Background Delivery*) is already declared in `App/Nutrilog.entitlements`.
+3. Run on a real iPhone (HealthKit is limited in the simulator). Simulator builds and tests work without a team.
+
+The Xcode project is generated from `project.yml` with [XcodeGen](https://github.com/yonaskolb/XcodeGen). After changing targets, files or settings: `brew install xcodegen && xcodegen generate`, and commit both `project.yml` and `Nutrilog.xcodeproj`.
+
+Tests: `xcodebuild test -project Nutrilog.xcodeproj -scheme Nutrilog -destination 'platform=iOS Simulator,name=iPhone 17' CODE_SIGNING_ALLOWED=NO`, or `swift test` inside any `Packages/<name>`.
 
 ### Optional: USDA FoodData Central key
 
@@ -71,4 +75,4 @@ Issues and PRs welcome — read [CONTRIBUTING.md](CONTRIBUTING.md) first. This i
 
 Code: [MIT](LICENSE). Bundled datasets keep their own licenses (see above).
 
-*NutriLog is not a medical device and provides no medical advice.*
+*Nutrilog is not a medical device and provides no medical advice.*

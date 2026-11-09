@@ -1,8 +1,8 @@
 import Testing
 @testable import DesignSystem
 
-@Suite struct DesignSystemTests {
-    @Test func moduleLoads() {
+struct DesignSystemTests {
+    @Test func `module loads`() {
         #expect(DesignSystem.moduleName == "DesignSystem")
     }
 }

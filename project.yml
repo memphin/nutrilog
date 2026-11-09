@@ -1,0 +1,86 @@
+# XcodeGen spec — source of truth for Nutrilog.xcodeproj.
+# After editing: `xcodegen generate` (brew install xcodegen), then commit both files.
+name: Nutrilog
+options:
+  bundleIdPrefix: hr.ivanjuric
+  deploymentTarget:
+    iOS: "26.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+packages:
+  Core: { path: Packages/Core }
+  Persistence: { path: Packages/Persistence }
+  FoodSources: { path: Packages/FoodSources }
+  HealthKitClient: { path: Packages/HealthKitClient }
+  Scanner: { path: Packages/Scanner }
+  DesignSystem: { path: Packages/DesignSystem }
+targets:
+  Nutrilog:
+    type: application
+    platform: iOS
+    sources:
+      - App/Sources
+      - App/Resources
+      - path: Resources/FoodIndex
+        buildPhase: resources
+        type: folder
+    configFiles:
+      Debug: Config/App.xcconfig
+      Release: Config/App.xcconfig
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: hr.ivanjuric.nutrilog
+        PRODUCT_NAME: Nutrilog
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_STYLE: Automatic
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: Nutrilog
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        ITSAppUsesNonExemptEncryption: false
+        USDAFDCAPIKey: $(USDA_FDC_API_KEY)
+        OFFUserAgentContact: $(OFF_USER_AGENT_CONTACT)
+        NSHealthShareUsageDescription: Nutrilog reads your weight, body fat, steps, sleep, energy, heart rate and water from Apple Health to show them next to what you eat.
+        NSHealthUpdateUsageDescription: Nutrilog writes the nutrients and water you log, and weight you enter manually, to Apple Health.
+        NSCameraUsageDescription: Nutrilog uses the camera to scan product barcodes.
+    entitlements:
+      path: App/Nutrilog.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
+        com.apple.developer.healthkit.background-delivery: true
+    dependencies:
+      - package: Core
+      - package: Persistence
+      - package: FoodSources
+      - package: HealthKitClient
+      - package: Scanner
+      - package: DesignSystem
+  NutrilogTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [Tests/NutrilogTests]
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: hr.ivanjuric.nutrilog.tests
+    dependencies:
+      - target: Nutrilog
+schemes:
+  Nutrilog:
+    build:
+      targets:
+        Nutrilog: all
+        NutrilogTests: [test]
+    test:
+      targets: [NutrilogTests]
+      gatherCoverageData: true

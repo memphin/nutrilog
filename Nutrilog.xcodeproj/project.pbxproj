@@ -1,0 +1,584 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		104AA4A32A6EC881CF63A75C /* AppEnvironmentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B74262F076BA46E2B4980AFF /* AppEnvironmentTests.swift */; };
+		4938903A2D3F636B0ECFCE00 /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB79B4BE92A3FFCB94D8CA93 /* AppEnvironment.swift */; };
+		4B6FE28F847FE3FB45F70F18 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = A889B4CD67F814724B977510 /* Persistence */; };
+		4C8B1351185B5B231D206824 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02B31E9560DA95F7E191A672 /* AppConfig.swift */; };
+		68184A1CAA4FB02029B16A52 /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 080725B27DAA3A8B4B5726A4 /* DesignSystem */; };
+		7CFFB861685166190159B1AF /* Scanner in Frameworks */ = {isa = PBXBuildFile; productRef = 1027AC8891CFCD49FA5F02E6 /* Scanner */; };
+		924B13C90B00812AD3829D7F /* Core in Frameworks */ = {isa = PBXBuildFile; productRef = AB9209C5C9EF92BFDB397212 /* Core */; };
+		9E285DA1EA0BB94E3C0ACB63 /* FoodIndex in Resources */ = {isa = PBXBuildFile; fileRef = 75DC5492FDBB333B50430029 /* FoodIndex */; };
+		B2A7F52D53D7CC4052A9D352 /* HealthKitClient in Frameworks */ = {isa = PBXBuildFile; productRef = 82AE5DAB28DD19241D0B72AD /* HealthKitClient */; };
+		B318D26F17E6B8CD774C9E64 /* FoodSources in Frameworks */ = {isa = PBXBuildFile; productRef = 31C0B385FA81090C31C324EA /* FoodSources */; };
+		BC7BC71995D1614AD56B4D84 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E654260AEEB47CC4E408FEBB /* RootView.swift */; };
+		DF3E1A7AFED9764A1158B47E /* NutrilogApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D095BF32FF994BA5E303CEFE /* NutrilogApp.swift */; };
+		EFB886BDAA15EBAA459742F1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 180130317CF5FAF7AE910FE2 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		38EB55B165ACC7872489B2D4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 02603088B15E88C52D0FE2B2 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DDA5148F972A0FF5CA7C37F4;
+			remoteInfo = Nutrilog;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		02B31E9560DA95F7E191A672 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
+		180130317CF5FAF7AE910FE2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		2137916B6A16402C94700DF7 /* NutrilogTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = NutrilogTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		34B1B04B40C3BCA84C756B6C /* App.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = App.xcconfig; sourceTree = "<group>"; };
+		3AF39B0F528153E0E26659AE /* Persistence */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Persistence; path = Packages/Persistence; sourceTree = SOURCE_ROOT; };
+		60FBAD1B8EF1EAF542AFD162 /* Nutrilog.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Nutrilog.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		63407E42DD103C94C747FC3E /* DesignSystem */ = {isa = PBXFileReference; lastKnownFileType = folder; name = DesignSystem; path = Packages/DesignSystem; sourceTree = SOURCE_ROOT; };
+		6383EA51CBC1C56DC110D389 /* FoodSources */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FoodSources; path = Packages/FoodSources; sourceTree = SOURCE_ROOT; };
+		75DC5492FDBB333B50430029 /* FoodIndex */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FoodIndex; path = Resources/FoodIndex; sourceTree = SOURCE_ROOT; };
+		96D590C88C38803CC71E2F8E /* Core */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Core; path = Packages/Core; sourceTree = SOURCE_ROOT; };
+		9D49D6FA80ED906B28795E67 /* HealthKitClient */ = {isa = PBXFileReference; lastKnownFileType = folder; name = HealthKitClient; path = Packages/HealthKitClient; sourceTree = SOURCE_ROOT; };
+		B74262F076BA46E2B4980AFF /* AppEnvironmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironmentTests.swift; sourceTree = "<group>"; };
+		C5474734DF2DBC41E0C59322 /* Scanner */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Scanner; path = Packages/Scanner; sourceTree = SOURCE_ROOT; };
+		CB79B4BE92A3FFCB94D8CA93 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
+		D095BF32FF994BA5E303CEFE /* NutrilogApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutrilogApp.swift; sourceTree = "<group>"; };
+		E654260AEEB47CC4E408FEBB /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		BCD7C61116B3592069688223 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				924B13C90B00812AD3829D7F /* Core in Frameworks */,
+				4B6FE28F847FE3FB45F70F18 /* Persistence in Frameworks */,
+				B318D26F17E6B8CD774C9E64 /* FoodSources in Frameworks */,
+				B2A7F52D53D7CC4052A9D352 /* HealthKitClient in Frameworks */,
+				7CFFB861685166190159B1AF /* Scanner in Frameworks */,
+				68184A1CAA4FB02029B16A52 /* DesignSystem in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		12746B54F2FAC274C2AE15B3 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				180130317CF5FAF7AE910FE2 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		35EC61EC1E3713FB0B071106 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				75DC5492FDBB333B50430029 /* FoodIndex */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		4E83C6336F6AB8E139ABBCA1 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				34B1B04B40C3BCA84C756B6C /* App.xcconfig */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
+		4F74D0D76D6FA0EEA681EFCA = {
+			isa = PBXGroup;
+			children = (
+				63E9B5CFC895EB55FF285935 /* App */,
+				4E83C6336F6AB8E139ABBCA1 /* Config */,
+				796A8EDEB4D282439614B4AE /* Packages */,
+				35EC61EC1E3713FB0B071106 /* Resources */,
+				D51F031D32C310E7A6118768 /* Tests */,
+				A9E406B16BCFD1C0B871A29B /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		63E9B5CFC895EB55FF285935 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				12746B54F2FAC274C2AE15B3 /* Resources */,
+				F4D7DE84A33703DAB4EB6C5E /* Sources */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		796A8EDEB4D282439614B4AE /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				96D590C88C38803CC71E2F8E /* Core */,
+				63407E42DD103C94C747FC3E /* DesignSystem */,
+				6383EA51CBC1C56DC110D389 /* FoodSources */,
+				9D49D6FA80ED906B28795E67 /* HealthKitClient */,
+				3AF39B0F528153E0E26659AE /* Persistence */,
+				C5474734DF2DBC41E0C59322 /* Scanner */,
+			);
+			path = Packages;
+			sourceTree = "<group>";
+		};
+		A9E406B16BCFD1C0B871A29B /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				60FBAD1B8EF1EAF542AFD162 /* Nutrilog.app */,
+				2137916B6A16402C94700DF7 /* NutrilogTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		BC8BDC52143C260F5FABB6B7 /* NutrilogTests */ = {
+			isa = PBXGroup;
+			children = (
+				B74262F076BA46E2B4980AFF /* AppEnvironmentTests.swift */,
+			);
+			path = NutrilogTests;
+			sourceTree = "<group>";
+		};
+		D51F031D32C310E7A6118768 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				BC8BDC52143C260F5FABB6B7 /* NutrilogTests */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		F4D7DE84A33703DAB4EB6C5E /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				02B31E9560DA95F7E191A672 /* AppConfig.swift */,
+				CB79B4BE92A3FFCB94D8CA93 /* AppEnvironment.swift */,
+				D095BF32FF994BA5E303CEFE /* NutrilogApp.swift */,
+				E654260AEEB47CC4E408FEBB /* RootView.swift */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		59CF69D7B1384AE3C77D0468 /* NutrilogTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A3AF2036AC2C58B64B7D4E34 /* Build configuration list for PBXNativeTarget "NutrilogTests" */;
+			buildPhases = (
+				5443DCEFDD3BBF5003BB3C9B /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				6970E815E0043138D2137C4B /* PBXTargetDependency */,
+			);
+			name = NutrilogTests;
+			packageProductDependencies = (
+			);
+			productName = NutrilogTests;
+			productReference = 2137916B6A16402C94700DF7 /* NutrilogTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		DDA5148F972A0FF5CA7C37F4 /* Nutrilog */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA40556945E19258FC3B36DA /* Build configuration list for PBXNativeTarget "Nutrilog" */;
+			buildPhases = (
+				A882A87EE9ADC5CCEA559861 /* Sources */,
+				8BB9A941BF7F329575FD0E9B /* Resources */,
+				BCD7C61116B3592069688223 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Nutrilog;
+			packageProductDependencies = (
+				AB9209C5C9EF92BFDB397212 /* Core */,
+				A889B4CD67F814724B977510 /* Persistence */,
+				31C0B385FA81090C31C324EA /* FoodSources */,
+				82AE5DAB28DD19241D0B72AD /* HealthKitClient */,
+				1027AC8891CFCD49FA5F02E6 /* Scanner */,
+				080725B27DAA3A8B4B5726A4 /* DesignSystem */,
+			);
+			productName = Nutrilog;
+			productReference = 60FBAD1B8EF1EAF542AFD162 /* Nutrilog.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		02603088B15E88C52D0FE2B2 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					DDA5148F972A0FF5CA7C37F4 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 9094C7533F67F158D74B09CB /* Build configuration list for PBXProject "Nutrilog" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 4F74D0D76D6FA0EEA681EFCA;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				7969964021A3BE1E31137B3E /* XCLocalSwiftPackageReference "Packages/Core" */,
+				49ACD108EC159EBBE35D5E06 /* XCLocalSwiftPackageReference "Packages/DesignSystem" */,
+				E9D14AB61FB6B4C1CC44F9A6 /* XCLocalSwiftPackageReference "Packages/FoodSources" */,
+				509288BABE461587ED136C71 /* XCLocalSwiftPackageReference "Packages/HealthKitClient" */,
+				1C6FC7812376B8DCD4974008 /* XCLocalSwiftPackageReference "Packages/Persistence" */,
+				7BDD49B631A70093123B7E07 /* XCLocalSwiftPackageReference "Packages/Scanner" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = A9E406B16BCFD1C0B871A29B /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				DDA5148F972A0FF5CA7C37F4 /* Nutrilog */,
+				59CF69D7B1384AE3C77D0468 /* NutrilogTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		8BB9A941BF7F329575FD0E9B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EFB886BDAA15EBAA459742F1 /* Assets.xcassets in Resources */,
+				9E285DA1EA0BB94E3C0ACB63 /* FoodIndex in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		5443DCEFDD3BBF5003BB3C9B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				104AA4A32A6EC881CF63A75C /* AppEnvironmentTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A882A87EE9ADC5CCEA559861 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4C8B1351185B5B231D206824 /* AppConfig.swift in Sources */,
+				4938903A2D3F636B0ECFCE00 /* AppEnvironment.swift in Sources */,
+				DF3E1A7AFED9764A1158B47E /* NutrilogApp.swift in Sources */,
+				BC7BC71995D1614AD56B4D84 /* RootView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		6970E815E0043138D2137C4B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DDA5148F972A0FF5CA7C37F4 /* Nutrilog */;
+			targetProxy = 38EB55B165ACC7872489B2D4 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		00F132CA29201B7B50ED140A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		5A3760CFA5BF6C1D52D6781F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = hr.ivanjuric.nutrilog.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Nutrilog.app/Nutrilog";
+			};
+			name = Debug;
+		};
+		6F6B8E7EEC12F475F089E686 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		8F6392FD1509D6930051E4E0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 34B1B04B40C3BCA84C756B6C /* App.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/Nutrilog.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = hr.ivanjuric.nutrilog;
+				PRODUCT_NAME = Nutrilog;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		B9960D76E4DA14065530FE21 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 34B1B04B40C3BCA84C756B6C /* App.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/Nutrilog.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = hr.ivanjuric.nutrilog;
+				PRODUCT_NAME = Nutrilog;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		C29B51D798D60D06164A4EA4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = hr.ivanjuric.nutrilog.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Nutrilog.app/Nutrilog";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		9094C7533F67F158D74B09CB /* Build configuration list for PBXProject "Nutrilog" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6F6B8E7EEC12F475F089E686 /* Debug */,
+				00F132CA29201B7B50ED140A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A3AF2036AC2C58B64B7D4E34 /* Build configuration list for PBXNativeTarget "NutrilogTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5A3760CFA5BF6C1D52D6781F /* Debug */,
+				C29B51D798D60D06164A4EA4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		AA40556945E19258FC3B36DA /* Build configuration list for PBXNativeTarget "Nutrilog" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B9960D76E4DA14065530FE21 /* Debug */,
+				8F6392FD1509D6930051E4E0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		1C6FC7812376B8DCD4974008 /* XCLocalSwiftPackageReference "Packages/Persistence" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Persistence;
+		};
+		49ACD108EC159EBBE35D5E06 /* XCLocalSwiftPackageReference "Packages/DesignSystem" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/DesignSystem;
+		};
+		509288BABE461587ED136C71 /* XCLocalSwiftPackageReference "Packages/HealthKitClient" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/HealthKitClient;
+		};
+		7969964021A3BE1E31137B3E /* XCLocalSwiftPackageReference "Packages/Core" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Core;
+		};
+		7BDD49B631A70093123B7E07 /* XCLocalSwiftPackageReference "Packages/Scanner" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Scanner;
+		};
+		E9D14AB61FB6B4C1CC44F9A6 /* XCLocalSwiftPackageReference "Packages/FoodSources" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/FoodSources;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		080725B27DAA3A8B4B5726A4 /* DesignSystem */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DesignSystem;
+		};
+		1027AC8891CFCD49FA5F02E6 /* Scanner */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Scanner;
+		};
+		31C0B385FA81090C31C324EA /* FoodSources */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FoodSources;
+		};
+		82AE5DAB28DD19241D0B72AD /* HealthKitClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = HealthKitClient;
+		};
+		A889B4CD67F814724B977510 /* Persistence */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Persistence;
+		};
+		AB9209C5C9EF92BFDB397212 /* Core */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Core;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 02603088B15E88C52D0FE2B2 /* Project object */;
+}

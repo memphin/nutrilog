@@ -1,6 +1,6 @@
 # Privacy
 
-NutriLog is built for one person's private use. The design rule is simple: **data stays on the device unless you explicitly export it.**
+Nutrilog is built for one person's private use. The design rule is simple: **data stays on the device unless you explicitly export it.**
 
 ## What is stored
 - Your food diary, custom foods, recipes, saved meals, targets and profile — in an SQLite database inside the app's sandbox, protected by iOS Data Protection (encrypted at rest).
