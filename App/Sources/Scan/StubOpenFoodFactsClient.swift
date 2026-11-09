@@ -9,6 +9,7 @@ final class StubOpenFoodFactsClient: OpenFoodFactsClient {
         var products: [String: OFFProduct]
         var failure: OpenFoodFactsError?
         var requests: [String] = []
+        var delay: Duration?
     }
 
     private let state: Mutex<State>
@@ -29,11 +30,19 @@ final class StubOpenFoodFactsClient: OpenFoodFactsClient {
         state.withLock { $0.failure = failure }
     }
 
+    /// Answers after `delay` (to test what happens while a lookup is in flight).
+    func setDelay(_ delay: Duration?) {
+        state.withLock { $0.delay = delay }
+    }
+
     func add(_ product: OFFProduct) {
         state.withLock { $0.products[product.code] = product }
     }
 
     func product(barcode: String) async throws -> OFFProduct {
+        if let delay = state.withLock({ $0.delay }) {
+            try await Task.sleep(for: delay)
+        }
         let result: Result<OFFProduct, OpenFoodFactsError> = state.withLock { state in
             state.requests.append(barcode)
             if let failure = state.failure {

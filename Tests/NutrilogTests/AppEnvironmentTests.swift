@@ -14,14 +14,15 @@ struct AppEnvironmentTests {
     }
 
     @Test func `empty USDA key is treated as missing`() {
-        let config = AppConfig(usdaAPIKey: nil, offUserAgent: AppConfig.defaultUserAgent)
+        let config = AppConfig(usdaAPIKey: nil)
         #expect(config.usdaAPIKey == nil)
-        #expect(config.offUserAgent.hasPrefix("Nutrilog/"))
+        #expect(config.offContact == AppConfig.defaultOFFContact)
     }
 
     @Test func `main bundle config reads info plist`() {
         let config = AppConfig(bundle: .main)
-        #expect(config.offUserAgent.contains("github.com/memphin/nutrilog"))
+        #expect(config.offContact.contains("github.com/memphin/nutrilog"))
+        #expect(!config.appVersion.isEmpty)
     }
 }
 

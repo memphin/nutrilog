@@ -2,8 +2,10 @@ import Core
 import FoodLookup
 import FoodSources
 import Foundation
+import ImageIO
 import Persistence
 import Testing
+import UIKit
 @testable import Nutrilog
 
 /// Scan flow (backlog #20) at the model level, with a stub Open Food Facts client (the simulator has no camera).
@@ -13,6 +15,7 @@ struct ScanFlowTests {
     static let partialCode = "4006381333931"
     static let perServingCode = "8712345678906"
     static let unknownCode = "5901234123457"
+    static let perServingEnergyOnlyCode = "4000417025005"
 
     static let complete = OFFProduct(
         code: nutella,
@@ -41,6 +44,15 @@ struct ScanFlowTests {
         nutriments: ["energy-kcal_serving": 12, "proteins_serving": 0, "carbohydrates_serving": 2.7, "fat_serving": 0],
     )
 
+    /// Per serving ("1 bar") with only the energy known.
+    static let perServingEnergyOnly = OFFProduct(
+        code: perServingEnergyOnlyCode,
+        productName: "Protein bar",
+        servingSize: "1 bar",
+        nutritionDataPer: "serving",
+        nutriments: ["energy-kcal_serving": 150],
+    )
+
     @MainActor
     struct Harness {
         let env: AppEnvironment
@@ -57,7 +69,10 @@ struct ScanFlowTests {
         }
     }
 
-    func harness(products: [OFFProduct] = [complete, energyOnly, perServing], failure: OpenFoodFactsError? = nil) -> Harness {
+    func harness(
+        products: [OFFProduct] = [complete, energyOnly, perServing, perServingEnergyOnly],
+        failure: OpenFoodFactsError? = nil,
+    ) -> Harness {
         let client = StubOpenFoodFactsClient(products: products, failure: failure)
         let env = AppEnvironment.preview(clock: ManualClock().appClock, openFoodFacts: client)
         return Harness(env: env, client: client, model: ScanFlowModel(environment: env))
@@ -83,7 +98,7 @@ struct ScanFlowTests {
     @Test func `live config gives the OFF client a contact`() {
         let config = AppConfig(bundle: .main)
         #expect(!config.offContact.isEmpty)
-        #expect(!AppConfig(usdaAPIKey: nil, offUserAgent: AppConfig.defaultUserAgent).offContact.isEmpty)
+        #expect(!AppConfig(usdaAPIKey: nil).offContact.isEmpty)
     }
 
     @Test func `local hit goes straight to quantity without the network`() async throws {
@@ -331,5 +346,153 @@ struct ScanFlowTests {
         #expect(converted.food.dataQuality == .partialMacros)
         #expect(converted.food.kcal100 == 500)
         #expect(converted.servings.first?.grams == 40)
+    }
+
+    // MARK: Review follow-ups
+
+    @Test func `complete nutrition waits for the serving weight on a placeholder`() async throws {
+        let h = harness()
+        await h.model.handle([Self.perServingEnergyOnlyCode])
+        let product = try found(h.model)
+        #expect(product.needsServingWeight)
+        #expect(!product.needsCompletion) // serving weight first
+        #expect(throws: (any Error).self) { try h.model.foodForCompletingNutrition() }
+
+        let converted = try h.model.setServingWeight(50)
+        #expect(!converted.food.perServingOnly)
+        #expect(converted.food.dataQuality == .partialMacros) // macros still missing
+        let afterWeight = try found(h.model)
+        #expect(afterWeight.needsCompletion)
+        #expect(afterWeight.missing == [.protein, .carbs, .fat])
+
+        let request = try h.model.foodForCompletingNutrition()
+        let editor = FoodEditorModel(energyUnit: .kcal, editing: request.detail, completing: request.missing)
+        #expect(editor.energy == "300") // 150 kcal per 50 g
+        editor.protein = "20"
+        editor.carbs = "40"
+        editor.fat = "16"
+        let saved = try h.foods.save(#require(editor.makeDetail()))
+        h.model.nutritionCompleted(saved)
+
+        let stored = try #require(try h.foods.detail(id: saved.food.id))
+        #expect(stored.food.dataQuality == .complete)
+        #expect(!stored.food.perServingOnly)
+        let serving = try #require(stored.servings.first { $0.id == stored.food.defaultServingID })
+        #expect(serving.grams == 50)
+        let oneServing = Quantity.servings(count: 1, serving: serving.size).nutrients(per100: stored.food.per100)
+        #expect(abs(oneServing.kcal - 150) < 1e-9)
+        #expect(try found(h.model).missing == [])
+    }
+
+    @Test func `re-scanned zero-macro placeholder doesn't guess missing values`() async throws {
+        let h = harness()
+        await h.model.handle([Self.perServingCode]) // protein and fat are a real 0 per serving
+        _ = try h.model.foodForLogging()
+
+        h.client.setFailure(.offline)
+        let rescan = h.newSession()
+        await rescan.handle([Self.perServingCode])
+        let product = try found(rescan)
+        #expect(product.isSaved)
+        #expect(product.needsServingWeight)
+        #expect(product.missing == nil)
+        #expect(!product.isMissing(.protein))
+        #expect(!product.needsCompletion)
+
+        // Unknown missing values: converting keeps the data partial for the user to review.
+        let converted = try rescan.setServingWeight(60)
+        #expect(!converted.food.perServingOnly)
+        #expect(converted.food.dataQuality == .partialMacros)
+        #expect(try found(rescan).needsCompletion)
+    }
+
+    @Test func `a lookup answer that arrives after closing is discarded`() async {
+        let h = harness()
+        h.client.setDelay(.milliseconds(300))
+        let lookup = Task { await h.model.handle([Self.nutella]) }
+        #expect(await waitUntil { h.model.isResolving })
+        h.model.resumeScanning() // "Scan another" / closed while the lookup runs
+        await lookup.value
+        #expect(h.model.phase == .scanning)
+        #expect(h.client.requests == [Self.nutella])
+    }
+
+    @Test func `retry keeps the failure screen up while it runs`() async throws {
+        let h = harness(failure: .offline)
+        await h.model.handle([Self.nutella])
+        h.client.setFailure(nil)
+        h.client.setDelay(.milliseconds(200))
+        let retry = Task { await h.model.retry() }
+        #expect(await waitUntil { h.model.isRetrying })
+        #expect(h.model.phase == .failed(.offline, candidates: [Self.nutella]))
+        #expect(h.model.showsResult)
+        await retry.value
+        #expect(!h.model.isRetrying)
+        #expect(try found(h.model).food.name == "Nutella")
+    }
+
+    @Test func `no database gives a failure instead of hanging`() async {
+        let model = ScanFlowModel(lookup: nil, foods: nil, labelPhotos: .temporary())
+        await model.handle([Self.nutella])
+        guard case .failed(.other, _) = model.phase else {
+            Issue.record("expected a failure, got \(model.phase)")
+            return
+        }
+        #expect(model.showsResult)
+    }
+
+    @Test func `quantity sheet logs a placeholder by servings with the label's values`() async throws {
+        let h = harness()
+        await h.model.handle([Self.perServingCode])
+        let detail = try h.model.foodForLogging()
+        #expect(detail.isPerServingPlaceholder)
+        #expect(!QuantitySheet.offersBaseUnit(detail))
+
+        // Prefilled with 1 × the printed serving, never grams.
+        let initial = QuantitySheet.initialLogQuantity(detail)
+        guard case let .servings(count, size) = initial.quantity else {
+            Issue.record("expected servings, got \(initial.quantity)")
+            return
+        }
+        #expect(count == 1)
+        #expect(size.label == "1 shot")
+        let servingID = try #require(detail.food.defaultServingID)
+        #expect(QuantitySheet.quantity(amountText: "100", unitChoice: "base", detail: detail) == nil)
+
+        let quantity = try #require(QuantitySheet.quantity(amountText: "1", unitChoice: servingID, detail: detail))
+        let entry = try #require(h.env.diary).log(
+            food: detail.food, quantity: quantity, servingID: servingID, slotID: "breakfast", day: h.env.today,
+        )
+        #expect(abs(entry.kcal - 12) < 1e-9)
+        #expect(abs(entry.carbsG - 2.7) < 1e-9)
+    }
+
+    @Test func `label photos are downsampled to 1600 px`() throws {
+        func jpeg(width: CGFloat, height: CGFloat) -> Data {
+            let format = UIGraphicsImageRendererFormat()
+            format.scale = 1
+            return UIGraphicsImageRenderer(size: CGSize(width: width, height: height), format: format)
+                .jpegData(withCompressionQuality: 0.9) { context in
+                    UIColor.systemOrange.setFill()
+                    context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+                }
+        }
+        func pixelSize(_ data: Data) throws -> (Int, Int) {
+            let source = try #require(CGImageSourceCreateWithData(data as CFData, nil))
+            let image = try #require(CGImageSourceCreateImageAtIndex(source, 0, nil))
+            return (image.width, image.height)
+        }
+
+        let large = try #require(LabelPhotoStore.downsampledJPEG(jpeg(width: 3200, height: 400)))
+        let (largeWidth, largeHeight) = try pixelSize(large)
+        #expect(largeWidth == 1600)
+        #expect(largeHeight == 200)
+
+        let small = try #require(LabelPhotoStore.downsampledJPEG(jpeg(width: 120, height: 80)))
+        let (smallWidth, smallHeight) = try pixelSize(small)
+        #expect(smallWidth == 120)
+        #expect(smallHeight == 80)
+
+        #expect(LabelPhotoStore.downsampledJPEG(Data("not an image".utf8)) == nil)
     }
 }

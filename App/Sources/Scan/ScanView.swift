@@ -51,7 +51,8 @@ struct ScanView: View {
     }
 
     private func scanner(_ model: ScanFlowModel) -> some View {
-        BarcodeScannerView { barcode in
+        // Pause the camera (and its haptics and torch) while a lookup runs or a sheet covers it.
+        BarcodeScannerView(isPaused: model.showsResult || model.isResolving) { barcode in
             Task { await model.handle(barcode.candidates) }
         }
         .overlay(alignment: .top) { statusOverlay(model) }
@@ -144,6 +145,8 @@ struct ScanResultView: View {
     @State private var creating = false
     @State private var completing: CompletionRequest?
     @State private var errorMessage: String?
+    /// The current food's label photo, read once per food rather than on every body pass.
+    @State private var labelPhoto: (foodID: String, data: Data)?
 
     struct CompletionRequest: Identifiable {
         let id = UUID()
@@ -164,6 +167,9 @@ struct ScanResultView: View {
                         loggedFood(detail)
                     }
                 }
+        }
+        .task(id: model.product.flatMap { $0.isSaved ? $0.food.id : nil }) {
+            await loadLabelPhoto()
         }
         .sheet(isPresented: $creating) {
             FoodEditorView(barcode: model.barcodeForNewFood) { saved in
@@ -190,7 +196,7 @@ struct ScanResultView: View {
             ProductCardView(
                 product: product,
                 energyUnit: environment.energyUnit,
-                labelPhoto: product.isSaved ? environment.labelPhotos.load(foodID: product.food.id) : nil,
+                labelPhoto: labelPhoto?.foodID == product.food.id ? labelPhoto?.data : nil,
                 onLog: log,
                 onCompleteNutrition: completeNutrition,
                 onSetServingWeight: setServingWeight,
@@ -205,6 +211,7 @@ struct ScanResultView: View {
             LookupFailedView(
                 failure: failure,
                 barcode: candidates.first,
+                isRetrying: model.isRetrying,
                 onRetry: { Task { await model.retry() } },
                 onCreate: { creating = true },
             )
@@ -213,6 +220,16 @@ struct ScanResultView: View {
         case .scanning, .resolving:
             ProgressView()
         }
+    }
+
+    private func loadLabelPhoto() async {
+        guard let id = model.product.flatMap({ $0.isSaved ? $0.food.id : nil }) else {
+            labelPhoto = nil
+            return
+        }
+        let store = environment.labelPhotos
+        let data = await Task.detached(priority: .utility) { store.load(foodID: id) }.value
+        labelPhoto = data.map { (id, $0) }
     }
 
     private func log() {

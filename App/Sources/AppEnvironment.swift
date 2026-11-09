@@ -66,8 +66,10 @@ final class AppEnvironment {
         healthWriter: (any HealthWriting)? = nil,
         healthObserver: (any HealthObserving)? = nil,
         usdaKeyStore: any USDAKeyStoring = InMemoryUSDAKeyStore(),
-        openFoodFacts: (any OpenFoodFactsClient)? = nil,
-        labelPhotos: LabelPhotoStore = .live,
+        // Network-free / throwaway defaults so tests can't reach OFF or write into the app container; `live()`
+        // passes the real ones.
+        openFoodFacts: any OpenFoodFactsClient = StubOpenFoodFactsClient(),
+        labelPhotos: LabelPhotoStore = .temporary(),
     ) {
         self.database = database
         self.config = config
@@ -96,7 +98,6 @@ final class AppEnvironment {
         }
         self.usdaKeyStore = usdaKeyStore
         self.openFoodFacts = openFoodFacts
-            ?? OpenFoodFactsHTTPClient(contact: config.offContact, appVersion: config.appVersion)
         self.labelPhotos = labelPhotos
         let resolved = Self.resolveUSDAKey(store: usdaKeyStore, config: config)
         usdaKeySource = resolved.source
@@ -297,14 +298,17 @@ final class AppEnvironment {
             }
         }
         let health = LiveHealthDataSource()
+        let config = AppConfig(bundle: bundle)
         return AppEnvironment(
             database: state,
-            config: AppConfig(bundle: bundle),
+            config: config,
             bundledIndex: BundledFoodIndex.inBundle(bundle),
             health: health,
             healthWriter: health,
             healthObserver: health,
             usdaKeyStore: KeychainUSDAKeyStore(),
+            openFoodFacts: OpenFoodFactsHTTPClient(contact: config.offContact, appVersion: config.appVersion),
+            labelPhotos: .live,
         )
     }
 
@@ -325,7 +329,7 @@ final class AppEnvironment {
         let health = health ?? (sampleData ? FakeHealthDataSource.demo(endingOn: today) : FakeHealthDataSource())
         let env = AppEnvironment(
             database: state,
-            config: AppConfig(usdaAPIKey: nil, offUserAgent: AppConfig.defaultUserAgent),
+            config: AppConfig(usdaAPIKey: nil),
             bundledIndex: BundledFoodIndex.inBundle(),
             clock: clock,
             health: health,

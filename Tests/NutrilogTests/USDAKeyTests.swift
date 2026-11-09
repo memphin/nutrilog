@@ -34,7 +34,7 @@ struct USDAKeyEnvironmentTests {
     private func environment(buildKey: String?, store: any USDAKeyStoring = InMemoryUSDAKeyStore()) -> AppEnvironment {
         AppEnvironment(
             database: .failed("unused"),
-            config: AppConfig(usdaAPIKey: buildKey, offUserAgent: AppConfig.defaultUserAgent),
+            config: AppConfig(usdaAPIKey: buildKey),
             bundledIndex: nil,
             usdaKeyStore: store,
         )

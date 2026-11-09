@@ -158,16 +158,21 @@ struct ProductCardView: View {
 
     private func nutrientSection(_ title: String, _ n: Nutrients) -> some View {
         Section(title) {
-            NutrientRow("Energy", value: energyUnit.display(n.kcal), unit: energyUnit.symbol, emphasized: true)
-            NutrientRow("Protein", value: missing(.protein) ? nil : n.proteinG)
-            NutrientRow("Carbohydrates", value: missing(.carbs) ? nil : n.carbsG)
+            NutrientRow(
+                "Energy",
+                value: product.isMissing(.energy) ? nil : energyUnit.display(n.kcal),
+                unit: energyUnit.symbol,
+                emphasized: true,
+            )
+            NutrientRow("Protein", value: product.isMissing(.protein) ? nil : n.proteinG)
+            NutrientRow("Carbohydrates", value: product.isMissing(.carbs) ? nil : n.carbsG)
             if let sugar = n.sugarG {
                 NutrientRow("of which sugars", value: sugar, indent: true)
             }
             if let fiber = n.fiberG {
                 NutrientRow("Fiber", value: fiber)
             }
-            NutrientRow("Fat", value: missing(.fat) ? nil : n.fatG)
+            NutrientRow("Fat", value: product.isMissing(.fat) ? nil : n.fatG)
             if let sat = n.satFatG {
                 NutrientRow("of which saturated", value: sat, indent: true)
             }
@@ -175,11 +180,6 @@ struct ProductCardView: View {
                 NutrientRow("Salt", value: Salt.saltG(fromSodiumMg: sodium))
             }
         }
-    }
-
-    /// Missing values show "—" rather than a misleading 0.
-    private func missing(_ nutrient: FoodEditorModel.RequiredNutrient) -> Bool {
-        product.food.dataQuality != .complete && product.missing.contains(nutrient)
     }
 }
 
@@ -202,7 +202,8 @@ struct NutriScoreBadge: View {
             .font(.caption2.weight(.bold))
             .padding(.horizontal, NL.Spacing.s - 2)
             .padding(.vertical, NL.Spacing.xxs)
-            .foregroundStyle(.white)
+            // Dark text on the light B/C greens and yellow, white on the rest (contrast).
+            .foregroundStyle(grade == "B" || grade == "C" ? Color.black : Color.white)
             .background(color, in: Capsule())
             .accessibilityLabel("Nutri-Score \(grade)")
     }
@@ -236,6 +237,7 @@ struct NotFoundView: View {
 struct LookupFailedView: View {
     let failure: ScanFlowModel.Failure
     let barcode: String?
+    var isRetrying = false
     let onRetry: () -> Void
     let onCreate: () -> Void
 
@@ -250,9 +252,14 @@ struct LookupFailedView: View {
                 }
             }
         } actions: {
-            Button("Try again", systemImage: "arrow.clockwise", action: onRetry)
-                .buttonStyle(.glassProminent)
+            if isRetrying {
+                ProgressView("Trying again…")
+            } else {
+                Button("Try again", systemImage: "arrow.clockwise", action: onRetry)
+                    .buttonStyle(.glassProminent)
+            }
             Button("Create food manually", systemImage: "plus", action: onCreate)
+                .disabled(isRetrying)
         }
     }
 }
@@ -263,6 +270,8 @@ struct LabelPhotoSection: View {
     @Binding var photo: Data?
     @State private var showCamera = false
     @State private var libraryItem: PhotosPickerItem?
+    @State private var isProcessing = false
+    @State private var loadError: String?
 
     private var cameraAvailable: Bool {
         UIImagePickerController.isSourceTypeAvailable(.camera)
@@ -278,6 +287,12 @@ struct LabelPhotoSection: View {
                     .accessibilityLabel("Label photo")
                 Button("Remove photo", systemImage: "trash", role: .destructive) { self.photo = nil }
             }
+            if isProcessing {
+                ProgressView()
+            }
+            if let loadError {
+                Label(loadError, systemImage: "exclamationmark.triangle").foregroundStyle(.orange)
+            }
             if cameraAvailable {
                 Button(photo == nil ? "Photograph label" : "Retake photo", systemImage: "camera") { showCamera = true }
             }
@@ -291,17 +306,40 @@ struct LabelPhotoSection: View {
         }
         .fullScreenCover(isPresented: $showCamera) {
             CameraPicker { image in
-                photo = LabelPhotoStore.jpegData(from: image)
+                process { image.jpegData(compressionQuality: 0.9) }
             }
             .ignoresSafeArea()
         }
         .onChange(of: libraryItem) { _, item in
             guard let item else { return }
+            libraryItem = nil
+            isProcessing = true
+            loadError = nil
             Task {
-                if let data = try? await item.loadTransferable(type: Data.self), let image = UIImage(data: data) {
-                    photo = LabelPhotoStore.jpegData(from: image)
+                do {
+                    let data = try await item.loadTransferable(type: Data.self)
+                    process { data }
+                } catch {
+                    isProcessing = false
+                    loadError = "Couldn't load that photo: \(error.localizedDescription)"
                 }
-                libraryItem = nil
+            }
+        }
+    }
+
+    /// Encodes and downsamples off the main actor, then shows the result (or says why it failed).
+    private func process(_ makeData: @escaping @Sendable () -> Data?) {
+        isProcessing = true
+        loadError = nil
+        Task {
+            let jpeg = await Task.detached(priority: .userInitiated) {
+                makeData().flatMap { LabelPhotoStore.downsampledJPEG($0) }
+            }.value
+            isProcessing = false
+            if let jpeg {
+                photo = jpeg
+            } else {
+                loadError = "Couldn't read that photo. Try another one."
             }
         }
     }

@@ -65,6 +65,9 @@ final class ScanFlowModel {
     }
 
     private(set) var phase: Phase = .scanning
+    /// "Try again" is looking the failed code up again. The failure screen stays up meanwhile (closing and reopening
+    /// the sheet could race with its dismissal and leave no sheet at all).
+    private(set) var isRetrying = false
     /// Short message shown over the camera, e.g. for a code that isn't a product barcode.
     private(set) var notice: String?
     /// "Keep scanning": after logging, go back to the camera instead of closing (shopping-list style).
@@ -132,37 +135,49 @@ final class ScanFlowModel {
         await resolve(candidates)
     }
 
-    /// Looks the last failed code up again.
+    /// Looks the last failed code up again, keeping the failure screen up (with progress) until the answer arrives.
     func retry() async {
-        guard case let .failed(_, candidates) = phase else { return }
-        await resolve(candidates)
+        guard case let .failed(_, candidates) = phase, !isRetrying else { return }
+        await resolve(candidates, retrying: true)
     }
 
     /// Back to the camera (card dismissed, "Scan another").
     func resumeScanning() {
         generation += 1
+        isRetrying = false
         phase = .scanning
         pendingLabelPhoto = nil
         labelPhotoError = nil
     }
 
-    private func resolve(_ candidates: [String]) async {
+    private func resolve(_ candidates: [String], retrying: Bool = false) async {
         guard let lookup else {
             phase = .failed(.other("The food database couldn't be opened."), candidates: candidates)
             return
         }
         generation += 1
         let token = generation
-        phase = .resolving(candidates: candidates)
+        if retrying {
+            isRetrying = true
+        } else {
+            phase = .resolving(candidates: candidates)
+        }
         let next: Phase?
         do {
             next = try await Self.phase(for: lookup.resolve(candidates: candidates))
         } catch is CancellationError {
+            if token == generation {
+                isRetrying = false
+                if !retrying {
+                    phase = .scanning
+                }
+            }
             return
         } catch {
             next = Self.phase(for: error, candidates: candidates)
         }
         guard token == generation else { return } // closed or rescanned meanwhile
+        isRetrying = false
         if let next {
             phase = next
         } else {
@@ -198,17 +213,24 @@ final class ScanFlowModel {
     }
 
     /// The local food to open in the editor for "Complete nutrition", and which values the source is missing.
+    ///
+    /// Not for a per-serving placeholder: its values are per serving, which the editor would show as per 100 (and
+    /// editing the stand-in serving would break "1 serving"). Set the serving weight first (``setServingWeight(_:)``).
     func foodForCompletingNutrition() throws -> (detail: FoodDetail, missing: Set<FoodEditorModel.RequiredNutrient>) {
+        guard product?.needsServingWeight != true else {
+            throw PersistenceError.validation("enter the serving weight first")
+        }
         let product = try ensureSaved()
-        return (product.detail, product.missing)
+        return (product.detail, product.missing ?? [])
     }
 
-    /// The editor saved the completed food: show it (the local copy now holds the user's values).
+    /// The editor saved the completed food: show it (the local copy now holds the user's values, and the editor
+    /// validated all four required ones).
     func nutritionCompleted(_ saved: FoodDetail) {
         guard var product else { return }
         product.detail = saved
         product.isSaved = true
-        product.missing = saved.food.dataQuality == .complete ? [] : product.missing
+        product.missing = []
         phase = .found(product)
     }
 
@@ -225,22 +247,25 @@ final class ScanFlowModel {
         let saved = try foods.save(converted)
         product.detail = saved
         product.isSaved = true
+        // No longer a placeholder: an unknown missing set now follows the normal rule for partial foods.
+        product.missing = saved.food.dataQuality == .complete ? [] : product.missing ?? ScannedProduct.inferredMissing(saved.food)
         phase = .found(product)
         return saved
     }
 
-    /// `detail` (a per-serving placeholder) with values per 100 for a serving of `servingWeight` g/ml.
+    /// `detail` (a per-serving placeholder) with values per 100 for a serving of `servingWeight` g/ml. `missing` nil
+    /// means unknown (a placeholder found locally): the quality then stays partial.
     nonisolated static func convertingPlaceholder(
         _ detail: FoodDetail,
         servingWeight: Double,
-        missing: Set<FoodEditorModel.RequiredNutrient>,
+        missing: Set<FoodEditorModel.RequiredNutrient>?,
     ) -> FoodDetail {
         var result = detail
         var food = detail.food
         food.per100 = Nutrients.per100(fromServing: food.per100, servingGrams: servingWeight)
         food.perServingOnly = false
         // Per-serving values were partial only because the weight was unknown; missing macros keep them partial.
-        if missing.isEmpty, food.dataQuality == .partialMacros {
+        if missing?.isEmpty == true, food.dataQuality == .partialMacros {
             food.dataQuality = .complete
         }
         if food.notes?.hasPrefix("Nutrition per serving;") == true {
@@ -298,6 +323,10 @@ final class ScanFlowModel {
         guard let foods else { throw PersistenceError.validation("database unavailable") }
         product.detail = try foods.saveRemoteCopy(remote.draft)
         product.isSaved = true
+        // `saveRemoteCopy` may return a food the user already completed.
+        if product.detail.food.dataQuality == .complete {
+            product.missing = []
+        }
         phase = .found(product)
         return product
     }
@@ -312,14 +341,16 @@ struct ScannedProduct: Equatable {
     var isSaved: Bool
     /// The OFF answer, when the product came from Open Food Facts in this scan.
     var remote: RemoteProduct?
-    /// Required nutrients the source doesn't have (shown empty by "Complete nutrition").
-    var missing: Set<FoodEditorModel.RequiredNutrient>
+    /// Required nutrients the source doesn't have (shown empty by "Complete nutrition"); nil when unknown (a
+    /// per-serving placeholder found locally, whose zeros may be real).
+    var missing: Set<FoodEditorModel.RequiredNutrient>?
 
     init(local detail: FoodDetail) {
         self.detail = detail
         isSaved = true
         remote = nil
-        missing = Self.inferredMissing(detail.food)
+        // A placeholder's values are per serving, so its zeros say nothing about what the source lacked.
+        missing = detail.food.perServingOnly ? nil : Self.inferredMissing(detail.food)
     }
 
     init(remote: RemoteProduct) {
@@ -352,10 +383,15 @@ struct ScannedProduct: Equatable {
         remote?.isStale ?? false
     }
 
-    /// Show the "Complete nutrition" CTA: some required value is missing.
+    /// Show the "Complete nutrition" CTA: the data is partial. Not for a per-serving placeholder: it gets the
+    /// serving-weight prompt first (see ``ScanFlowModel/foodForCompletingNutrition()``).
     var needsCompletion: Bool {
-        // A placeholder that only lacks its serving weight gets the serving-weight prompt instead.
-        food.dataQuality != .complete && (!missing.isEmpty || !needsServingWeight)
+        food.dataQuality != .complete && !needsServingWeight
+    }
+
+    /// Whether a required value is known to be missing (shown as "—").
+    func isMissing(_ nutrient: FoodEditorModel.RequiredNutrient) -> Bool {
+        food.dataQuality != .complete && missing?.contains(nutrient) == true
     }
 
     /// The real serving weight is unknown: ask for it, hide gram entry.

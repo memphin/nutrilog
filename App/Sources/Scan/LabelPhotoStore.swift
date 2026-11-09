@@ -1,5 +1,6 @@
 import Foundation
-import UIKit
+import ImageIO
+import UniformTypeIdentifiers
 
 /// Reference photos of nutrition labels (FR-13), one JPEG per food at `<directory>/<foodID>.jpg`.
 ///
@@ -48,18 +49,24 @@ struct LabelPhotoStore: Sendable {
         try FileManager.default.removeItem(at: url(foodID: foodID))
     }
 
-    /// `image` downscaled to ``maxPixelSize`` and encoded as JPEG.
-    static func jpegData(from image: UIImage) -> Data? {
-        let size = image.size
-        let longest = max(size.width, size.height) * image.scale
-        guard longest > 0 else { return nil }
-        let factor = min(1, maxPixelSize / longest)
-        let target = CGSize(width: size.width * image.scale * factor, height: size.height * image.scale * factor)
-        let format = UIGraphicsImageRendererFormat()
-        format.scale = 1
-        let resized = UIGraphicsImageRenderer(size: target, format: format).image { _ in
-            image.draw(in: CGRect(origin: .zero, size: target))
-        }
-        return resized.jpegData(compressionQuality: 0.7)
+    /// Image `data` (any format ImageIO reads) downsampled so its longest side is at most `maxPixelSize`, with the
+    /// EXIF orientation applied, re-encoded as JPEG. Never decodes the full-size image; safe off the main actor.
+    /// Returns nil when `data` isn't a readable image.
+    nonisolated static func downsampledJPEG(_ data: Data, maxPixelSize: Int = Int(maxPixelSize)) -> Data? {
+        let sourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
+        guard let source = CGImageSourceCreateWithData(data as CFData, sourceOptions) else { return nil }
+        let thumbnailOptions = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
+        ] as CFDictionary
+        guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, thumbnailOptions) else { return nil }
+        let output = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(output, UTType.jpeg.identifier as CFString, 1, nil)
+        else { return nil }
+        CGImageDestinationAddImage(destination, image, [kCGImageDestinationLossyCompressionQuality: 0.7] as CFDictionary)
+        guard CGImageDestinationFinalize(destination) else { return nil }
+        return output as Data
     }
 }
