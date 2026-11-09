@@ -130,7 +130,7 @@ public struct FoodSearch: Sendable {
 
         let copied = Set(foods.filter { $0.source == .bundled }.compactMap(\.sourceID))
         let alreadyLocal = try database.reader.read { db in
-            try Set(String.fetchAll(db, sql: "SELECT source_id FROM food WHERE source = 'bundled' AND source_id IS NOT NULL"))
+            try Set(String.fetchAll(db, sql: "SELECT source_id FROM food WHERE source = 'bundled' AND source_id IS NOT NULL AND deleted_at IS NULL"))
         }
         for item in try bundled.search(query, limit: limit) where !copied.contains(item.sourceID) && !alreadyLocal.contains(item.sourceID) {
             results.append(.bundled(item))

@@ -76,6 +76,7 @@ public struct DiaryRepository: Sendable {
     public func log(
         food: Food, quantity: Quantity, servingID: String? = nil, slotID: String, day: LocalDay,
     ) throws -> DiaryEntry {
+        guard quantity.baseAmount > 0 else { throw PersistenceError.validation("amount must be greater than zero") }
         let now = clock.now()
         return try database.writer.write { db in
             var entry = try DiaryEntry(
@@ -126,6 +127,7 @@ public struct DiaryRepository: Sendable {
     /// Changes the amount of a food entry. The existing snapshot is scaled, so later edits to the food
     /// never leak into history (NFR-4).
     public func updateQuantity(entryID: String, quantity: Quantity) throws {
+        guard quantity.baseAmount > 0 else { throw PersistenceError.validation("amount must be greater than zero") }
         let now = clock.now()
         try database.writer.write { db in
             guard var entry = try DiaryEntry.fetchOne(db, key: entryID) else { throw PersistenceError.notFound(entryID) }
@@ -334,7 +336,7 @@ public struct DiaryRepository: Sendable {
 
     static func nextSortOrder(_ db: Database, day: LocalDay, slotID: String) throws -> Int {
         let max = try Int.fetchOne(db, sql: """
-        SELECT MAX(sort_order) FROM diary_entry WHERE day = ? AND meal_slot_id = ? AND deleted_at IS NULL
+        SELECT MAX(sort_order) FROM diary_entry WHERE day = ? AND meal_slot_id = ?
         """, arguments: [day, slotID])
         return (max ?? -1) + 1
     }

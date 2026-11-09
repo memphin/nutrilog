@@ -203,6 +203,25 @@ struct DataPortabilityTests {
         }
     }
 
+    @Test func `replace rejects a partial file`() throws {
+        let f = try Fixture()
+        let p = DataPortability(f.db)
+        #expect(throws: DataPortability.ImportError.self) {
+            try p.importJSON(
+                Data(#"{"format":"nutrilog-export","schemaVersion":1,"exportedAt":"x","tables":{"food":[]}}"#.utf8),
+                mode: .replace,
+            )
+        }
+        _ = try f.profiles.profile() // nothing was wiped
+    }
+
+    @Test func `csv neutralizes spreadsheet formulas`() {
+        #expect(DataPortability.neutralizeFormula("=HYPERLINK(\"x\")") == "'=HYPERLINK(\"x\")")
+        #expect(DataPortability.neutralizeFormula("@cmd") == "'@cmd")
+        #expect(DataPortability.neutralizeFormula("-5") == "-5")
+        #expect(DataPortability.neutralizeFormula("Banana") == "Banana")
+    }
+
     @Test func `csv export`() throws {
         let f = try populated()
         let files = try DataPortability(f.db).exportCSV()

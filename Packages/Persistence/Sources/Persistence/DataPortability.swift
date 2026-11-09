@@ -34,6 +34,7 @@ public struct DataPortability: Sendable {
         case notAnExport
         case newerSchema(file: Int, supported: Int)
         case unknownTable(String)
+        case missingTable(String)
     }
 
     let database: AppDatabase
@@ -90,6 +91,10 @@ public struct DataPortability: Sendable {
         if let unknown = file.tables.keys.first(where: { !Self.tables.contains($0) }) {
             throw ImportError.unknownTable(unknown)
         }
+        // Replace wipes every table, so a partial file would leave e.g. no profile or meal slots behind.
+        if mode == .replace, let missing = Self.tables.first(where: { file.tables[$0] == nil }) {
+            throw ImportError.missingTable(missing)
+        }
 
         return try database.writer.write { db in
             try db.execute(sql: "PRAGMA defer_foreign_keys = ON")
@@ -113,11 +118,18 @@ public struct DataPortability: Sendable {
                     let args = StatementArguments(names.map { values[$0]!.databaseValue })
                     if existing == nil {
                         let placeholders = Array(repeating: "?", count: names.count).joined(separator: ", ")
+                        // Merge: a row clashing with a local row on another unique key (e.g. healthkit_link.hk_uuid)
+                        // is skipped instead of aborting the whole import; local data wins.
+                        let verb = mode == .merge ? "INSERT OR IGNORE" : "INSERT"
                         try db.execute(
-                            sql: "INSERT INTO \(table) (\(names.joined(separator: ", "))) VALUES (\(placeholders))",
+                            sql: "\(verb) INTO \(table) (\(names.joined(separator: ", "))) VALUES (\(placeholders))",
                             arguments: args,
                         )
-                        summary.inserted += 1
+                        if db.changesCount > 0 {
+                            summary.inserted += 1
+                        } else {
+                            summary.skipped += 1
+                        }
                     } else if hasUpdatedAt,
                               let incoming = values["updated_at"]?.stringValue,
                               let local: String = existing?["updated_at"],
@@ -182,11 +194,19 @@ public struct DataPortability: Sendable {
 
     static func csv(_ rows: [[String]]) -> String {
         rows.map { fields in
-            fields.map { field in
+            fields.map { raw in
+                let field = neutralizeFormula(raw)
                 guard field.contains(where: { $0 == "," || $0 == "\"" || $0 == "\n" || $0 == "\r" }) else { return field }
                 return "\"" + field.replacingOccurrences(of: "\"", with: "\"\"") + "\""
             }.joined(separator: ",")
         }.joined(separator: "\r\n") + "\r\n"
+    }
+
+    /// Spreadsheets execute cells starting with `= + - @` (or tab/CR) as formulas; prefix such text with `'`.
+    /// Plain numbers (e.g. "-5") are left alone.
+    static func neutralizeFormula(_ field: String) -> String {
+        guard let first = field.first, "=+-@\t\r".contains(first), Double(field) == nil else { return field }
+        return "'" + field
     }
 }
 

@@ -118,11 +118,24 @@ public struct FoodRepository: Sendable {
 
     /// Active (non-deleted) food carrying `barcode`; the input is normalized first.
     public func food(barcode raw: String, symbology: Barcode.Symbology = .unknown) throws -> FoodDetail? {
-        guard let code = Barcode.normalize(raw, symbology: symbology) else { return nil }
+        // Saved codes are normalized without a symbology hint, so an 8-digit code may be stored as EAN-8 while the
+        // scanner reports UPC-E (or vice versa). Try every reading, the hinted one first.
+        var candidates: [String] = []
+        for hint in [symbology, .unknown, .upcE] {
+            if let code = Barcode.normalize(raw, symbology: hint), !candidates.contains(code) {
+                candidates.append(code)
+            }
+        }
+        guard !candidates.isEmpty else { return nil }
         return try database.reader.read { db in
-            guard let link = try FoodBarcode.fetchOne(db, key: code), let detail = try Self.detail(db, id: link.foodID),
-                  detail.food.deletedAt == nil else { return nil }
-            return detail
+            for code in candidates {
+                if let link = try FoodBarcode.fetchOne(db, key: code), let detail = try Self.detail(db, id: link.foodID),
+                   detail.food.deletedAt == nil
+                {
+                    return detail
+                }
+            }
+            return nil
         }
     }
 

@@ -70,6 +70,16 @@ struct FoodSearchTests {
         #expect(try index.search("", limit: 5).isEmpty)
     }
 
+    @Test func `deleted local copy does not hide the bundled food`() throws {
+        let f = try Fixture()
+        let index = try makeBundledIndex(rows: [("b1", "171705", "Bananas, raw", 89)])
+        let search = FoodSearch(f.db, bundled: index)
+        let raw = try #require(try index.food(id: "b1"))
+        let copy = try f.foods.localCopy(of: raw)
+        try f.foods.softDelete(id: copy.id)
+        #expect(try search.search("banana").map(\.source) == [.bundled])
+    }
+
     @Test func `result accessors`() {
         let food = Food(name: "Ajvar", brand: "Podravka", per100: Nutrients(kcal: 80, proteinG: 1, carbsG: 8, fatG: 4))
         let bundled = BundledFood(id: "x", sourceID: "1", name: "Peppers", per100: .zero)
