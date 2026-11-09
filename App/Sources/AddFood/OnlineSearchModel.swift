@@ -4,6 +4,7 @@ import FoodSources
 import Foundation
 import Observation
 import Persistence
+import SwiftUI
 
 /// One online search hit (FR-20): an unsaved food from Open Food Facts or USDA, with names already title-cased.
 struct OnlineFoodResult: Identifiable, Hashable {
@@ -30,6 +31,16 @@ struct OnlineFoodResult: Identifiable, Hashable {
     var brand: String? {
         draft.name == nil ? nil : draft.brand
     }
+
+    /// Product page for OFF hits ("View on Open Food Facts", ODbL attribution); `nil` for USDA.
+    var offProductURL: URL? {
+        draft.origin == .off ? draft.productURL : nil
+    }
+
+    /// Barcode compared across sources: normalized (UPC-A → EAN-13, …) when valid, else as given.
+    var barcodeKey: String? {
+        draft.barcode.map { Barcode.normalize($0) ?? $0 }
+    }
 }
 
 /// State behind the "Online" segment of Add Food (backlog #22, FR-20): debounced, cancellable parallel searches of
@@ -51,9 +62,9 @@ final class OnlineSearchModel {
         case loading
         case loaded(count: Int)
         case offline
-        /// USDA HTTP 429 cool-down: no request until `until`.
+        /// Rate-limit cool-down (USDA 429: 1 h, OFF 429/503: 60 s): no request until `until`.
         case paused(until: Date)
-        /// OFF throttled the search (HTTP 429/503).
+        /// OFF answered with a server error.
         case busy
         case failed(String)
 
@@ -71,13 +82,16 @@ final class OnlineSearchModel {
 
     let debounce: Duration
     private let sleep: @Sendable (Duration) async throws -> Void
+    /// Tells VoiceOver when a source answers or fails (no-op otherwise).
+    private let announce: @MainActor (String) -> Void
 
     /// The query the current results and statuses belong to (trimmed).
     private(set) var query = ""
     private(set) var offStatus: SourceStatus = .idle
     private(set) var usdaStatus: SourceStatus = .idle
-    /// Merged results, in arrival order: each source's list is appended when it arrives, so rows already on
-    /// screen never move. A USDA Branded hit whose barcode an OFF hit already has (or vice versa) is left out.
+    /// Merged results, in arrival order: each source's list is appended when it arrives. One row per product: a
+    /// barcode (normalized) appears once, and OFF wins over USDA Branded — a USDA row is replaced in place when OFF
+    /// arrives later with the same barcode.
     private(set) var results: [OnlineFoodResult] = []
 
     private var cache: [CacheKey: [OnlineFoodResult]] = [:]
@@ -91,14 +105,28 @@ final class OnlineSearchModel {
     init(
         debounce: Duration = OnlineSearchModel.defaultDebounce,
         sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) },
+        announce: @escaping @MainActor (String) -> Void = { AccessibilityNotification.Announcement($0).post() },
     ) {
         self.debounce = debounce
         self.sleep = sleep
+        self.announce = announce
     }
 
     /// True while either visible source is still loading.
     var isLoading: Bool {
         offStatus.isLoading || usdaStatus.isLoading
+    }
+
+    /// "No online matches" only when a source actually answered: not while one is loading, and not when every
+    /// visible source failed, is offline or is paused (their status rows already say so).
+    var showsNoMatches: Bool {
+        guard results.isEmpty, !isLoading else { return false }
+        return [offStatus, usdaStatus].contains { status in
+            if case .loaded = status {
+                return true
+            }
+            return false
+        }
     }
 
     /// Marks the sources as loading, waits ``debounce``, then queries both sources in parallel and publishes each
@@ -112,7 +140,7 @@ final class OnlineSearchModel {
             return
         }
         // Show the spinners at once; the previous results stay until the debounce has passed.
-        offStatus = .loading
+        offStatus = initialOFFStatus(offSearch)
         usdaStatus = initialUSDAStatus(usda)
         do {
             try await sleep(debounce)
@@ -123,14 +151,15 @@ final class OnlineSearchModel {
 
         self.query = query
         results = []
-        // The cool-down may have started while waiting.
+        // A cool-down may have started while waiting.
+        offStatus = initialOFFStatus(offSearch)
         usdaStatus = initialUSDAStatus(usda)
 
         var pending: [FoodDraft.Origin] = []
-        for origin in [FoodDraft.Origin.off, .usda] where status(of: origin) == .loading {
+        for origin in [FoodDraft.Origin.off, .usda] where status(of: origin) != .hidden {
             if let cached = cache[CacheKey(origin: origin, query: query.lowercased())] {
-                apply(origin, .success(cached))
-            } else {
+                apply(origin, .success(cached)) // also during a cool-down: no request needed
+            } else if status(of: origin) == .loading {
                 pending.append(origin)
             }
         }
@@ -156,7 +185,8 @@ final class OnlineSearchModel {
                 if case let .success(found) = outcome {
                     remember(found, origin: origin, query: query.lowercased())
                 }
-                apply(origin, outcome)
+                apply(origin, outcome, offPausedUntil: offSearch.rateLimitedUntil)
+                announceStatus(of: origin)
             }
         }
     }
@@ -191,6 +221,10 @@ final class OnlineSearchModel {
         usdaStatus = usda.isAvailable ? .idle : .hidden
     }
 
+    private func initialOFFStatus(_ offSearch: any OpenFoodFactsSearchClient) -> SourceStatus {
+        offSearch.rateLimitedUntil.map { .paused(until: $0) } ?? .loading
+    }
+
     private func initialUSDAStatus(_ usda: any USDAClient) -> SourceStatus {
         guard usda.isAvailable else { return .hidden }
         if let until = usda.rateLimitedUntil {
@@ -199,22 +233,68 @@ final class OnlineSearchModel {
         return .loading
     }
 
-    private func apply(_ origin: FoodDraft.Origin, _ outcome: Result<[OnlineFoodResult], any Error>) {
+    private func apply(
+        _ origin: FoodDraft.Origin,
+        _ outcome: Result<[OnlineFoodResult], any Error>,
+        offPausedUntil: Date? = nil,
+    ) {
         switch outcome {
         case let .success(found):
-            let known = Set(results.compactMap(\.draft.barcode))
-            let ids = Set(results.map(\.id))
-            let added = found.filter { result in
-                !ids.contains(result.id) && !(result.draft.barcode.map(known.contains) ?? false)
-            }
-            results += added
-            setStatus(.loaded(count: added.count), for: origin)
+            merge(found)
+            setStatus(.loaded(count: 0), for: origin)
+            refreshCounts()
         case let .failure(error):
             if error is CancellationError {
                 return
             }
-            setStatus(Self.status(for: error), for: origin)
+            if origin == .off, case OpenFoodFactsError.rateLimited = error {
+                setStatus(offPausedUntil.map { .paused(until: $0) } ?? .busy, for: origin)
+            } else {
+                setStatus(Self.status(for: error), for: origin)
+            }
         }
+    }
+
+    /// Adds `found` to ``results``: skips ids and barcodes already listed (also within `found`), except that an OFF
+    /// hit replaces a USDA row with the same barcode in place.
+    private func merge(_ found: [OnlineFoodResult]) {
+        var ids = Set(results.map(\.id))
+        var indexByBarcode: [String: Int] = [:]
+        for (index, result) in results.enumerated() {
+            if let key = result.barcodeKey, indexByBarcode[key] == nil {
+                indexByBarcode[key] = index
+            }
+        }
+        for result in found where !ids.contains(result.id) {
+            if let key = result.barcodeKey, let index = indexByBarcode[key] {
+                if result.draft.origin == .off, results[index].draft.origin == .usda {
+                    ids.remove(results[index].id)
+                    results[index] = result
+                    ids.insert(result.id)
+                }
+                continue
+            }
+            results.append(result)
+            ids.insert(result.id)
+            if let key = result.barcodeKey {
+                indexByBarcode[key] = results.count - 1
+            }
+        }
+    }
+
+    /// Loaded counts follow ``results`` (a USDA row can be replaced by OFF later).
+    private func refreshCounts() {
+        for origin in [FoodDraft.Origin.off, .usda] {
+            if case .loaded = status(of: origin) {
+                setStatus(.loaded(count: results.count(where: { $0.draft.origin == origin })), for: origin)
+            }
+        }
+    }
+
+    private func announceStatus(of origin: FoodDraft.Origin) {
+        let status = status(of: origin)
+        guard status != .loading, status != .hidden, status != .idle else { return }
+        announce(OnlineSourceStatusRow.text(source: origin, status: status))
     }
 
     private func setStatus(_ status: SourceStatus, for origin: FoodDraft.Origin) {

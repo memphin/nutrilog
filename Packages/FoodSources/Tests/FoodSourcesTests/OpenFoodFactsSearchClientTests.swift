@@ -155,6 +155,65 @@ struct OpenFoodFactsSearchClientTests {
     }
 }
 
+struct OpenFoodFactsSearchThrottleTests {
+    private func makeClient(_ transport: StubTransport, clock: TestClock, sleeper: SleepRecorder) -> OpenFoodFactsSearchHTTPClient {
+        OpenFoodFactsSearchHTTPClient(userAgent: "Nutrilog/1.0", transport: transport, now: { clock.now }, sleep: sleeper.sleep)
+    }
+
+    @Test func `responses are never read from or kept for URLCache`() {
+        let request = OpenFoodFactsSearchHTTPClient(userAgent: "Nutrilog/1.0").request(query: "nutella")
+        #expect(request.cachePolicy == .reloadIgnoringLocalCacheData)
+    }
+
+    @Test(arguments: [429, 503])
+    func `throttling starts a 60 s cool-down with no requests`(status: Int) async throws {
+        let clock = TestClock()
+        let transport = try StubTransport([.http(status, Data()), .http(200, Fixture.data("search_nutella"))])
+        let client = makeClient(transport, clock: clock, sleeper: SleepRecorder())
+
+        await #expect(throws: OpenFoodFactsError.rateLimited) { try await client.search(query: "nutella") }
+        let until = try #require(client.rateLimitedUntil)
+        #expect(until == clock.now.addingTimeInterval(60))
+
+        clock.advance(by: 59)
+        await #expect(throws: OpenFoodFactsError.rateLimited) { try await client.search(query: "nutella") }
+        #expect(transport.requests.count == 1)
+
+        clock.advance(by: 2)
+        #expect(client.rateLimitedUntil == nil)
+        let results = try await client.search(query: "nutella")
+        #expect(results.count == 4)
+        #expect(transport.requests.count == 2)
+    }
+
+    @Test func `requests are spaced at least 1.5 s apart`() async throws {
+        let clock = TestClock()
+        let sleeper = SleepRecorder()
+        let transport = try StubTransport([.http(200, Fixture.data("search_nutella"))])
+        let client = makeClient(transport, clock: clock, sleeper: sleeper)
+
+        _ = try await client.search(query: "nu")
+        #expect(sleeper.delays.isEmpty)
+        clock.advance(by: 0.5)
+        _ = try await client.search(query: "nut")
+        #expect(sleeper.delays == [.milliseconds(1000)])
+        clock.advance(by: 5)
+        _ = try await client.search(query: "nute")
+        #expect(sleeper.delays == [.milliseconds(1000)])
+        #expect(transport.requests.count == 3)
+    }
+
+    @Test func `copies of a client share the throttle`() async throws {
+        let clock = TestClock()
+        let throttle = OFFSearchThrottle()
+        let transport = StubTransport([.http(503, Data())])
+        let first = OpenFoodFactsSearchHTTPClient(userAgent: "a", transport: transport, throttle: throttle, now: { clock.now })
+        let second = OpenFoodFactsSearchHTTPClient(userAgent: "a", transport: transport, throttle: throttle, now: { clock.now })
+        await #expect(throws: OpenFoodFactsError.rateLimited) { try await first.search(query: "x") }
+        #expect(second.rateLimitedUntil != nil)
+    }
+}
+
 struct FoodNameCasingTests {
     @Test(arguments: [
         ("CHOCOLATE HAZELNUT SPREAD", "Chocolate Hazelnut Spread"),
@@ -166,6 +225,11 @@ struct FoodNameCasingTests {
         ("PEANUT BUTTER-FILLED PRETZELS (BITES)", "Peanut Butter-Filled Pretzels (Bites)"),
         ("ČOKOLADA S LJEŠNJACIMA", "Čokolada S Lješnjacima"),
         ("UHT MILK 3.5%", "UHT Milk 3.5%"),
+        ("KFC ORIGINAL RECIPE", "KFC Original Recipe"),
+        ("DM BIO OAT FLAKES", "DM Bio Oat Flakes"),
+        ("O'REILLY'S IRISH CREAM", "O'Reilly's Irish Cream"),
+        ("D'ARBO APRICOT JAM", "D'Arbo Apricot Jam"),
+        ("DRY ROASTED PEANUTS", "Dry Roasted Peanuts"),
     ])
     func `all caps names are title-cased`(input: String, expected: String) {
         #expect(FoodNameCasing.titleCasedIfAllCaps(input) == expected)

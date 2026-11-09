@@ -34,7 +34,7 @@ struct OnlineResultsView: View {
                     }
                 }
             }
-            if model.results.isEmpty, !model.isLoading {
+            if model.showsNoMatches {
                 EmptyStateView("No online matches", systemImage: "magnifyingglass", message: "Try another spelling or create the food.")
                     .listRowBackground(Color.clear)
             }
@@ -44,6 +44,17 @@ struct OnlineResultsView: View {
                         OnlineFoodRow(result: result, unit: unit)
                     }
                     .buttonStyle(.plain)
+                    .contextMenu {
+                        if let url = result.offProductURL {
+                            Link(destination: url) { Label("View on Open Food Facts", systemImage: "safari") }
+                        }
+                    }
+                    .swipeActions(edge: .leading) {
+                        if let url = result.offProductURL {
+                            Link(destination: url) { Label("Open Food Facts", systemImage: "safari") }
+                                .tint(.orange)
+                        }
+                    }
                 }
             } footer: {
                 if model.results.contains(where: { $0.draft.origin == .off }) {

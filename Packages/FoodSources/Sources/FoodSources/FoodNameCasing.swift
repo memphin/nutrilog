@@ -15,9 +15,10 @@ public enum FoodNameCasing {
     /// so names typed in mixed case ("McVitie's", "iPhone bar", "Apples, raw") are left alone.
     ///
     /// Each word is lowercased and its first letter capitalized; minor words after the first stay lowercase, known
-    /// abbreviations and words with digits ("2GO", "100G") are kept. A letter after an apostrophe stays lowercase
-    /// ("KELLOGG'S" → "Kellogg's"); one after "-", "/", "(" or "&" starts a new
-    /// part, and dotted initials ("U.S.A.") are kept.
+    /// abbreviations, words of up to three letters without a vowel ("KFC", "DM") and words with digits ("2GO",
+    /// "100G") are kept. A letter after an apostrophe stays lowercase ("KELLOGG'S" → "Kellogg's") unless the
+    /// apostrophe follows a single letter ("O'REILLY'S" → "O'Reilly's", "D'ARBO" → "D'Arbo"); one after "-", "/",
+    /// "(" or "&" starts a new part, and dotted initials ("U.S.A.") are kept.
     public static func titleCasedIfAllCaps(_ text: String) -> String {
         guard isAllCaps(text) else { return text }
         var result = ""
@@ -58,7 +59,7 @@ public enum FoodNameCasing {
     /// One whitespace-separated word, which may still contain "-", "/", "(", "." or "'".
     private static func casedWord(_ word: String, isFirst: Bool) -> String {
         let bare = word.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        if acronyms.contains(bare) || bare.contains(where: \.isNumber) || isDotted(bare) {
+        if acronyms.contains(bare) || bare.contains(where: \.isNumber) || isDotted(bare) || isVowelless(bare) {
             return word
         }
         if !isFirst, minorWords.contains(bare.lowercased()), bare.count == word.count {
@@ -66,18 +67,32 @@ public enum FoodNameCasing {
         }
         var result = ""
         var startOfPart = true
+        var lettersInPart = 0
         for char in word {
             if char.isLetter {
                 result += startOfPart ? char.uppercased() : char.lowercased()
                 startOfPart = false
+                lettersInPart += 1
             } else {
                 result.append(char)
                 if char == "-" || char == "/" || char == "(" || char == "&" {
                     startOfPart = true
+                    lettersInPart = 0
+                } else if char == "'" || char == "\u{2019}" {
+                    // O'Reilly, D'Arbo: a single letter before the apostrophe is an elided word.
+                    startOfPart = lettersInPart == 1
+                    lettersInPart = 0
                 }
             }
         }
         return result
+    }
+
+    /// Two or three letters and no vowel (Y counts as one): an abbreviation like "KFC" or "DM".
+    private static func isVowelless(_ word: String) -> Bool {
+        let folded = word.folding(options: .diacriticInsensitive, locale: nil).uppercased()
+        return (2 ... 3).contains(folded.count) && folded.allSatisfy(\.isLetter)
+            && !folded.contains { "AEIOUY".contains($0) }
     }
 
     /// Single letters separated by dots, like "U.S.A" or "N.V".

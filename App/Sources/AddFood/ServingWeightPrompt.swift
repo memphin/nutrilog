@@ -8,6 +8,7 @@ extension FoodDetail {
     enum ServingWeightError: LocalizedError, Equatable {
         case notPositive
         case implausible(kcalPer100: Double)
+        case implausibleMacros(gramsPer100: Double)
 
         var errorDescription: String? {
             switch self {
@@ -15,12 +16,16 @@ extension FoodDetail {
                 "Enter a weight above 0."
             case let .implausible(kcal):
                 "That weight would mean \(Int(kcal.rounded())) kcal per 100 — more than pure fat. Check the weight."
+            case let .implausibleMacros(grams):
+                "That weight would mean \(Int(grams.rounded())) g of protein, carbs and fat per 100 g. Check the weight."
             }
         }
     }
 
     /// Highest believable energy density (pure fat is ~900 kcal/100 g).
     static let maximumKcalPer100 = 900.0
+    /// Highest believable protein + carbs + fat per 100 g (a little over 100 for rounding on labels).
+    static let maximumMacroGramsPer100 = 105.0
 
     /// A per-serving placeholder copy (``isPerServingPlaceholder``) converted to real per-100 values once the user
     /// knows what one serving weighs: values are scaled by 100 ÷ `grams`, the default serving gets that weight, the
@@ -30,6 +35,10 @@ extension FoodDetail {
         let per100 = Nutrients.per100(fromServing: food.per100, servingGrams: grams)
         guard per100.kcal <= Self.maximumKcalPer100 else {
             throw ServingWeightError.implausible(kcalPer100: per100.kcal)
+        }
+        let macros = per100.proteinG + per100.carbsG + per100.fatG
+        guard macros <= Self.maximumMacroGramsPer100 else {
+            throw ServingWeightError.implausibleMacros(gramsPer100: macros)
         }
         var detail = self
         detail.food.per100 = per100

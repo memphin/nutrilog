@@ -116,7 +116,7 @@ struct AddFoodView: View {
             }
             .task { reloadLists() }
             .task(id: query) { await runSearch() }
-            .task(id: OnlineSearchKey(query: query, isOnline: scope == .online)) {
+            .task(id: OnlineSearchKey(query: query.trimmingCharacters(in: .whitespacesAndNewlines), isOnline: scope == .online)) {
                 guard scope == .online else { return }
                 await online.search(query, offSearch: environment.offSearch, usda: environment.usda)
             }
