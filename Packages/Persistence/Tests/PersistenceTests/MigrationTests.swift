@@ -1,3 +1,4 @@
+import Foundation
 import GRDB
 import Testing
 @testable import Persistence
@@ -47,5 +48,22 @@ struct MigrationTests {
         _ = try AppDatabase(queue) // second run must be a no-op
         let applied = try queue.read { try Migrator.make().appliedMigrations($0) }
         #expect(applied == Migrator.migrations)
+    }
+}
+
+struct OnDiskDatabaseTests {
+    @Test func `opens migrates and reopens on disk`() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("nutrilog-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let first = try AppDatabase.onDisk(directory: dir)
+        try first.writer.write { db in
+            try db.execute(sql: "UPDATE profile SET height_cm = 181")
+        }
+        let reopened = try AppDatabase.onDisk(directory: dir)
+        let height = try reopened.reader.read { db in try Double.fetchOne(db, sql: "SELECT height_cm FROM profile") }
+        #expect(height == 181)
+        let mode = try reopened.reader.read { db in try String.fetchOne(db, sql: "PRAGMA journal_mode") }
+        #expect(mode == "wal")
+        #expect(FileManager.default.fileExists(atPath: dir.appendingPathComponent("nutrilog.sqlite").path))
     }
 }
