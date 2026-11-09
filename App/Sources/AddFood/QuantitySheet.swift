@@ -31,11 +31,33 @@ struct QuantitySheet: View {
     }
 
     private var quantity: Quantity? {
+        Self.quantity(amountText: amountText, unitChoice: unitChoice, detail: detail)
+    }
+
+    /// The amount typed in `unitChoice` ("base" or a serving id) as a quantity; nil for invalid input, or for
+    /// grams on a per-serving placeholder (its weight is a stand-in).
+    static func quantity(amountText: String, unitChoice: String, detail: FoodDetail) -> Quantity? {
         guard let amount = Format.number(amountText), amount >= 0 else { return nil }
-        if let serving = selectedServing {
+        if let serving = detail.servings.first(where: { $0.id == unitChoice }) {
             return .servings(count: amount, serving: serving.size)
         }
-        return .base(amount)
+        return offersBaseUnit(detail) ? .base(amount) : nil
+    }
+
+    /// Whether grams/ml can be entered. Not for a per-serving placeholder: log it by servings only.
+    static func offersBaseUnit(_ detail: FoodDetail) -> Bool {
+        !detail.isPerServingPlaceholder
+    }
+
+    /// The quantity to prefill when logging: the food's suggestion, but never grams for a per-serving placeholder.
+    static func initialLogQuantity(_ detail: FoodDetail) -> (quantity: Quantity, servingID: String?) {
+        let suggested = detail.suggestedQuantity
+        if !offersBaseUnit(detail), case .base = suggested,
+           let serving = detail.servings.first(where: { $0.id == detail.food.defaultServingID })
+        {
+            return (.servings(count: 1, serving: serving.size), serving.id)
+        }
+        return (suggested, nil)
     }
 
     private var preview: Nutrients {
@@ -53,16 +75,23 @@ struct QuantitySheet: View {
                         .frame(maxWidth: 120)
                         .accessibilityLabel("Amount")
                     Picker("Unit", selection: $unitChoice) {
-                        Text(food.baseUnit.symbol).tag("base")
+                        // A per-serving placeholder's weight is a 100 g/ml stand-in: log it by servings only.
+                        if Self.offersBaseUnit(detail) {
+                            Text(food.baseUnit.symbol).tag("base")
+                        }
                         ForEach(detail.servings) { serving in
-                            Text("\(serving.label) (\(NutrientRow.format(serving.grams, unit: "g")) \(food.baseUnit.symbol))")
-                                .tag(serving.id)
+                            if detail.isPerServingPlaceholder {
+                                Text(serving.label).tag(serving.id)
+                            } else {
+                                Text("\(serving.label) (\(NutrientRow.format(serving.grams, unit: "g")) \(food.baseUnit.symbol))")
+                                    .tag(serving.id)
+                            }
                         }
                     }
                     .labelsHidden()
                     .pickerStyle(.menu)
                 }
-                if let quantity, selectedServing != nil {
+                if let quantity, selectedServing != nil, !detail.isPerServingPlaceholder {
                     Text("= \(NutrientRow.format(quantity.baseAmount, unit: "g")) \(food.baseUnit.symbol)")
                         .foregroundStyle(.secondary)
                 }
@@ -151,7 +180,8 @@ struct QuantitySheet: View {
         switch mode {
         case let .log(slot, _):
             slotID = slot
-            apply(detail.suggestedQuantity)
+            let initial = Self.initialLogQuantity(detail)
+            apply(initial.quantity, servingID: initial.servingID)
         case let .edit(entry):
             slotID = entry.mealSlotID
             // Restore "2 × slice" when the label matches a serving; otherwise show the base amount.

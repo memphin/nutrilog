@@ -16,6 +16,8 @@
             switch name {
             case "addFood":
                 AddFoodView(target: AddTarget(slotID: "breakfast", day: environment.today))
+            case "scan":
+                ScanView(target: AddTarget(slotID: "breakfast", day: environment.today)) {}
             case "foodEditor":
                 FoodEditorView(initialName: "Ajvar")
             case "quickAdd":

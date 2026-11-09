@@ -15,6 +15,11 @@ final class FoodEditorModel {
         }
     }
 
+    /// The nutrients every food must have; listed when completing a partial food (SPEC §9 "Complete nutrition").
+    enum RequiredNutrient: String, CaseIterable, Hashable, Sendable {
+        case energy, protein, carbs, fat
+    }
+
     struct ServingDraft: Identifiable, Equatable {
         var id: String = newID()
         var label: String = ""
@@ -47,6 +52,9 @@ final class FoodEditorModel {
 
     let energyUnit: EnergyUnit
     private(set) var original: FoodDetail?
+    /// Set when completing the nutrition of a partial food: these fields start empty so they must be typed in,
+    /// and saving marks the food's data complete.
+    private(set) var completing: Set<RequiredNutrient>?
 
     /// Nutrition fields as loaded from `original`. Fields still showing this text keep the stored value on
     /// save: the fields round to 2 decimals, and USDA / Open Food Facts values often have more.
@@ -57,7 +65,15 @@ final class FoodEditorModel {
 
     private var loaded: LoadedFields?
 
-    init(energyUnit: EnergyUnit, editing detail: FoodDetail? = nil, initialName: String = "", barcode: String? = nil) {
+    /// - Parameter completing: Complete-nutrition mode for a partial food (`detail` required): the given
+    ///   nutrients are missing in the source, so their fields start empty; saving marks the data complete.
+    init(
+        energyUnit: EnergyUnit,
+        editing detail: FoodDetail? = nil,
+        initialName: String = "",
+        barcode: String? = nil,
+        completing: Set<RequiredNutrient>? = nil,
+    ) {
         self.energyUnit = energyUnit
         original = detail
         name = initialName
@@ -66,6 +82,17 @@ final class FoodEditorModel {
         }
         if let detail {
             load(detail)
+            if let completing {
+                self.completing = completing
+                for field in completing {
+                    switch field {
+                    case .energy: energy = ""
+                    case .protein: protein = ""
+                    case .carbs: carbs = ""
+                    case .fat: fat = ""
+                    }
+                }
+            }
         }
     }
 
@@ -159,8 +186,14 @@ final class FoodEditorModel {
         food.notes = Self.optional(notes)
         food.isLiquid = isLiquid
         food.per100 = keepingUneditedValues(per100)
-        // Editing a bundled / USDA / Open Food Facts food keeps its data-quality flag.
-        food.dataQuality = original?.food.dataQuality ?? .complete
+        // Editing a bundled / USDA / Open Food Facts food keeps its data-quality flag, unless the user just completed
+        // its nutrition (all four required values are validated numbers). Per-serving placeholders stay partial
+        // until their serving weight is known.
+        if completing != nil, !food.perServingOnly {
+            food.dataQuality = .complete
+        } else {
+            food.dataQuality = original?.food.dataQuality ?? .complete
+        }
         let drafts = servings.filter { !$0.label.trimmingCharacters(in: .whitespaces).isEmpty }
         let savedServings = drafts.map { draft in
             let old = original?.servings.first { $0.id == draft.id }

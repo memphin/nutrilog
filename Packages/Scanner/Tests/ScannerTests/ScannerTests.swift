@@ -177,3 +177,14 @@ struct ScannerAvailabilityTests {
         #expect(availability == expected)
     }
 }
+
+struct ScannerActivityTests {
+    @Test func `scans only when ready, not paused, no manual entry and active`() {
+        #expect(ScannerActivity.isScanning(availability: .ready, isPaused: false, isShowingManualEntry: false, isAppActive: true))
+        #expect(!ScannerActivity.isScanning(availability: .ready, isPaused: true, isShowingManualEntry: false, isAppActive: true))
+        #expect(!ScannerActivity.isScanning(availability: .ready, isPaused: false, isShowingManualEntry: true, isAppActive: true))
+        #expect(!ScannerActivity.isScanning(availability: .ready, isPaused: false, isShowingManualEntry: false, isAppActive: false))
+        #expect(!ScannerActivity.isScanning(availability: .denied, isPaused: false, isShowingManualEntry: false, isAppActive: true))
+        #expect(!ScannerActivity.isScanning(availability: nil, isPaused: false, isShowingManualEntry: false, isAppActive: true))
+    }
+}

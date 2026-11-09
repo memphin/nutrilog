@@ -5,8 +5,10 @@
 
     /// Live barcode scanner (FR-10) with torch toggle, haptic on detection, a 2 s same-code debounce, camera-permission
     /// handling and a manual-entry fallback (FR-14). Calls `onScan` for every accepted code; scanning continues, so the
-    /// caller decides when to dismiss.
+    /// caller decides when to dismiss. Pass `isPaused` while something covers the camera (a result sheet, a lookup in
+    /// progress): the camera, haptics and torch stop until it is false again.
     public struct BarcodeScannerView: View {
+        private let isPaused: Bool
         private let onScan: @MainActor (ScannedBarcode) -> Void
 
         @State private var availability: ScannerAvailability?
@@ -16,13 +18,20 @@
         @State private var isShowingManualEntry = false
         @Environment(\.scenePhase) private var scenePhase
 
-        public init(onScan: @escaping @MainActor (ScannedBarcode) -> Void) {
+        public init(isPaused: Bool = false, onScan: @escaping @MainActor (ScannedBarcode) -> Void) {
+            self.isPaused = isPaused
             self.onScan = onScan
         }
 
-        /// The camera runs only while the scanner is shown, the manual-entry sheet is closed and the app is active.
+        /// The camera runs only while the scanner is shown and not paused, the manual-entry sheet is closed and the
+        /// app is active.
         private var isScanning: Bool {
-            availability == .ready && !isShowingManualEntry && scenePhase == .active
+            ScannerActivity.isScanning(
+                availability: availability,
+                isPaused: isPaused,
+                isShowingManualEntry: isShowingManualEntry,
+                isAppActive: scenePhase == .active,
+            )
         }
 
         public var body: some View {
@@ -118,7 +127,7 @@
         }
 
         private func handle(_ barcode: ScannedBarcode) {
-            guard debouncer.accept(barcode.payload) else { return }
+            guard isScanning, debouncer.accept(barcode.payload) else { return }
             detections += 1
             onScan(barcode)
         }

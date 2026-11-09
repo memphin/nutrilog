@@ -24,6 +24,7 @@ struct AddFoodView: View {
     @State private var path: [FoodDetail] = []
     @State private var showCreate = false
     @State private var showQuickAdd = false
+    @State private var showScanner = false
     @State private var errorMessage: String?
 
     struct Lists {
@@ -83,6 +84,7 @@ struct AddFoodView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
                 ToolbarItemGroup(placement: .primaryAction) {
+                    Button("Scan barcode", systemImage: "barcode.viewfinder") { showScanner = true }
                     Button("Quick add", systemImage: "bolt") { showQuickAdd = true }
                     Button("Create food", systemImage: "plus") { showCreate = true }
                 }
@@ -97,6 +99,9 @@ struct AddFoodView: View {
                     reloadLists()
                     path.append(saved)
                 }
+            }
+            .fullScreenCover(isPresented: $showScanner, onDismiss: reloadLists) {
+                ScanView(target: target) { dismiss() }
             }
             .sheet(isPresented: $showQuickAdd) {
                 QuickAddView(mode: .create(slotID: target.slotID, day: target.day)) { dismiss() }
