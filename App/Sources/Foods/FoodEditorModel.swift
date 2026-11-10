@@ -1,4 +1,6 @@
 import Core
+import FoodLookup
+import FoodSources
 import Foundation
 import Observation
 import Persistence
@@ -295,6 +297,89 @@ final class FoodEditorModel {
             barcodeRows.append(BarcodeDraft(code: code))
         }
         return .added(code)
+    }
+
+    // MARK: Product lookup (#69)
+
+    /// What looking a scanned code up did to the form.
+    enum ScanLookup: Equatable {
+        /// Open Food Facts knows the product (`name`): its values were filled in.
+        case filled(name: String)
+        /// One of the user's foods already carries the code; nothing was filled in.
+        case existing(name: String)
+        /// Nobody knows the code: the values have to be typed from the label.
+        case notFound
+        /// The lookup failed (offline, Open Food Facts not answering).
+        case failed
+        /// Not looked up: an existing food is being edited, or nutrition values were typed already.
+        case skipped
+    }
+
+    /// A lookup may fill the form of a new food while none of the required nutrition values is typed in — it never
+    /// overwrites what the user entered and never changes an existing food.
+    var canFillFromLookup: Bool {
+        original == nil && [energy, protein, carbs, fat].allSatisfy { $0.trimmingCharacters(in: .whitespaces).isEmpty }
+    }
+
+    /// Looks a scanned code up — your foods, then Open Food Facts, like the scanner of Add Food — and fills the form
+    /// of a new food with the product found.
+    func lookUpScanned(candidates: [String], using lookup: BarcodeLookup?) async -> ScanLookup {
+        guard canFillFromLookup, let lookup, !candidates.isEmpty else { return .skipped }
+        let result: BarcodeLookupResult
+        do {
+            result = try await lookup.resolve(candidates: candidates)
+        } catch {
+            return .failed
+        }
+        switch result {
+        case let .local(detail):
+            return .existing(name: detail.food.displayName)
+        case .notFound:
+            return .notFound
+        case let .remote(remote):
+            guard canFillFromLookup else { return .skipped } // values were typed while the lookup ran
+            let missing = Set(remote.draft.missingNutrients.compactMap { RequiredNutrient(rawValue: $0.rawValue) })
+            let product = FoodDetail(draft: remote.draft)
+            fill(from: product, missing: missing)
+            return .filled(name: product.food.name)
+        }
+    }
+
+    /// Fills a new food's form with a product's values; a name or brand already typed is kept. The food stays a new
+    /// custom food. Values the source doesn't have stay empty, and a product known only per serving switches the
+    /// form to "Per serving" so the serving size is asked for.
+    func fill(from product: FoodDetail, missing: Set<RequiredNutrient> = []) {
+        let food = product.food
+        if name.trimmingCharacters(in: .whitespaces).isEmpty {
+            name = food.name
+        }
+        if nameLocal.isEmpty {
+            nameLocal = food.nameLocal ?? ""
+        }
+        if brand.isEmpty {
+            brand = food.brand ?? ""
+        }
+        isLiquid = food.isLiquid
+        energy = missing.contains(.energy) ? "" : Format.field(energyUnit.display(food.kcal100))
+        protein = missing.contains(.protein) ? "" : Format.field(food.proteinG100)
+        carbs = missing.contains(.carbs) ? "" : Format.field(food.carbsG100)
+        fat = missing.contains(.fat) ? "" : Format.field(food.fatG100)
+        fiber = Format.field(food.fiberG100)
+        sugar = Format.field(food.sugarG100)
+        satFat = Format.field(food.satFatG100)
+        entersSalt = false
+        sodiumOrSalt = Format.field(food.sodiumMg100)
+        if product.isPerServingPlaceholder {
+            // The stored values are per serving of unknown weight.
+            basis = .perServing
+            basisServingAmount = ""
+        } else {
+            basis = .per100
+            if servings.allSatisfy({ $0.label.isEmpty && $0.amount.isEmpty }) {
+                servings = product.servings.map { ServingDraft(id: $0.id, label: $0.label, amount: Format.field($0.grams)) }
+                defaultServingID = servings.contains { $0.id == food.defaultServingID } ? food.defaultServingID : nil
+            }
+        }
     }
 
     /// The normalized, valid, de-duplicated codes the food will be saved with.

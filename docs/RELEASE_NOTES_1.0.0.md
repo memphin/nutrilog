@@ -34,6 +34,8 @@ This file is a draft until the tag is pushed: the success criteria at the end ar
 - Daily goals: a step goal and a water goal (Settings). Step bars are green at the goal, orange close below it and red
   further away; water is red below its goal and green from it.
 - The Today dashboard's tiles are arranged in Settings → Dashboard.
+- New food: "Scan barcode to fill in" looks the product up (your foods, then Open Food Facts) and fills in its name,
+  brand, nutrition and serving; you check the values and save it as your own food.
   Charts have a spoken summary for VoiceOver.
 - Weekly report for any week: averages, closest and furthest day, intake against estimated expenditure, trend change;
   share it as an image rendered on the device.

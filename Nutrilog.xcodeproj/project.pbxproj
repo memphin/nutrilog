@@ -22,6 +22,7 @@
 		1B66D123840B97B94ED63379 /* USDAKeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF825E4994064B6BF2442C2C /* USDAKeyTests.swift */; };
 		1DC2ED5B9C4717C969FFB5D6 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200292DBDEE662CE1C732A6B /* DashboardView.swift */; };
 		1FA726507651EE06D48965EF /* NutrilogWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = EABDD0FC973CCF44DCDAB0DB /* NutrilogWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		243FA816A20ECE214845DF3E /* FoodEditorLookupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8462A6F5F29B3E4DC56760BB /* FoodEditorLookupTests.swift */; };
 		2B72DF9DC39A4FD532F82AD6 /* StubOpenFoodFactsClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9CCA4A26FB3F7E0C4FF09B0 /* StubOpenFoodFactsClient.swift */; };
 		2F72AA6FCE65F593C82570B7 /* BarcodeResolutionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D43D67F6BDD6DC3B91132A7 /* BarcodeResolutionView.swift */; };
 		301ABF27DC784AD95629AC76 /* DashboardSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = F87E174607A41B937561E217 /* DashboardSnapshot.swift */; };
@@ -188,6 +189,7 @@
 		7D43D67F6BDD6DC3B91132A7 /* BarcodeResolutionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeResolutionView.swift; sourceTree = "<group>"; };
 		81B23CAA505BA1C22B5F85C6 /* USDAKeyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USDAKeyStore.swift; sourceTree = "<group>"; };
 		828903692011EC3D30FD2CA5 /* DashboardTiles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardTiles.swift; sourceTree = "<group>"; };
+		8462A6F5F29B3E4DC56760BB /* FoodEditorLookupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodEditorLookupTests.swift; sourceTree = "<group>"; };
 		85872A22FB7B839CA01C0AF8 /* TargetsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetsModel.swift; sourceTree = "<group>"; };
 		8789AEDEFF3C272646067CF9 /* BodyFatWritePrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyFatWritePrompt.swift; sourceTree = "<group>"; };
 		88C0F2A65D5766E267236619 /* DiarySheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiarySheets.swift; sourceTree = "<group>"; };
@@ -458,6 +460,7 @@
 				2A4FB165DEA1491559A09EDF /* DashboardAccessTests.swift */,
 				E08827E52350A7B5F31EAAFD /* DashboardFeedbackTests.swift */,
 				797201B6EA91DC5D52E3B963 /* DashboardTests.swift */,
+				8462A6F5F29B3E4DC56760BB /* FoodEditorLookupTests.swift */,
 				61AEE6266270978795C272EF /* HealthTests.swift */,
 				13167937AD97A7A6E63D0C7D /* HealthWriteTests.swift */,
 				8B0E99FA1A1F64A610187439 /* OnlineSearchTests.swift */,
@@ -676,6 +679,7 @@
 				FD2ACB8A51EA43DF2F8351B3 /* DashboardAccessTests.swift in Sources */,
 				A8918B70C533573FD724FD17 /* DashboardFeedbackTests.swift in Sources */,
 				8DD6E20CDA492A24A1146173 /* DashboardTests.swift in Sources */,
+				243FA816A20ECE214845DF3E /* FoodEditorLookupTests.swift in Sources */,
 				CF7335C7FD8411978B9DBA15 /* HealthTests.swift in Sources */,
 				DEA6ED43ED0C3E0835637019 /* HealthWriteTests.swift in Sources */,
 				D953F9BE2CB9E64FED7766C4 /* OnlineSearchTests.swift in Sources */,
