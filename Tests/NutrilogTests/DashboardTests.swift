@@ -393,8 +393,10 @@ struct DashboardDemoTests {
         let model = DashboardModel(environment: env)
         let task = Task { await model.observe() }
         defer { task.cancel() }
+        // The diary totals come from their own observation, after the tiles: wait for them too.
         #expect(await waitUntil(timeout: .seconds(5)) {
             DashboardTile.allCases.allSatisfy { model.state(of: $0) == .ready } && model.snapshot.water.otherAppsMl > 0
+                && model.snapshot.totals.kcal > 0
         })
         let snapshot = model.snapshot
         #expect(model.access == .requested)
