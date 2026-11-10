@@ -81,8 +81,10 @@ struct DashboardFeedbackTests {
 
     // MARK: Water (#64)
 
-    @Test func `water is red below its goal and green from it`() {
-        #expect(GoalColor.water(2499, goalMl: 2500) == GoalColor.missed)
+    @Test func `water is red far below its goal, orange close to it and green from it`() {
+        #expect(GoalColor.water(1999, goalMl: 2500) == GoalColor.missed)
+        #expect(GoalColor.water(2000, goalMl: 2500) == GoalColor.near)
+        #expect(GoalColor.water(2499, goalMl: 2500) == GoalColor.near)
         #expect(GoalColor.water(2500, goalMl: 2500) == GoalColor.reached)
         #expect(GoalColor.water(3000, goalMl: 2500) == GoalColor.reached)
         var data = DashboardData(today: today)
@@ -175,7 +177,7 @@ struct DashboardFeedbackTests {
             DailyMetricsRecord(DailyHealthMetrics(day: today.adding(days: -$0), weightKg: 80 + Double($0) / 10), fetchedAt: Date())
         }
         let snapshot = DashboardSnapshot(data)
-        #expect(snapshot.accessibilityLabel(of: .weight, state: .ready) == "Weight, 80.0 kilograms")
+        #expect(snapshot.accessibilityLabel(of: .weight, state: .ready) == "Weight, 80.0 kilograms, below the weekly average")
         #expect(snapshot.sparkline(for: .weight) != nil)
     }
 
@@ -212,6 +214,44 @@ struct DashboardFeedbackTests {
         var short = DashboardData(today: today)
         short.metrics = [DailyMetricsRecord(DailyHealthMetrics(day: today, hrvSDNNms: 40), fetchedAt: Date())]
         #expect(DashboardSnapshot(short).baselineColor(of: .hrv) == nil)
+    }
+
+    // MARK: Weight and body fat against the week before
+
+    @Test func `weight is coloured by the goal against the weekly average, body fat by being below it`() {
+        // 7 days at 80 kg / 20 %, today as given.
+        func snapshot(kg: Double, fat: Double, goal: GoalMode, days: Int = 7) -> DashboardSnapshot {
+            var data = DashboardData(today: today)
+            data.goalMode = goal
+            data.metrics = (0 ... days).map {
+                let metrics = DailyHealthMetrics(day: today.adding(days: -$0), weightKg: $0 == 0 ? kg : 80, bodyFatPct: $0 == 0 ? fat : 20)
+                return DailyMetricsRecord(metrics, fetchedAt: Date())
+            }
+            return DashboardSnapshot(data)
+        }
+        // Losing: below the average is green, slightly above orange, far above red.
+        #expect(snapshot(kg: 79.6, fat: 19.8, goal: .lose).weeklyBand(of: .weight) == .reached)
+        #expect(snapshot(kg: 80.4, fat: 19.8, goal: .lose).weeklyBand(of: .weight) == .near)
+        #expect(snapshot(kg: 80.8, fat: 19.8, goal: .lose).weeklyBand(of: .weight) == .far)
+        // Gaining: the mirror image.
+        #expect(snapshot(kg: 80.4, fat: 20, goal: .gain).weeklyBand(of: .weight) == .reached)
+        #expect(snapshot(kg: 79.6, fat: 20, goal: .gain).weeklyBand(of: .weight) == .near)
+        #expect(snapshot(kg: 79.2, fat: 20, goal: .gain).weeklyBand(of: .weight) == .far)
+        // Maintaining: no colour.
+        #expect(snapshot(kg: 82, fat: 20, goal: .maintain).weeklyBand(of: .weight) == nil)
+        #expect(snapshot(kg: 82, fat: 20, goal: .maintain).baselineColor(of: .weight) == nil)
+        // Body fat does not depend on the goal.
+        #expect(snapshot(kg: 80, fat: 19.5, goal: .maintain).baselineColor(of: .bodyFat) == GoalColor.reached)
+        #expect(snapshot(kg: 80, fat: 20.4, goal: .maintain).baselineColor(of: .bodyFat) == GoalColor.near)
+        #expect(snapshot(kg: 80, fat: 20.8, goal: .maintain).baselineColor(of: .bodyFat) == GoalColor.missed)
+        // Too little history for a weekly average: no colour.
+        let short = snapshot(kg: 82, fat: 22, goal: .lose, days: 2)
+        #expect(short.weeklyWeightKg == nil && short.baselineColor(of: .weight) == nil && short.baselineColor(of: .bodyFat) == nil)
+        // VoiceOver says what the colour means.
+        #expect(snapshot(kg: 80.8, fat: 19.5, goal: .lose).accessibilityLabel(of: .weight, state: .ready)
+            == "Weight, 80.8 kilograms, above the weekly average")
+        #expect(snapshot(kg: 80.8, fat: 19.5, goal: .lose).accessibilityLabel(of: .bodyFat, state: .ready)
+            == "Body fat, 19.5 percent, below the weekly average")
     }
 
     // MARK: Descriptions (#67)

@@ -144,7 +144,7 @@ struct DashboardAccessibilityTests {
         }
         let label = DashboardSnapshot(data).accessibilityLabel(of: .weight, state: .ready)
         // Like the tile: the weight only (#73).
-        #expect(label == "Weight, 80.0 kilograms")
+        #expect(label == "Weight, 80.0 kilograms, below the weekly average")
     }
 
     @Test func `tiles without data say no data and why`() {

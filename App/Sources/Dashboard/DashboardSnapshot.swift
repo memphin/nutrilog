@@ -22,6 +22,8 @@ struct DashboardData: Equatable {
     var waterGoalMl: Double = 2500
     var stepGoal: Int = StepGoal.defaultSteps
     var sleepGoalMin: Int = SleepGoal.defaultMinutes
+    /// The profile's goal (lose, maintain, gain): which way the weight should move.
+    var goalMode: GoalMode = .maintain
 
     var window: ClosedRange<LocalDay> {
         today.adding(days: -(Self.historyDays - 1)) ... today
@@ -122,6 +124,10 @@ struct DashboardSnapshot: Equatable {
     let target: Target?
     let stepGoal: Int
     let sleepGoalMin: Int
+    let goalMode: GoalMode
+    /// Mean weight / body fat of the 7 days before the latest value (`WeeklyBand.average`); nil with too few days.
+    let weeklyWeightKg: Double?
+    let weeklyBodyFatPct: Double?
     /// 7-day series per tile (`DashboardSnapshot.sparklines`), also the ones that can't be drawn.
     let sparklines: [DashboardTile: Sparkline]
 
@@ -150,6 +156,15 @@ struct DashboardSnapshot: Equatable {
         target = data.target
         stepGoal = data.stepGoal
         sleepGoalMin = data.sleepGoalMin
+        goalMode = data.goalMode
+        var kgByDay: [LocalDay: Double] = [:]
+        var fatByDay: [LocalDay: Double] = [:]
+        for weight in dayWeights {
+            kgByDay[weight.day] = weight.kg
+            fatByDay[weight.day] = weight.bodyFatPct
+        }
+        weeklyWeightKg = weight.flatMap { WeeklyBand.average(kgByDay, before: $0.latest.day) }
+        weeklyBodyFatPct = bodyFat.flatMap { WeeklyBand.average(fatByDay, before: $0.day) }
         sparklines = Self.sparklines(data: data, rows: rows, dayWeights: dayWeights)
     }
 
