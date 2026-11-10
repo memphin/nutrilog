@@ -26,9 +26,7 @@ struct DashboardFeedbackTests {
             day: today, sleepAsleepMin: 450, sleepInBedMin: 480, sleepCoreMin: 240, sleepDeepMin: 90, sleepRemMin: 120, sleepAwakeMin: 30,
         )
         let snapshot = snapshot(night)
-        #expect(snapshot.accessibilityLabel(of: .sleep, state: .ready) == "Sleep, 7 hours 30 minutes asleep")
-        #expect(snapshot.sparkline(for: .sleep) == nil)
-        #expect(snapshot.accessibilityTrend(of: .sleep, state: .ready) == nil)
+        #expect(snapshot.accessibilityLabel(of: .sleep, state: .ready) == "Sleep, 7 hours 30 minutes asleep, close to the goal of 8 hours")
         // The stages stay in the detail list.
         var data = DashboardData(today: today)
         data.metrics = [DailyMetricsRecord(night, fetchedAt: Date())]
@@ -36,7 +34,7 @@ struct DashboardFeedbackTests {
         #expect(row?.detail?.contains("Deep") == true)
         // Only time in bed known: that is what the tile says.
         let inBedOnly = self.snapshot(DailyHealthMetrics(day: today, sleepInBedMin: 480))
-        #expect(inBedOnly.accessibilityLabel(of: .sleep, state: .ready) == "Sleep, 8 hours in bed")
+        #expect(inBedOnly.accessibilityLabel(of: .sleep, state: .ready) == "Sleep, 8 hours in bed, goal of 8 hours reached")
         #expect(!DashboardTile.sleep.isWide)
     }
 
@@ -125,6 +123,95 @@ struct DashboardFeedbackTests {
         let weekly = ChartBuilder.weekly(series.points, firstWeekday: 2)
         #expect(weekly.count == 1)
         #expect(weekly[0].value == 2150 && weekly[0].resting == 1650 && weekly[0].active == 500)
+    }
+
+    // MARK: Sleep goal, weight, baselines (#72–#74)
+
+    @Test func `sleep is written plainly and coloured by the sleep goal`() throws {
+        #expect(DashboardFormat.duration(425) == "7h 5min")
+        #expect(DashboardFormat.duration(480) == "8h")
+        #expect(DashboardFormat.duration(45) == "45min")
+        // Green at the goal, orange up to an hour short, red further below.
+        #expect(SleepGoal.band(minutes: 480, goal: 480) == .reached)
+        #expect(SleepGoal.band(minutes: 479, goal: 480) == .near)
+        #expect(SleepGoal.band(minutes: 420, goal: 480) == .near)
+        #expect(SleepGoal.band(minutes: 419, goal: 480) == .far)
+        #expect(GoalColor.sleep(minutes: 500, goal: 480) == GoalColor.reached)
+        #expect(GoalColor.sleep(minutes: 450, goal: 480) == GoalColor.near)
+        #expect(GoalColor.sleep(minutes: 300, goal: 480) == GoalColor.missed)
+
+        // The goal is a setting the dashboard picks up.
+        let env = AppEnvironment.preview()
+        let profiles = try #require(env.profiles)
+        #expect(SleepGoal.load(from: profiles) == 480)
+        try SleepGoal.save(435, to: profiles)
+        #expect(SleepGoal.load(from: profiles) == 435)
+        try SleepGoal.save(10, to: profiles) // out of range: clamped
+        #expect(SleepGoal.load(from: profiles) == SleepGoal.validRange.lowerBound)
+        try SleepGoal.save(420, to: profiles)
+        let model = DashboardModel(environment: env)
+        #expect(model.snapshot.sleepGoalMin == 420)
+
+        // The 7-day bars are back, coloured like the value.
+        var data = DashboardData(today: today)
+        data.sleepGoalMin = 450
+        data.metrics = [0: 460, 1: 400, 2: 380].map { offset, minutes in
+            DailyMetricsRecord(DailyHealthMetrics(day: today.adding(days: -offset), sleepAsleepMin: minutes), fetchedAt: Date())
+        }
+        let snapshot = DashboardSnapshot(data)
+        let bars = try #require(snapshot.sparkline(for: .sleep))
+        #expect(bars.mark == .bar)
+        #expect(bars.points.map(\.value).sorted() == [380, 400, 460])
+        #expect(snapshot.goalColor(of: .sleep, value: 460) == GoalColor.reached)
+        #expect(snapshot.goalColor(of: .sleep, value: 400) == GoalColor.near)
+        #expect(snapshot.goalColor(of: .sleep, value: 380) == GoalColor.missed)
+        let label = snapshot.accessibilityLabel(of: .sleep, state: .ready)
+        #expect(label == "Sleep, 7 hours 40 minutes asleep, goal of 7 hours 30 minutes reached")
+    }
+
+    @Test func `the weight tile says the weight only`() {
+        var data = DashboardData(today: today)
+        data.metrics = (0 ..< 10).map {
+            DailyMetricsRecord(DailyHealthMetrics(day: today.adding(days: -$0), weightKg: 80 + Double($0) / 10), fetchedAt: Date())
+        }
+        let snapshot = DashboardSnapshot(data)
+        #expect(snapshot.accessibilityLabel(of: .weight, state: .ready) == "Weight, 80.0 kilograms")
+        #expect(snapshot.sparkline(for: .weight) != nil)
+    }
+
+    @Test func `HRV and resting heart rate are coloured against the 30-day average`() {
+        func comparison(_ value: Double, average30: Double?) -> BaselineComparison {
+            BaselineComparison(day: today, value: value, average7: value, average30: average30)
+        }
+        // HRV: higher is better.
+        #expect(BaselineBand.hrv(comparison(55, average30: 50)) == .reached)
+        #expect(BaselineBand.hrv(comparison(50, average30: 50)) == .reached)
+        #expect(BaselineBand.hrv(comparison(47, average30: 50)) == .near)
+        #expect(BaselineBand.hrv(comparison(45, average30: 50)) == .near)
+        #expect(BaselineBand.hrv(comparison(44, average30: 50)) == .far)
+        #expect(BaselineBand.hrv(comparison(44, average30: nil)) == nil)
+        // Resting heart rate: lower is better.
+        #expect(BaselineBand.restingHR(comparison(56, average30: 60)) == .reached)
+        #expect(BaselineBand.restingHR(comparison(60, average30: 60)) == .reached)
+        #expect(BaselineBand.restingHR(comparison(62, average30: 60)) == .near)
+        #expect(BaselineBand.restingHR(comparison(63, average30: 60)) == .near)
+        #expect(BaselineBand.restingHR(comparison(64, average30: 60)) == .far)
+
+        // On the snapshot: 30 days at 50 ms / 60 bpm, today 40 ms / 61 bpm.
+        var data = DashboardData(today: today)
+        data.metrics = (0 ... 30).map {
+            let metrics = DailyHealthMetrics(day: today.adding(days: -$0), restingHR: $0 == 0 ? 61 : 60, hrvSDNNms: $0 == 0 ? 40 : 50)
+            return DailyMetricsRecord(metrics, fetchedAt: Date())
+        }
+        let snapshot = DashboardSnapshot(data)
+        #expect(snapshot.baselineColor(of: .hrv) == GoalColor.missed)
+        #expect(snapshot.baselineColor(of: .restingHeartRate) == GoalColor.near)
+        #expect(snapshot.baselineColor(of: .steps) == nil)
+        #expect(snapshot.accessibilityLabel(of: .restingHeartRate, state: .ready).contains("2% above your 30-day average"))
+        // No baseline yet: no colour.
+        var short = DashboardData(today: today)
+        short.metrics = [DailyMetricsRecord(DailyHealthMetrics(day: today, hrvSDNNms: 40), fetchedAt: Date())]
+        #expect(DashboardSnapshot(short).baselineColor(of: .hrv) == nil)
     }
 
     // MARK: Descriptions (#67)

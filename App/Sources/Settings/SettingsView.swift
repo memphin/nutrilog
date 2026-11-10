@@ -9,6 +9,7 @@ struct SettingsView: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var waterGoal = 2500.0
     @State private var stepGoal = StepGoal.defaultSteps
+    @State private var sleepGoal = SleepGoal.defaultMinutes
     @State private var errorMessage: String?
     @State private var usdaKeyDraft = ""
 
@@ -35,6 +36,10 @@ struct SettingsView: View {
                         LabeledContent("Steps", value: stepGoal.formatted())
                     }
                     .onChange(of: stepGoal) { saveStepGoal() }
+                    Stepper(value: $sleepGoal, in: SleepGoal.validRange, step: SleepGoal.step) {
+                        LabeledContent("Sleep", value: DashboardFormat.duration(sleepGoal))
+                    }
+                    .onChange(of: sleepGoal) { saveSleepGoal() }
                     Stepper(value: $waterGoal, in: 500 ... 6000, step: 250) {
                         LabeledContent("Water", value: "\(Int(waterGoal)) ml")
                     }
@@ -44,8 +49,8 @@ struct SettingsView: View {
                     Text("Daily goals")
                 } footer: {
                     Text(
-                        "Steps are green on a day that reached the goal, orange close below it and red further away. "
-                            + "Water is red below the goal and green once it is reached.",
+                        "Steps and sleep are green on a day that reached the goal, orange close below it (sleep: up to an "
+                            + "hour short) and red further away. Water is red below the goal and green once it is reached.",
                     )
                 }
 
@@ -84,6 +89,7 @@ struct SettingsView: View {
             .task(id: environment.dataGeneration) {
                 waterGoal = (try? environment.profiles?.profile().waterGoalMl) ?? 2500
                 stepGoal = environment.profiles.map(StepGoal.load(from:)) ?? StepGoal.defaultSteps
+                sleepGoal = environment.profiles.map(SleepGoal.load(from:)) ?? SleepGoal.defaultMinutes
             }
             .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: {
                 if !$0 {
@@ -162,6 +168,15 @@ struct SettingsView: View {
             try StepGoal.save(stepGoal, to: profiles)
         } catch {
             errorMessage = "Couldn't save the step goal: \(error.localizedDescription)"
+        }
+    }
+
+    private func saveSleepGoal() {
+        guard let profiles = environment.profiles, SleepGoal.load(from: profiles) != sleepGoal else { return }
+        do {
+            try SleepGoal.save(sleepGoal, to: profiles)
+        } catch {
+            errorMessage = "Couldn't save the sleep goal: \(error.localizedDescription)"
         }
     }
 

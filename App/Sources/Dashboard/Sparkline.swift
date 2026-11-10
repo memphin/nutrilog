@@ -104,8 +104,7 @@ struct Sparkline: Equatable {
 // MARK: - Series per tile
 
 extension DashboardSnapshot {
-    /// The 7-day series of every tile that has one. The calories tile has none (its ring is about today), nor has
-    /// sleep (the tile shows last night only, #62).
+    /// The 7-day series of every tile that has one. The calories tile has none (its ring is about today).
     static func sparklines(
         data: DashboardData,
         rows: [DailyHealthMetrics],
@@ -144,8 +143,11 @@ extension DashboardSnapshot {
         let total = series { EnergyBurned(activeKcal: $0.activeKcal, restingKcal: $0.basalKcal).totalKcal }
         // Each total is drawn as resting + active (#66).
         let resting = series { EnergyBurned(activeKcal: $0.activeKcal, restingKcal: $0.basalKcal).totalKcal == nil ? nil : $0.basalKcal }
+        // Like the tile's value: time asleep, or time in bed when that is all Health has (#72).
+        let sleep = series { ($0.sleepAsleepMin ?? $0.sleepInBedMin).map(Double.init) }
         return [
             .steps: Sparkline(steps, today: today, mark: .bar),
+            .sleep: Sparkline(sleep, today: today, mark: .bar),
             .totalEnergy: Sparkline(total, today: today, mark: .bar, bases: resting),
             .water: Sparkline(water, today: today, mark: .bar),
             .weight: Sparkline(WeightTrend.trendByDay(weightByDay, through: today), today: today, mark: .line),
@@ -158,19 +160,28 @@ extension DashboardSnapshot {
 
 // MARK: - Goal colours
 
-/// The colours of values measured against a daily goal (#63, #64).
+/// The colours of values measured against a daily goal or a baseline (#63, #64, #72, #74).
 enum GoalColor {
     static let reached = Color.green
     static let near = Color.orange
     static let missed = Color.red
 
-    /// Steps: green at or above the goal, orange close below it, red far below.
-    static func steps(_ steps: Double, goal: Int) -> Color {
-        switch StepGoal.band(steps: steps, goal: goal) {
+    static func color(_ band: GoalBand) -> Color {
+        switch band {
         case .reached: reached
         case .near: near
         case .far: missed
         }
+    }
+
+    /// Steps: green at or above the goal, orange close below it, red far below.
+    static func steps(_ steps: Double, goal: Int) -> Color {
+        color(StepGoal.band(steps: steps, goal: goal))
+    }
+
+    /// Sleep: green at or above the goal, orange up to an hour short, red further below.
+    static func sleep(minutes: Double, goal: Int) -> Color {
+        color(SleepGoal.band(minutes: minutes, goal: goal))
     }
 
     /// Water: red below the goal, green at or above it.
@@ -184,7 +195,17 @@ extension DashboardSnapshot {
     func goalColor(of tile: DashboardTile, value: Double) -> Color? {
         switch tile {
         case .steps: GoalColor.steps(value, goal: stepGoal)
+        case .sleep: GoalColor.sleep(minutes: value, goal: sleepGoalMin)
         case .water: GoalColor.water(value, goalMl: water.goalMl)
+        default: nil
+        }
+    }
+
+    /// The colour of the HRV or resting heart rate value against its 30-day average; nil without one (#74).
+    func baselineColor(of tile: DashboardTile) -> Color? {
+        switch tile {
+        case .hrv: hrv.flatMap(BaselineBand.hrv).map(GoalColor.color)
+        case .restingHeartRate: restingHR.flatMap(BaselineBand.restingHR).map(GoalColor.color)
         default: nil
         }
     }

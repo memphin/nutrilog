@@ -111,8 +111,8 @@ struct SparklineTests {
         #expect(snapshot.accessibilityTrend(of: .weight, state: .ready) == "down over 7 days")
         #expect(snapshot.accessibilityTrend(of: .weight, state: .needsAccess) == nil)
 
-        // Sleep has no chart on its tile (#62); no HRV or body fat: nothing to draw.
-        #expect(snapshot.sparklines[.sleep] == nil)
+        // Sleep: one night only, so nothing to draw yet (#72); no HRV or body fat either.
+        #expect(snapshot.sparklines[.sleep]?.points.map(\.value) == [450])
         #expect(snapshot.sparkline(for: .sleep) == nil)
         #expect(snapshot.sparkline(for: .hrv) == nil)
         #expect(snapshot.sparkline(for: .bodyFat) == nil)

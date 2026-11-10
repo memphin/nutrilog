@@ -21,6 +21,7 @@ struct DashboardData: Equatable {
     var target: Target?
     var waterGoalMl: Double = 2500
     var stepGoal: Int = StepGoal.defaultSteps
+    var sleepGoalMin: Int = SleepGoal.defaultMinutes
 
     var window: ClosedRange<LocalDay> {
         today.adding(days: -(Self.historyDays - 1)) ... today
@@ -120,6 +121,7 @@ struct DashboardSnapshot: Equatable {
     let totals: Nutrients
     let target: Target?
     let stepGoal: Int
+    let sleepGoalMin: Int
     /// 7-day series per tile (`DashboardSnapshot.sparklines`), also the ones that can't be drawn.
     let sparklines: [DashboardTile: Sparkline]
 
@@ -147,6 +149,7 @@ struct DashboardSnapshot: Equatable {
         totals = data.totals
         target = data.target
         stepGoal = data.stepGoal
+        sleepGoalMin = data.sleepGoalMin
         sparklines = Self.sparklines(data: data, rows: rows, dayWeights: dayWeights)
     }
 
@@ -168,6 +171,11 @@ struct DashboardSnapshot: Equatable {
     var energyBurned: EnergyBurned? {
         let burned = EnergyBurned(activeKcal: todayMetrics?.activeKcal, restingKcal: todayMetrics?.basalKcal)
         return burned.hasValue ? burned : nil
+    }
+
+    /// Last night's minutes on the tile: asleep, or in bed when that is all Health has.
+    var sleepMinutes: Int? {
+        sleep?.asleepMin ?? sleep?.inBedMin
     }
 
     /// Last night (the night ending today).
@@ -300,15 +308,15 @@ enum TileHistory {
 // MARK: - Formatting
 
 enum DashboardFormat {
-    /// "7 h 05 min", "45 min".
+    /// "7h 5min", "8h", "45min" (#72).
     static func duration(_ minutes: Int) -> String {
         let hours = minutes / 60
         let rest = minutes % 60
-        guard hours > 0 else { return "\(rest) min" }
-        return "\(hours) h \(String(format: "%02d", rest)) min"
+        guard hours > 0 else { return "\(rest)min" }
+        return rest == 0 ? "\(hours)h" : "\(hours)h \(rest)min"
     }
 
-    /// "Core 3 h 30 min · Deep 1 h 15 min · REM 1 h 40 min · Awake 10 min"; nil without stages.
+    /// "Core 3h 30min · Deep 1h 15min · REM 1h 40min · Awake 10min"; nil without stages.
     static func stages(_ metrics: DailyHealthMetrics) -> String? {
         let parts: [(String, Int?)] = [
             ("Core", metrics.sleepCoreMin), ("Deep", metrics.sleepDeepMin), ("REM", metrics.sleepRemMin), ("Awake", metrics.sleepAwakeMin),

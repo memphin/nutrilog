@@ -143,9 +143,8 @@ struct DashboardAccessibilityTests {
             data.metrics.append(DailyMetricsRecord(DailyHealthMetrics(day: day, weightKg: 80 + Double(offset) / 10), fetchedAt: Date()))
         }
         let label = DashboardSnapshot(data).accessibilityLabel(of: .weight, state: .ready)
-        #expect(label.hasPrefix("Weight, 80.0 kilograms, trend "))
-        #expect(label.hasSuffix(" in 7 days"))
-        #expect(label.contains(", down "))
+        // Like the tile: the weight only (#73).
+        #expect(label == "Weight, 80.0 kilograms")
     }
 
     @Test func `tiles without data say no data and why`() {

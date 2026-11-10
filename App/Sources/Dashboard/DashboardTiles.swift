@@ -8,6 +8,8 @@ extension SettingKey {
     static let dashboardLayout = "dashboardLayout"
     /// The daily step goal (`StepGoal`, #63).
     static let stepGoal = "stepGoal"
+    /// The nightly sleep goal in minutes (`SleepGoal`, #72).
+    static let sleepGoal = "sleepGoal"
 }
 
 extension AppEnvironment {
@@ -84,13 +86,15 @@ enum DashboardTile: String, CaseIterable, Codable, Identifiable, Hashable {
         case .restingHeartRate:
             "Resting heart rate is how many times your heart beats per minute while you are awake, calm and haven't "
                 + "moved for a while. A lower value usually goes with better fitness; a value clearly above your own "
-                + "7-day average can be a sign of stress, poor sleep, alcohol or an illness coming on. Compare it with "
-                + "your own baseline rather than with other people."
+                + "average can be a sign of stress, poor sleep, alcohol or an illness coming on. Compare it with "
+                + "your own baseline rather than with other people. The value is green at or below your 30-day "
+                + "average, orange slightly above it and red more than 5% above."
         case .hrv:
             "Heart rate variability (HRV) is how much the time between heartbeats varies, in milliseconds (SDNN), "
                 + "measured mostly while you sleep. A higher value than your usual generally means you are well "
                 + "recovered; a lower one can follow hard training, stress, short sleep, alcohol or illness. HRV is "
-                + "very individual, so compare it with your own 7- and 30-day averages, not with other people."
+                + "very individual, so compare it with your own 7- and 30-day averages, not with other people. The value is green at or above "
+                + "your 30-day average, orange slightly below it and red more than 10% below."
         case .steps, .sleep, .weight, .bodyFat:
             "Days without a value had no data in Apple Health — or Nutrilog may not have permission to read it."
         }
@@ -260,6 +264,18 @@ enum WaterQuickAdd {
     }
 }
 
+// MARK: - Goal bands
+
+/// How a value compares with its goal or baseline; drawn green, orange and red (`GoalColor`).
+enum GoalBand: Equatable {
+    /// At the goal or better.
+    case reached
+    /// Close to it.
+    case near
+    /// Well off it.
+    case far
+}
+
 // MARK: - Step goal
 
 /// The daily step goal and how a day compares with it (#63).
@@ -270,15 +286,9 @@ enum StepGoal {
     /// A day at or above this share of the goal is "near" it.
     static let nearShare = 0.8
 
-    enum Band: Equatable {
-        /// At or above the goal.
-        case reached
-        /// Below the goal, but at least `nearShare` of it.
-        case near
-        /// Well below the goal.
-        case far
-    }
+    typealias Band = GoalBand
 
+    /// Near: below the goal, but at least `nearShare` of it.
     static func band(steps: Double, goal: Int) -> Band {
         guard goal > 0 else { return .reached }
         if steps >= Double(goal) {
@@ -297,6 +307,67 @@ enum StepGoal {
 
     static func save(_ steps: Int, to settings: ProfileRepository) throws {
         try settings.setSetting(SettingKey.stepGoal, normalized(steps))
+    }
+}
+
+// MARK: - Sleep goal
+
+/// The nightly sleep goal and how a night compares with it (#72).
+enum SleepGoal {
+    static let defaultMinutes = 8 * 60
+    static let validRange = 4 * 60 ... 12 * 60
+    static let step = 15
+    /// A night at most this many minutes short of the goal is "near" it.
+    static let nearMinutes = 60
+
+    static func band(minutes: Double, goal: Int) -> GoalBand {
+        guard goal > 0 else { return .reached }
+        if minutes >= Double(goal) {
+            return .reached
+        }
+        return minutes >= Double(goal - nearMinutes) ? .near : .far
+    }
+
+    static func normalized(_ minutes: Int) -> Int {
+        min(max(minutes, validRange.lowerBound), validRange.upperBound)
+    }
+
+    static func load(from settings: ProfileRepository) -> Int {
+        normalized((try? settings.setting(SettingKey.sleepGoal, as: Int.self)) ?? defaultMinutes)
+    }
+
+    static func save(_ minutes: Int, to settings: ProfileRepository) throws {
+        try settings.setSetting(SettingKey.sleepGoal, normalized(minutes))
+    }
+}
+
+// MARK: - Baseline bands
+
+/// How today's HRV or resting heart rate compares with the 30-day average (#74).
+enum BaselineBand {
+    /// Within half a percent counts as the average (the tile then says "In line with your 30-day average").
+    static let tolerance = 0.005
+    /// HRV down to 10% below the average is "slightly below"; HRV swings a lot from day to day.
+    static let hrvNear = 0.10
+    /// Resting heart rate up to 5% above the average is "slightly above".
+    static let restingHRNear = 0.05
+
+    /// HRV: higher is better. nil without a 30-day average.
+    static func hrv(_ comparison: BaselineComparison) -> GoalBand? {
+        comparison.deviation.map { band(shortfall: -$0, near: hrvNear) }
+    }
+
+    /// Resting heart rate: lower is better. nil without a 30-day average.
+    static func restingHR(_ comparison: BaselineComparison) -> GoalBand? {
+        comparison.deviation.map { band(shortfall: $0, near: restingHRNear) }
+    }
+
+    /// `shortfall`: how far the value is on the wrong side of the average, as a share of it.
+    private static func band(shortfall: Double, near: Double) -> GoalBand {
+        if shortfall < tolerance {
+            return .reached
+        }
+        return shortfall <= near ? .near : .far
     }
 }
 
