@@ -398,9 +398,9 @@ Refs: §1.3, §11
 Recipe = food(source='recipe') + `recipe_ingredient` snapshots; editor with ingredient search, cooked total weight or servings count; per-100 g computed; log by grams or servings; "re-cook" updates weights.
 
 **Acceptance criteria**
-- [ ] Core: `RecipeCalculator` tested (raw vs cooked weight, servings)
-- [ ] Editing a recipe does not change past diary entries
-- [ ] Duplicate recipe
+- [x] Core: `RecipeCalculator` tested (raw vs cooked weight, servings)
+- [x] Editing a recipe does not change past diary entries
+- [x] Duplicate recipe
 
 Refs: FR-25
 
@@ -411,8 +411,8 @@ Refs: FR-25
 "Save as meal" from any meal section; Meals tab in Add Food; log all items (editable quantities before confirm).
 
 **Acceptance criteria**
-- [ ] Items referencing deleted foods are flagged, meal still loggable
-- [ ] use_count/last_used ranking
+- [x] Items referencing deleted foods are flagged, meal still loggable
+- [x] use_count/last_used ranking
 
 Refs: FR-24
 
@@ -423,8 +423,8 @@ Refs: FR-24
 `WeightTrend.compute(samples:alpha:)` — EMA α=0.1, carry-forward for missing days, down-weight day-over-day jumps > 2.5%.
 
 **Acceptance criteria**
-- [ ] Tests: steady loss, plateau with noise, missing week, water-weight spike
-- [ ] Stored in `daily_metrics.weight_trend_kg`
+- [x] Tests: steady loss, plateau with noise, missing week, water-weight spike
+- [x] Stored in `daily_metrics.weight_trend_kg`
 
 Refs: §5.4.1 step 1
 
@@ -435,10 +435,10 @@ Refs: §5.4.1 step 1
 Implements SPEC §5.4.1 steps 2–5: 14-day window, min 7 logged days, energy balance 7,700 kcal/kg, blend 0.7/0.3 with previous, clamp ±25% of formula baseline until high confidence, under-logging detection.
 
 **Acceptance criteria**
-- [ ] Synthetic perfect-logging data recovers true TDEE within ±50 kcal
-- [ ] Missing days, spikes, under-logging scenarios tested
-- [ ] Confidence low/medium/high rules tested
-- [ ] Pure function; no DB or Health dependency
+- [x] Synthetic perfect-logging data recovers true TDEE within ±50 kcal
+- [x] Missing days, spikes, under-logging scenarios tested
+- [x] Confidence low/medium/high rules tested
+- [x] Pure function; no DB or Health dependency
 
 Refs: §5.4.1, FR-34
 
@@ -449,9 +449,9 @@ Refs: §5.4.1, FR-34
 On configured weekday: sheet with weekly weight change vs goal, TDEE estimate + confidence, proposed kcal target; accept writes new `target` (origin='adaptive') and a `tdee_estimate` row; "How was this computed" sheet lists days used.
 
 **Acceptance criteria**
-- [ ] Check-in reminder via local notification (opt-in)
-- [ ] History screen of past estimates and decisions
-- [ ] Every number tappable to its explanation
+- [x] Check-in reminder via local notification (opt-in)
+- [x] History screen of past estimates and decisions
+- [x] Every number tappable to its explanation
 
 Refs: §5.4.1 steps 6–7
 
@@ -462,7 +462,7 @@ Refs: §5.4.1 steps 6–7
 Toggle on diary day ("Day fully logged") stored in `day_note.is_complete`; TDEE uses complete days or days with ≥ 3 entries; show gentle warning when intake is implausibly low vs estimate.
 
 **Acceptance criteria**
-- [ ] Warning never lowers target automatically
+- [x] Warning never lowers target automatically
 
 Refs: §5.4.1 inputs
 
@@ -473,8 +473,8 @@ Refs: §5.4.1 inputs
 Month grid; each day colored by kcal vs target band (±5% green, ±15% yellow, else red; grey = not logged); tap → day.
 
 **Acceptance criteria**
-- [ ] Uses the target effective on that day
-- [ ] Scroll performance fine for 2 years
+- [x] Uses the target effective on that day
+- [x] Scroll performance fine for 2 years
 
 Refs: FR-50
 
@@ -485,8 +485,8 @@ Refs: FR-50
 Swift Charts with 1w/1m/3m/1y ranges, scrubbing, averages line.
 
 **Acceptance criteria**
-- [ ] Each dashboard tile opens its chart
-- [ ] Accessibility: audio graph / summary labels
+- [x] Each dashboard tile opens its chart
+- [x] Accessibility: audio graph / summary labels
 
 Refs: FR-51
 
@@ -497,8 +497,8 @@ Refs: FR-51
 Averages (kcal, macros, steps, sleep), best/worst day, intake vs estimated expenditure, weight trend change; shareable image (local render).
 
 **Acceptance criteria**
-- [ ] Report for any past week
-- [ ] Numbers match charts to the unit
+- [x] Report for any past week
+- [x] Numbers match charts to the unit
 
 Refs: FR-52
 
@@ -509,8 +509,8 @@ Refs: FR-52
 `LogFavoriteFoodIntent`, `QuickAddCaloriesIntent`, `RemainingCaloriesIntent`, `LogWaterIntent` with Siri phrases and Shortcuts parameters.
 
 **Acceptance criteria**
-- [ ] Works from Shortcuts app and Siri without opening the app
-- [ ] Writes go through the same repositories (HealthKit sync included)
+- [x] Works from Shortcuts app and Siri without opening the app
+- [x] Writes go through the same repositories (HealthKit sync included)
 
 Refs: FR-71
 
@@ -521,8 +521,8 @@ Refs: FR-71
 Detect likely duplicates (same barcode or normalized name+brand) and merge (re-point entries, keep best data). Automatic weekly JSON backup, keep last 7 in app container.
 
 **Acceptance criteria**
-- [ ] Merge is transactional and tested
-- [ ] Backups listed/restorable in Settings
+- [x] Merge is transactional and tested
+- [x] Backups listed/restorable in Settings
 
 Refs: FR-26, FR-62
 
@@ -533,7 +533,7 @@ Refs: FR-26, FR-62
 WidgetKit small/medium/lock-screen; App Group shared DB read; timeline refresh after logging.
 
 **Acceptance criteria**
-- [ ] Widget reflects a new entry within 1 min
+- [x] Widget reflects a new entry within 1 min
 
 Refs: FR-70 (SHOULD)
 
