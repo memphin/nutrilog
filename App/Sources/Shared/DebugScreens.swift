@@ -66,6 +66,18 @@
                 NavigationStack { DuplicateFoodsView() }
             case "backups":
                 NavigationStack { BackupsView() }
+            case "smartLog":
+                SmartLogView(target: AddTarget(slotID: "breakfast", day: environment.today)) {}
+            case "smartLogReview":
+                SmartLogView(target: AddTarget(slotID: "breakfast", day: environment.today), prefilledText: "80 g oats, 2 eggs and a banana") {}
+            case "smartLogPhoto":
+                // `-uiPhoto <path>`: a photo file to estimate.
+                let args = ProcessInfo.processInfo.arguments
+                let path = args.firstIndex(of: "-uiPhoto").flatMap { $0 + 1 < args.count ? args[$0 + 1] : nil }
+                SmartLogView(
+                    target: AddTarget(slotID: "breakfast", day: environment.today),
+                    prefilledPhoto: path.flatMap { FileManager.default.contents(atPath: $0) },
+                ) {}
             case "diary":
                 DiaryView()
             default:

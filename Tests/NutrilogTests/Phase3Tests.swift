@@ -472,6 +472,24 @@ struct DiaryPhase3Tests {
         #expect(model.meals.map(\.id) == [meal.id])
     }
 
+    @Test func `a meal logged today is saved as a meal in one step`() throws {
+        let foods = try #require(env.foods), diary = try #require(env.diary)
+        let rice = try foods.save(FoodDetail(food: Food(name: "Rice", per100: Nutrients(kcal: 360, proteinG: 7, carbsG: 79, fatG: 1)))).food
+        let slots = try diary.mealSlots()
+        let breakfast = try #require(slots.first), lunch = try #require(slots.dropFirst().first)
+        try diary.log(food: rice, quantity: .base(150), slotID: lunch.id, day: env.today)
+        try diary.logQuickAdd(name: "Coffee", nutrients: Nutrients(kcal: 5, proteinG: 0, carbsG: 0, fatG: 0), slotID: breakfast.id, day: env.today)
+        let model = FoodsListModel(environment: env)
+        model.reload()
+        #expect(model.todaySlots.first { $0.slot.id == lunch.id }?.foodCount == 1)
+        #expect(model.todaySlots.first { $0.slot.id == breakfast.id }?.foodCount == 0) // a quick add can't be saved
+
+        model.saveMeal(from: lunch, name: " ")
+        #expect(model.errorMessage == nil)
+        #expect(model.meals.map(\.template.name) == [lunch.name])
+        #expect(model.meals.first?.items.map(\.item.grams) == [150])
+    }
+
     @Test func `the history calendar asks the diary for a day`() {
         let day = env.today.adding(days: -40)
         env.openDiary(on: day)

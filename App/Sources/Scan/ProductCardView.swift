@@ -345,8 +345,8 @@ struct LabelPhotoSection: View {
     }
 }
 
-/// `UIImagePickerController` with the camera (SwiftUI has no camera capture view).
-private struct CameraPicker: UIViewControllerRepresentable {
+/// `UIImagePickerController` with the camera (SwiftUI has no camera capture view). Also used by Smart log.
+struct CameraPicker: UIViewControllerRepresentable {
     let onImage: (UIImage) -> Void
     @Environment(\.dismiss) private var dismiss
 

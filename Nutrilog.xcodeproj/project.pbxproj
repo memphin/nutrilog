@@ -36,6 +36,7 @@
 		4DC52CA02C6FE613D1916BF9 /* DashboardTiles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 828903692011EC3D30FD2CA5 /* DashboardTiles.swift */; };
 		504780AD2EFFF998BED91C59 /* AppEnvironment+Phase3.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38B1653155087794D791C824 /* AppEnvironment+Phase3.swift */; };
 		50A6CFC489DF154A0AA0321F /* ScanLogging.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6262BB27CA1589E6093F80 /* ScanLogging.swift */; };
+		5118FF7645A802193BFEB6F5 /* SmartLogModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211FE0332A7019A7DA3061A7 /* SmartLogModel.swift */; };
 		52BE128D0BBB8486593D5D4F /* DiaryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0AF9328875CE64DEC3A2E2D /* DiaryModel.swift */; };
 		58795C8A1EF5F8C72541211A /* StubOpenFoodFactsSearchClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BE8ACADAC7651CCEC03FF98 /* StubOpenFoodFactsSearchClient.swift */; };
 		5B1199DEB7304FCF88C1FCA8 /* ScanLogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B6E769753521818A47867D1 /* ScanLogTests.swift */; };
@@ -78,11 +79,13 @@
 		B318D26F17E6B8CD774C9E64 /* FoodSources in Frameworks */ = {isa = PBXBuildFile; productRef = 31C0B385FA81090C31C324EA /* FoodSources */; };
 		BC586D159CC0C736901474F6 /* WeightEntrySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4B4F85583C71529B44494C0 /* WeightEntrySheet.swift */; };
 		BC7BC71995D1614AD56B4D84 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E654260AEEB47CC4E408FEBB /* RootView.swift */; };
+		C9E0F7E509FFE9C312B83F50 /* AppleMealEstimator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8929E65494F8D90B0B2E9AD5 /* AppleMealEstimator.swift */; };
 		CA0FC3CD85AB96F5062B15F3 /* WidgetSnapshotWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6ADFAC50551DC87D9A75D079 /* WidgetSnapshotWriter.swift */; };
 		CAF0ED85767DB9B2600F5738 /* QuantitySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F50396E834D499DFEF4D8B6 /* QuantitySheet.swift */; };
 		CF7335C7FD8411978B9DBA15 /* HealthTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61AEE6266270978795C272EF /* HealthTests.swift */; };
 		CFA34818EFB1ED1B551F03A6 /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 080725B27DAA3A8B4B5726A4 /* DesignSystem */; };
 		D63FFCA9058D3B3B24A31E40 /* QuickAddView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62FB67E26CA995E485714116 /* QuickAddView.swift */; };
+		D69A9E173EFABC88EB8F2BF5 /* SmartLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDC34D9A6DD7E033C6E9F09F /* SmartLogView.swift */; };
 		D87F05CD4E76424EDBB130A7 /* ScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73B40A78D5287C3224F49964 /* ScanView.swift */; };
 		D8AAD47FE5AEB84E00427A4D /* WaterSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14DF3C6838FE65C74899D773 /* WaterSettingsView.swift */; };
 		D953F9BE2CB9E64FED7766C4 /* OnlineSearchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B0E99FA1A1F64A610187439 /* OnlineSearchTests.swift */; };
@@ -91,10 +94,12 @@
 		DEA6ED43ED0C3E0835637019 /* HealthWriteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13167937AD97A7A6E63D0C7D /* HealthWriteTests.swift */; };
 		DF3E1A7AFED9764A1158B47E /* NutrilogApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D095BF32FF994BA5E303CEFE /* NutrilogApp.swift */; };
 		E137C48EA41D048FAC019CE0 /* ProfileTargetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F71079C582044C8F4ED01E8F /* ProfileTargetsView.swift */; };
+		E69B7DCE99CBBCA2DDAC2DA6 /* MealPhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB7D15A7BD075EBA54BFE4F4 /* MealPhoto.swift */; };
 		EAD9E7A4EBB699552A460AA4 /* MealEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1081816C74632E53789D12E3 /* MealEditorView.swift */; };
 		EE36C17AEBFEA69CE8225435 /* TrendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B5E8F4C6E359325A7494834 /* TrendsView.swift */; };
 		EFB886BDAA15EBAA459742F1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 180130317CF5FAF7AE910FE2 /* Assets.xcassets */; };
 		F2788FEF2D2CC7940789533F /* MetricChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5D95DD2AC860B2C228DE46B /* MetricChartView.swift */; };
+		F2FF70EF32025780A9912AC6 /* SmartLogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC60900C615CCA823579925E /* SmartLogTests.swift */; };
 		F4AC475DB0A7C5380A30A6D4 /* HistoryCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ACB54EF4C3A7642A5C92C7C /* HistoryCalendarView.swift */; };
 		F79DF53B2543285FECD3CB2A /* CheckInModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12F76D1F9BAE9425078B0D71 /* CheckInModel.swift */; };
 		F7A575829D0B26A17D391B32 /* Phase3Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5CAF4B5A3B4EE940C623451 /* Phase3Tests.swift */; };
@@ -150,6 +155,7 @@
 		1A6262BB27CA1589E6093F80 /* ScanLogging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanLogging.swift; sourceTree = "<group>"; };
 		1C7A62EC62945A0E3012FC0D /* FoodEditorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodEditorModel.swift; sourceTree = "<group>"; };
 		200292DBDEE662CE1C732A6B /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		211FE0332A7019A7DA3061A7 /* SmartLogModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartLogModel.swift; sourceTree = "<group>"; };
 		2137916B6A16402C94700DF7 /* NutrilogTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = NutrilogTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2731170287A6A6A66DAA3599 /* DashboardSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardSettingsView.swift; sourceTree = "<group>"; };
 		2766F77D24430E87452D326A /* NutrilogWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutrilogWidgets.swift; sourceTree = "<group>"; };
@@ -193,6 +199,7 @@
 		85872A22FB7B839CA01C0AF8 /* TargetsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetsModel.swift; sourceTree = "<group>"; };
 		8789AEDEFF3C272646067CF9 /* BodyFatWritePrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyFatWritePrompt.swift; sourceTree = "<group>"; };
 		88C0F2A65D5766E267236619 /* DiarySheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiarySheets.swift; sourceTree = "<group>"; };
+		8929E65494F8D90B0B2E9AD5 /* AppleMealEstimator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleMealEstimator.swift; sourceTree = "<group>"; };
 		89A65223A0724F7BB3C9AEB6 /* HealthSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSettingsView.swift; sourceTree = "<group>"; };
 		8B0E99FA1A1F64A610187439 /* OnlineSearchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnlineSearchTests.swift; sourceTree = "<group>"; };
 		8B5E8F4C6E359325A7494834 /* TrendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsView.swift; sourceTree = "<group>"; };
@@ -205,6 +212,7 @@
 		A1B7A03C9A4FE723D7A3BF9C /* UndoToast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoToast.swift; sourceTree = "<group>"; };
 		A2618C14C29EE8CD6C4BCBEA /* StatsLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsLoader.swift; sourceTree = "<group>"; };
 		AAF2897F4802348D03CD13E0 /* WeeklyReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyReportView.swift; sourceTree = "<group>"; };
+		AB7D15A7BD075EBA54BFE4F4 /* MealPhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPhoto.swift; sourceTree = "<group>"; };
 		B4B4F85583C71529B44494C0 /* WeightEntrySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightEntrySheet.swift; sourceTree = "<group>"; };
 		B603731B14753759F3C92555 /* DashboardAccessibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardAccessibility.swift; sourceTree = "<group>"; };
 		B6EB609D583D2669AAB1A6EA /* CheckInReminder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckInReminder.swift; sourceTree = "<group>"; };
@@ -222,6 +230,7 @@
 		D7EAAE523E4903BA152CEB02 /* LabelPhotoStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabelPhotoStore.swift; sourceTree = "<group>"; };
 		D9CCA4A26FB3F7E0C4FF09B0 /* StubOpenFoodFactsClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StubOpenFoodFactsClient.swift; sourceTree = "<group>"; };
 		DB794A962335DE59BDB70C2F /* ChartData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartData.swift; sourceTree = "<group>"; };
+		DDC34D9A6DD7E033C6E9F09F /* SmartLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartLogView.swift; sourceTree = "<group>"; };
 		DF825E4994064B6BF2442C2C /* USDAKeyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USDAKeyTests.swift; sourceTree = "<group>"; };
 		DFA022929D750396EDF97E64 /* TestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSupport.swift; sourceTree = "<group>"; };
 		E08827E52350A7B5F31EAAFD /* DashboardFeedbackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardFeedbackTests.swift; sourceTree = "<group>"; };
@@ -229,6 +238,7 @@
 		E5CAF4B5A3B4EE940C623451 /* Phase3Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Phase3Tests.swift; sourceTree = "<group>"; };
 		E654260AEEB47CC4E408FEBB /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		EABDD0FC973CCF44DCDAB0DB /* NutrilogWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = NutrilogWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		EC60900C615CCA823579925E /* SmartLogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartLogTests.swift; sourceTree = "<group>"; };
 		F23EE87063AC0235DCCB68D1 /* CheckInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckInView.swift; sourceTree = "<group>"; };
 		F28B3E3E4870913195C62148 /* Expenditure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Expenditure.swift; sourceTree = "<group>"; };
 		F71079C582044C8F4ED01E8F /* ProfileTargetsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileTargetsView.swift; sourceTree = "<group>"; };
@@ -433,6 +443,17 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		AD18976D9B46A7B14D5DA936 /* SmartLog */ = {
+			isa = PBXGroup;
+			children = (
+				8929E65494F8D90B0B2E9AD5 /* AppleMealEstimator.swift */,
+				AB7D15A7BD075EBA54BFE4F4 /* MealPhoto.swift */,
+				211FE0332A7019A7DA3061A7 /* SmartLogModel.swift */,
+				DDC34D9A6DD7E033C6E9F09F /* SmartLogView.swift */,
+			);
+			path = SmartLog;
+			sourceTree = "<group>";
+		};
 		B1819805D688A7B870CE02EE /* Intents */ = {
 			isa = PBXGroup;
 			children = (
@@ -468,6 +489,7 @@
 				E5CAF4B5A3B4EE940C623451 /* Phase3Tests.swift */,
 				40D4DECE786948C76A63B1D1 /* ScanFlowTests.swift */,
 				3B6E769753521818A47867D1 /* ScanLogTests.swift */,
+				EC60900C615CCA823579925E /* SmartLogTests.swift */,
 				DFA022929D750396EDF97E64 /* TestSupport.swift */,
 				DF825E4994064B6BF2442C2C /* USDAKeyTests.swift */,
 			);
@@ -539,6 +561,7 @@
 				D76EE6C841CF9A2A447455E6 /* Scan */,
 				E4B918FE2BAA42A314260E98 /* Settings */,
 				62723209C3F73795C67716E3 /* Shared */,
+				AD18976D9B46A7B14D5DA936 /* SmartLog */,
 				0D4E8B98EFD552D9AC891785 /* Trends */,
 			);
 			path = Sources;
@@ -687,6 +710,7 @@
 				F7A575829D0B26A17D391B32 /* Phase3Tests.swift in Sources */,
 				85EEBF3444FF4814C5E4CE4F /* ScanFlowTests.swift in Sources */,
 				5B1199DEB7304FCF88C1FCA8 /* ScanLogTests.swift in Sources */,
+				F2FF70EF32025780A9912AC6 /* SmartLogTests.swift in Sources */,
 				81534A8EE21DC5652C4025F6 /* TestSupport.swift in Sources */,
 				1B66D123840B97B94ED63379 /* USDAKeyTests.swift in Sources */,
 			);
@@ -709,6 +733,7 @@
 				4C8B1351185B5B231D206824 /* AppConfig.swift in Sources */,
 				504780AD2EFFF998BED91C59 /* AppEnvironment+Phase3.swift in Sources */,
 				4938903A2D3F636B0ECFCE00 /* AppEnvironment.swift in Sources */,
+				C9E0F7E509FFE9C312B83F50 /* AppleMealEstimator.swift in Sources */,
 				A3C1B26B3CD5783B04E64C4C /* BackupsView.swift in Sources */,
 				2F72AA6FCE65F593C82570B7 /* BarcodeResolutionView.swift in Sources */,
 				8B09C14215BD273D36F083EC /* BodyFatWritePrompt.swift in Sources */,
@@ -744,6 +769,7 @@
 				93B09755C37AA95F2D37C1C5 /* MealEditorModel.swift in Sources */,
 				EAD9E7A4EBB699552A460AA4 /* MealEditorView.swift in Sources */,
 				0AD5B14C6C88055EAA4B9B00 /* MealLogSheet.swift in Sources */,
+				E69B7DCE99CBBCA2DDAC2DA6 /* MealPhoto.swift in Sources */,
 				F2788FEF2D2CC7940789533F /* MetricChartView.swift in Sources */,
 				DF3E1A7AFED9764A1158B47E /* NutrilogApp.swift in Sources */,
 				A1CA6A18658C4CB51FE742D4 /* NutrilogIntents.swift in Sources */,
@@ -759,6 +785,8 @@
 				D87F05CD4E76424EDBB130A7 /* ScanView.swift in Sources */,
 				FCF338A6D394B280390662D4 /* ServingWeightPrompt.swift in Sources */,
 				018E0BAE0593A61F9524CF61 /* SettingsView.swift in Sources */,
+				5118FF7645A802193BFEB6F5 /* SmartLogModel.swift in Sources */,
+				D69A9E173EFABC88EB8F2BF5 /* SmartLogView.swift in Sources */,
 				63A06B0B7E9B7752B3697481 /* Sparkline.swift in Sources */,
 				41A0E7F0CC95196CE2CCEB94 /* StatsLoader.swift in Sources */,
 				2B72DF9DC39A4FD532F82AD6 /* StubOpenFoodFactsClient.swift in Sources */,
