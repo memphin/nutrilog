@@ -213,7 +213,10 @@ private struct TileContent: View {
         case .weight:
             if let weight = snapshot.weight {
                 VStack(alignment: .leading, spacing: NL.Spacing.xxs) {
-                    ValueText(weight.latestKg.formatted(.number.precision(.fractionLength(1))), unit: "kg")
+                    ValueText(
+                        weight.latestKg.formatted(.number.precision(.fractionLength(1))), unit: "kg",
+                        color: snapshot.baselineColor(of: .weight) ?? .primary,
+                    )
                     if weight.latest.day != snapshot.today {
                         Text(Format.day(weight.latest.day, today: snapshot.today)).font(.caption).foregroundStyle(.tertiary)
                     }
@@ -222,7 +225,10 @@ private struct TileContent: View {
         case .bodyFat:
             if let fat = snapshot.bodyFat {
                 VStack(alignment: .leading, spacing: NL.Spacing.xxs) {
-                    ValueText(fat.pct.formatted(.number.precision(.fractionLength(1))), unit: "%")
+                    ValueText(
+                        fat.pct.formatted(.number.precision(.fractionLength(1))), unit: "%",
+                        color: snapshot.baselineColor(of: .bodyFat) ?? .primary,
+                    )
                     if fat.day != snapshot.today {
                         Text(Format.day(fat.day, today: snapshot.today)).font(.caption).foregroundStyle(.tertiary)
                     }
@@ -284,9 +290,10 @@ private struct TotalEnergyContent: View {
         VStack(alignment: .leading, spacing: NL.Spacing.xxs) {
             if let total = burned.totalKcal {
                 ValueText(number(total), unit: unit.symbol)
-                Text(burned.breakdown(unit))
-                    .font(.footnote).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                // Only the active part; the resting part is in the detail (owner feedback).
+                if let active = burned.activeKcal {
+                    Text("Active \(unit.format(active))").font(.footnote).foregroundStyle(.secondary)
+                }
             } else {
                 if let active = burned.activeKcal {
                     ValueText(number(active), unit: "\(unit.symbol) active")
@@ -367,7 +374,7 @@ struct WaterTileContent: View {
     let add: (Int) -> Void
 
     var body: some View {
-        // Red below the goal, green once it is reached (#64).
+        // Red far below the goal, orange close to it, green once it is reached (#64).
         let goalColor = GoalColor.water(water.totalMl, goalMl: water.goalMl)
         VStack(alignment: .leading, spacing: NL.Spacing.s) {
             HStack(alignment: .firstTextBaseline) {

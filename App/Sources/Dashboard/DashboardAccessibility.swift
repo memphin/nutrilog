@@ -41,10 +41,12 @@ extension DashboardSnapshot {
         case .weight:
             guard let weight else { return [] }
             // Like the tile: the weight only (#73); the trend is in the detail.
-            return ["\(number(weight.latestKg, digits: 1)) kilograms"] + [measured(weight.latest.day)].compactMap(\.self)
+            return ["\(number(weight.latestKg, digits: 1)) kilograms"]
+                + [weeklyParts(weight.latestKg, average: weeklyWeightKg), measured(weight.latest.day)].compactMap(\.self)
         case .bodyFat:
             guard let bodyFat else { return [] }
-            return ["\(number(bodyFat.pct, digits: 1)) percent"] + [measured(bodyFat.day)].compactMap(\.self)
+            return ["\(number(bodyFat.pct, digits: 1)) percent"]
+                + [weeklyParts(bodyFat.pct, average: weeklyBodyFatPct), measured(bodyFat.day)].compactMap(\.self)
         case .totalEnergy:
             guard let burned = energyBurned else { return [] }
             if let total = burned.totalKcal, let active = burned.activeKcal, let resting = burned.restingKcal {
@@ -70,8 +72,23 @@ extension DashboardSnapshot {
             parts += [measured(comparison.day)].compactMap(\.self)
             return parts
         case .water:
-            return ["\(number(water.totalMl)) of \(number(water.goalMl)) millilitres", water.isGoalReached ? "goal reached" : "below goal"]
+            return ["\(number(water.totalMl)) of \(number(water.goalMl)) millilitres", waterGoalPart]
         }
+    }
+
+    private var waterGoalPart: String {
+        switch WaterGoal.band(ml: water.totalMl, goalMl: water.goalMl) {
+        case .reached: "goal reached"
+        case .near: "close to the goal"
+        case .far: "below goal"
+        }
+    }
+
+    /// "above the weekly average" — what the value's colour is read against; nil without a weekly average.
+    private func weeklyParts(_ value: Double, average: Double?) -> String? {
+        guard let average else { return nil }
+        let difference = ((value - average) * 10).rounded() / 10
+        return difference == 0 ? "at the weekly average" : "\(difference < 0 ? "below" : "above") the weekly average"
     }
 
     /// "8,500 steps", "close to the goal of 10,000".

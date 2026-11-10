@@ -184,9 +184,9 @@ enum GoalColor {
         color(SleepGoal.band(minutes: minutes, goal: goal))
     }
 
-    /// Water: red below the goal, green at or above it.
+    /// Water: green at or above the goal, orange close below it, red far below.
     static func water(_ ml: Double, goalMl: Double) -> Color {
-        goalMl > 0 && ml < goalMl ? missed : reached
+        color(WaterGoal.band(ml: ml, goalMl: goalMl))
     }
 }
 
@@ -201,9 +201,26 @@ extension DashboardSnapshot {
         }
     }
 
-    /// The colour of the HRV or resting heart rate value against its 30-day average; nil without one (#74).
+    /// How the latest weight (by the profile's goal) or body fat compares with the week before; nil without a
+    /// weekly average, or for weight when the goal is to maintain.
+    func weeklyBand(of tile: DashboardTile) -> GoalBand? {
+        switch tile {
+        case .weight:
+            guard let weight, let weeklyWeightKg else { return nil }
+            return WeeklyBand.weight(kg: weight.latestKg, average: weeklyWeightKg, goal: goalMode)
+        case .bodyFat:
+            guard let bodyFat, let weeklyBodyFatPct else { return nil }
+            return WeeklyBand.bodyFat(pct: bodyFat.pct, average: weeklyBodyFatPct)
+        default:
+            return nil
+        }
+    }
+
+    /// The colour of a value read against a baseline: HRV and resting heart rate against the 30-day average (#74),
+    /// weight and body fat against the week before; nil without the baseline.
     func baselineColor(of tile: DashboardTile) -> Color? {
         switch tile {
+        case .weight, .bodyFat: weeklyBand(of: tile).map(GoalColor.color)
         case .hrv: hrv.flatMap(BaselineBand.hrv).map(GoalColor.color)
         case .restingHeartRate: restingHR.flatMap(BaselineBand.restingHR).map(GoalColor.color)
         default: nil

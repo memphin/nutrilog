@@ -84,7 +84,7 @@ final class DashboardModel {
     func observe() async {
         let today = environment.today
         if data.today != today {
-            data = DashboardData(today: today, stepGoal: data.stepGoal, sleepGoalMin: data.sleepGoalMin)
+            data = DashboardData(today: today, stepGoal: data.stepGoal, sleepGoalMin: data.sleepGoalMin, goalMode: data.goalMode)
         }
         await reloadAccess()
         await withDiscardingTaskGroup { group in
@@ -135,6 +135,9 @@ final class DashboardModel {
         await DiaryModel.resubscribing { repo.observeProfile() } onValue: { profile in
             if let goal = profile?.waterGoalMl {
                 data.waterGoalMl = goal
+            }
+            if let mode = profile?.goalMode, data.goalMode != mode {
+                data.goalMode = mode
             }
         } onError: { report($0) }
     }

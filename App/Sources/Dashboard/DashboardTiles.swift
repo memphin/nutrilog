@@ -371,6 +371,58 @@ enum BaselineBand {
     }
 }
 
+// MARK: - Weekly bands
+
+/// How the latest weight or body fat compares with the week before it (owner feedback).
+enum WeeklyBand {
+    /// The average needs at least this many of the 7 days before the latest value.
+    static let minimumDays = 3
+    /// Weight up to this many kg on the wrong side of the average is "slightly" off.
+    static let weightNearKg = 0.5
+    /// Body fat up to this many percentage points above the average is "slightly above".
+    static let bodyFatNearPoints = 0.5
+
+    /// The mean of the values on the 7 days before `day`; nil with fewer than `minimumDays` of them.
+    static func average(_ values: [LocalDay: Double], before day: LocalDay) -> Double? {
+        let week = (1 ... 7).compactMap { values[day.adding(days: -$0)] }
+        guard week.count >= minimumDays else { return nil }
+        return week.reduce(0, +) / Double(week.count)
+    }
+
+    /// Losing: green at or below the average, orange slightly above, red far above. Gaining: the mirror image.
+    /// Maintaining has no better direction, so no band.
+    static func weight(kg: Double, average: Double, goal: GoalMode) -> GoalBand? {
+        switch goal {
+        case .lose: band(excess: kg - average, near: weightNearKg)
+        case .gain: band(excess: average - kg, near: weightNearKg)
+        case .maintain: nil
+        }
+    }
+
+    /// Body fat: green at or below the average, orange slightly above, red far above.
+    static func bodyFat(pct: Double, average: Double) -> GoalBand {
+        band(excess: pct - average, near: bodyFatNearPoints)
+    }
+
+    /// `excess`: how far the value is on the wrong side of the average.
+    private static func band(excess: Double, near: Double) -> GoalBand {
+        if excess <= 0 {
+            return .reached
+        }
+        return excess <= near ? .near : .far
+    }
+}
+
+/// Water against its daily goal: green at the goal, orange from `nearShare` of it, red below.
+enum WaterGoal {
+    static let nearShare = 0.8
+
+    static func band(ml: Double, goalMl: Double) -> GoalBand {
+        guard goalMl > 0, ml < goalMl else { return .reached }
+        return ml >= goalMl * nearShare ? .near : .far
+    }
+}
+
 // MARK: - Tile state
 
 /// What the app knows about Health access. Read access is opaque: after the user answered, a type without data may
