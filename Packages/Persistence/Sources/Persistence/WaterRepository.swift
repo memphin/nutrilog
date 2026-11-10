@@ -68,6 +68,20 @@ public struct WaterRepository: Sendable {
         try entries(for: day).reduce(0) { $0 + $1.ml }
     }
 
+    /// Water logged in Nutrilog per day (ml) for the days in `days` that have any.
+    public func totals(in days: ClosedRange<LocalDay>) throws -> [LocalDay: Double] {
+        try database.reader.read { db in
+            let rows = try Row.fetchAll(db, sql: """
+            SELECT day, SUM(ml) AS ml FROM water_entry WHERE deleted_at IS NULL AND day >= ? AND day <= ? GROUP BY day
+            """, arguments: [days.lowerBound, days.upperBound])
+            var result: [LocalDay: Double] = [:]
+            for row in rows {
+                result[row["day"]] = row["ml"]
+            }
+            return result
+        }
+    }
+
     public func observeEntries(for day: LocalDay) -> AsyncValueObservation<[WaterEntry]> {
         ValueObservation.tracking { db in try Self.request(day).fetchAll(db) }
             .removeDuplicates()

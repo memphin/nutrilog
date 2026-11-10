@@ -128,6 +128,33 @@ public struct DailyMetricsRepository: Sendable {
         }
     }
 
+    /// Stores the weight trend (`WeightTrend.compute`, backlog #33) on the rows of the given days. Only days that
+    /// already have a row are written (the table is a cache of Health; the trend itself can always be recomputed
+    /// from the weights), and only rows whose value changed get a new `updated_at` / `revision`.
+    /// Returns the number of rows changed.
+    @discardableResult
+    public func setWeightTrends(_ trends: [LocalDay: Double]) throws -> Int {
+        guard let first = trends.keys.min(), let last = trends.keys.max() else { return 0 }
+        let now = clock.now()
+        return try database.writer.write { db in
+            var changed = 0
+            for var row in try Self.request(first ... last).fetchAll(db) {
+                guard let trend = trends[row.day] else { continue }
+                if let stored = row.weightTrendKg, abs(stored - trend) < 0.0005 {
+                    continue
+                }
+                row.weightTrendKg = trend
+                row.updatedAt = now
+                row.revision += 1
+                try row.update(db, columns: [
+                    DailyMetricsRecord.Columns.weightTrendKg, DailyMetricsRecord.Columns.updatedAt, DailyMetricsRecord.Columns.revision,
+                ])
+                changed += 1
+            }
+            return changed
+        }
+    }
+
     public func metrics(on day: LocalDay) throws -> DailyMetricsRecord? {
         try database.reader.read { db in try DailyMetricsRecord.fetchOne(db, key: day) }
     }

@@ -29,6 +29,21 @@ public struct DayDiary: Hashable, Sendable {
     }
 }
 
+/// A day's diary in one row: totals, number of entries and the "fully logged" mark.
+public struct DiaryDaySummary: Hashable, Sendable {
+    public var day: LocalDay
+    public var totals: Nutrients
+    public var entryCount: Int
+    public var isComplete: Bool
+
+    public init(day: LocalDay, totals: Nutrients, entryCount: Int, isComplete: Bool) {
+        self.day = day
+        self.totals = totals
+        self.entryCount = entryCount
+        self.isComplete = isComplete
+    }
+}
+
 /// Diary entries: logging with nutrient snapshots, edits, moves, soft deletes, copy meal/day
 /// and day notes (backlog #3, #10, #12).
 public struct DiaryRepository: Sendable {
@@ -68,6 +83,55 @@ public struct DiaryRepository: Sendable {
         try diary(for: day).totals
     }
 
+    // MARK: Day summaries (history, charts, adaptive TDEE)
+
+    /// One row per day in `days` that has active entries or is marked as fully logged, oldest first.
+    public func daySummaries(in days: ClosedRange<LocalDay>) throws -> [DiaryDaySummary] {
+        try database.reader.read { db in try Self.daySummaries(db, in: days) }
+    }
+
+    public func observeDaySummaries(in days: ClosedRange<LocalDay>) -> AsyncValueObservation<[DiaryDaySummary]> {
+        ValueObservation
+            .tracking { db in try Self.daySummaries(db, in: days) }
+            .removeDuplicates()
+            .values(in: database.reader)
+    }
+
+    /// The earliest day with an active entry; nil for an empty diary.
+    public func firstLoggedDay() throws -> LocalDay? {
+        try database.reader.read { db in
+            try LocalDay.fetchOne(db, sql: "SELECT MIN(day) FROM diary_entry WHERE deleted_at IS NULL")
+        }
+    }
+
+    static func daySummaries(_ db: Database, in days: ClosedRange<LocalDay>) throws -> [DiaryDaySummary] {
+        var result: [LocalDay: DiaryDaySummary] = [:]
+        let rows = try Row.fetchAll(db, sql: """
+        SELECT day, COUNT(*) AS entries, SUM(kcal) AS kcal, SUM(protein_g) AS protein_g, SUM(carbs_g) AS carbs_g,
+               SUM(fat_g) AS fat_g, SUM(fiber_g) AS fiber_g, SUM(sugar_g) AS sugar_g, SUM(sat_fat_g) AS sat_fat_g,
+               SUM(sodium_mg) AS sodium_mg
+        FROM diary_entry WHERE deleted_at IS NULL AND day >= ? AND day <= ? GROUP BY day
+        """, arguments: [days.lowerBound, days.upperBound])
+        for row in rows {
+            let day: LocalDay = row["day"]
+            result[day] = DiaryDaySummary(
+                day: day,
+                totals: Nutrients(
+                    kcal: row["kcal"], proteinG: row["protein_g"], carbsG: row["carbs_g"], fatG: row["fat_g"],
+                    fiberG: row["fiber_g"], sugarG: row["sugar_g"], satFatG: row["sat_fat_g"], sodiumMg: row["sodium_mg"],
+                ),
+                entryCount: row["entries"], isComplete: false,
+            )
+        }
+        let complete = try LocalDay.fetchAll(db, sql: """
+        SELECT day FROM day_note WHERE deleted_at IS NULL AND is_complete = 1 AND day >= ? AND day <= ?
+        """, arguments: [days.lowerBound, days.upperBound])
+        for day in complete {
+            result[day, default: DiaryDaySummary(day: day, totals: .zero, entryCount: 0, isComplete: true)].isComplete = true
+        }
+        return result.values.sorted { $0.day < $1.day }
+    }
+
     // MARK: Logging
 
     /// Logs `quantity` of `food`, snapshotting nutrients from the food's current per-100 values.
@@ -79,16 +143,55 @@ public struct DiaryRepository: Sendable {
         guard quantity.baseAmount > 0 else { throw PersistenceError.validation("amount must be greater than zero") }
         let now = clock.now()
         return try database.writer.write { db in
-            var entry = try DiaryEntry(
-                day: day, mealSlotID: slotID, foodID: food.id, displayName: food.name,
-                grams: quantity.baseAmount, servingLabel: quantity.servingLabel, isQuickAdd: false,
-                nutrients: quantity.nutrients(per100: food.per100), loggedAt: now,
-                sortOrder: Self.nextSortOrder(db, day: day, slotID: slotID),
-            )
-            try entry.insert(db)
-            try Self.queueHealthWrite(db, ids: [entry.id], now: now)
+            try Self.insertFoodEntry(db, food: food, quantity: quantity, servingID: servingID, slotID: slotID, day: day, now: now)
+        }
+    }
 
-            guard var stored = try Food.fetchOne(db, key: food.id) else { throw PersistenceError.notFound(food.id) }
+    /// One food to log with ``logAll(_:slotID:day:)``.
+    public struct LogItem: Sendable {
+        public var food: Food
+        public var quantity: Quantity
+        public var servingID: String?
+
+        public init(food: Food, quantity: Quantity, servingID: String? = nil) {
+            self.food = food
+            self.quantity = quantity
+            self.servingID = servingID
+        }
+    }
+
+    /// Logs several foods into one slot in a single transaction (saved meals, backlog #32): all or nothing.
+    @discardableResult
+    public func logAll(_ items: [LogItem], slotID: String, day: LocalDay) throws -> [DiaryEntry] {
+        guard items.allSatisfy({ $0.quantity.baseAmount > 0 }) else {
+            throw PersistenceError.validation("amount must be greater than zero")
+        }
+        let now = clock.now()
+        return try database.writer.write { db in
+            try items.map { item in
+                try Self.insertFoodEntry(
+                    db, food: item.food, quantity: item.quantity, servingID: item.servingID, slotID: slotID, day: day, now: now,
+                )
+            }
+        }
+    }
+
+    /// Inserts one food entry with a snapshot of `food`'s per-100 values, queues its Health write and records the
+    /// food's use. A soft-deleted food (an item of a saved meal) is still logged; only its use isn't recorded.
+    static func insertFoodEntry(
+        _ db: Database, food: Food, quantity: Quantity, servingID: String?, slotID: String, day: LocalDay, now: Date,
+    ) throws -> DiaryEntry {
+        guard var stored = try Food.fetchOne(db, key: food.id) else { throw PersistenceError.notFound(food.id) }
+        var entry = try DiaryEntry(
+            day: day, mealSlotID: slotID, foodID: food.id, displayName: food.name,
+            grams: quantity.baseAmount, servingLabel: quantity.servingLabel, isQuickAdd: false,
+            nutrients: quantity.nutrients(per100: food.per100), loggedAt: now,
+            sortOrder: nextSortOrder(db, day: day, slotID: slotID),
+        )
+        try entry.insert(db)
+        try queueHealthWrite(db, ids: [entry.id], now: now)
+
+        if stored.deletedAt == nil {
             stored.useCount += 1
             stored.lastUsedAt = now
             switch quantity {
@@ -101,9 +204,9 @@ public struct DiaryRepository: Sendable {
             }
             stored.stampUpdated(now)
             try stored.update(db)
-            entry.revision = 1
-            return entry
         }
+        entry.revision = 1
+        return entry
     }
 
     /// Quick-add calories (and optional macros) without a food (FR-5, backlog #10).

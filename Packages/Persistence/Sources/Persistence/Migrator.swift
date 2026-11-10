@@ -11,7 +11,8 @@ public enum Migrator {
         "004_food_per_serving_only",
         "005_healthkit_outbox",
         "006_barcode_scan_log",
-        // "007_<description>",
+        "007_tdee_estimate_details",
+        // "008_<description>",
     ]
 
     public static func make() throws -> DatabaseMigrator {
