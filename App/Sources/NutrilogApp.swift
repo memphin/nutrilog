@@ -7,6 +7,7 @@ struct NutrilogApp: App {
     init() {
         let environment = NutrilogApp.makeEnvironment()
         _environment = State(initialValue: environment)
+        AppEnvironment.shared = environment // App Intents run outside the view tree
         // Here rather than in a view: Health may launch the app in the background to deliver observer updates,
         // and the observer queries must be registered on every launch (backlog #26).
         environment.startHealthBackgroundWork()

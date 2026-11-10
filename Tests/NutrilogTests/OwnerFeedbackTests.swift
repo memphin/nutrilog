@@ -69,8 +69,9 @@ struct SparklineTests {
 
     @Test func `tiles get their series from one data set`() {
         var data = DashboardData(today: today)
-        data.metrics = (0 ..< 10).map { (offset: Int) -> DailyMetricsRecord in
-            let steps = 1000 * (10 - offset)
+        // 40 days, so the weight trend (which follows weigh-ins slowly) has settled into the 0.1 kg/day loss.
+        data.metrics = (0 ..< 40).map { (offset: Int) -> DailyMetricsRecord in
+            let steps = 1000 * max(10 - offset, 1)
             let active: Double? = offset == 2 ? nil : 400
             let basal: Double? = offset == 3 ? nil : 1600
             let sleep: Int? = offset == 0 ? 450 : nil

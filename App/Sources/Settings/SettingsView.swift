@@ -18,6 +18,7 @@ struct SettingsView: View {
                     NavigationLink("Profile & targets") { ProfileTargetsView() }
                     NavigationLink("Meal slots") { MealSlotsEditor() }
                     NavigationLink("Apple Health") { HealthSettingsView() }
+                    NavigationLink("Weekly check-in") { CheckInSettingsView() }
                 }
 
                 Section("Units") {
@@ -34,10 +35,15 @@ struct SettingsView: View {
 
                 Section {
                     NavigationLink("Export & import") { DataSettingsView() }
+                    NavigationLink("Backups") { BackupsView() }
+                    NavigationLink("Duplicate foods") { DuplicateFoodsView() }
                 } header: {
                     Text("Your data")
                 } footer: {
-                    Text("Everything is stored only on this iPhone. Export regularly to keep a backup.")
+                    Text(
+                        "Everything is stored only on this iPhone. A backup is kept on it every week; export regularly to "
+                            + "have a copy somewhere else too.",
+                    )
                 }
 
                 Section {

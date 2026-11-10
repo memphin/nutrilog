@@ -55,6 +55,15 @@ final class AppEnvironment {
     /// updates it when the app becomes active or the system reports a significant time change (midnight).
     private(set) var today: LocalDay
 
+    /// The tab shown; set to jump between tabs (e.g. the history calendar opening a day in the diary).
+    var selectedTab: AppTab = .today
+    /// A day the diary should show next; the diary clears it once applied. Set through `openDiary(on:)`.
+    var diaryDayRequest: LocalDay?
+    /// The opt-in weekly check-in reminder (a local notification, backlog #35); a no-op in tests and previews.
+    let checkInReminder: any CheckInReminderScheduling
+    /// Folder of the automatic local backups (FR-62); nil turns them off (tests, previews).
+    let backupsDirectory: URL?
+
     /// Bumped when the database contents change outside the normal flows (JSON import), so screens drop
     /// state that may no longer match the data, such as a pending undo.
     private(set) var dataGeneration = 0
@@ -73,7 +82,11 @@ final class AppEnvironment {
         openFoodFacts: any OpenFoodFactsClient = StubOpenFoodFactsClient(),
         labelPhotos: LabelPhotoStore = .temporary(),
         offSearch: any OpenFoodFactsSearchClient = StubOpenFoodFactsSearchClient(),
+        checkInReminder: any CheckInReminderScheduling = NoCheckInReminder(),
+        backupsDirectory: URL? = nil,
     ) {
+        self.checkInReminder = checkInReminder
+        self.backupsDirectory = backupsDirectory
         self.database = database
         self.config = config
         self.bundledIndex = bundledIndex
@@ -315,6 +328,10 @@ final class AppEnvironment {
             openFoodFacts: OpenFoodFactsHTTPClient(contact: config.offContact, appVersion: config.appVersion),
             labelPhotos: .live,
             offSearch: OpenFoodFactsSearchHTTPClient(contact: config.offContact, appVersion: config.appVersion),
+            checkInReminder: LocalNotificationCheckInReminder(),
+            backupsDirectory: try? FileManager.default
+                .url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+                .appendingPathComponent("Backups", isDirectory: true),
         )
     }
 
@@ -328,6 +345,8 @@ final class AppEnvironment {
         healthObserver: (any HealthObserving)? = nil,
         openFoodFacts: (any OpenFoodFactsClient)? = nil,
         labelPhotos: LabelPhotoStore? = nil,
+        checkInReminder: (any CheckInReminderScheduling)? = nil,
+        backupsDirectory: URL? = nil,
     ) -> AppEnvironment {
         let state: DatabaseState
         do { state = try .ready(AppDatabase.inMemory()) } catch { state = .failed(String(describing: error)) }
@@ -344,6 +363,8 @@ final class AppEnvironment {
             // Never the network: an empty stub answers "not found".
             openFoodFacts: openFoodFacts ?? StubOpenFoodFactsClient(),
             labelPhotos: labelPhotos ?? .temporary(),
+            checkInReminder: checkInReminder ?? NoCheckInReminder(),
+            backupsDirectory: backupsDirectory,
         )
         if sampleData {
             env.insertSampleData()
@@ -379,9 +400,53 @@ final class AppEnvironment {
             day: today,
         )
         _ = try? profiles.setTarget(Target(
-            effectiveFrom: today.adding(days: -30), kcal: 2200,
+            effectiveFrom: today.adding(days: -60), kcal: 2200,
             macros: MacroTargets(proteinG: 160, carbsG: 220, fatG: 75), origin: .manual,
         ))
+        insertSampleHistory(oats: oats, milk: milk)
+    }
+
+    /// Six weeks of diary history, a complete profile, a recipe and a saved meal, so the Trends screens (maintenance
+    /// estimate, check-in, calendar, charts, weekly report) have something to show. Weights come from the demo Health data.
+    private func insertSampleHistory(oats: Food?, milk: Food?) {
+        guard let foods, let diary, let profiles, let recipes, let meals else { return }
+        if var profile = try? profiles.profile() {
+            profile.heightCm = 182
+            profile.birthDate = LocalDay(year: 1988, month: 4, day: 12)
+            profile.sex = .male
+            profile.activityLevel = .light
+            profile.goalMode = .lose
+            profile.goalRateKgPerWeek = 0.25
+            try? profiles.save(profile)
+        }
+        // Deterministic day-to-day variation around 2,250 kcal; every tenth day is left unlogged.
+        let swing: [Double] = [0, 120, -180, 60, 260, -90, -140, 310, -40, 90]
+        for offset in 1 ... 45 where offset % 10 != 4 {
+            let day = today.adding(days: -offset)
+            let kcal = 2250 + swing[offset % swing.count]
+            let meals: [(String, Double)] = [("breakfast", 0.25), ("lunch", 0.4), ("dinner", 0.35)]
+            for (slot, share) in meals {
+                let part = kcal * share
+                _ = try? diary.logQuickAdd(
+                    name: slot.capitalized, nutrients: Nutrients(
+                        kcal: part,
+                        proteinG: part * 0.28 / 4,
+                        carbsG: part * 0.42 / 4,
+                        fatG: part * 0.3 / 9,
+                    ),
+                    slotID: slot, day: day,
+                )
+            }
+        }
+        if let oats, let milk {
+            _ = try? recipes.save(RecipeDraft(
+                name: "Overnight oats",
+                ingredients: [RecipeIngredient(food: oats, grams: 160), RecipeIngredient(food: milk, grams: 500)],
+                cookedWeightG: 640, servingsCount: 4,
+            ))
+            _ = try? meals.createFromDiary(day: today, slotID: "breakfast", name: "Usual breakfast")
+            try? foods.setFavorite(id: milk.id, true)
+        }
     }
 }
 
@@ -421,6 +486,10 @@ enum SettingKey {
     static let healthOnboardingShown = "healthOnboardingShown"
     /// Bool: "Write to Apple Health" (Settings → Apple Health, backlog #27); missing means on.
     static let healthWriteEnabled = "healthWriteEnabled"
+    /// Bool: the weekly check-in reminder notification is on (backlog #35); missing means off.
+    static let checkInReminderEnabled = "checkInReminderEnabled"
+    /// String ("YYYY-MM-DD"): the last day the check-in sheet opened by itself, so it does so once a day at most.
+    static let checkInPromptedDay = "checkInPromptedDay"
 }
 
 /// kcal or kJ for display (Settings → Units). Storage is always kcal.

@@ -1,0 +1,99 @@
+import DesignSystem
+import Persistence
+import SwiftUI
+
+/// Settings → Duplicate foods: foods that share a barcode or the same name and brand, merged into one (FR-26, #41).
+struct DuplicateFoodsView: View {
+    @Environment(AppEnvironment.self) private var environment
+    @State private var groups: [[FoodDetail]] = []
+    /// The food to keep per group; default: the suggested keeper (the group's first food).
+    @State private var keep: [String: String] = [:]
+    @State private var message: String?
+
+    var body: some View {
+        List {
+            if groups.isEmpty {
+                EmptyStateView(
+                    "No duplicates found", systemImage: "checkmark.circle",
+                    message: "Foods with the same barcode, or the same name and brand, would show up here.",
+                )
+                .listRowBackground(Color.clear)
+            }
+            ForEach(groups, id: \.first?.id) { group in
+                Section {
+                    ForEach(group) { detail in
+                        let isKept = keeper(of: group) == detail.food.id
+                        Button { keep[groupID(group)] = detail.food.id } label: {
+                            HStack {
+                                Image(systemName: isKept ? "checkmark.circle.fill" : "circle")
+                                    .foregroundStyle(isKept ? Color.accentColor : .secondary)
+                                VStack(alignment: .leading, spacing: NL.Spacing.xxs) {
+                                    FoodRow(
+                                        name: detail.food.name, brand: detail.food.brand, per100: detail.food.per100,
+                                        source: detail.food.source, unit: environment.energyUnit, isLiquid: detail.food.isLiquid,
+                                    )
+                                    Text(Self.facts(detail)).font(.caption).foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityAddTraits(isKept ? .isSelected : [])
+                    }
+                    Button("Merge into the selected food") { merge(group) }
+                } footer: {
+                    Text("Diary entries, recipes and saved meals of the others move to the selected food. Logged values don't change.")
+                }
+            }
+        }
+        .navigationTitle("Duplicate foods")
+        .task(id: environment.dataGeneration) { reload() }
+        .alert("Duplicate foods", isPresented: Binding(get: { message != nil }, set: {
+            if !$0 {
+                message = nil
+            }
+        })) {
+            Button("OK", role: .cancel) {}
+        } message: { Text(message ?? "") }
+    }
+
+    /// "Logged 12 times · 1 barcode · 2 servings".
+    static func facts(_ detail: FoodDetail) -> String {
+        var parts = ["Logged \(detail.food.useCount) \(detail.food.useCount == 1 ? "time" : "times")"]
+        if !detail.barcodes.isEmpty {
+            parts.append("\(detail.barcodes.count) \(detail.barcodes.count == 1 ? "barcode" : "barcodes")")
+        }
+        if !detail.servings.isEmpty {
+            parts.append("\(detail.servings.count) \(detail.servings.count == 1 ? "serving" : "servings")")
+        }
+        if detail.food.dataQuality != .complete {
+            parts.append("incomplete nutrition")
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    private func groupID(_ group: [FoodDetail]) -> String {
+        group.map(\.food.id).sorted().joined(separator: ",")
+    }
+
+    private func keeper(of group: [FoodDetail]) -> String? {
+        keep[groupID(group)] ?? group.first?.food.id
+    }
+
+    private func reload() {
+        do {
+            groups = try environment.foods?.duplicateGroups() ?? []
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
+    private func merge(_ group: [FoodDetail]) {
+        guard let keepID = keeper(of: group), let foods = environment.foods else { return }
+        do {
+            try foods.merge(keep: keepID, remove: group.map(\.food.id).filter { $0 != keepID })
+        } catch {
+            message = "Couldn't merge: \(error.localizedDescription)"
+        }
+        reload()
+    }
+}

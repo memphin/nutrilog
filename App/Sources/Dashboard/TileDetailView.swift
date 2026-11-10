@@ -3,7 +3,7 @@ import DesignSystem
 import Persistence
 import SwiftUI
 
-/// A tile's detail: the last 14 days as a list (charts come in phase 3, FR-51). Weight lists the manual entries
+/// A tile's detail: its chart (FR-51, backlog #38) and the last 14 days as a list. Weight lists the manual entries
 /// (edit, delete with undo); water lists today's entries (delete with undo).
 struct TileDetailView: View {
     let tile: DashboardTile
@@ -13,6 +13,13 @@ struct TileDetailView: View {
 
     var body: some View {
         List {
+            Section {
+                MetricChartView(metric: ChartMetric(tile: tile))
+                    .listRowInsets(EdgeInsets(top: NL.Spacing.m, leading: NL.Spacing.l, bottom: NL.Spacing.m, trailing: NL.Spacing.l))
+                if tile == .energy {
+                    NavigationLink("Macros chart") { MetricChartScreen(metric: .macros) }
+                }
+            }
             switch tile {
             case .weight:
                 Section {

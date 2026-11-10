@@ -44,6 +44,8 @@ private struct DiaryContent: View {
     @State private var showDatePicker = false
     @State private var showNoteEditor = false
     @State private var movingEntry: DiaryEntry?
+    @State private var savingMealSlot: MealSlot?
+    @State private var mealName = ""
 
     struct CopyRequest: Identifiable {
         let slotID: String?
@@ -102,10 +104,21 @@ private struct DiaryContent: View {
                             Label("Add a note for this day", systemImage: "square.and.pencil")
                         }
                     }
-                    if diary.note?.isComplete == true {
-                        Label("Day marked as fully logged", systemImage: "checkmark.seal")
-                            .foregroundStyle(.green)
+                }
+
+                Section {
+                    Toggle(isOn: Binding(get: { diary.note?.isComplete == true }, set: { _ in model.toggleComplete() })) {
+                        Label("Day fully logged", systemImage: "checkmark.seal")
                     }
+                    if let hint = model.loggingHint {
+                        Label {
+                            Text(hint).font(.footnote).foregroundStyle(.secondary)
+                        } icon: {
+                            Image(systemName: "info.circle").foregroundStyle(.orange)
+                        }
+                    }
+                } footer: {
+                    Text("The maintenance estimate uses days that are fully logged or have at least 3 entries.")
                 }
             }
         }
@@ -115,7 +128,30 @@ private struct DiaryContent: View {
         .toolbar { toolbar }
         .task(id: model.day) { await model.observeDiary() }
         .task(id: model.day) { await model.observeTarget() }
+        .task(id: model.day) { model.reloadEstimate() }
         .onChange(of: environment.dataGeneration) { model.dataDidChangeExternally() }
+        // The history calendar (or anything else) asked for a day.
+        .onChange(of: environment.diaryDayRequest, initial: true) { _, requested in
+            if let requested {
+                model.day = requested
+                environment.diaryDayRequest = nil
+            }
+        }
+        .alert("Save as meal", isPresented: Binding(get: { savingMealSlot != nil }, set: {
+            if !$0 {
+                savingMealSlot = nil
+            }
+        })) {
+            TextField("Name", text: $mealName)
+            Button("Save") {
+                if let slot = savingMealSlot {
+                    model.saveAsMeal(slotID: slot.id, name: mealName)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Saves the foods of this meal so you can log them all at once from Add food → Meals.")
+        }
         .undoToast(model.undo)
         .sheet(item: $addTarget) { target in
             AddFoodView(target: target)
@@ -169,6 +205,11 @@ private struct DiaryContent: View {
                 Button("Add food", systemImage: "plus") { addTarget = AddTarget(slotID: section.slot.id, day: model.day) }
                 Button("Quick add calories", systemImage: "bolt") { quickAddTarget = AddTarget(slotID: section.slot.id, day: model.day) }
                 Divider()
+                Button("Save as meal…", systemImage: "square.and.arrow.down.on.square") {
+                    mealName = section.slot.name
+                    savingMealSlot = section.slot
+                }
+                .disabled(!section.entries.contains { !$0.isQuickAdd })
                 Button("Copy from yesterday", systemImage: "arrow.uturn.backward") {
                     model.copy(from: model.day.previous, slotID: section.slot.id)
                 }

@@ -29,6 +29,13 @@ private struct FoodsListContent: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var editing: FoodDetail?
     @State private var showCreate = false
+    @State private var showCreateRecipe = false
+    @State private var editingRecipe: RecipeSelection?
+
+    /// A recipe opened in the recipe editor.
+    struct RecipeSelection: Identifiable {
+        let id: String
+    }
 
     var body: some View {
         List {
@@ -42,7 +49,11 @@ private struct FoodsListContent: View {
             }
             ForEach(model.filtered) { food in
                 Button {
-                    editing = model.detail(for: food)
+                    if food.source == .recipe {
+                        editingRecipe = RecipeSelection(id: food.id)
+                    } else {
+                        editing = model.detail(for: food)
+                    }
                 } label: {
                     HStack {
                         FoodRow(
@@ -74,7 +85,10 @@ private struct FoodsListContent: View {
         .navigationTitle("My foods")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button("New food", systemImage: "plus") { showCreate = true }
+                Menu("New", systemImage: "plus") {
+                    Button("New food", systemImage: "fork.knife") { showCreate = true }
+                    Button("New recipe", systemImage: "frying.pan") { showCreateRecipe = true }
+                }
             }
         }
         .task { model.reload() }
@@ -86,6 +100,17 @@ private struct FoodsListContent: View {
         }
         .sheet(item: $editing, onDismiss: reload) { detail in
             FoodEditorView(editing: detail)
+        }
+        .sheet(isPresented: $showCreateRecipe, onDismiss: reload) {
+            RecipeEditorView()
+        }
+        .sheet(item: $editingRecipe, onDismiss: reload) { selection in
+            // Duplicating opens the copy next.
+            RecipeEditorView(recipeID: selection.id) { saved in
+                if saved.id != selection.id {
+                    Task { editingRecipe = RecipeSelection(id: saved.id) }
+                }
+            }
         }
         .alert("Error", isPresented: Binding(get: { model.errorMessage != nil }, set: {
             if !$0 {

@@ -71,7 +71,8 @@ final class TargetsModel {
         weightKg = Format.field(latestWeightKg)
         loadedWeight = weightKg
         if let target {
-            overrideKcal = target.origin == .manual
+            // A target from the weekly check-in is shown as it is, not replaced by the formula's suggestion.
+            overrideKcal = target.origin != .formula
             manualKcal = Format.field(target.kcal)
             proteinG = Format.field(target.proteinG)
             carbsG = Format.field(target.carbsG)
@@ -202,9 +203,11 @@ final class TargetsModel {
     func makeTarget() -> Target? {
         guard validationErrors.isEmpty, let kcal = effectiveKcal, let macros else { return nil }
         let fiber = fiberG == loadedFiber ? currentTarget?.fiberG : Format.number(fiberG).flatMap { $0 > 0 ? $0 : nil }
+        // Changing only macros or fiber keeps a check-in target "adaptive".
+        let keepsAdaptive = overrideKcal && currentTarget?.origin == .adaptive && currentTarget?.kcal == kcal.rounded()
         return Target(
             effectiveFrom: today, kcal: kcal.rounded(), macros: macros, fiberG: fiber,
-            origin: overrideKcal ? .manual : .formula,
+            origin: keepsAdaptive ? .adaptive : overrideKcal ? .manual : .formula,
         )
     }
 
