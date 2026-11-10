@@ -61,7 +61,7 @@ final class DashboardModel {
 
     // MARK: Loading
 
-    /// Re-reads the settings the dashboard caches (layout, water sizes, step goal) — they are edited in Settings.
+    /// Re-reads the settings the dashboard caches (layout, water sizes, step and sleep goals) — they are edited in Settings.
     func reloadSettings() {
         guard let profiles = environment.profiles else { return }
         layout = DashboardLayout.load(from: profiles)
@@ -69,6 +69,10 @@ final class DashboardModel {
         let stepGoal = StepGoal.load(from: profiles)
         if data.stepGoal != stepGoal {
             data.stepGoal = stepGoal
+        }
+        let sleepGoal = SleepGoal.load(from: profiles)
+        if data.sleepGoalMin != sleepGoal {
+            data.sleepGoalMin = sleepGoal
         }
     }
 
@@ -80,7 +84,7 @@ final class DashboardModel {
     func observe() async {
         let today = environment.today
         if data.today != today {
-            data = DashboardData(today: today, stepGoal: data.stepGoal)
+            data = DashboardData(today: today, stepGoal: data.stepGoal, sleepGoalMin: data.sleepGoalMin)
         }
         await reloadAccess()
         await withDiscardingTaskGroup { group in

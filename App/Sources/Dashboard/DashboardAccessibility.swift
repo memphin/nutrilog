@@ -3,7 +3,7 @@ import Foundation
 
 /// VoiceOver labels of the dashboard tiles (FR-73), pure so they are unit-tested.
 extension DashboardSnapshot {
-    /// The spoken label of a tile, e.g. "Weight, 81.4 kilograms, trend 81.2, down 0.4 in 7 days" or
+    /// The spoken label of a tile, e.g. "Weight, 81.4 kilograms" or
     /// "Steps, no data. No data found — check Health permissions".
     func accessibilityLabel(of tile: DashboardTile, state: TileState, energyUnit: EnergyUnit = .kcal) -> String {
         guard state == .ready else {
@@ -40,15 +40,8 @@ extension DashboardSnapshot {
             return sleepParts
         case .weight:
             guard let weight else { return [] }
-            var parts = ["\(number(weight.latestKg, digits: 1)) kilograms", "trend \(number(weight.trendKg, digits: 1))"]
-            if let change = weight.trendChange7d {
-                let rounded = (change * 10).rounded() / 10
-                parts
-                    .append(rounded == 0 ? "unchanged in 7 days" :
-                        "\(rounded < 0 ? "down" : "up") \(number(abs(rounded), digits: 1)) in 7 days")
-            }
-            parts += [measured(weight.latest.day)].compactMap(\.self)
-            return parts
+            // Like the tile: the weight only (#73); the trend is in the detail.
+            return ["\(number(weight.latestKg, digits: 1)) kilograms"] + [measured(weight.latest.day)].compactMap(\.self)
         case .bodyFat:
             guard let bodyFat else { return [] }
             return ["\(number(bodyFat.pct, digits: 1)) percent"] + [measured(bodyFat.day)].compactMap(\.self)
@@ -70,7 +63,8 @@ extension DashboardSnapshot {
             guard let comparison = tile == .hrv ? hrv : restingHR else { return [] }
             let unit = tile == .hrv ? "milliseconds" : "beats per minute"
             var parts = ["\(number(comparison.value)) \(unit)", "7-day average \(number(comparison.average7))"]
-            if tile == .hrv, let deviation = comparison.deviationText {
+            // The value's colour is read against the 30-day average (#74), so say where it stands.
+            if let deviation = comparison.deviationText {
                 parts.append(deviation)
             }
             parts += [measured(comparison.day)].compactMap(\.self)
@@ -94,10 +88,14 @@ extension DashboardSnapshot {
 
     /// Like the tile: time asleep only; time in bed when that is all Health has. Stages are in the detail (#62).
     private var sleepParts: [String] {
-        if let asleep = sleep?.asleepMin {
-            return ["\(Self.spokenDuration(asleep)) asleep"]
+        guard let minutes = sleepMinutes else { return [] }
+        let goalText = Self.spokenDuration(sleepGoalMin)
+        let goal = switch SleepGoal.band(minutes: Double(minutes), goal: sleepGoalMin) {
+        case .reached: "goal of \(goalText) reached"
+        case .near: "close to the goal of \(goalText)"
+        case .far: "below the goal of \(goalText)"
         }
-        return sleep?.inBedMin.map { ["\(Self.spokenDuration($0)) in bed"] } ?? []
+        return ["\(Self.spokenDuration(minutes)) \(sleep?.asleepMin == nil ? "in bed" : "asleep")", goal]
     }
 
     /// The tile's 7-day trend for VoiceOver ("up over 7 days"), spoken as the tile's value; nil without a chart or

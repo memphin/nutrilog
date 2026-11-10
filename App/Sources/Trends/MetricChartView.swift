@@ -11,7 +11,7 @@ struct MetricChartView: View {
     @State private var range: ChartRange = .month
     @State private var series: ChartSeries?
     @State private var selectedDate: Date?
-    /// The daily goal the bars are coloured by: steps (#63) or ml of water (#64); nil for the other metrics.
+    /// The daily goal the bars are coloured by: steps (#63), ml of water (#64) or hours of sleep (#72); nil for the other metrics.
     @State private var goal: Double?
 
     var body: some View {
@@ -59,6 +59,8 @@ struct MetricChartView: View {
         selectedDate = nil
         goal = switch metric {
         case .steps: environment.profiles.map { Double(StepGoal.load(from: $0)) }
+        // The sleep chart is in hours.
+        case .sleep: environment.profiles.map { Double(SleepGoal.load(from: $0)) / 60 }
         case .water: try? environment.profiles?.profile().waterGoalMl
         default: nil
         }
@@ -213,7 +215,7 @@ struct MetricChartView: View {
                 BarMark(x: .value("Day", date(point), unit: component), y: .value(series.unitLabel, active))
                     .foregroundStyle(by: .value("Part", "Active"))
             }
-        case .steps, .water:
+        case .steps, .water, .sleep:
             if let value = point.value {
                 BarMark(x: .value("Day", date(point), unit: component), y: .value(series.unitLabel, value))
                     .foregroundStyle(goalColor(value).opacity(0.85))
@@ -250,7 +252,11 @@ struct MetricChartView: View {
     /// Steps: green at the goal, orange close below, red further away. Water: red below the goal, green at it.
     private func goalColor(_ value: Double) -> Color {
         guard let goal else { return tint }
-        return metric == .water ? GoalColor.water(value, goalMl: goal) : GoalColor.steps(value, goal: Int(goal))
+        switch metric {
+        case .water: return GoalColor.water(value, goalMl: goal)
+        case .sleep: return GoalColor.sleep(minutes: value * 60, goal: Int((goal * 60).rounded()))
+        default: return GoalColor.steps(value, goal: Int(goal))
+        }
     }
 
     private var tint: Color {

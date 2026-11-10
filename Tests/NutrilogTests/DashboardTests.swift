@@ -405,13 +405,12 @@ struct DashboardDemoTests {
         #expect(snapshot.hrv?.deviationText != nil)
         #expect(snapshot.restingHR != nil)
         #expect(snapshot.energyBurned?.totalKcal != nil)
-        // A week of demo history: every tile but calories and sleep has a sparkline and a spoken trend.
-        for tile in DashboardTile.allCases where tile != .energy && tile != .sleep {
+        // A week of demo history: every tile but calories has a sparkline and a spoken trend.
+        for tile in DashboardTile.allCases where tile != .energy {
             #expect(snapshot.sparkline(for: tile) != nil, "\(tile)")
             #expect(snapshot.accessibilityTrend(of: tile, state: .ready) != nil, "\(tile)")
         }
         #expect(snapshot.sparkline(for: .energy) == nil)
-        #expect(snapshot.sparkline(for: .sleep) == nil) // the sleep tile shows last night only (#62)
         #expect(snapshot.totals.kcal > 0)
         #expect(try env.weights?.latest() == nil) // nothing entered by hand
     }
@@ -451,9 +450,9 @@ struct WeightFormTests {
 
 struct DashboardFormatTests {
     @Test func `durations and changes`() {
-        #expect(DashboardFormat.duration(440) == "7 h 20 min")
-        #expect(DashboardFormat.duration(65) == "1 h 05 min")
-        #expect(DashboardFormat.duration(45) == "45 min")
+        #expect(DashboardFormat.duration(440) == "7h 20min")
+        #expect(DashboardFormat.duration(65) == "1h 5min")
+        #expect(DashboardFormat.duration(45) == "45min")
         #expect(DashboardFormat.kgChange(-0.44).hasPrefix("−"))
         #expect(DashboardFormat.kgChange(0.21).hasPrefix("+"))
         #expect(DashboardFormat.kgChange(0.01).hasPrefix("±"))
