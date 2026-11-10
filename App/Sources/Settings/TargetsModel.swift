@@ -27,6 +27,8 @@ final class TargetsModel {
     private(set) var weightKg: Double?
     /// The day of that weight.
     private(set) var weightDay: LocalDay?
+    /// Maintenance measured from Apple Health energy (last 30 days); when present it replaces BMR × activity.
+    private(set) var measured: MeasuredTDEE?
 
     // Target
     var overrideKcal = false
@@ -56,7 +58,10 @@ final class TargetsModel {
 
     // MARK: Loading
 
-    func load(profile: Profile, target: Target?, latestWeightKg: Double?, weightDay: LocalDay? = nil) {
+    func load(
+        profile: Profile, target: Target?, latestWeightKg: Double?, weightDay: LocalDay? = nil, measured: MeasuredTDEE? = nil,
+    ) {
+        self.measured = measured
         self.profile = profile
         currentTarget = target
         heightCm = Format.field(profile.heightCm)
@@ -101,8 +106,14 @@ final class TargetsModel {
         return Energy.mifflinStJeor(weightKg: weight, heightCm: height, ageYears: Double(age), sex: sex)
     }
 
-    var tdee: Double? {
+    /// Formula maintenance: BMR × activity, the fallback without enough Health energy.
+    var formulaTDEE: Double? {
         bmr.map { Energy.baselineTDEE(bmr: $0, activity: activity) }
+    }
+
+    /// Maintenance the suggested target is built on: measured Health energy, or the formula without it.
+    var tdee: Double? {
+        measured?.kcal ?? formulaTDEE
     }
 
     var formulaKcal: Double? {

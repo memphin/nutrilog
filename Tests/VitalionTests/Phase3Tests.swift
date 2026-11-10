@@ -67,6 +67,20 @@ struct ExpenditureTests {
         #expect(snapshot.kcal == estimate.kcal)
     }
 
+    @Test func `the baseline is the 30-day average of Health energy when there is enough`() throws {
+        try completeProfile(env)
+        let metrics = try #require(env.dailyMetrics)
+        // 10 days of 2,200 + 400; today's partial value is left out.
+        try metrics.upsert((1 ... 10).map { DailyHealthMetrics(day: env.today.adding(days: -$0), activeKcal: 400, basalKcal: 2200) }
+            + [DailyHealthMetrics(day: env.today, activeKcal: 50, basalKcal: 300)])
+        let measured = try #require(try Expenditure.measured(environment: env))
+        #expect(measured.kcal == 2600 && measured.days == 10)
+        try seedHistory(env)
+        let snapshot = try #require(try Expenditure.snapshot(environment: env))
+        #expect(snapshot.baselineKcal == 2600)
+        #expect(snapshot.baselineIsMeasured)
+    }
+
     @Test func `no estimate with too little data, with the reason`() throws {
         let empty = try #require(try Expenditure.snapshot(environment: env))
         #expect(empty.estimate == .failure(.notEnoughLoggedDays(0)))

@@ -145,10 +145,11 @@ final class CheckInModel {
         ]
         if let baseline = estimate.baselineKcal {
             facts.append(CheckInFact(
-                kind: .baseline, title: "Formula baseline", value: unit.format(baseline),
-                explanation: "What the Mifflin-St Jeor formula gives for your height, weight, age and sex, times your activity "
-                    + "level. The estimate replaces this guess with your own data; until confidence is high it is kept within "
-                    + "25 % of it.",
+                kind: .baseline, title: "Baseline", value: unit.format(baseline),
+                explanation: "Your average total energy burned (active + resting) in Apple Health over the last "
+                    + "\(Energy.measuredWindowDays) days or, with less than \(Energy.measuredMinimumDays) days of it, the "
+                    + "Mifflin-St Jeor formula for your height, weight, age and sex times your activity level. The estimate "
+                    + "replaces this with your intake and weight trend; until confidence is high it is kept within 25 % of it.",
             ))
         }
         if let currentTargetKcal {
@@ -195,7 +196,7 @@ final class CheckInModel {
                 + "70 % new + 30 % old = \(unit.format(0.7 * estimate.rawKcal + 0.3 * previous))."
         }
         if estimate.wasClamped, let baseline = estimate.baselineKcal {
-            text += "\n\nThat is more than 25 % away from the formula baseline (\(unit.format(baseline))), so until confidence is "
+            text += "\n\nThat is more than 25 % away from the baseline (\(unit.format(baseline))), so until confidence is "
                 + "high it is limited to \(unit.format(estimate.kcal))."
         }
         if estimate.underLoggingSuspected {

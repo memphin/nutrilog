@@ -175,7 +175,7 @@ Single user (the owner). Representative daily flows:
 
 ### 5.4 Targets & profile (MUST)
 - FR-30 Profile: height, date of birth, sex, activity level; weight read from Health (manual fallback).
-- FR-31 Calorie target: computed (Mifflin-St Jeor BMR × activity, ± goal rate) or manual override.
+- FR-31 Calorie target: computed (maintenance ± goal rate) or manual override. Maintenance is the 30-day average of Health total energy (active + resting; at least 7 usable days, days below 60 % of the median dropped as partial wear); without it, Mifflin-St Jeor BMR × activity.
 - FR-32 Macro targets as grams or % with validation that % sum to 100; optional different targets per weekday (training vs. rest day) (SHOULD).
 - FR-33 Goal modes: lose / maintain / gain with weekly rate; app shows implied deficit/surplus.
 - FR-34 (**MUST**, phase 3) **Adaptive expenditure**: estimate TDEE from logged intake and smoothed weight change; surface as "estimated maintenance" with a confidence indicator; weekly check-in proposes a new calorie target with one-tap apply. Algorithm in §5.4.1.
@@ -187,7 +187,7 @@ Inputs: daily `kcalIn` (diary totals; days with < 3 entries and no "complete day
 2. **Window**: rolling 14 days (minimum 7 logged days to show an estimate; confidence grows to "high" at 21+ days with ≥ 80% logged days).
 3. **Energy balance**: `ΔE = (trend_end − trend_start) × 7,700 kcal/kg` over the window.
 4. **Estimate**: `TDEE_est = mean(kcalIn over logged days) − ΔE / windowDays`.
-5. **Smoothing**: blend with the previous week's estimate (0.7 new / 0.3 old) to avoid jumps; clamp to ±25% of the Mifflin-St Jeor × activity baseline until confidence is high.
+5. **Smoothing**: blend with the previous week's estimate (0.7 new / 0.3 old) to avoid jumps; clamp to ±25% of the baseline (FR-31 maintenance: measured Health energy, else Mifflin-St Jeor × activity) until confidence is high.
 6. **Check-in** (configurable weekday, default Monday): show actual weekly weight change vs. goal rate, new TDEE estimate, and the proposed target `TDEE_est − goalRateKgPerWeek × 7,700 / 7`. User accepts, edits or skips.
 7. **Transparency**: every number tappable to a "how was this computed" sheet listing the days used and their kcal/weight.
 

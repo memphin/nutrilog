@@ -51,6 +51,7 @@ struct ProfileTargetsView: View {
             let latest = try StatsLoader.dayWeights(through: today, environment: environment).last { $0.kg != nil }
             try model.load(
                 profile: profiles.profile(), target: profiles.target(on: today), latestWeightKg: latest?.kg, weightDay: latest?.day,
+                measured: Expenditure.measured(environment: environment),
             )
             self.model = model
         } catch {
@@ -101,16 +102,19 @@ private struct TargetsForm: View {
                     Text("Female").tag(Sex?.some(.female))
                     Text("Other").tag(Sex?.some(.other))
                 }
-                Picker("Activity", selection: $model.activity) {
-                    ForEach(ActivityLevel.allCases, id: \.self) { level in
-                        VStack(alignment: .leading) {
-                            Text(level.title)
-                            Text(level.explanation).font(.caption).foregroundStyle(.secondary)
+                // With measured Health energy the activity level isn't used, so it is only asked for without it.
+                if model.measured == nil {
+                    Picker("Activity", selection: $model.activity) {
+                        ForEach(ActivityLevel.allCases, id: \.self) { level in
+                            VStack(alignment: .leading) {
+                                Text(level.title)
+                                Text(level.explanation).font(.caption).foregroundStyle(.secondary)
+                            }
+                            .tag(level)
                         }
-                        .tag(level)
                     }
+                    .pickerStyle(.navigationLink)
                 }
-                .pickerStyle(.navigationLink)
             } header: {
                 Text("Profile")
             } footer: {
@@ -137,7 +141,18 @@ private struct TargetsForm: View {
             }
 
             Section {
-                if let bmr = model.bmr, let tdee = model.tdee {
+                if let measured = model.measured {
+                    LabeledContent("Maintenance (measured)") {
+                        VStack(alignment: .trailing, spacing: NL.Spacing.xxs) {
+                            Text(unit.format(measured.kcal)).monospacedDigit()
+                            Text("Average total energy, \(measured.days) days").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    .accessibilityElement(children: .combine)
+                    if let target = model.formulaKcal {
+                        LabeledContent("Suggested target", value: unit.format(target)).bold()
+                    }
+                } else if let bmr = model.bmr, let tdee = model.tdee {
                     LabeledContent("BMR (Mifflin-St Jeor)", value: unit.format(bmr))
                     LabeledContent("Maintenance (× \(model.activity.factor.formatted()))", value: unit.format(tdee))
                     if let target = model.formulaKcal {
@@ -156,7 +171,13 @@ private struct TargetsForm: View {
             } header: {
                 Text("Calories")
             } footer: {
-                Text("The weekly check-in (Trends) refines this with your real intake and weight trend.")
+                Text(model.measured == nil
+                    ? "Without at least \(Energy.measuredMinimumDays) days of active and resting energy in Apple Health, maintenance "
+                    + "is estimated from your activity level. The weekly check-in (Trends) refines this with your real intake and "
+                    + "weight trend."
+                    : "Maintenance is your average total energy burned (active + resting, Apple Health) over the last "
+                    + "\(Energy.measuredWindowDays) days. The weekly check-in (Trends) refines this with your real intake and "
+                    + "weight trend.")
             }
 
             Section {

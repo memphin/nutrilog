@@ -67,8 +67,11 @@ struct TrendsView: View {
                         Text("Not enough data yet").font(NL.Typography.number)
                         Text(reason.explanation).font(.footnote).foregroundStyle(.secondary)
                         if let baseline = snapshot.baselineKcal {
-                            Text("Formula estimate meanwhile: \(environment.energyUnit.format(baseline))")
-                                .font(.footnote).foregroundStyle(.secondary)
+                            Text(
+                                "\(snapshot.baselineIsMeasured ? "Health energy average" : "Formula estimate") meanwhile: "
+                                    + environment.energyUnit.format(baseline),
+                            )
+                            .font(.footnote).foregroundStyle(.secondary)
                         }
                     }
                     .accessibilityElement(children: .combine)
