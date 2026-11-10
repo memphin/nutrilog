@@ -45,7 +45,9 @@ jobs:
           path: |
             Packages/${{ matrix.package }}/.build
             ~/Library/Caches/org.swift.swiftpm
-          key: spm-${{ matrix.package }}-${{ hashFiles(format('Packages/{0}/Package.resolved', matrix.package)) }}
+          # The repo name is in the key because .build holds absolute paths: a cache from a checkout under another
+          # name (the repo was renamed from nutrilog) fails with "missing required module 'SwiftShims'".
+          key: spm-${{ github.event.repository.name }}-${{ matrix.package }}-${{ hashFiles(format('Packages/{0}/Package.resolved', matrix.package)) }}
       - name: Test ${{ matrix.package }}
         working-directory: Packages/${{ matrix.package }}
         run: swift test --parallel --enable-code-coverage
@@ -84,8 +86,8 @@ jobs:
         run: |
           set -o pipefail
           xcodebuild test \
-            -project Nutrilog.xcodeproj \
-            -scheme Nutrilog \
+            -project Vitalion.xcodeproj \
+            -scheme Vitalion \
             -destination "id=${{ steps.sim.outputs.udid }}" \
             -resultBundlePath TestResults.xcresult \
             -enableCodeCoverage NO \
@@ -147,7 +149,7 @@ jobs:
           if [ "$PROJECT_VERSION" != "$VERSION" ]; then
             echo "::warning::project.yml MARKETING_VERSION is $PROJECT_VERSION but the tag is $TAG. The tag wins; bump project.yml so local builds match."
           fi
-          echo "Nutrilog $VERSION (build $BUILD)" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "Vitalion $VERSION (build $BUILD)" | tee -a "$GITHUB_STEP_SUMMARY"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "build=$BUILD" >> "$GITHUB_OUTPUT"
       - name: Show toolchain
@@ -190,11 +192,11 @@ jobs:
         run: |
           set -o pipefail
           xcodebuild archive \
-            -project Nutrilog.xcodeproj \
-            -scheme Nutrilog \
+            -project Vitalion.xcodeproj \
+            -scheme Vitalion \
             -configuration Release \
             -destination "generic/platform=iOS" \
-            -archivePath "$RUNNER_TEMP/Nutrilog.xcarchive" \
+            -archivePath "$RUNNER_TEMP/Vitalion.xcarchive" \
             -allowProvisioningUpdates \
             -authenticationKeyPath "$ASC_KEY_PATH" \
             -authenticationKeyID "$ASC_KEY_ID" \
@@ -214,14 +216,14 @@ jobs:
           set -o pipefail
           # destination=upload in the export options: the export signs for App Store Connect and uploads the build.
           xcodebuild -exportArchive \
-            -archivePath "$RUNNER_TEMP/Nutrilog.xcarchive" \
+            -archivePath "$RUNNER_TEMP/Vitalion.xcarchive" \
             -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
             -exportPath "$RUNNER_TEMP/export" \
             -allowProvisioningUpdates \
             -authenticationKeyPath "$ASC_KEY_PATH" \
             -authenticationKeyID "$ASC_KEY_ID" \
             -authenticationKeyIssuerID "$ASC_ISSUER_ID"
-          echo "Uploaded Nutrilog $VERSION ($BUILD) to App Store Connect; it shows up in TestFlight after processing." >> "$GITHUB_STEP_SUMMARY"
+          echo "Uploaded Vitalion $VERSION ($BUILD) to App Store Connect; it shows up in TestFlight after processing." >> "$GITHUB_STEP_SUMMARY"
       - name: Remove the API key and build secrets
         if: always()
         run: rm -f "$RUNNER_TEMP"/AuthKey_*.p8 Config/Secrets.xcconfig

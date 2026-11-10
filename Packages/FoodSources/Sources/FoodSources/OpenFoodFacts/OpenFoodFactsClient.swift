@@ -59,9 +59,9 @@ public struct OpenFoodFactsHTTPClient: OpenFoodFactsClient {
 
     /// - Parameters:
     ///   - contact: How OFF can reach the app's maintainer: Info.plist `OFFUserAgentContact`, e.g.
-    ///     "https://github.com/memphin/nutrilog". Must not be blank (asserted; release builds fall back to
-    ///     `Nutrilog/<appVersion>`).
-    ///   - appVersion: Goes into the User-Agent, `Nutrilog/<appVersion> (<contact>)`.
+    ///     "https://github.com/memphin/vitalion". Must not be blank (asserted; release builds fall back to
+    ///     `Vitalion/<appVersion>`).
+    ///   - appVersion: Goes into the User-Agent, `Vitalion/<appVersion> (<contact>)`.
     ///   - transport: Defaults to a `URLSession` with the 8 s timeout.
     ///   - sleep: Backoff wait; tests pass a recorder.
     public init(
@@ -74,7 +74,7 @@ public struct OpenFoodFactsHTTPClient: OpenFoodFactsClient {
     ) {
         let contact = contact.trimmingCharacters(in: .whitespacesAndNewlines)
         assert(!contact.isEmpty, "OFF requires a contact in the User-Agent: set OFFUserAgentContact in Info.plist")
-        userAgent = contact.isEmpty ? "Nutrilog/\(appVersion)" : "Nutrilog/\(appVersion) (\(contact))"
+        userAgent = contact.isEmpty ? "Vitalion/\(appVersion)" : "Vitalion/\(appVersion) (\(contact))"
         self.baseURL = baseURL
         self.transport = transport
         self.retryPolicy = retryPolicy

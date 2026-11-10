@@ -166,7 +166,7 @@ final class AppEnvironment {
         db.map { DailyMetricsRepository($0, clock: clock) }
     }
 
-    /// Water logged in Nutrilog (FR-46). The day's total is these entries + `daily_metrics.water_ml` (other apps).
+    /// Water logged in Vitalion (FR-46). The day's total is these entries + `daily_metrics.water_ml` (other apps).
     var water: WaterRepository? {
         db.map { WaterRepository($0, clock: clock) }
     }

@@ -115,7 +115,7 @@ struct EmptyWidgetView: View {
     var body: some View {
         VStack(spacing: 4) {
             Image(systemName: "fork.knife")
-            Text("Open Nutrilog").font(.caption)
+            Text("Open Vitalion").font(.caption)
         }
         .foregroundStyle(.secondary)
     }
@@ -314,7 +314,7 @@ struct MetricsWidget: Widget {
 }
 
 @main
-struct NutrilogWidgetBundle: WidgetBundle {
+struct VitalionWidgetBundle: WidgetBundle {
     var body: some Widget {
         CaloriesWidget()
         MacrosWidget()

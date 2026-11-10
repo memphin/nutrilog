@@ -95,7 +95,7 @@ struct HealthSettingsView: View {
                     Task { await environment.healthSync?.refresh(force: true) }
                 }
                 .disabled(isSyncing)
-                Button("What Nutrilog reads and writes") { showOnboarding = true }
+                Button("What Vitalion reads and writes") { showOnboarding = true }
             } else {
                 Button("Connect Apple Health") { showOnboarding = true }
             }
@@ -103,7 +103,7 @@ struct HealthSettingsView: View {
                 Text(message).foregroundStyle(.red)
             }
         } footer: {
-            Text("To change what Nutrilog may read or write, open \(HealthKitClient.permissionsPath).")
+            Text("To change what Vitalion may read or write, open \(HealthKitClient.permissionsPath).")
         }
     }
 
@@ -126,7 +126,7 @@ struct HealthSettingsView: View {
         } footer: {
             Text(
                 "Apple Health doesn't tell apps whether you allowed reading a type, "
-                    + "so a type without data may simply not be shared with Nutrilog.",
+                    + "so a type without data may simply not be shared with Vitalion.",
             )
         }
     }

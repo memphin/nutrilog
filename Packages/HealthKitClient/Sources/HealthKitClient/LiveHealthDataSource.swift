@@ -10,7 +10,7 @@
     /// - steps, active/basal energy, water: `HKStatisticsCollectionQuery` with `.cumulativeSum`, one bucket per
     ///   local day anchored at local midnight. The totals come from a query *without* `.separateBySource`, so
     ///   Health's de-duplication across iPhone and Watch applies; a second query with `.separateBySource` names the
-    ///   main source for the source summary and lets Core leave Nutrilog's own water out.
+    ///   main source for the source summary and lets Core leave Vitalion's own water out.
     /// - weight, body fat, resting heart rate, HRV: plain sample queries over the days, reduced in Core.
     /// - sleep: category samples whose end date falls inside the nights' windows.
     ///
@@ -270,7 +270,7 @@
             }
         }
 
-        /// Health stores body fat as a fraction (0.182); Nutrilog uses percent (18.2).
+        /// Health stores body fat as a fraction (0.182); Vitalion uses percent (18.2).
         var valueScale: Double {
             self == .bodyFatPercentage ? 100 : 1
         }

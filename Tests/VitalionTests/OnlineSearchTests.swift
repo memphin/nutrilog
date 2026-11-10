@@ -5,7 +5,7 @@ import Foundation
 import Persistence
 import Synchronization
 import Testing
-@testable import Nutrilog
+@testable import Vitalion
 
 // MARK: - Stubs
 

@@ -1,6 +1,6 @@
 # Privacy
 
-Nutrilog is built for one person's private use. The design rule is simple: **data stays on the device unless you explicitly export it.**
+Vitalion is built for one person's private use. The design rule is simple: **data stays on the device unless you explicitly export it.**
 
 ## What is stored
 - Your food diary, custom foods, saved meals, targets and profile — in an SQLite database inside the app's sandbox, protected by iOS Data Protection (encrypted at rest).
@@ -9,7 +9,7 @@ Nutrilog is built for one person's private use. The design rule is simple: **dat
 - Your optional USDA API key — in the iOS Keychain.
 - A meal photo you take or choose for "Snap or describe a meal" is not stored: it is used for that one estimate and dropped.
 - Automatic backups: about once a week a full export is written to a folder inside the app's sandbox (the newest seven are kept). They never leave the device unless you share one.
-- Today's totals for the widgets (calories, macros, steps, sleep, weight, water) — in the app's App Group container on the device, readable only by Nutrilog and its own widget extension.
+- Today's totals for the widgets (calories, macros, steps, sleep, weight, water) — in the app's App Group container on the device, readable only by Vitalion and its own widget extension.
 
 ## What leaves the device
 | Destination | When | What is sent |

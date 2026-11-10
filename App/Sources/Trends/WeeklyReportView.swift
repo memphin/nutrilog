@@ -50,7 +50,7 @@ struct WeeklyReportView: View {
                 if let report {
                     WeeklyReportCard(report: report, unit: environment.energyUnit, today: environment.today)
                     if let shareURL {
-                        ShareLink(item: shareURL, preview: SharePreview("Nutrilog weekly report")) {
+                        ShareLink(item: shareURL, preview: SharePreview("Vitalion weekly report")) {
                             Label("Share as image", systemImage: "square.and.arrow.up")
                         }
                         .buttonStyle(.bordered)
@@ -135,7 +135,7 @@ struct WeeklyReportView: View {
         let renderer = ImageRenderer(content: card)
         renderer.scale = 3
         guard let data = renderer.uiImage?.pngData() else { return nil }
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("nutrilog-week-\(report.start.isoString).png")
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("vitalion-week-\(report.start.isoString).png")
         do {
             try data.write(to: url, options: .atomic)
             return url
@@ -156,7 +156,7 @@ struct WeeklyReportCard: View {
         VStack(alignment: .leading, spacing: NL.Spacing.l) {
             if showsBranding {
                 HStack {
-                    Text("Nutrilog").font(.headline)
+                    Text("Vitalion").font(.headline)
                     Spacer()
                     Text(WeeklyReportView.title(report.start)).font(.subheadline).foregroundStyle(.secondary)
                 }

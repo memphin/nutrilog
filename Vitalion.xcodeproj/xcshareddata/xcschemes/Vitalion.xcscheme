@@ -15,10 +15,10 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "DDA5148F972A0FF5CA7C37F4"
-               BuildableName = "Nutrilog.app"
-               BlueprintName = "Nutrilog"
-               ReferencedContainer = "container:Nutrilog.xcodeproj">
+               BlueprintIdentifier = "A413CEF60AEA3BCCD7B8A656"
+               BuildableName = "Vitalion.app"
+               BlueprintName = "Vitalion"
+               ReferencedContainer = "container:Vitalion.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -29,10 +29,10 @@
             buildForAnalyzing = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "59CF69D7B1384AE3C77D0468"
-               BuildableName = "NutrilogTests.xctest"
-               BlueprintName = "NutrilogTests"
-               ReferencedContainer = "container:Nutrilog.xcodeproj">
+               BlueprintIdentifier = "F3C192A5CCE79BF9A2BDA88F"
+               BuildableName = "VitalionTests.xctest"
+               BlueprintName = "VitalionTests"
+               ReferencedContainer = "container:Vitalion.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -47,10 +47,10 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "DDA5148F972A0FF5CA7C37F4"
-            BuildableName = "Nutrilog.app"
-            BlueprintName = "Nutrilog"
-            ReferencedContainer = "container:Nutrilog.xcodeproj">
+            BlueprintIdentifier = "A413CEF60AEA3BCCD7B8A656"
+            BuildableName = "Vitalion.app"
+            BlueprintName = "Vitalion"
+            ReferencedContainer = "container:Vitalion.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <Testables>
@@ -59,10 +59,10 @@
             parallelizable = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "59CF69D7B1384AE3C77D0468"
-               BuildableName = "NutrilogTests.xctest"
-               BlueprintName = "NutrilogTests"
-               ReferencedContainer = "container:Nutrilog.xcodeproj">
+               BlueprintIdentifier = "F3C192A5CCE79BF9A2BDA88F"
+               BuildableName = "VitalionTests.xctest"
+               BlueprintName = "VitalionTests"
+               ReferencedContainer = "container:Vitalion.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -83,10 +83,10 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "DDA5148F972A0FF5CA7C37F4"
-            BuildableName = "Nutrilog.app"
-            BlueprintName = "Nutrilog"
-            ReferencedContainer = "container:Nutrilog.xcodeproj">
+            BlueprintIdentifier = "A413CEF60AEA3BCCD7B8A656"
+            BuildableName = "Vitalion.app"
+            BlueprintName = "Vitalion"
+            ReferencedContainer = "container:Vitalion.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -100,10 +100,10 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "DDA5148F972A0FF5CA7C37F4"
-            BuildableName = "Nutrilog.app"
-            BlueprintName = "Nutrilog"
-            ReferencedContainer = "container:Nutrilog.xcodeproj">
+            BlueprintIdentifier = "A413CEF60AEA3BCCD7B8A656"
+            BuildableName = "Vitalion.app"
+            BlueprintName = "Vitalion"
+            ReferencedContainer = "container:Vitalion.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

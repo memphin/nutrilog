@@ -40,7 +40,7 @@ struct URLSessionTransportTests {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [OFFStubURLProtocol.self]
         let transport = URLSessionTransport(session: URLSession(configuration: configuration))
-        return OpenFoodFactsHTTPClient(contact: "https://github.com/memphin/nutrilog", transport: transport)
+        return OpenFoodFactsHTTPClient(contact: "https://github.com/memphin/vitalion", transport: transport)
     }
 
     @Test func `client works end to end over URLSession`() async throws {
@@ -48,7 +48,7 @@ struct URLSessionTransportTests {
         #expect(product.productName == "Nutella")
         #expect(product.nutriments["energy-kcal_100g"] == 539)
         // The stub echoes the User-Agent it received into `brands`.
-        #expect(product.brands == "Nutrilog/1.0 (https://github.com/memphin/nutrilog)")
+        #expect(product.brands == "Vitalion/1.0 (https://github.com/memphin/vitalion)")
     }
 
     @Test func `HTTP 404 from URLSession is returned, not thrown, and maps to notFound`() async {

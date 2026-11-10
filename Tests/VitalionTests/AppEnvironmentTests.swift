@@ -1,7 +1,7 @@
 import Foundation
 import Persistence
 import Testing
-@testable import Nutrilog
+@testable import Vitalion
 
 @MainActor
 struct AppEnvironmentTests {
@@ -21,7 +21,7 @@ struct AppEnvironmentTests {
 
     @Test func `main bundle config reads info plist`() {
         let config = AppConfig(bundle: .main)
-        #expect(config.offContact.contains("github.com/memphin/nutrilog"))
+        #expect(config.offContact.contains("github.com/memphin/vitalion"))
         #expect(!config.appVersion.isEmpty)
     }
 }

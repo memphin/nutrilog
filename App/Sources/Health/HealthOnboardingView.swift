@@ -6,11 +6,11 @@ import SwiftUI
 /// from Settings → Apple Health. "Continue" shows the system sheet and closes once the user has answered; the
 /// 90-day sync then runs in the background, with its progress and errors shown in Settings → Apple Health.
 struct HealthOnboardingView: View {
-    static let intro = "Nutrilog shows your Apple Health data next to what you eat. Here is what it asks for and why — "
+    static let intro = "Vitalion shows your Apple Health data next to what you eat. Here is what it asks for and why — "
         + "Apple Health then lets you allow or deny each type."
     static let privacy = "Your Health data stays on this iPhone. You can change your choices at any time in "
         + "\(HealthKitClient.permissionsPath). Apple Health doesn't tell apps which types you didn't allow, so where "
-        + "data is missing Nutrilog shows “\(HealthKitClient.noDataMessage)”."
+        + "data is missing Vitalion shows “\(HealthKitClient.noDataMessage)”."
 
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.dismiss) private var dismiss
@@ -24,7 +24,7 @@ struct HealthOnboardingView: View {
                     Text(Self.intro)
                 }
 
-                Section("Nutrilog reads") {
+                Section("Vitalion reads") {
                     ForEach(HealthReadType.allCases) { type in
                         TypeRow(title: type.title, explanation: type.explanation)
                     }
@@ -35,9 +35,9 @@ struct HealthOnboardingView: View {
                         TypeRow(title: type.title, explanation: type.explanation)
                     }
                 } header: {
-                    Text("Nutrilog writes")
+                    Text("Vitalion writes")
                 } footer: {
-                    Text("Nothing Nutrilog reads from Health is ever written back.")
+                    Text("Nothing Vitalion reads from Health is ever written back.")
                 }
 
                 Section {} footer: {

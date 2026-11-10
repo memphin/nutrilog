@@ -2,7 +2,7 @@ import FoodSources
 import Foundation
 import Synchronization
 import Testing
-@testable import Nutrilog
+@testable import Vitalion
 
 struct USDAKeySourceTests {
     @Test func `keychain key wins, then build config, then none`() {

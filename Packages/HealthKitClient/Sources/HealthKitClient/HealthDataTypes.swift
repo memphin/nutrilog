@@ -1,6 +1,6 @@
 import Core
 
-/// The Health types Nutrilog reads (SPEC §3.4, FR-40), with the explanation shown before the permission sheet.
+/// The Health types Vitalion reads (SPEC §3.4, FR-40), with the explanation shown before the permission sheet.
 /// Plain data so onboarding, tests and the fake work without HealthKit; `LiveHealthDataSource` maps each case
 /// to its `HKObjectType`.
 public enum HealthReadType: String, CaseIterable, Sendable, Identifiable {
@@ -75,7 +75,7 @@ public enum HealthReadType: String, CaseIterable, Sendable, Identifiable {
         }
     }
 
-    /// Why Nutrilog reads this type.
+    /// Why Vitalion reads this type.
     public var explanation: String {
         switch self {
         case .stepCount:
@@ -106,7 +106,7 @@ public enum HealthReadType: String, CaseIterable, Sendable, Identifiable {
     }
 }
 
-/// The Health types Nutrilog writes (SPEC §3.4, FR-42/43/46) through `HealthWriting`.
+/// The Health types Vitalion writes (SPEC §3.4, FR-42/43/46) through `HealthWriting`.
 public enum HealthWriteType: String, CaseIterable, Sendable, Identifiable {
     case dietaryEnergyConsumed
     case dietaryProtein
@@ -143,7 +143,7 @@ public enum HealthWriteType: String, CaseIterable, Sendable, Identifiable {
         }
     }
 
-    /// What Nutrilog writes and when.
+    /// What Vitalion writes and when.
     public var explanation: String {
         switch self {
         case .dietaryEnergyConsumed:
@@ -151,11 +151,11 @@ public enum HealthWriteType: String, CaseIterable, Sendable, Identifiable {
         case .dietaryProtein, .dietaryCarbohydrates, .dietaryFatTotal, .dietaryFiber, .dietarySugar, .dietarySodium:
             "The \(title.lowercased()) of each diary entry, updated when you edit or delete it."
         case .dietaryWater:
-            "Water you log in Nutrilog."
+            "Water you log in Vitalion."
         case .bodyMass:
-            "Only weights you enter by hand in Nutrilog. Weights from your scale are never written back."
+            "Only weights you enter by hand in Vitalion. Weights from your scale are never written back."
         case .bodyFatPercentage:
-            "Only body fat you enter by hand with a weight in Nutrilog. Values from your scale are never written back."
+            "Only body fat you enter by hand with a weight in Vitalion. Values from your scale are never written back."
         }
     }
 }

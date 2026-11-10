@@ -1,11 +1,11 @@
 import SwiftUI
 
 @main
-struct NutrilogApp: App {
+struct VitalionApp: App {
     @State private var environment: AppEnvironment
 
     init() {
-        let environment = NutrilogApp.makeEnvironment()
+        let environment = VitalionApp.makeEnvironment()
         _environment = State(initialValue: environment)
         AppEnvironment.shared = environment // App Intents run outside the view tree
         // Here rather than in a view: Health may launch the app in the background to deliver observer updates,

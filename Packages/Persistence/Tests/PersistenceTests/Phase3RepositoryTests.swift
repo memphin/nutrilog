@@ -440,13 +440,20 @@ struct LocalBackupsTests {
         f.clock.advance(5)
         let second = try backups.backupNow() // "back up now" ignores the weekly rhythm
         try Data("x".utf8).write(to: dir.appendingPathComponent("notes.txt"))
-        try Data("x".utf8).write(to: dir.appendingPathComponent("nutrilog-backup-garbage.json"))
+        try Data("x".utf8).write(to: dir.appendingPathComponent("vitalion-backup-garbage.json"))
         #expect(try backups.list().map(\.url.lastPathComponent) == [second.url.lastPathComponent, manual.url.lastPathComponent])
         try backups.delete(manual)
         #expect(try backups.list().count == 1)
-        #expect(LocalBackups.date(fromFileName: "nutrilog-backup-20261109T140312Z.json") == Timestamp.date("2026-11-09T14:03:12Z"))
+        #expect(LocalBackups.date(fromFileName: "vitalion-backup-20261109T140312Z.json") == Timestamp.date("2026-11-09T14:03:12Z"))
         #expect(try LocalBackups
-            .fileName(for: #require(Timestamp.date("2026-11-09T14:03:12.900Z"))) == "nutrilog-backup-20261109T140312Z.json")
+            .fileName(for: #require(Timestamp.date("2026-11-09T14:03:12.900Z"))) == "vitalion-backup-20261109T140312Z.json")
+        // Backups from before the rename (Nutrilog) are still listed and restorable.
+        #expect(LocalBackups.date(fromFileName: "nutrilog-backup-20261109T140312Z.json") == Timestamp.date("2026-11-09T14:03:12Z"))
+        let legacy = dir.appendingPathComponent("nutrilog-backup-20200101T000000Z.json")
+        try FileManager.default.copyItem(at: second.url, to: legacy)
+        let listed = try backups.list()
+        #expect(listed.map(\.url.lastPathComponent) == [second.url.lastPathComponent, legacy.lastPathComponent])
+        _ = try backups.restore(#require(listed.last))
     }
 
     @Test func `restore brings the data back`() throws {

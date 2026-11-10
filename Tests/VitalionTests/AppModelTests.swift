@@ -2,7 +2,7 @@ import Core
 import Foundation
 import Persistence
 import Testing
-@testable import Nutrilog
+@testable import Vitalion
 
 @MainActor
 struct FoodEditorModelTests {

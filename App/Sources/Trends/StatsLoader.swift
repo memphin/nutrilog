@@ -12,7 +12,7 @@ enum StatsBuilder {
     ///   - targets: every target by its first day.
     ///   - metrics: Health values of the range.
     ///   - dayWeights: reconciled weights from the first weigh-in on (not only the range), so the trend is right.
-    ///   - loggedWaterMl: water logged in Nutrilog per day.
+    ///   - loggedWaterMl: water logged in Vitalion per day.
     static func build(
         range: ClosedRange<LocalDay>,
         summaries: [DiaryDaySummary],

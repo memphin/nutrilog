@@ -2,14 +2,14 @@ import Core
 import Foundation
 import GRDB
 
-/// The tables whose rows Nutrilog mirrors to Apple Health (`healthkit_link.owner_table`).
+/// The tables whose rows Vitalion mirrors to Apple Health (`healthkit_link.owner_table`).
 public enum HealthKitOwner: String, Codable, Hashable, Sendable, CaseIterable, DatabaseValueConvertible {
     case diaryEntry = "diary_entry"
     case waterEntry = "water_entry"
     case weightEntry = "weight_entry"
 }
 
-/// One Health sample Nutrilog wrote for one of its rows (`healthkit_link`).
+/// One Health sample Vitalion wrote for one of its rows (`healthkit_link`).
 public struct HealthKitLink: Codable, Hashable, Identifiable, Sendable, TimestampedRecord {
     public static let databaseTableName = "healthkit_link"
 
@@ -68,7 +68,7 @@ public struct HealthKitOutboxItem: Codable, Hashable, Sendable, TimestampedRecor
     public typealias Columns = CodingKeys
 }
 
-/// A Nutrilog row with Health samples whose row is soft-deleted or missing (orphan cleanup).
+/// A Vitalion row with Health samples whose row is soft-deleted or missing (orphan cleanup).
 public struct HealthKitOrphan: Hashable, Sendable {
     public var ownerTable: HealthKitOwner
     public var ownerID: String

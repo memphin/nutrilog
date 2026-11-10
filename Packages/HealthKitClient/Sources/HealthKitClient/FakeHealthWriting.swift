@@ -5,7 +5,7 @@ import Synchronization
 /// In-memory `HealthWriting` for tests and previews. Keeps the samples "in Health" and records every call.
 ///
 /// With `mirror`, saved water, weight and body fat samples also appear in that fake's data under `source` (and
-/// vanish when deleted), like the real store: a test can then check that what Nutrilog wrote is not read back as data
+/// vanish when deleted), like the real store: a test can then check that what Vitalion wrote is not read back as data
 /// from other apps.
 public final class FakeHealthWriter: HealthWriting {
     public struct StoredSample: Hashable, Sendable {
@@ -44,7 +44,7 @@ public final class FakeHealthWriter: HealthWriting {
         isAvailable: Bool = true,
         state: State = State(),
         mirror: FakeHealthDataSource? = nil,
-        source: HealthSource = HealthSource(name: "Nutrilog", bundleIdentifier: "hr.ivanjuric.nutrilog"),
+        source: HealthSource = HealthSource(name: "Vitalion", bundleIdentifier: "hr.ivanjuric.nutrilog"),
     ) {
         self.isAvailable = isAvailable
         self.state = Mutex(state)

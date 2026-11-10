@@ -7,7 +7,9 @@ import GRDB
 /// The JSON contains every user-data table, tombstones included, rows ordered by primary key and keys sorted,
 /// so exporting → restoring into an empty database → exporting again yields identical bytes.
 public struct DataPortability: Sendable {
-    public static let format = "nutrilog-export"
+    public static let format = "vitalion-export"
+    /// What exports were called while the app was named Nutrilog; still accepted on import.
+    static let legacyFormats: Set<String> = ["nutrilog-export"]
 
     /// Tables in foreign-key-safe insertion order. `off_product_cache` is a re-fetchable cache of ODbL data and
     /// is deliberately excluded, as are `healthkit_outbox` (this device's queue of pending Apple Health writes)
@@ -86,7 +88,7 @@ public struct DataPortability: Sendable {
         } catch {
             throw ImportError.notAnExport
         }
-        guard file.format == Self.format else { throw ImportError.notAnExport }
+        guard file.format == Self.format || Self.legacyFormats.contains(file.format) else { throw ImportError.notAnExport }
         guard file.schemaVersion <= Self.schemaVersion else {
             throw ImportError.newerSchema(file: file.schemaVersion, supported: Self.schemaVersion)
         }

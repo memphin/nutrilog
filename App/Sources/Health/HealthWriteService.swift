@@ -10,7 +10,7 @@ import Persistence
 /// - The repositories queue every changed row in `healthkit_outbox`, in the same transaction as the change (imports
 ///   too). The diary never waits for Health: this service drains the queue afterwards, triggered by a database
 ///   observation of the queue's generation counter.
-/// - For each queued row: delete every sample Nutrilog wrote for it (by `HKMetadataKeyExternalUUID`, so lost links
+/// - For each queued row: delete every sample Vitalion wrote for it (by `HKMetadataKeyExternalUUID`, so lost links
 ///   cannot leave strays), then — if the row is active — write its samples again and replace its `healthkit_link`
 ///   rows. Save, edit, move and undo are therefore all "rewrite", delete is "delete". A brand-new row (no links, never
 ///   attempted) skips the delete.
@@ -29,7 +29,7 @@ import Persistence
 ///   changes; entries edited while off keep their old values in Health until they are edited again.
 ///
 /// Loop prevention (SPEC §3.4): only `diary_entry`, `water_entry` and `weight_entry` rows are ever written. Health
-/// reads go to `daily_metrics` only, and `HealthSyncService` leaves Nutrilog's own water, weight and body fat out of
+/// reads go to `daily_metrics` only, and `HealthSyncService` leaves Vitalion's own water, weight and body fat out of
 /// it, so nothing written here is read back as another app's data.
 @MainActor
 @Observable

@@ -73,7 +73,7 @@ struct TileDetailView: View {
     @ViewBuilder private var manualWeights: some View {
         let entries = model.data.manualWeights.reversed()
         if !entries.isEmpty {
-            Section("Entered in Nutrilog") {
+            Section("Entered in Vitalion") {
                 ForEach(Array(entries)) { entry in
                     Button {
                         weightSheet = .edit(entry)

@@ -4,7 +4,7 @@ import HealthKit
 import HealthKitClient
 import Persistence
 import Testing
-@testable import Nutrilog
+@testable import Vitalion
 
 @MainActor
 struct HealthSyncServiceTests {

@@ -47,7 +47,7 @@ struct ProfileTargetsView: View {
         do {
             let today = environment.today
             let model = TargetsModel(today: today)
-            // The latest weight of any source: weigh-ins entered in Nutrilog and Apple Health (#65).
+            // The latest weight of any source: weigh-ins entered in Vitalion and Apple Health (#65).
             let latest = try StatsLoader.dayWeights(through: today, environment: environment).last { $0.kg != nil }
             try model.load(
                 profile: profiles.profile(), target: profiles.target(on: today), latestWeightKg: latest?.kg, weightDay: latest?.day,
@@ -115,7 +115,7 @@ private struct TargetsForm: View {
                 Text("Profile")
             } footer: {
                 Text(model.weightKg == nil
-                    ? "Weight comes from your weigh-ins: add one on Today → Weight, or allow Nutrilog to read weight from Apple Health."
+                    ? "Weight comes from your weigh-ins: add one on Today → Weight, or allow Vitalion to read weight from Apple Health."
                     : "Weight is your latest weigh-in (Today → Weight, or Apple Health).")
             }
 

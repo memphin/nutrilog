@@ -2,7 +2,7 @@
 
 - [x] Create public GitHub repo, push these files (`main` protected, squash merges, require CI)
 - [x] Replace `<YOUR NAME>` in `LICENSE`, `<you>` in README/xcconfig template
-- [x] Decide final app name & bundle ID → **Nutrilog**, `hr.ivanjuric.nutrilog`
+- [x] Decide final app name & bundle ID → **Nutrilog**, `hr.ivanjuric.nutrilog` (renamed to **Vitalion** in November 2026; the bundle ID stays)
 - [x] Xcode 26: `Nutrilog.xcodeproj` generated from `project.yml` (XcodeGen), local packages linked
 - [x] Add `Config/Secrets.xcconfig` to project build settings; expose `USDA_FDC_API_KEY` via Info.plist
 - [x] Enable HealthKit capability + Background Delivery; add `NSHealthShareUsageDescription`, `NSHealthUpdateUsageDescription`, `NSCameraUsageDescription`

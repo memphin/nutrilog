@@ -14,6 +14,7 @@ public final class AppDatabase: Sendable {
     /// Production database inside the app container, protected until first unlock.
     public static func onDisk(directory: URL) throws -> AppDatabase {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        // The file keeps the app's former name (Nutrilog) so installed copies open their existing data.
         let url = directory.appendingPathComponent("nutrilog.sqlite")
         var config = Configuration()
         config.foreignKeysEnabled = true

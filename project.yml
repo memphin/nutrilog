@@ -1,6 +1,6 @@
-# XcodeGen spec — source of truth for Nutrilog.xcodeproj.
+# XcodeGen spec — source of truth for Vitalion.xcodeproj.
 # After editing: `xcodegen generate` (brew install xcodegen), then commit both files.
-name: Nutrilog
+name: Vitalion
 options:
   bundleIdPrefix: hr.ivanjuric
   deploymentTarget:
@@ -24,7 +24,7 @@ packages:
   Scanner: { path: Packages/Scanner }
   DesignSystem: { path: Packages/DesignSystem }
 targets:
-  Nutrilog:
+  Vitalion:
     type: application
     platform: iOS
     sources:
@@ -39,15 +39,17 @@ targets:
       Release: Config/App.xcconfig
     settings:
       base:
+        # Bundle IDs and the App Group keep the former name (Nutrilog): a new ID would be a new app to Apple, without
+        # the installed data, Health permissions or TestFlight history.
         PRODUCT_BUNDLE_IDENTIFIER: hr.ivanjuric.nutrilog
-        PRODUCT_NAME: Nutrilog
+        PRODUCT_NAME: Vitalion
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_STYLE: Automatic
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     info:
       path: App/Info.plist
       properties:
-        CFBundleDisplayName: Nutrilog
+        CFBundleDisplayName: Vitalion
         CFBundleIconName: AppIcon
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
@@ -56,11 +58,11 @@ targets:
         ITSAppUsesNonExemptEncryption: false
         USDAFDCAPIKey: $(USDA_FDC_API_KEY)
         OFFUserAgentContact: $(OFF_USER_AGENT_CONTACT)
-        NSHealthShareUsageDescription: Nutrilog reads your weight, body fat, steps, sleep, energy, heart rate and water from Apple Health to show them next to what you eat.
-        NSHealthUpdateUsageDescription: Nutrilog writes the nutrients and water you log, and the weight and body fat you enter manually, to Apple Health.
-        NSCameraUsageDescription: Nutrilog uses the camera to scan product barcodes and to take a photo of a meal to estimate what it contains.
+        NSHealthShareUsageDescription: Vitalion reads your weight, body fat, steps, sleep, energy, heart rate and water from Apple Health to show them next to what you eat.
+        NSHealthUpdateUsageDescription: Vitalion writes the nutrients and water you log, and the weight and body fat you enter manually, to Apple Health.
+        NSCameraUsageDescription: Vitalion uses the camera to scan product barcodes and to take a photo of a meal to estimate what it contains.
     entitlements:
-      path: App/Nutrilog.entitlements
+      path: App/Vitalion.entitlements
       properties:
         com.apple.developer.healthkit: true
         com.apple.developer.healthkit.access: []
@@ -75,9 +77,9 @@ targets:
       - package: HealthKitClient
       - package: Scanner
       - package: DesignSystem
-      - target: NutrilogWidgets
+      - target: VitalionWidgets
   # Home Screen / Lock Screen widgets (FR-70). Reads only the snapshot in the App Group container: no packages, no database.
-  NutrilogWidgets:
+  VitalionWidgets:
     type: app-extension
     platform: iOS
     sources:
@@ -89,38 +91,38 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: hr.ivanjuric.nutrilog.widgets
-        PRODUCT_NAME: NutrilogWidgets
+        PRODUCT_NAME: VitalionWidgets
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_STYLE: Automatic
         SKIP_INSTALL: YES
     info:
       path: Widgets/Info.plist
       properties:
-        CFBundleDisplayName: Nutrilog
+        CFBundleDisplayName: Vitalion
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     entitlements:
-      path: Widgets/NutrilogWidgets.entitlements
+      path: Widgets/VitalionWidgets.entitlements
       properties:
         com.apple.security.application-groups: [group.hr.ivanjuric.nutrilog]
-  NutrilogTests:
+  VitalionTests:
     type: bundle.unit-test
     platform: iOS
-    sources: [Tests/NutrilogTests]
+    sources: [Tests/VitalionTests]
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
         PRODUCT_BUNDLE_IDENTIFIER: hr.ivanjuric.nutrilog.tests
     dependencies:
-      - target: Nutrilog
+      - target: Vitalion
 schemes:
-  Nutrilog:
+  Vitalion:
     build:
       targets:
-        Nutrilog: all
-        NutrilogTests: [test]
+        Vitalion: all
+        VitalionTests: [test]
     test:
-      targets: [NutrilogTests]
+      targets: [VitalionTests]
       gatherCoverageData: true

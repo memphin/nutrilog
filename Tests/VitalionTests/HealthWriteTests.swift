@@ -4,7 +4,7 @@ import HealthKitClient
 import Persistence
 import Synchronization
 import Testing
-@testable import Nutrilog
+@testable import Vitalion
 
 /// Holds every `FakeHealthWriter.save` until `open()` — a write in flight.
 final class SaveGate: Sendable {
@@ -442,14 +442,14 @@ struct HealthWriteServiceTests {
         #expect(try env.water?.entries(for: today).isEmpty == true) // other apps' water is not copied into water_entry
     }
 
-    @Test func `water Nutrilog wrote is not read back as other apps' water`() async throws {
+    @Test func `water Vitalion wrote is not read back as other apps' water`() async throws {
         let today = today
         let other = HealthSource(name: "WaterMinder", bundleIdentifier: "com.funnmedia.waterminder")
         source.update { state in
             state.authorizationRequested = true
             state.cumulativeSamples[.dietaryWater] = [HealthQuantitySample(start: today.date(atHour: 9), value: 400, source: other)]
         }
-        // The writer mirrors into the fake source under Nutrilog's bundle id, exactly like Health would.
+        // The writer mirrors into the fake source under Vitalion's bundle id, exactly like Health would.
         try #require(env.water).add(ml: 500, day: today)
         await service.drain()
         #expect(source.snapshot.cumulativeSamples[.dietaryWater]?.count == 2)
@@ -460,7 +460,7 @@ struct HealthWriteServiceTests {
         )
         try await sync.sync(days: today ... today)
         #expect(try env.dailyMetrics?.metrics(on: today)?.waterMl == 400)
-        // The day's water = Nutrilog's entries + other apps — 900 ml, not 1400.
+        // The day's water = Vitalion's entries + other apps — 900 ml, not 1400.
         #expect(try #require(env.water).totalMl(for: today) + (env.dailyMetrics?.metrics(on: today)?.waterMl ?? 0) == 900)
     }
 }

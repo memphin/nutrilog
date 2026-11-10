@@ -12,9 +12,9 @@ struct DashboardData: Equatable {
     var metrics: [DailyMetricsRecord] = []
     /// Manual weights of the history window.
     var manualWeights: [WeightEntry] = []
-    /// Water logged in Nutrilog today.
+    /// Water logged in Vitalion today.
     var water: [WaterEntry] = []
-    /// Water logged in Nutrilog per day over the sparkline window (today included), in ml.
+    /// Water logged in Vitalion per day over the sparkline window (today included), in ml.
     var waterByDay: [LocalDay: Double] = [:]
     /// Today's diary totals.
     var totals: Nutrients = .zero
@@ -40,7 +40,7 @@ struct DashboardData: Equatable {
     }
 }
 
-/// Today's water: logged in Nutrilog plus other apps' water from Health (FR-46). Nutrilog's own Health samples are
+/// Today's water: logged in Vitalion plus other apps' water from Health (FR-46). Vitalion's own Health samples are
 /// already left out of `otherAppsMl`, so nothing is counted twice.
 struct WaterProgress: Equatable {
     var loggedMl: Double
@@ -250,7 +250,7 @@ enum TileHistory {
 
     /// - Parameters:
     ///   - kcalByDay: diary energy per day (only for `.energy`).
-    ///   - loggedWaterByDay: water logged in Nutrilog per day (only for `.water`).
+    ///   - loggedWaterByDay: water logged in Vitalion per day (only for `.water`).
     static func rows(
         for tile: DashboardTile,
         data: DashboardData,
@@ -289,7 +289,7 @@ enum TileHistory {
                     value: kg.map(DashboardFormat.kg),
                     detail: kg == nil ? nil : [
                         trend[day].map { "Trend \(DashboardFormat.kg($0))" },
-                        weight?.isManual == true ? "Entered in Nutrilog" : nil,
+                        weight?.isManual == true ? "Entered in Vitalion" : nil,
                     ].compactMap(\.self).joined(separator: " · "),
                 )
             case .bodyFat:
@@ -313,7 +313,7 @@ enum TileHistory {
                     day: day,
                     value: total > 0 ? DashboardFormat.ml(total) : nil,
                     detail: other > 0 && logged > 0 ?
-                        "\(DashboardFormat.ml(logged)) in Nutrilog, \(DashboardFormat.ml(other)) from other apps" : nil,
+                        "\(DashboardFormat.ml(logged)) in Vitalion, \(DashboardFormat.ml(other)) from other apps" : nil,
                 )
             }
         }

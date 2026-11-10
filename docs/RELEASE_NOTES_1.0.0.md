@@ -1,5 +1,7 @@
 # Nutrilog 1.0.0 — release notes (draft)
 
+> The app was renamed to **Vitalion** in November 2026. These notes keep the name it shipped under.
+
 v1.0.0 completes phase 3 of the [roadmap](SPEC.md#13-roadmap) and with it the v1 scope (phases 1–3).
 This file is a draft until the tag is pushed: the success criteria at the end are the owner's to fill in.
 

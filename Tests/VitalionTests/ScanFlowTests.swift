@@ -6,7 +6,7 @@ import ImageIO
 import Persistence
 import Testing
 import UIKit
-@testable import Nutrilog
+@testable import Vitalion
 
 /// Scan flow (backlog #20) at the model level, with a stub Open Food Facts client (the simulator has no camera).
 @MainActor

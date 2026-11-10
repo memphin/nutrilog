@@ -16,7 +16,7 @@ struct BackupsView: View {
                     .disabled(environment.backups == nil)
             } footer: {
                 Text(
-                    "Nutrilog saves a full backup on this iPhone about once a week and keeps the newest \(LocalBackups.keep). "
+                    "Vitalion saves a full backup on this iPhone about once a week and keeps the newest \(LocalBackups.keep). "
                         + "They protect against a bad import or a mistake — not against losing the phone. For that, share a "
                         + "backup or use Export & import.",
                 )
@@ -110,7 +110,7 @@ struct BackupsView: View {
             environment.refreshStoredWeightTrend()
             message = "Restored \(summary.inserted) records."
         } catch DataPortability.ImportError.newerSchema {
-            message = "This backup was made by a newer version of Nutrilog. Update the app first."
+            message = "This backup was made by a newer version of Vitalion. Update the app first."
         } catch {
             message = "Couldn't restore: \(error.localizedDescription)"
         }

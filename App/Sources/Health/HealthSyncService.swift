@@ -15,7 +15,7 @@ import Persistence
 ///   hourly background delivery re-reads the recent days whenever Health changes (a morning weigh-in shows up within
 ///   the hour without opening the app). Every observer completion handler is called by `HealthObserverDispatcher`.
 /// The calendar (time zone) is read at the start of every sync, so day boundaries follow the device.
-/// Water and weights written by Nutrilog itself are left out of `daily_metrics` (they live in `water_entry` and
+/// Water and weights written by Vitalion itself are left out of `daily_metrics` (they live in `water_entry` and
 /// `weight_entry`).
 @MainActor
 @Observable
@@ -44,7 +44,7 @@ final class HealthSyncService {
 
     let source: any HealthDataSource
     private let observer: (any HealthObserving)?
-    /// Nutrilog's own source in Health; its water and weights are not counted as data from other apps.
+    /// Vitalion's own source in Health; its water and weights are not counted as data from other apps.
     private let ownBundleIdentifier: String?
     private let metrics: DailyMetricsRepository
     private let settings: ProfileRepository

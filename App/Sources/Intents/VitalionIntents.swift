@@ -3,7 +3,7 @@ import Foundation
 import Persistence
 
 // Siri / Shortcuts actions (FR-71, backlog #40). None of them opens the app: the system starts it in the
-// background, `NutrilogApp.init` builds the environment, and the intent works on the same repositories.
+// background, `VitalionApp.init` builds the environment, and the intent works on the same repositories.
 
 /// A favorite food as a Shortcuts parameter.
 struct FoodEntity: AppEntity {
@@ -31,24 +31,24 @@ struct FoodEntity: AppEntity {
 struct FavoriteFoodQuery: EntityStringQuery {
     @MainActor
     func entities(for identifiers: [String]) async throws -> [FoodEntity] {
-        try NutrilogIntentSupport.actions().foods(ids: identifiers).map(FoodEntity.init)
+        try VitalionIntentSupport.actions().foods(ids: identifiers).map(FoodEntity.init)
     }
 
     @MainActor
     func suggestedEntities() async throws -> [FoodEntity] {
-        try NutrilogIntentSupport.actions().favorites().map(FoodEntity.init)
+        try VitalionIntentSupport.actions().favorites().map(FoodEntity.init)
     }
 
     @MainActor
     func entities(matching string: String) async throws -> [FoodEntity] {
-        try NutrilogIntentSupport.actions().favorites()
+        try VitalionIntentSupport.actions().favorites()
             .filter { $0.name.localizedStandardContains(string) || ($0.brand?.localizedStandardContains(string) ?? false) }
             .map(FoodEntity.init)
     }
 }
 
 @MainActor
-enum NutrilogIntentSupport {
+enum VitalionIntentSupport {
     static func actions() throws -> IntentActions {
         guard let environment = AppEnvironment.shared else { throw IntentActions.Failure.databaseUnavailable }
         return IntentActions(environment: environment)
@@ -77,7 +77,7 @@ struct LogFavoriteFoodIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        let message = try await NutrilogIntentSupport.actions().logFood(id: food.id, amount: amount)
+        let message = try await VitalionIntentSupport.actions().logFood(id: food.id, amount: amount)
         return .result(dialog: IntentDialog(stringLiteral: message))
     }
 }
@@ -101,7 +101,7 @@ struct QuickAddCaloriesIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        let message = try await NutrilogIntentSupport.actions().quickAdd(kcal: calories, name: name)
+        let message = try await VitalionIntentSupport.actions().quickAdd(kcal: calories, name: name)
         return .result(dialog: IntentDialog(stringLiteral: message))
     }
 }
@@ -115,7 +115,7 @@ struct RemainingCaloriesIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<Double> & ProvidesDialog {
-        let actions = try NutrilogIntentSupport.actions()
+        let actions = try VitalionIntentSupport.actions()
         let status = try actions.remaining()
         return try .result(value: (status.remainingKcal ?? 0).rounded(), dialog: IntentDialog(stringLiteral: actions.remainingSentence()))
     }
@@ -135,12 +135,12 @@ struct LogWaterIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        let message = try await NutrilogIntentSupport.actions().logWater(ml: amount)
+        let message = try await VitalionIntentSupport.actions().logWater(ml: amount)
         return .result(dialog: IntentDialog(stringLiteral: message))
     }
 }
 
-struct NutrilogShortcuts: AppShortcutsProvider {
+struct VitalionShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
             intent: RemainingCaloriesIntent(),

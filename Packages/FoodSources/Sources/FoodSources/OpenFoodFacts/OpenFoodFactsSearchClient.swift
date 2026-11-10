@@ -88,9 +88,9 @@ public struct OpenFoodFactsSearchHTTPClient: OpenFoodFactsSearchClient {
 
     /// - Parameters:
     ///   - contact: How OFF can reach the app's maintainer, as for ``OpenFoodFactsHTTPClient``: Info.plist
-    ///     `OFFUserAgentContact`, e.g. "https://github.com/memphin/nutrilog". Blank falls back to
-    ///     `Nutrilog/<appVersion>`.
-    ///   - appVersion: Goes into the User-Agent, `Nutrilog/<appVersion> (<contact>)`.
+    ///     `OFFUserAgentContact`, e.g. "https://github.com/memphin/vitalion". Blank falls back to
+    ///     `Vitalion/<appVersion>`.
+    ///   - appVersion: Goes into the User-Agent, `Vitalion/<appVersion> (<contact>)`.
     ///   - pageSize: Results per search (1…100).
     ///   - transport: Defaults to an uncached `URLSession` with the 5 s timeout.
     ///   - throttle: Shared pacing and cool-down state.
@@ -107,7 +107,7 @@ public struct OpenFoodFactsSearchHTTPClient: OpenFoodFactsSearchClient {
         sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) },
     ) {
         let contact = contact.trimmingCharacters(in: .whitespacesAndNewlines)
-        userAgent = contact.isEmpty ? "Nutrilog/\(appVersion)" : "Nutrilog/\(appVersion) (\(contact))"
+        userAgent = contact.isEmpty ? "Vitalion/\(appVersion)" : "Vitalion/\(appVersion) (\(contact))"
         self.baseURL = baseURL
         self.pageSize = min(max(pageSize, 1), 100)
         self.transport = transport
