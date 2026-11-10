@@ -31,6 +31,8 @@ private struct FoodsListContent: View {
     @State private var showCreate = false
     @State private var showCreateMeal = false
     @State private var editingMeal: MealSelection?
+    @State private var savingSlot: MealSlot?
+    @State private var mealName = ""
 
     var body: some View {
         List {
@@ -75,6 +77,7 @@ private struct FoodsListContent: View {
                 Menu("New", systemImage: "plus") {
                     Button("New food", systemImage: "fork.knife") { showCreate = true }
                     Button("New meal", systemImage: "takeoutbag.and.cup.and.straw") { showCreateMeal = true }
+                    mealFromTodayMenu
                 }
             }
         }
@@ -94,6 +97,21 @@ private struct FoodsListContent: View {
         .sheet(item: $editingMeal, onDismiss: reload) { selection in
             MealEditorView(mealID: selection.id, onDeleted: { model.mealWasDeleted($0) })
         }
+        .alert("Save as meal", isPresented: Binding(get: { savingSlot != nil }, set: {
+            if !$0 {
+                savingSlot = nil
+            }
+        })) {
+            TextField("Name", text: $mealName)
+            Button("Save") {
+                if let slot = savingSlot {
+                    model.saveMeal(from: slot, name: mealName)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Saves the foods you logged today so you can log them all at once from Add food → Meals.")
+        }
         .alert("Error", isPresented: Binding(get: { model.errorMessage != nil }, set: {
             if !$0 {
                 model.errorMessage = nil
@@ -101,6 +119,22 @@ private struct FoodsListContent: View {
         })) {
             Button("OK", role: .cancel) {}
         } message: { Text(model.errorMessage ?? "") }
+    }
+
+    /// Breakfast, lunch, dinner, snacks… as logged today, each one tap away from becoming a saved meal.
+    private var mealFromTodayMenu: some View {
+        Menu("Meal from today", systemImage: "calendar.badge.plus") {
+            ForEach(model.todaySlots) { item in
+                Button {
+                    mealName = item.slot.name
+                    savingSlot = item.slot
+                } label: {
+                    Text(item.slot.name)
+                    Text(item.foodCount == 0 ? "Nothing logged" : "\(item.foodCount) \(item.foodCount == 1 ? "food" : "foods")")
+                }
+                .disabled(item.foodCount == 0)
+            }
+        }
     }
 
     /// Any food — a legacy recipe food included — opens in the ordinary food editor.

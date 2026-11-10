@@ -191,16 +191,25 @@ final class SmartLogModel {
         phase = .input
     }
 
-    /// Logs every line into `slotID`: local foods as themselves, estimates as quick-add entries named with their amount.
+    /// Notes on a food made from an estimate, so it can be told apart and reused by a later estimate.
+    static let estimatedFoodNotes = "Estimated by Apple Intelligence."
+
+    /// Logs every line into `slotID`. Local foods are logged as themselves; an estimate becomes a food of its own
+    /// (reusing one made from an identical earlier estimate), so the entry keeps its amount: tapping it edits the
+    /// weight and the nutrients follow, and the meal can be saved as a meal.
     func log(slotID: String, day: LocalDay, in environment: AppEnvironment) throws {
         guard canLog, let diary = environment.diary, let foods = environment.foods else { return }
         var items: [DiaryRepository.LogItem] = []
-        var estimates: [(name: String, nutrients: Nutrients)] = []
+        var estimatedFoods: [Food]?
         for line in lines {
             guard let grams = line.grams else { return }
             switch line.origin {
             case .estimate:
-                estimates.append(("\(line.name) (\(Format.field(grams)) \(line.unit.symbol))", line.nutrients))
+                if estimatedFoods == nil {
+                    estimatedFoods = try foods.customFoods().filter { $0.notes == Self.estimatedFoodNotes }
+                }
+                let food = try Self.estimatedFood(for: line, among: &estimatedFoods!, in: foods)
+                items.append(.init(food: food, quantity: .base(grams)))
             case let .local(.food(food)):
                 items.append(.init(food: food, quantity: .base(grams)))
             case let .local(.bundled(bundled)):
@@ -210,9 +219,29 @@ final class SmartLogModel {
         if !items.isEmpty {
             try diary.logAll(items, slotID: slotID, day: day)
         }
-        for estimate in estimates {
-            try diary.logQuickAdd(name: estimate.name, nutrients: estimate.nutrients, slotID: slotID, day: day)
+    }
+
+    /// The food for an estimated line: an earlier estimated food with the same name and values, else a new one.
+    private static func estimatedFood(for line: Line, among existing: inout [Food], in foods: FoodRepository) throws -> Food {
+        let trimmed = line.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let name = trimmed.isEmpty ? "Estimated food" : trimmed
+        let isLiquid = line.unit == .milliliters
+        if let match = existing.first(where: {
+            $0.name.caseInsensitiveCompare(name) == .orderedSame && $0.isLiquid == isLiquid && sameValues($0.per100, line.per100)
+        }) {
+            return match
         }
+        let food = try foods.save(FoodDetail(food: Food(
+            name: name, per100: line.per100, isLiquid: isLiquid, notes: estimatedFoodNotes,
+        ))).food
+        existing.append(food)
+        return food
+    }
+
+    /// Equal to a tenth of a unit: estimates round-trip through text and scaling.
+    private static func sameValues(_ a: Nutrients, _ b: Nutrients) -> Bool {
+        let close = { (x: Double, y: Double) in abs(x - y) < 0.05 }
+        return close(a.kcal, b.kcal) && close(a.proteinG, b.proteinG) && close(a.carbsG, b.carbsG) && close(a.fatG, b.fatG)
     }
 
     private typealias Result = (lines: [Line], notice: String?)

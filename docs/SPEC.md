@@ -155,7 +155,7 @@ Single user (the owner). Representative daily flows:
 - FR-5 Quick-add calories (and optional macros) without a food.
 - FR-6 Day summary: kcal consumed, remaining, P/C/F grams and % of target; fiber, sugar, sodium (sat. fat SHOULD).
 - FR-7 Notes per day (free text, e.g. "cheat day", "sick").
-- FR-8 Snap or describe a meal (SHOULD): a photo and/or a sentence becomes a list of foods with amounts to review, correct and log in one tap. The estimate is made on the device by the Apple Intelligence model (Foundation Models; a photo needs iOS 27) and logged as quick-add entries. Where the model isn't available, the text, or the labels of the on-device image classifier, are matched to foods on the phone and logged as those foods. Nothing is sent anywhere.
+- FR-8 Snap or describe a meal (SHOULD): a photo and/or a sentence becomes a list of foods with amounts to review, correct and log in one tap. The estimate is made on the device by the Apple Intelligence model (Foundation Models; a photo needs iOS 27) and logged as foods of their own (marked "Estimated by Apple Intelligence", reused when the same estimate comes again), so an entry's amount can be edited later and the meal saved as a meal. Where the model isn't available, the text, or the labels of the on-device image classifier, are matched to foods on the phone and logged as those foods. Nothing is sent anywhere.
 
 ### 5.2 Barcode scanning (MUST)
 - FR-10 Scan EAN-13, EAN-8, UPC-A/E, Code-128 using **VisionKit `DataScannerViewController`**; continuous scanning, haptic on detect, torch toggle. (AVFoundation fallback not needed on iOS 26 hardware.)
