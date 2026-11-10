@@ -35,7 +35,7 @@ public struct FoodRepository: Sendable {
 
     /// Body of ``save(_:movingBarcodes:)`` inside a write transaction; `barcodes` are already normalized and
     /// deduplicated.
-    private static func save(
+    static func save(
         _ db: Database,
         detail: FoodDetail,
         barcodes: [String],

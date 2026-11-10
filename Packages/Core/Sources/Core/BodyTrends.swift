@@ -94,22 +94,46 @@ public struct WeightSummary: Hashable, Sendable {
     }
 }
 
-/// A simple exponential moving average of daily weights (the outlier-aware version is phase 3, backlog #33).
+/// One day of the weight trend (backlog #33).
+public struct WeightTrendPoint: Hashable, Sendable {
+    public var day: LocalDay
+    /// The smoothed weight on `day`.
+    public var trendKg: Double
+    /// The weigh-in of the day; nil when the trend was carried forward.
+    public var weightKg: Double?
+    /// True when the weigh-in jumped more than `WeightTrend.outlierJump` and was down-weighted.
+    public var isOutlier: Bool
+
+    public init(day: LocalDay, trendKg: Double, weightKg: Double?, isOutlier: Bool) {
+        self.day = day
+        self.trendKg = trendKg
+        self.weightKg = weightKg
+        self.isOutlier = isOutlier
+    }
+}
+
+/// The weight trend: an exponential moving average of daily weights (SPEC §5.4.1 step 1, backlog #33).
 public enum WeightTrend {
-    /// The dashboard's "7-day EMA".
-    public static let days = 7
+    /// Smoothing factor of the trend: each weigh-in moves it by 10 % of the difference (SPEC §5.4.1).
+    public static let defaultAlpha = 0.1
+    /// A weigh-in more than 2.5 % away from the previous accepted one counts as a jump (water, a different scale).
+    public static let outlierJump = 0.025
+    /// A jump moves the trend with only this share of `alpha`.
+    public static let outlierAlphaFactor = 0.25
+    /// Jumps are only judged against a weigh-in at most this many days old; after a longer gap any change is plausible.
+    public static let outlierMaxGapDays = 3
 
     /// The usual N-day EMA smoothing factor, 2 / (N + 1): 0.25 for 7 days.
     public static func alpha(days: Int) -> Double {
         2 / Double(max(days, 1) + 1)
     }
 
-    /// The trend for every day from the first weigh-in through `lastDay`. The first weigh-in starts the trend; each
-    /// later weigh-in moves it by `alpha` of the difference; days without one carry the previous value forward.
+    /// The plain EMA for every day from the first weigh-in through `lastDay`. The first weigh-in starts the trend;
+    /// each later weigh-in moves it by `alpha` of the difference; days without one carry the previous value forward.
     public static func ema(
         _ weights: [LocalDay: Double],
         through lastDay: LocalDay,
-        alpha: Double = alpha(days: days),
+        alpha: Double = defaultAlpha,
     ) -> [LocalDay: Double] {
         guard var day = weights.keys.min(), day <= lastDay else { return [:] }
         var trend: Double?
@@ -124,19 +148,83 @@ public enum WeightTrend {
         return result
     }
 
+    /// The trend for every day from the first weigh-in through `lastDay` (default: the last weigh-in), oldest first.
+    ///
+    /// Like ``ema(_:through:alpha:)``, but a weigh-in that jumps more than ``outlierJump`` from the previous accepted
+    /// weigh-in (at most ``outlierMaxGapDays`` days earlier) is down-weighted: it moves the trend with
+    /// `alpha × outlierAlphaFactor`, so one salty dinner barely shows. When the next weigh-in confirms the new level
+    /// (within the threshold of the jump), it is accepted normally — a real change is followed, just a day late.
+    public static func compute(
+        samples: [LocalDay: Double],
+        through lastDay: LocalDay? = nil,
+        alpha: Double = defaultAlpha,
+    ) -> [WeightTrendPoint] {
+        guard var day = samples.keys.min(), let end = lastDay ?? samples.keys.max(), day <= end else { return [] }
+        var trend: Double?
+        var accepted: (day: LocalDay, kg: Double)?
+        var pendingJump: Double?
+        var result: [WeightTrendPoint] = []
+        while day <= end {
+            var isOutlier = false
+            if let weight = samples[day] {
+                if let current = trend {
+                    if let reference = accepted, reference.kg > 0,
+                       reference.day.days(until: day) <= outlierMaxGapDays,
+                       abs(weight - reference.kg) / reference.kg > outlierJump,
+                       !(pendingJump.map { $0 > 0 && abs(weight - $0) / $0 <= outlierJump } ?? false)
+                    {
+                        isOutlier = true
+                        pendingJump = weight
+                        trend = current + alpha * outlierAlphaFactor * (weight - current)
+                    } else {
+                        pendingJump = nil
+                        accepted = (day, weight)
+                        trend = current + alpha * (weight - current)
+                    }
+                } else {
+                    trend = weight
+                    accepted = (day, weight)
+                }
+            }
+            if let trend {
+                result.append(WeightTrendPoint(day: day, trendKg: trend, weightKg: samples[day], isOutlier: isOutlier))
+            }
+            day = day.next
+        }
+        return result
+    }
+
+    /// ``compute(samples:through:alpha:)`` as day → trend.
+    public static func trendByDay(
+        _ samples: [LocalDay: Double],
+        through lastDay: LocalDay? = nil,
+        alpha: Double = defaultAlpha,
+    ) -> [LocalDay: Double] {
+        var result: [LocalDay: Double] = [:]
+        for point in compute(samples: samples, through: lastDay, alpha: alpha) {
+            result[point.day] = point.trendKg
+        }
+        return result
+    }
+
+    /// Day → weight for the days of `weights` that have one.
+    public static func samples(_ weights: [DayWeight]) -> [LocalDay: Double] {
+        var result: [LocalDay: Double] = [:]
+        for weight in weights {
+            if let kg = weight.kg {
+                result[weight.day] = kg
+            }
+        }
+        return result
+    }
+
     /// Latest weight, trend on `today` and the 7-day trend change; nil when no day up to `today` has a weight.
     public static func summary(_ weights: [DayWeight], today: LocalDay) -> WeightSummary? {
         let known = weights.filter { $0.day <= today }
-        var byDay: [LocalDay: Double] = [:]
-        for weight in known {
-            if let kg = weight.kg {
-                byDay[weight.day] = kg
-            }
-        }
         guard let latest = known.filter({ $0.kg != nil }).max(by: { $0.day < $1.day }), let latestKg = latest.kg else {
             return nil
         }
-        let trend = ema(byDay, through: today)
+        let trend = trendByDay(samples(known), through: today)
         guard let trendToday = trend[today] else { return nil }
         let change = trend[today.adding(days: -7)].map { trendToday - $0 }
         return WeightSummary(latest: latest, latestKg: latestKg, trendKg: trendToday, trendChange7d: change)

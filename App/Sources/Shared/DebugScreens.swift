@@ -42,6 +42,32 @@
                         QuantitySheet(detail: detail, mode: .log(slotID: "breakfast", day: environment.today)) {}
                     }
                 }
+            case "trends":
+                TrendsView()
+            case "checkIn":
+                CheckInView()
+            case "checkInHistory":
+                NavigationStack { CheckInHistoryView() }
+            case "history":
+                NavigationStack { HistoryCalendarView() }
+            case "weeklyReport":
+                NavigationStack { WeeklyReportView() }
+            case "chartWeight":
+                NavigationStack { MetricChartScreen(metric: .weight) }
+            case "chartEnergy":
+                NavigationStack { MetricChartScreen(metric: .energy) }
+            case "chartMacros":
+                NavigationStack { MetricChartScreen(metric: .macros) }
+            case "chartSteps":
+                NavigationStack { MetricChartScreen(metric: .steps) }
+            case "recipe":
+                RecipeEditorView(recipeID: try? environment.recipes?.recipes().first?.id)
+            case "duplicates":
+                NavigationStack { DuplicateFoodsView() }
+            case "backups":
+                NavigationStack { BackupsView() }
+            case "diary":
+                DiaryView()
             default:
                 Text("Unknown screen \(name)")
             }

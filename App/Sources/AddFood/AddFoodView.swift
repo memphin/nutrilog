@@ -3,14 +3,14 @@ import DesignSystem
 import Persistence
 import SwiftUI
 
-/// "+" on a meal slot: Recents / Favorites / My foods tabs plus unified search (backlog #8, FR-20, FR-22).
+/// "+" on a meal slot: Recents / Favorites / My foods / Meals tabs plus unified search (backlog #8, #32, FR-20, FR-22).
 struct AddFoodView: View {
     let target: AddTarget
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.dismiss) private var dismiss
 
     enum Tab: String, CaseIterable, Identifiable {
-        case recents = "Recents", favorites = "Favorites", mine = "My foods"
+        case recents = "Recents", favorites = "Favorites", mine = "My foods", meals = "Meals"
         var id: String {
             rawValue
         }
@@ -29,6 +29,10 @@ struct AddFoodView: View {
     @State private var scope: SearchScope = .local
     @State private var online = OnlineSearchModel()
     @State private var servingPrompt: PendingServingWeight?
+    @State private var meals: [MealTemplateDetail] = []
+    @State private var loggingMeal: MealTemplateDetail?
+    @State private var renamingMeal: MealTemplateDetail?
+    @State private var mealName = ""
 
     /// Where a typed search looks: this iPhone (own foods + bundled index) or online (OFF + USDA, backlog #22).
     enum SearchScope: String, CaseIterable, Identifiable {
@@ -56,9 +60,27 @@ struct AddFoodView: View {
                     .listRowInsets(EdgeInsets())
 
                     let foods = currentList
-                    if foods.isEmpty {
+                    if tab == .meals ? meals.isEmpty : foods.isEmpty {
                         EmptyStateView(emptyTitle, systemImage: "fork.knife", message: emptyMessage)
                             .listRowBackground(Color.clear)
+                    }
+                    if tab == .meals {
+                        ForEach(meals) { meal in
+                            Button { loggingMeal = meal } label: {
+                                MealRow(meal: meal, unit: environment.energyUnit)
+                            }
+                            .buttonStyle(.plain)
+                            .swipeActions(edge: .trailing) {
+                                Button("Delete", systemImage: "trash", role: .destructive) { deleteMeal(meal) }
+                            }
+                            .contextMenu {
+                                Button("Rename", systemImage: "pencil") {
+                                    mealName = meal.template.name
+                                    renamingMeal = meal
+                                }
+                                Button("Delete", systemImage: "trash", role: .destructive) { deleteMeal(meal) }
+                            }
+                        }
                     }
                     ForEach(foods) { food in
                         Button { open(food) } label: {
@@ -126,6 +148,18 @@ struct AddFoodView: View {
                     path.append(detail)
                 }
             }
+            .sheet(item: $loggingMeal, onDismiss: reloadLists) { meal in
+                MealLogSheet(meal: meal, target: target) { dismiss() }
+            }
+            .alert("Rename meal", isPresented: Binding(get: { renamingMeal != nil }, set: {
+                if !$0 {
+                    renamingMeal = nil
+                }
+            })) {
+                TextField("Name", text: $mealName)
+                Button("Save") { renameMeal() }
+                Button("Cancel", role: .cancel) {}
+            }
             .sheet(isPresented: $showCreate) {
                 FoodEditorView(initialName: query) { saved in
                     reloadLists()
@@ -158,6 +192,7 @@ struct AddFoodView: View {
         case .recents: lists.recents
         case .favorites: lists.favorites
         case .mine: lists.mine
+        case .meals: []
         }
     }
 
@@ -166,6 +201,7 @@ struct AddFoodView: View {
         case .recents: "Nothing logged yet"
         case .favorites: "No favorites"
         case .mine: "No custom foods"
+        case .meals: "No saved meals"
         }
     }
 
@@ -173,7 +209,29 @@ struct AddFoodView: View {
         switch tab {
         case .recents: "Search above or create a food — it shows up here after you log it."
         case .favorites: "Tap the star on a food to keep it here."
-        case .mine: "Foods you create appear here."
+        case .mine: "Foods and recipes you create appear here."
+        case .meals: "In the diary, open a meal's menu and choose “Save as meal” to log it again in one tap."
+        }
+    }
+
+    private func deleteMeal(_ meal: MealTemplateDetail) {
+        do {
+            try environment.meals?.softDelete(id: meal.id)
+            reloadLists()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func renameMeal() {
+        guard let meal = renamingMeal else { return }
+        do {
+            try environment.meals?.rename(id: meal.id, to: mealName)
+            reloadLists()
+        } catch let PersistenceError.validation(message) {
+            errorMessage = message
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 
@@ -185,6 +243,7 @@ struct AddFoodView: View {
                 favorites: foods.favorites(),
                 mine: foods.customFoods(),
             )
+            meals = try environment.meals?.templates() ?? []
         } catch {
             errorMessage = error.localizedDescription
         }

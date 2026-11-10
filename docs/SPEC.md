@@ -2,8 +2,8 @@
 
 | Field | Value |
 |---|---|
-| Document version | 1.0 (approved baseline) |
-| Date | 2026-11-09 |
+| Document version | 1.1 (v1.0 feature-complete) |
+| Date | 2026-11-10 |
 | Status | **Approved** — development starts with Phase 0. Changes go through PRs to `docs/SPEC.md` with a change-log entry. |
 | Working name | **Nutrilog** (rename at any time before the first TestFlight build) |
 | Audience | Single owner/developer; open-source contributors later |
@@ -194,7 +194,7 @@ Unit tests cover: perfect-logging synthetic data (recovers the true TDEE within 
 
 ### 5.5 Health & body data (MUST)
 - FR-40 Request HealthKit read permissions for steps, weight, body fat %, sleep, active energy, basal energy; write permission for dietary nutrients and body mass.
-- FR-41 Dashboard tiles for today: steps, sleep duration (hours:minutes, plus in-bed vs. asleep and stage breakdown), weight (latest + 7-day EMA trend + Δ vs. 7 days ago), body fat %, active energy, resting heart rate, overnight HRV, water. Tiles are reorderable/hideable.
+- FR-41 Dashboard tiles for today: steps, sleep duration (hours:minutes, plus in-bed vs. asleep and stage breakdown), weight (latest + trend + trend Δ vs. 7 days ago; the trend is the EMA of §5.4.1 step 1, the same one the charts and the adaptive TDEE use), body fat %, active energy, resting heart rate, overnight HRV, water. Tiles are reorderable/hideable.
 - FR-42 Manual weight entry (writes to Health unless disabled).
 - FR-43 Write each diary entry's nutrients to Health as `dietary*` samples; keep in sync on edit/delete; global toggle to disable writing.
 - FR-44 Background refresh via observer queries; manual pull-to-refresh.
@@ -271,8 +271,9 @@ Nutrilog/
 │   ├── HealthKitClient/      # Authorization, queries, writers, observers
 │   ├── Scanner/              # VisionKit DataScannerViewController wrapper
 │   └── DesignSystem/         # Colors, typography, components, charts
-├── Widgets/                  # WidgetKit extension
-├── Intents/                  # App Intents (Siri/Shortcuts)
+├── Widgets/                  # WidgetKit extension (reads a snapshot of today from the App Group container)
+├── Shared/                   # Code compiled into the app and the widget extension
+│                             # App Intents (Siri/Shortcuts) live in App/Sources/Intents: they run in the app process
 ├── Resources/                # Bundled food index (SQLite or JSON), licenses
 └── Tests/                    # Unit + UI tests
 ```
@@ -420,6 +421,7 @@ All blocking decisions are made (D1–D9). The following defaults may be changed
 ---
 
 *Change log*
+- 1.1 — phase 3 implemented (recipes, saved meals, weight trend, adaptive TDEE and weekly check-in, history calendar, charts, weekly report, App Intents, duplicate merge and backups, widgets). Clarifications made while building it: FR-41's weight tile uses the §5.4.1 trend (α = 0.1) instead of a separate 7-day EMA, so every screen shows one trend; the trend's outlier rule compares a weigh-in with the previous accepted one (at most 3 days earlier) and accepts a jump that the next weigh-in confirms; the estimate also needs ≥ 2 weigh-ins and a trend spanning ≥ 7 days of the window; "medium" confidence = ≥ 10 logged days and ≥ 4 weigh-ins; proposed targets never go below 1,200 kcal and are not lowered while under-logging is suspected; widgets read a snapshot written by the app rather than the database; App Intents are part of the app target (2026-11-10)
 - 1.0 — approved baseline; draft markers removed (2026-11-09)
 - 0.1 — initial research + draft (2026-11-09)
 - 0.4 — D7 Developer Program/TestFlight, D8 GRDB, D9 water + body fat % + resting HR/HRV tiles added as MUST (FR-46–48, HealthKit types, data model); phase 2 estimate adjusted; all blocking questions closed (2026-11-09)

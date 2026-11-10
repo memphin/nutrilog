@@ -4,17 +4,29 @@
 
 Log what you eat (barcode scan, search, recipes, saved meals) and see it next to how your body responds — weight trend, body fat, steps, sleep, resting heart rate, HRV — all pulled from Apple Health. No account, no cloud, no telemetry.
 
-> Status: **Phase 1 — MVP diary.** Food diary, custom foods, offline search, targets and export work; barcode scanning and Apple Health arrive in phase 2. See the [roadmap](docs/SPEC.md#13-roadmap).
+> Status: **v1.0 feature-complete** (phases 1–3 of the [roadmap](docs/SPEC.md#13-roadmap)): diary, barcode scanning, Apple Health, recipes, saved meals, adaptive TDEE with a weekly check-in, history, charts, weekly report, Shortcuts and widgets. Next is phase 4 (optional self-hosted sync and a web client). Release notes: [docs/RELEASE_NOTES_1.0.0.md](docs/RELEASE_NOTES_1.0.0.md).
 
-## Features (planned for v1)
+| Today | Trends | Weekly check-in |
+|---|---|---|
+| ![Today dashboard](docs/screenshots/today.png) | ![Trends](docs/screenshots/trends.png) | ![Weekly check-in](docs/screenshots/check-in.png) |
 
-- Fast food diary with meal slots, recents, favorites, saved meals and recipes
+| History | Weight chart | Weekly report |
+|---|---|---|
+| ![History calendar](docs/screenshots/history.png) | ![Weight chart](docs/screenshots/weight-chart.png) | ![Weekly report](docs/screenshots/weekly-report.png) |
+
+*Screenshots show the built-in sample data (`-uiSampleData`), not real data.*
+
+## Features
+
+- Fast food diary with meal slots, recents, favorites, quick-add, copy meal/day, **saved meals** (log a usual meal in one tap) and **recipes** (ingredients, cooked weight or servings, log by grams or servings)
 - Barcode scanning (VisionKit) with Open Food Facts lookup and one-tap manual entry when a product is missing
-- Offline search over a bundled USDA FoodData Central subset + your own foods (SQLite FTS5, diacritic-insensitive)
-- Calorie and macro targets, **adaptive TDEE estimate** from your intake and smoothed weight trend, weekly check-in
-- Apple Health: reads steps, sleep (with stages), weight, body fat %, active energy, resting HR, HRV, water; writes nutrients and water
+- Offline search over a bundled USDA FoodData Central subset + your own foods (SQLite FTS5, diacritic-insensitive); online search in Open Food Facts and USDA
+- Calorie and macro targets, **adaptive maintenance (TDEE) estimate** from your intake and smoothed weight trend, and a **weekly check-in** that proposes a target — every number explains how it was computed
+- Apple Health: reads steps, sleep (with stages), weight, body fat %, active and resting energy, resting HR, HRV, water; writes nutrients, water and manual weights
 - Works with any scale/watch that syncs to Apple Health (built and tested with a Withings scale + Apple Watch)
-- Charts, weekly report, JSON/CSV export — your data is always yours
+- History calendar colored by adherence, charts (1W / 1M / 3M / 1Y) for weight and trend, body fat, calories vs target, macros, steps, sleep, heart rate, HRV, water and energy burned, and a shareable weekly report
+- Siri / Shortcuts: log a favorite, quick-add calories, remaining calories, log water; Home Screen and Lock Screen widgets
+- JSON/CSV export and import, automatic weekly on-device backups, duplicate-food merge — your data is always yours
 
 Not planned: ads, subscriptions, social features, coaching, analytics SDKs.
 
@@ -34,7 +46,7 @@ open Nutrilog.xcodeproj
 ```
 
 1. Put your Apple Developer Team ID in `Config/Secrets.xcconfig` (`DEVELOPMENT_TEAM = ...`) or pick your team in Xcode → `Nutrilog` target → Signing & Capabilities.
-2. HealthKit (with *Background Delivery*) is already declared in `App/Nutrilog.entitlements`.
+2. HealthKit (with *Background Delivery*) and the App Group the widgets read from (`group.hr.ivanjuric.nutrilog`) are already declared in the entitlements. With your own bundle ID, change the group in `project.yml` and `Shared/WidgetSnapshot.swift` to match.
 3. Run on a real iPhone (HealthKit is limited in the simulator). Simulator builds and tests work without a team.
 
 The Xcode project is generated from `project.yml` with [XcodeGen](https://github.com/yonaskolb/XcodeGen). After changing targets, files or settings: `brew install xcodegen && xcodegen generate`, and commit both `project.yml` and `Nutrilog.xcodeproj`.
@@ -48,10 +60,10 @@ The app works without one (bundled foods + Open Food Facts). For online USDA sea
 ## Project layout
 
 ```
-App/            SwiftUI app, DI, navigation
+App/            SwiftUI app, DI, navigation; App Intents (Siri / Shortcuts) in App/Sources/Intents
 Packages/       Swift packages: Core, Persistence (GRDB), FoodSources, FoodLookup, HealthKitClient, Scanner, DesignSystem
-Widgets/        WidgetKit extension (post-v1)
-Intents/        App Intents (Siri / Shortcuts)
+Widgets/        WidgetKit extension (Home Screen and Lock Screen widgets)
+Shared/         Code compiled into both the app and the widget extension
 Resources/      Bundled food index, licenses
 tools/          Scripts (e.g. build the bundled USDA food index)
 docs/           SPEC.md (product & technical specification), ADRs

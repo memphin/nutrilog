@@ -12,7 +12,7 @@ settings:
     SWIFT_STRICT_CONCURRENCY: complete
     # Local builds only: the TestFlight job overrides both from the tag (v0.2.0 → 0.2.0) and the commit count.
     # Keep MARKETING_VERSION at the version being released next (docs/RELEASING.md).
-    MARKETING_VERSION: "0.2.1"
+    MARKETING_VERSION: "1.0.0"
     CURRENT_PROJECT_VERSION: "1"
     ENABLE_USER_SCRIPT_SANDBOXING: YES
 packages:
@@ -30,6 +30,7 @@ targets:
     sources:
       - App/Sources
       - App/Resources
+      - Shared
       - path: Resources/FoodIndex
         buildPhase: resources
         type: folder
@@ -64,6 +65,8 @@ targets:
         com.apple.developer.healthkit: true
         com.apple.developer.healthkit.access: []
         com.apple.developer.healthkit.background-delivery: true
+        # Shared with the widget extension: the app writes today's snapshot there (backlog #42).
+        com.apple.security.application-groups: [group.hr.ivanjuric.nutrilog]
     dependencies:
       - package: Core
       - package: Persistence
@@ -72,6 +75,36 @@ targets:
       - package: HealthKitClient
       - package: Scanner
       - package: DesignSystem
+      - target: NutrilogWidgets
+  # Home Screen / Lock Screen widgets (FR-70). Reads only the snapshot in the App Group container: no packages, no database.
+  NutrilogWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - Widgets
+      - Shared
+    configFiles:
+      Debug: Config/App.xcconfig
+      Release: Config/App.xcconfig
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: hr.ivanjuric.nutrilog.widgets
+        PRODUCT_NAME: NutrilogWidgets
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_STYLE: Automatic
+        SKIP_INSTALL: YES
+    info:
+      path: Widgets/Info.plist
+      properties:
+        CFBundleDisplayName: Nutrilog
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: Widgets/NutrilogWidgets.entitlements
+      properties:
+        com.apple.security.application-groups: [group.hr.ivanjuric.nutrilog]
   NutrilogTests:
     type: bundle.unit-test
     platform: iOS

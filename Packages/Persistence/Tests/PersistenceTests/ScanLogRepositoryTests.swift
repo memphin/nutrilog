@@ -11,8 +11,8 @@ struct ScanLogRepositoryTests {
 
     @Test func `scan log is migrated (006) and not exported`() throws {
         let f = try Fixture()
-        #expect(Migrator.migrations.last == "006_barcode_scan_log")
-        #expect(DataPortability.schemaVersion == 6)
+        #expect(Migrator.migrations.contains("006_barcode_scan_log"))
+        #expect(DataPortability.schemaVersion >= 6)
         try log(f).record(barcode: "4006381333931", outcome: .local)
         let data = try DataPortability(f.db, clock: f.clock.appClock).exportJSON()
         let object = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])

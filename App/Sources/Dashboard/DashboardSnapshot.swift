@@ -247,7 +247,7 @@ enum TileHistory {
                 weightByDay[day] = kg
             }
         }
-        let trend = WeightTrend.ema(weightByDay, through: data.today)
+        let trend = WeightTrend.trendByDay(weightByDay, through: data.today)
         return (0 ..< days).map { offset in
             let day = data.today.adding(days: -offset)
             let row = metrics[day]

@@ -41,6 +41,20 @@ The team also needs **at least one registered device**. Without one, automatic s
 profile that the archive step uses, and fails with "Your team has no devices". To register your iPhone, run the app on
 it once from Xcode with your team selected, or add it under **Devices**.
 
+### 1b. The widget extension and its App Group (since v1.0.0)
+
+The app embeds a widget extension (`hr.ivanjuric.nutrilog.widgets`), and both share the App Group
+`group.hr.ivanjuric.nutrilog`. With automatic signing and `-allowProvisioningUpdates` Xcode registers the extension's
+App ID and the group by itself on the first signed build. If the archive step fails on signing instead, register them
+by hand:
+
+1. **Identifiers → +  → App Groups**: description `Nutrilog`, identifier `group.hr.ivanjuric.nutrilog`.
+2. **Identifiers → + → App IDs → App**: bundle ID `hr.ivanjuric.nutrilog.widgets`, capability **App Groups**.
+3. Open the `hr.ivanjuric.nutrilog` App ID, enable **App Groups** on it too, and select the group on both IDs.
+
+Build the app once on your iPhone from Xcode before tagging: that confirms the signing works and lets you check the
+widgets and the Shortcuts actions on a real device (the simulator tests don't cover either).
+
 ### 2. Create the App Store Connect app record
 
 1. Open [appstoreconnect.apple.com](https://appstoreconnect.apple.com) and go to **Apps**. Click **+**, then **New App**.

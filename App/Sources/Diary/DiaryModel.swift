@@ -23,6 +23,8 @@ final class DiaryModel {
     private(set) var liquidFoodIDs: Set<String> = []
     var errorMessage: String?
     let undo = UndoCenter()
+    /// The adaptive maintenance estimate, for the under-logging hint (backlog #36); nil until there is one.
+    private(set) var estimateKcal: Double?
 
     private let environment: AppEnvironment
     private var pinnedDay: LocalDay
@@ -180,6 +182,47 @@ final class DiaryModel {
         }
     }
 
+    // MARK: Saved meals (backlog #32)
+
+    /// "Save as meal": a saved meal from the food entries of one slot of the current day.
+    @discardableResult
+    func saveAsMeal(slotID: String, name: String) -> Bool {
+        guard let meals = environment.meals else { return false }
+        do {
+            let meal = try meals.createFromDiary(day: day, slotID: slotID, name: name)
+            undo.offer("Saved meal “\(meal.template.name)”") { [weak self] in
+                do {
+                    try meals.softDelete(id: meal.id)
+                } catch {
+                    self?.errorMessage = error.localizedDescription
+                }
+            }
+            return true
+        } catch let PersistenceError.validation(message) {
+            errorMessage = message
+            return false
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+    }
+
+    // MARK: Fully logged days and under-logging (backlog #36)
+
+    /// Re-reads the maintenance estimate the hint compares a day with.
+    func reloadEstimate() {
+        estimateKcal = (try? Expenditure.snapshot(environment: environment))?.kcal
+    }
+
+    /// A gentle hint for a finished day that looks incompletely logged; nil otherwise. Never changes any target.
+    var loggingHint: String? {
+        guard let diary else { return nil }
+        return DiaryHints.hint(
+            day: day, today: today, kcal: diary.totals.kcal, entryCount: diary.entryCount,
+            isComplete: diary.note?.isComplete ?? false, estimateKcal: estimateKcal, unit: energyUnit,
+        )
+    }
+
     // MARK: Day note
 
     func saveNote(text: String, isComplete: Bool) {
@@ -218,5 +261,25 @@ final class DiaryModel {
             errorMessage = error.localizedDescription
             return false
         }
+    }
+}
+
+/// Hints about days that look incompletely logged (SPEC §5.4.1 inputs, backlog #36). Informational only: the app
+/// warns, it never lowers a target because of a low day.
+enum DiaryHints {
+    static func hint(
+        day: LocalDay, today: LocalDay, kcal: Double, entryCount: Int, isComplete: Bool, estimateKcal: Double?, unit: EnergyUnit,
+    ) -> String? {
+        // Today is still being logged; a day marked complete is trusted as it is; an empty day says nothing.
+        guard day < today, !isComplete, entryCount > 0 else { return nil }
+        if AdaptiveTDEE.looksUnderLogged(dayKcal: kcal, isComplete: isComplete, estimateKcal: estimateKcal), let estimateKcal {
+            return "\(unit.format(kcal)) is less than half of your estimated \(unit.format(estimateKcal)) a day. "
+                + "If something is missing, add it. If this really was everything, mark the day as fully logged."
+        }
+        if entryCount < AdaptiveTDEE.minimumEntries {
+            return "Days with fewer than \(AdaptiveTDEE.minimumEntries) entries are left out of the maintenance estimate. "
+                + "Mark the day as fully logged if this was everything you ate."
+        }
+        return nil
     }
 }

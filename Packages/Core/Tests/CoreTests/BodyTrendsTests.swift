@@ -17,7 +17,7 @@ struct WeightTrendTests {
 
     @Test func `EMA starts at the first weigh-in and moves by alpha`() {
         let weights: [LocalDay: Double] = [day("2026-11-01"): 80, day("2026-11-02"): 84, day("2026-11-03"): 76]
-        let trend = WeightTrend.ema(weights, through: day("2026-11-03"))
+        let trend = WeightTrend.ema(weights, through: day("2026-11-03"), alpha: 0.25)
         #expect(trend[day("2026-11-01")] == 80)
         #expect(trend[day("2026-11-02")] == 81) // 80 + 0.25 × 4
         #expect(trend[day("2026-11-03")] == 79.75) // 81 + 0.25 × −5
@@ -26,7 +26,7 @@ struct WeightTrendTests {
 
     @Test func `missing days carry the trend forward`() {
         let weights: [LocalDay: Double] = [day("2026-11-01"): 80, day("2026-11-04"): 88]
-        let trend = WeightTrend.ema(weights, through: day("2026-11-06"))
+        let trend = WeightTrend.ema(weights, through: day("2026-11-06"), alpha: 0.25)
         #expect(trend[day("2026-11-02")] == 80)
         #expect(trend[day("2026-11-03")] == 80)
         #expect(trend[day("2026-11-04")] == 82)
@@ -52,7 +52,12 @@ struct WeightTrendTests {
         var weights: [DayWeight] = []
         // One kilo less every day for 10 days, from 90 kg on Nov 1.
         for offset in 0 ..< 10 {
-            weights.append(DayWeight(day: day("2026-11-01").adding(days: offset), kg: 90 - Double(offset), bodyFatPct: nil, isManual: false))
+            weights.append(DayWeight(
+                day: day("2026-11-01").adding(days: offset),
+                kg: 90 - Double(offset),
+                bodyFatPct: nil,
+                isManual: false,
+            ))
         }
         let summary = try #require(WeightTrend.summary(weights, today: day("2026-11-10")))
         #expect(summary.latestKg == 81)
@@ -71,7 +76,10 @@ struct WeightTrendTests {
         #expect(summary.trendChange7d == nil)
         #expect(WeightTrend.summary([], today: day("2026-11-10")) == nil)
         // Body fat only: no weight to summarize.
-        #expect(WeightTrend.summary([DayWeight(day: day("2026-11-08"), kg: nil, bodyFatPct: 18, isManual: false)], today: day("2026-11-10")) == nil)
+        #expect(WeightTrend.summary(
+            [DayWeight(day: day("2026-11-08"), kg: nil, bodyFatPct: 18, isManual: false)],
+            today: day("2026-11-10"),
+        ) == nil)
     }
 }
 
@@ -100,7 +108,12 @@ struct WeightReconcilerTests {
 
     @Test func `manual body fat wins and days are local`() {
         let manual = [
-            ManualWeight(measuredAt: time("2026-11-09 00:30", zagreb), kg: 80, bodyFatPct: nil, enteredAt: time("2026-11-09 09:00", zagreb)),
+            ManualWeight(
+                measuredAt: time("2026-11-09 00:30", zagreb),
+                kg: 80,
+                bodyFatPct: nil,
+                enteredAt: time("2026-11-09 09:00", zagreb),
+            ),
             ManualWeight(measuredAt: time("2026-11-09 08:00", zagreb), kg: 81, bodyFatPct: 17, enteredAt: time("2026-11-09 08:00", zagreb)),
         ]
         let health = [DailyHealthMetrics(day: day("2026-11-09"), bodyFatPct: 19)]

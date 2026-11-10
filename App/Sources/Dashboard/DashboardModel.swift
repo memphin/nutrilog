@@ -222,6 +222,7 @@ final class DashboardModel {
             } else {
                 try weights.add(kg: kg, bodyFatPct: bodyFatPct, measuredAt: measuredAt)
             }
+            environment.refreshStoredWeightTrend()
             return true
         } catch {
             errorMessage = "Couldn't save the weight: \(error.localizedDescription)"
@@ -233,7 +234,11 @@ final class DashboardModel {
         guard let weights = environment.weights else { return }
         do {
             try weights.softDelete(ids: [entry.id])
-            offerUndo("Deleted \(DashboardFormat.kg(entry.kg))") { try weights.restore(ids: [entry.id]) }
+            environment.refreshStoredWeightTrend()
+            offerUndo("Deleted \(DashboardFormat.kg(entry.kg))") { [environment] in
+                try weights.restore(ids: [entry.id])
+                environment.refreshStoredWeightTrend()
+            }
         } catch {
             errorMessage = "Couldn't delete the weight: \(error.localizedDescription)"
         }

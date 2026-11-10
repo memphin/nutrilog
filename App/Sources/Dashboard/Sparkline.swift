@@ -144,7 +144,7 @@ extension DashboardSnapshot {
             .totalEnergy: Sparkline(total, today: today, mark: .bar),
             .sleep: Sparkline(sleepHours, today: today, mark: .bar),
             .water: Sparkline(water, today: today, mark: .bar),
-            .weight: Sparkline(WeightTrend.ema(weightByDay, through: today), today: today, mark: .line),
+            .weight: Sparkline(WeightTrend.trendByDay(weightByDay, through: today), today: today, mark: .line),
             .bodyFat: Sparkline(bodyFatByDay, today: today, mark: .line),
             .restingHeartRate: Sparkline(series(\.restingHR), today: today, mark: .line),
             .hrv: Sparkline(series(\.hrvSDNNms), today: today, mark: .line),

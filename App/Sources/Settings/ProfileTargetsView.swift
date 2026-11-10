@@ -131,7 +131,7 @@ private struct TargetsForm: View {
             } header: {
                 Text("Calories")
             } footer: {
-                Text("From phase 3, the weekly check-in refines this with your real intake and weight trend.")
+                Text("The weekly check-in (Trends) refines this with your real intake and weight trend.")
             }
 
             Section {

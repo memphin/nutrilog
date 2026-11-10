@@ -1,0 +1,272 @@
+import Core
+import Foundation
+
+/// What can be charted (FR-51, backlog #38).
+enum ChartMetric: String, CaseIterable, Identifiable {
+    case weight, bodyFat, energy, macros, steps, sleep, restingHeartRate, hrv, water, activeEnergy, totalEnergy
+
+    var id: String {
+        rawValue
+    }
+
+    var title: String {
+        switch self {
+        case .weight: "Weight"
+        case .bodyFat: "Body fat"
+        case .energy: "Calories vs target"
+        case .macros: "Macros"
+        case .steps: "Steps"
+        case .sleep: "Sleep"
+        case .restingHeartRate: "Resting heart rate"
+        case .hrv: "HRV"
+        case .water: "Water"
+        case .activeEnergy: "Active energy"
+        case .totalEnergy: "Total energy burned"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .weight: "scalemass"
+        case .bodyFat: "percent"
+        case .energy: "flame"
+        case .macros: "chart.bar.xaxis"
+        case .steps: "figure.walk"
+        case .sleep: "bed.double"
+        case .restingHeartRate: "heart"
+        case .hrv: "waveform.path.ecg"
+        case .water: "drop"
+        case .activeEnergy: "bolt.heart"
+        case .totalEnergy: "flame.circle"
+        }
+    }
+
+    /// Bars for amounts per day; lines for measurements.
+    var isBar: Bool {
+        switch self {
+        case .energy, .macros, .steps, .sleep, .water, .activeEnergy, .totalEnergy: true
+        case .weight, .bodyFat, .restingHeartRate, .hrv: false
+        }
+    }
+
+    /// The chart a dashboard tile opens.
+    init(tile: DashboardTile) {
+        self = switch tile {
+        case .energy: .energy
+        case .water: .water
+        case .sleep: .sleep
+        case .weight: .weight
+        case .bodyFat: .bodyFat
+        case .steps: .steps
+        case .activeEnergy: .activeEnergy
+        case .totalEnergy: .totalEnergy
+        case .restingHeartRate: .restingHeartRate
+        case .hrv: .hrv
+        }
+    }
+}
+
+enum ChartRange: String, CaseIterable, Identifiable {
+    case week = "1W", month = "1M", quarter = "3M", year = "1Y"
+
+    var id: String {
+        rawValue
+    }
+
+    var days: Int {
+        switch self {
+        case .week: 7
+        case .month: 30
+        case .quarter: 90
+        case .year: 365
+        }
+    }
+
+    var spokenTitle: String {
+        switch self {
+        case .week: "last 7 days"
+        case .month: "last 30 days"
+        case .quarter: "last 3 months"
+        case .year: "last year"
+        }
+    }
+
+    /// The days shown when the range ends on `today`.
+    func days(endingOn today: LocalDay) -> ClosedRange<LocalDay> {
+        today.adding(days: -(days - 1)) ... today
+    }
+}
+
+/// One mark of a chart: a day, or a week for the long ranges of bar charts.
+struct ChartPoint: Identifiable, Equatable {
+    /// The day, or the first day of the bucket.
+    var day: LocalDay
+    /// Days covered (1 or 7).
+    var spanDays: Int
+    /// The main value (already in display units); nil when the day has none.
+    var value: Double?
+    /// Weight: the trend. Calories: the target.
+    var reference: Double?
+    /// Macros only, in grams.
+    var proteinG: Double?
+    var carbsG: Double?
+    var fatG: Double?
+
+    var id: LocalDay {
+        day
+    }
+}
+
+struct ChartSeries: Equatable {
+    var metric: ChartMetric
+    var range: ChartRange
+    var points: [ChartPoint]
+    /// Mean of the daily values in the range (not of the buckets), so it equals the weekly report's averages.
+    var average: Double?
+    /// Days of the range that have a value.
+    var daysWithData: Int
+    var unitLabel: String
+    /// Days per mark: 1, or 7 when bars are grouped by week.
+    var bucketDays: Int
+
+    var isEmpty: Bool {
+        daysWithData == 0
+    }
+}
+
+/// Which days count for intake averages.
+enum IntakeStats {
+    /// `stats` with today's intake removed while the day is still being logged (not marked as fully logged).
+    static func finished(_ stats: [DayStats], today: LocalDay?) -> [DayStats] {
+        stats.map { day in
+            guard day.day == today, !day.isComplete else { return day }
+            var open = day
+            open.intake = nil
+            return open
+        }
+    }
+}
+
+/// Turns `DayStats` into chart series. Pure, so the numbers are unit-tested against the weekly report.
+enum ChartBuilder {
+    /// The daily value of `metric` in display units.
+    static func value(_ metric: ChartMetric, _ day: DayStats, unit: EnergyUnit) -> Double? {
+        switch metric {
+        case .weight: day.weightKg
+        case .bodyFat: day.bodyFatPct
+        case .energy, .macros: day.kcal.map(unit.display)
+        case .steps: day.steps.map(Double.init)
+        case .sleep: day.sleepMin.map { Double($0) / 60 }
+        case .restingHeartRate: day.restingHR
+        case .hrv: day.hrvMs
+        case .water: day.waterMl
+        case .activeEnergy: day.activeKcal.map(unit.display)
+        case .totalEnergy: day.totalBurnedKcal.map(unit.display)
+        }
+    }
+
+    static func unitLabel(_ metric: ChartMetric, unit: EnergyUnit) -> String {
+        switch metric {
+        case .weight: "kg"
+        case .bodyFat: "%"
+        case .energy, .activeEnergy, .totalEnergy: unit.symbol
+        case .macros: "g"
+        case .steps: "steps"
+        case .sleep: "h"
+        case .restingHeartRate: "bpm"
+        case .hrv: "ms"
+        case .water: "ml"
+        }
+    }
+
+    /// - Parameters:
+    ///   - stats: the days of the range, oldest first.
+    ///   - today: when given, today's intake is drawn but left out of the average of the intake charts unless the
+    ///     day is marked as fully logged — a half-logged day would pull the average down (the weekly report does
+    ///     the same, see `IntakeStats.finished`).
+    static func series(
+        _ metric: ChartMetric,
+        range: ChartRange,
+        stats: [DayStats],
+        unit: EnergyUnit,
+        firstWeekday: Int = 2,
+        today: LocalDay? = nil,
+    ) -> ChartSeries {
+        let daily = stats.map { day -> ChartPoint in
+            var point = ChartPoint(day: day.day, spanDays: 1, value: value(metric, day, unit: unit))
+            switch metric {
+            case .weight:
+                point.reference = day.trendKg
+            case .energy:
+                point.reference = day.targetKcal.map(unit.display)
+            case .macros:
+                point.proteinG = day.intake?.proteinG
+                point.carbsG = day.intake?.carbsG
+                point.fatG = day.intake?.fatG
+            default:
+                break
+            }
+            return point
+        }
+        let counted = metric == .energy || metric == .macros ? IntakeStats.finished(stats, today: today) : stats
+        let values = counted.compactMap { value(metric, $0, unit: unit) }
+        let groupsByWeek = metric.isBar && range.days > 31
+        return ChartSeries(
+            metric: metric, range: range,
+            points: groupsByWeek ? weekly(daily, firstWeekday: firstWeekday) : daily,
+            average: values.isEmpty ? nil : values.reduce(0, +) / Double(values.count),
+            daysWithData: values.count,
+            unitLabel: unitLabel(metric, unit: unit),
+            bucketDays: groupsByWeek ? 7 : 1,
+        )
+    }
+
+    /// Weekly means of the days that have a value.
+    static func weekly(_ daily: [ChartPoint], firstWeekday: Int) -> [ChartPoint] {
+        var order: [LocalDay] = []
+        var buckets: [LocalDay: [ChartPoint]] = [:]
+        for point in daily {
+            let week = point.day.weekStart(firstWeekday: firstWeekday)
+            if buckets[week] == nil {
+                order.append(week)
+            }
+            buckets[week, default: []].append(point)
+        }
+        return order.map { week in
+            let points = buckets[week] ?? []
+            return ChartPoint(
+                day: week, spanDays: 7,
+                value: Stats.mean(points.map(\.value)), reference: Stats.mean(points.map(\.reference)),
+                proteinG: Stats.mean(points.map(\.proteinG)), carbsG: Stats.mean(points.map(\.carbsG)),
+                fatG: Stats.mean(points.map(\.fatG)),
+            )
+        }
+    }
+
+    /// "8,412 steps", "7.4 h", "81.3 kg".
+    static func format(_ value: Double, _ metric: ChartMetric, unit: EnergyUnit) -> String {
+        let digits = switch metric {
+        case .weight, .bodyFat, .sleep: 1
+        default: 0
+        }
+        return "\(value.formatted(.number.precision(.fractionLength(digits)))) \(unitLabel(metric, unit: unit))"
+    }
+
+    /// A spoken summary of the chart for VoiceOver and the caption under it.
+    static func summary(_ series: ChartSeries, unit: EnergyUnit) -> String {
+        let name = series.metric.title
+        guard let average = series.average else { return "\(name), \(series.range.spokenTitle): no data." }
+        let values = series.points.compactMap(\.value)
+        var text = "\(name), \(series.range.spokenTitle): average \(format(average, series.metric, unit: unit))"
+        if let low = values.min(), let high = values.max(), values.count > 1 {
+            let per = series.bucketDays == 7 ? " (weekly averages)" : ""
+            text += ", from \(format(low, series.metric, unit: unit)) to \(format(high, series.metric, unit: unit))\(per)"
+        }
+        text += ". \(series.daysWithData) of \(series.range.days) days have data."
+        let trend = series.points.compactMap(\.reference)
+        if series.metric == .weight, let first = trend.first, let last = trend.last {
+            text += " Trend \(DashboardFormat.kgChange(last - first)) over the period."
+        }
+        return text
+    }
+}

@@ -57,23 +57,30 @@ public struct ProfileRepository: Sendable {
     @discardableResult
     public func setTarget(_ target: Target) throws -> Target {
         let now = clock.now()
-        return try database.writer.write { db in
-            var saved = target
-            if let existing = try Target
-                .filter(Target.Columns.effectiveFrom == target.effectiveFrom && Target.Columns.deletedAt == nil)
-                .fetchOne(db)
-            {
-                saved.id = existing.id
-                saved.createdAt = existing.createdAt
-                saved.revision = existing.revision
-                saved.stampUpdated(now)
-                try saved.update(db)
-            } else {
-                saved.stampCreated(now)
-                try saved.insert(db)
-            }
-            return saved
+        return try database.writer.write { db in try Self.setTarget(db, target, now: now) }
+    }
+
+    static func setTarget(_ db: Database, _ target: Target, now: Date) throws -> Target {
+        var saved = target
+        if let existing = try Target
+            .filter(Target.Columns.effectiveFrom == target.effectiveFrom && Target.Columns.deletedAt == nil)
+            .fetchOne(db)
+        {
+            saved.id = existing.id
+            saved.createdAt = existing.createdAt
+            saved.revision = existing.revision
+            saved.stampUpdated(now)
+            try saved.update(db)
+        } else {
+            saved.stampCreated(now)
+            try saved.insert(db)
         }
+        return saved
+    }
+
+    /// Every target by its first day, to look up the one in effect on any day (history calendar, charts).
+    public func targetTimeline() throws -> EffectiveTimeline<Target> {
+        try EffectiveTimeline(targetHistory().map { (from: $0.effectiveFrom, value: $0) })
     }
 
     public func targetHistory() throws -> [Target] {
