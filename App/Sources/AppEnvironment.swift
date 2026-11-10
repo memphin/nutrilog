@@ -406,10 +406,10 @@ final class AppEnvironment {
         insertSampleHistory(oats: oats, milk: milk)
     }
 
-    /// Six weeks of diary history, a complete profile, a recipe and a saved meal, so the Trends screens (maintenance
+    /// Six weeks of diary history, a complete profile and a saved meal, so the Trends screens (maintenance
     /// estimate, check-in, calendar, charts, weekly report) have something to show. Weights come from the demo Health data.
     private func insertSampleHistory(oats: Food?, milk: Food?) {
-        guard let foods, let diary, let profiles, let recipes, let meals else { return }
+        guard let foods, let diary, let profiles, let meals else { return }
         if var profile = try? profiles.profile() {
             profile.heightCm = 182
             profile.birthDate = LocalDay(year: 1988, month: 4, day: 12)
@@ -439,11 +439,7 @@ final class AppEnvironment {
             }
         }
         if let oats, let milk {
-            _ = try? recipes.save(RecipeDraft(
-                name: "Overnight oats",
-                ingredients: [RecipeIngredient(food: oats, grams: 160), RecipeIngredient(food: milk, grams: 500)],
-                cookedWeightG: 640, servingsCount: 4,
-            ))
+            _ = try? meals.create(name: "Overnight oats", items: [.init(foodID: oats.id, grams: 40), .init(foodID: milk.id, grams: 125)])
             _ = try? meals.createFromDiary(day: today, slotID: "breakfast", name: "Usual breakfast")
             try? foods.setFavorite(id: milk.id, true)
         }

@@ -6,8 +6,8 @@ import Persistence
 extension FoodSource {
     var badge: SourceBadge.Kind {
         switch self {
-        case .custom: .custom
-        case .recipe: .recipe
+        // `.recipe` is legacy (issue #68): such a food is an ordinary custom food.
+        case .custom, .recipe: .custom
         case .bundled: .bundled
         case .off: .off
         case .usda: .usda

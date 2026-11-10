@@ -5,12 +5,13 @@ This file is a draft until the tag is pushed: the success criteria at the end ar
 
 ## New since 0.2
 
-**Recipes and saved meals**
-- Recipes: ingredients with amounts, cooked weight or number of servings, nutrition per 100 g and per serving. Log by
-  grams or by serving. "Scale all amounts" for a bigger or smaller batch, duplicate a recipe. Each ingredient keeps
-  the values it had when it was added, and editing a recipe never changes what was already logged.
-- Saved meals: "Save as meal…" in any meal's menu, then log it from Add food → Meals — every item with its amount,
-  editable before confirming. Meals are ordered by how often and how recently you use them; an item whose food was
+**Saved meals**
+- Meals are lists of foods with amounts. Create one in Foods → + → New meal (pick foods, set amounts, see the
+  totals) or with "Save as meal…" in any meal's menu of the diary; edit its name and foods later in the Foods tab.
+  Log it from Add food → Meals — every item with its amount, editable before confirming. Editing a meal never
+  changes what was already logged.
+- There are no separate recipes: the app has foods and meals only. Recipes created with earlier builds are kept as
+  ordinary custom foods with the values they had. Meals are ordered by how often and how recently you use them; an item whose food was
   deleted is flagged and can still be logged.
 
 **Adaptive maintenance estimate and weekly check-in**
@@ -28,7 +29,11 @@ This file is a draft until the tag is pushed: the success criteria at the end ar
 - History calendar: two years of months, each day colored by how close it was to the target that applied that day;
   tap a day to open it in the diary.
 - Charts with 1W / 1M / 3M / 1Y, scrubbing and an average line: weight with trend, body fat, calories vs target,
-  macros, steps, sleep, resting heart rate, HRV, water, active and total energy. Every dashboard tile opens its chart.
+  macros, steps, sleep, resting heart rate, HRV, water and total energy (resting + active, stacked). Every dashboard tile
+  opens its chart.
+- Daily goals: a step goal and a water goal (Settings). Step bars are green at the goal, orange close below it and red
+  further away; water is red below its goal and green from it.
+- The Today dashboard's tiles are arranged in Settings → Dashboard.
   Charts have a spoken summary for VoiceOver.
 - Weekly report for any week: averages, closest and furthest day, intake against estimated expenditure, trend change;
   share it as an image rendered on the device.
@@ -40,8 +45,8 @@ This file is a draft until the tag is pushed: the success criteria at the end ar
   (medium, Lock Screen rectangular).
 
 **Your data**
-- Duplicate foods (Settings): foods sharing a barcode or the same name and brand can be merged; diary entries,
-  recipes and saved meals move to the food you keep.
+- Duplicate foods (Settings): foods sharing a barcode or the same name and brand can be merged; diary entries
+  and saved meals move to the food you keep.
 - Automatic weekly backup on the device (newest 7 kept), with restore and share in Settings → Backups.
 
 ## Changed

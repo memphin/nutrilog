@@ -6,6 +6,8 @@ import Persistence
 extension SettingKey {
     /// `DashboardLayout`: tile order and hidden tiles (backlog #28).
     static let dashboardLayout = "dashboardLayout"
+    /// The daily step goal (`StepGoal`, #63).
+    static let stepGoal = "stepGoal"
 }
 
 extension AppEnvironment {
@@ -26,7 +28,6 @@ enum DashboardTile: String, CaseIterable, Codable, Identifiable, Hashable {
     case weight
     case bodyFat
     case steps
-    case activeEnergy
     case totalEnergy
     case restingHeartRate
     case hrv
@@ -42,7 +43,6 @@ enum DashboardTile: String, CaseIterable, Codable, Identifiable, Hashable {
         case .sleep: "Sleep"
         case .weight: "Weight"
         case .bodyFat: "Body fat"
-        case .activeEnergy: "Active energy"
         case .totalEnergy: "Total energy"
         case .restingHeartRate: "Resting heart rate"
         case .hrv: "HRV"
@@ -57,7 +57,6 @@ enum DashboardTile: String, CaseIterable, Codable, Identifiable, Hashable {
         case .sleep: "bed.double"
         case .weight: "scalemass"
         case .bodyFat: "percent"
-        case .activeEnergy: "bolt.heart"
         case .totalEnergy: "flame.circle"
         case .restingHeartRate: "heart"
         case .hrv: "waveform.path.ecg"
@@ -68,8 +67,32 @@ enum DashboardTile: String, CaseIterable, Codable, Identifiable, Hashable {
     /// Wide tiles take a full row; the others are paired two per row.
     var isWide: Bool {
         switch self {
-        case .energy, .sleep, .water: true
+        case .energy, .water: true
         default: false
+        }
+    }
+
+    /// The text under the tile's detail list: what the metric is and how to read it (#67), or where missing days
+    /// come from.
+    var detailDescription: String? {
+        switch self {
+        case .energy, .water:
+            nil
+        case .totalEnergy:
+            "Total energy is resting plus active energy from Apple Health: resting is what your body burns just to "
+                + "keep going, active is what movement and exercise add. A day with only one of them has no total."
+        case .restingHeartRate:
+            "Resting heart rate is how many times your heart beats per minute while you are awake, calm and haven't "
+                + "moved for a while. A lower value usually goes with better fitness; a value clearly above your own "
+                + "7-day average can be a sign of stress, poor sleep, alcohol or an illness coming on. Compare it with "
+                + "your own baseline rather than with other people."
+        case .hrv:
+            "Heart rate variability (HRV) is how much the time between heartbeats varies, in milliseconds (SDNN), "
+                + "measured mostly while you sleep. A higher value than your usual generally means you are well "
+                + "recovered; a lower one can follow hard training, stress, short sleep, alcohol or illness. HRV is "
+                + "very individual, so compare it with your own 7- and 30-day averages, not with other people."
+        case .steps, .sleep, .weight, .bodyFat:
+            "Days without a value had no data in Apple Health — or Nutrilog may not have permission to read it."
         }
     }
 
@@ -116,6 +139,19 @@ struct DashboardLayout: Equatable, Codable {
         order.move(fromOffsets: source, toOffset: destination)
     }
 
+    /// Reorders the visible tiles (offsets into `visible`); hidden tiles follow them.
+    mutating func moveVisible(fromOffsets source: IndexSet, toOffset destination: Int) {
+        var shown = visible
+        shown.move(fromOffsets: source, toOffset: destination)
+        order = shown + order.filter { hidden.contains($0) }
+    }
+
+    /// Shows a hidden tile as the last visible one.
+    mutating func show(_ tile: DashboardTile) {
+        guard hidden.remove(tile) != nil else { return }
+        order = visible.filter { $0 != tile } + [tile] + order.filter { hidden.contains($0) }
+    }
+
     /// Visible tiles grouped into rows: a wide tile alone, narrow tiles in pairs (a narrow tile followed by a wide one
     /// or ending the list sits alone).
     var rows: [[DashboardTile]] {
@@ -142,7 +178,8 @@ struct DashboardLayout: Equatable, Codable {
     }
 
     /// Drops duplicates and adds tiles missing from `order` (a tile added in an update): after the nearest tile that
-    /// precedes it in the default order (Total energy after Active energy), or at the end when none does.
+    /// precedes it in the default order (Total energy after Steps), or at the end when none does. A tile that no
+    /// longer exists (Active energy, merged into Total energy in #66) is skipped when decoding.
     private mutating func normalize() {
         var seen = Set<DashboardTile>()
         order = order.filter { seen.insert($0).inserted }
@@ -220,6 +257,46 @@ enum WaterQuickAdd {
         let normalized = normalized(sizes)
         try settings.setSetting(SettingKey.waterQuickAddSizes, normalized)
         return normalized
+    }
+}
+
+// MARK: - Step goal
+
+/// The daily step goal and how a day compares with it (#63).
+enum StepGoal {
+    static let defaultSteps = 10000
+    static let validRange = 1000 ... 50000
+    static let step = 500
+    /// A day at or above this share of the goal is "near" it.
+    static let nearShare = 0.8
+
+    enum Band: Equatable {
+        /// At or above the goal.
+        case reached
+        /// Below the goal, but at least `nearShare` of it.
+        case near
+        /// Well below the goal.
+        case far
+    }
+
+    static func band(steps: Double, goal: Int) -> Band {
+        guard goal > 0 else { return .reached }
+        if steps >= Double(goal) {
+            return .reached
+        }
+        return steps >= Double(goal) * nearShare ? .near : .far
+    }
+
+    static func normalized(_ steps: Int) -> Int {
+        min(max(steps, validRange.lowerBound), validRange.upperBound)
+    }
+
+    static func load(from settings: ProfileRepository) -> Int {
+        normalized((try? settings.setting(SettingKey.stepGoal, as: Int.self)) ?? defaultSteps)
+    }
+
+    static func save(_ steps: Int, to settings: ProfileRepository) throws {
+        try settings.setSetting(SettingKey.stepGoal, normalized(steps))
     }
 }
 

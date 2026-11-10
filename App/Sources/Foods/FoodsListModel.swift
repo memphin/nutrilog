@@ -3,11 +3,13 @@ import Foundation
 import Observation
 import Persistence
 
-/// State and actions for the "Foods" tab: custom foods plus favorites, with undoable delete.
+/// State and actions for the "Foods" tab: saved meals, custom foods and favorites, with undoable delete.
 @MainActor
 @Observable
 final class FoodsListModel {
     private(set) var foods: [Food] = []
+    /// Saved meals, most used first.
+    private(set) var meals: [MealTemplateDetail] = []
     var query = ""
     var errorMessage: String?
     let undo = UndoCenter()
@@ -27,10 +29,20 @@ final class FoodsListModel {
         }
     }
 
+    /// Meals whose name or one of whose foods matches the filter.
+    var filteredMeals: [MealTemplateDetail] {
+        let text = query.trimmingCharacters(in: .whitespaces)
+        guard !text.isEmpty else { return meals }
+        return meals.filter { meal in
+            meal.template.name.localizedStandardContains(text) || meal.items.contains { $0.food.name.localizedStandardContains(text) }
+        }
+    }
+
     func reload() {
         guard let repo = environment.foods else { return }
         do {
-            // Custom foods, recipes and anything starred (e.g. a favorite USDA item).
+            meals = try environment.meals?.templates() ?? []
+            // Custom foods and anything starred (e.g. a favorite USDA item).
             let mine = try repo.customFoods()
             let favorites = try repo.favorites().filter { fav in !mine.contains { $0.id == fav.id } }
             foods = (mine + favorites).sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
@@ -71,6 +83,31 @@ final class FoodsListModel {
             }
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Soft-deletes the meal and offers undo.
+    func delete(_ meal: MealTemplateDetail) {
+        do {
+            try environment.meals?.softDelete(id: meal.id)
+            mealWasDeleted(meal)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Reloads and offers undo for a meal that was just deleted (here or in the meal editor).
+    func mealWasDeleted(_ meal: MealTemplateDetail) {
+        reload()
+        let generation = environment.dataGeneration
+        undo.offer("Deleted \(meal.template.name)") { [weak self] in
+            guard let self, environment.dataGeneration == generation else { return }
+            do {
+                try environment.meals?.restore(id: meal.id)
+                reload()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         }
     }
 

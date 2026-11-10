@@ -29,8 +29,6 @@ private struct DashboardContent: View {
     @Environment(AppEnvironment.self) private var environment
     @Bindable var model: DashboardModel
     @State private var path: [DashboardTile] = []
-    @State private var showCustomize = false
-    @State private var weightSheet: WeightSheetTarget?
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -44,7 +42,11 @@ private struct DashboardContent: View {
                         }
                     }
                     if model.layout.visible.isEmpty {
-                        EmptyStateView("All tiles are hidden", systemImage: "square.grid.2x2", message: "Tap Edit to show them again.")
+                        EmptyStateView(
+                            "All tiles are hidden",
+                            systemImage: "square.grid.2x2",
+                            message: "Show them again in Settings → Dashboard.",
+                        )
                     }
                 }
                 .padding(.horizontal, NL.Spacing.l)
@@ -54,29 +56,8 @@ private struct DashboardContent: View {
             .onAppear { model.reloadSettings() } // sizes may have changed in Settings
             .refreshable { await model.refresh() }
             .navigationTitle("Today")
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Edit") { showCustomize = true }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Button("Weight", systemImage: "scalemass") { weightSheet = .new }
-                        ForEach(model.waterSizes, id: \.self) { size in
-                            Button("\(size) ml water", systemImage: "drop") { model.addWater(ml: size) }
-                        }
-                    } label: {
-                        Label("Add", systemImage: "plus")
-                    }
-                }
-            }
             .navigationDestination(for: DashboardTile.self) { tile in
                 TileDetailView(tile: tile, model: model)
-            }
-            .sheet(isPresented: $showCustomize) {
-                DashboardCustomizeView(model: model)
-            }
-            .sheet(item: $weightSheet) { target in
-                WeightEntrySheet(model: model, editing: target.entry)
             }
             .undoToast(model.undo)
             .alert("Error", isPresented: Binding(get: { model.errorMessage != nil }, set: {
@@ -133,7 +114,9 @@ struct DashboardTileView: View {
             if state == .ready {
                 TileContent(tile: tile, model: model)
                 if let sparkline {
-                    SparklineView(sparkline: sparkline, tint: tile == .water ? NL.Palette.water : NL.Palette.trend)
+                    SparklineView(sparkline: sparkline, tint: tile == .totalEnergy ? .orange : NL.Palette.trend) {
+                        snapshot.goalColor(of: tile, value: $0.value)
+                    }
                 }
             } else {
                 TilePlaceholder(state: state, model: model)
@@ -220,7 +203,13 @@ private struct TileContent: View {
         case .energy:
             EnergyTileContent(totals: snapshot.totals, target: snapshot.target, unit: model.energyUnit)
         case .steps:
-            ValueText(snapshot.steps.map { $0.formatted() } ?? "—", unit: "steps")
+            VStack(alignment: .leading, spacing: NL.Spacing.xxs) {
+                ValueText(
+                    snapshot.steps.map { $0.formatted() } ?? "—", unit: "steps",
+                    color: snapshot.steps.map { GoalColor.steps(Double($0), goal: snapshot.stepGoal) } ?? .primary,
+                )
+                Text("Goal \(snapshot.stepGoal.formatted())").font(.footnote).foregroundStyle(.secondary)
+            }
         case .sleep:
             SleepTileContent(sleep: snapshot.sleep)
         case .weight:
@@ -245,12 +234,6 @@ private struct TileContent: View {
                     }
                 }
             }
-        case .activeEnergy:
-            let unit = model.energyUnit
-            ValueText(
-                snapshot.activeKcal.map { unit.display($0).formatted(.number.precision(.fractionLength(0))) } ?? "—",
-                unit: unit.symbol,
-            )
         case .totalEnergy:
             if let burned = snapshot.energyBurned {
                 TotalEnergyContent(burned: burned, unit: model.energyUnit)
@@ -268,15 +251,19 @@ private struct TileContent: View {
 private struct ValueText: View {
     let value: String
     let unit: String
+    /// The colour of the number (goal colours); the unit stays secondary.
+    var color: Color = .primary
 
-    init(_ value: String, unit: String) {
+    init(_ value: String, unit: String, color: Color = .primary) {
         self.value = value
         self.unit = unit
+        self.color = color
     }
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: NL.Spacing.xs) {
             Text(value).font(NL.Typography.number).monospacedDigit().contentTransition(.numericText())
+                .foregroundStyle(color)
             Text(unit).font(.footnote).foregroundStyle(.secondary)
         }
         .lineLimit(1)
@@ -332,32 +319,15 @@ private struct EnergyTileContent: View {
     }
 }
 
+/// Last night's sleep: the time asleep only (time in bed when that is all Health has). Stages are in the detail (#62).
 private struct SleepTileContent: View {
     let sleep: SleepValue?
 
     var body: some View {
-        if let sleep {
-            VStack(alignment: .leading, spacing: NL.Spacing.xxs) {
-                if let asleep = sleep.asleepMin {
-                    ValueText(DashboardFormat.duration(asleep), unit: "asleep")
-                } else if let inBed = sleep.inBedMin {
-                    ValueText(DashboardFormat.duration(inBed), unit: "in bed")
-                }
-                if let inBed = sleep.inBedMin, sleep.asleepMin != nil {
-                    Text("In bed \(DashboardFormat.duration(inBed))").font(.footnote).foregroundStyle(.secondary)
-                }
-                if sleep.hasStages {
-                    Text([
-                        sleep.coreMin.map { "Core \(DashboardFormat.duration($0))" },
-                        sleep.deepMin.map { "Deep \(DashboardFormat.duration($0))" },
-                        sleep.remMin.map { "REM \(DashboardFormat.duration($0))" },
-                        sleep.awakeMin.map { "Awake \(DashboardFormat.duration($0))" },
-                    ].compactMap(\.self).joined(separator: " · "))
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
+        if let asleep = sleep?.asleepMin {
+            ValueText(DashboardFormat.duration(asleep), unit: "asleep")
+        } else if let inBed = sleep?.inBedMin {
+            ValueText(DashboardFormat.duration(inBed), unit: "in bed")
         }
     }
 }
@@ -393,18 +363,23 @@ struct WaterTileContent: View {
     let add: (Int) -> Void
 
     var body: some View {
+        // Red below the goal, green once it is reached (#64).
+        let goalColor = GoalColor.water(water.totalMl, goalMl: water.goalMl)
         VStack(alignment: .leading, spacing: NL.Spacing.s) {
             HStack(alignment: .firstTextBaseline) {
-                ValueText(water.totalMl.formatted(.number.precision(.fractionLength(0))), unit: "of \(DashboardFormat.ml(water.goalMl))")
+                ValueText(
+                    water.totalMl.formatted(.number.precision(.fractionLength(0))), unit: "of \(DashboardFormat.ml(water.goalMl))",
+                    color: goalColor,
+                )
                 Spacer()
                 if water.isGoalReached {
                     Label("Goal reached", systemImage: "checkmark.circle.fill")
                         .labelStyle(.iconOnly)
-                        .foregroundStyle(NL.Palette.water)
+                        .foregroundStyle(goalColor)
                 }
             }
             ProgressView(value: water.fraction)
-                .tint(NL.Palette.water)
+                .tint(goalColor)
                 .accessibilityLabel("Water")
                 .accessibilityValue("\(Int(water.totalMl)) of \(Int(water.goalMl)) millilitres")
             if water.otherAppsMl > 0 {
@@ -422,41 +397,6 @@ struct WaterTileContent: View {
                     .buttonStyle(.bordered)
                     .tint(NL.Palette.water)
                     .accessibilityLabel("Add \(size) millilitres of water")
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Customize
-
-struct DashboardCustomizeView: View {
-    let model: DashboardModel
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    ForEach(model.layout.order) { tile in
-                        Toggle(isOn: Binding(get: { model.layout.isVisible(tile) }, set: { model.setVisible(tile, $0) })) {
-                            Label(tile.title, systemImage: tile.systemImage)
-                        }
-                    }
-                    .onMove { model.moveTiles(fromOffsets: $0, toOffset: $1) }
-                } footer: {
-                    Text("Drag to reorder. Hidden tiles keep their place.")
-                }
-                Section {
-                    Button("Reset to default") { model.resetLayout() }
-                }
-            }
-            .environment(\.editMode, .constant(.active))
-            .navigationTitle("Edit dashboard")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
                 }
             }
         }

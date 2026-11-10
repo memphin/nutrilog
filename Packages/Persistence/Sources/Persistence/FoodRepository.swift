@@ -220,7 +220,7 @@ public struct FoodRepository: Sendable {
         }
     }
 
-    /// All active custom foods and recipes, by name.
+    /// All active custom foods (including any legacy recipe food, see `FoodSource.recipe`), by name.
     public func customFoods() throws -> [Food] {
         try database.reader.read { db in
             try Food

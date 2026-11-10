@@ -96,6 +96,9 @@ struct SparklineTests {
         let total = snapshot.sparklines[.totalEnergy]
         #expect(total?.points.map(\.index) == [0, 1, 2, 5, 6])
         #expect(total?.points.last?.value == 2000)
+        // Each bar is resting with active on top (#66).
+        #expect(total?.points.allSatisfy { $0.base == 1600 } == true)
+        #expect(steps?.points.allSatisfy { $0.base == nil } == true)
 
         // Water: Nutrilog's own plus other apps', days with neither are gaps.
         let water = snapshot.sparklines[.water]
@@ -108,7 +111,8 @@ struct SparklineTests {
         #expect(snapshot.accessibilityTrend(of: .weight, state: .ready) == "down over 7 days")
         #expect(snapshot.accessibilityTrend(of: .weight, state: .needsAccess) == nil)
 
-        // One night of sleep and no HRV or body fat: nothing to draw.
+        // Sleep has no chart on its tile (#62); no HRV or body fat: nothing to draw.
+        #expect(snapshot.sparklines[.sleep] == nil)
         #expect(snapshot.sparkline(for: .sleep) == nil)
         #expect(snapshot.sparkline(for: .hrv) == nil)
         #expect(snapshot.sparkline(for: .bodyFat) == nil)

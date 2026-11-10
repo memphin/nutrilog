@@ -395,6 +395,9 @@ Refs: §1.3, §11
 ### 31. Recipes: model, editor, logging by grams or servings
 `labels: persistence, ui, phase-3`
 
+> Removed after owner feedback (issue #68): the app has foods and meals only. Saved meals (#32) got an editor
+> (name + foods with amounts); existing recipes became ordinary custom foods (migration 008).
+
 Recipe = food(source='recipe') + `recipe_ingredient` snapshots; editor with ingredient search, cooked total weight or servings count; per-100 g computed; log by grams or servings; "re-cook" updates weights.
 
 **Acceptance criteria**

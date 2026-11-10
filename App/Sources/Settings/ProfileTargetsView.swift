@@ -47,7 +47,11 @@ struct ProfileTargetsView: View {
         do {
             let today = environment.today
             let model = TargetsModel(today: today)
-            try model.load(profile: profiles.profile(), target: profiles.target(on: today), latestWeightKg: profiles.latestWeight()?.kg)
+            // The latest weight of any source: weigh-ins entered in Nutrilog and Apple Health (#65).
+            let latest = try StatsLoader.dayWeights(through: today, environment: environment).last { $0.kg != nil }
+            try model.load(
+                profile: profiles.profile(), target: profiles.target(on: today), latestWeightKg: latest?.kg, weightDay: latest?.day,
+            )
             self.model = model
         } catch {
             errorMessage = error.localizedDescription
@@ -71,9 +75,22 @@ private struct TargetsForm: View {
 
     var body: some View {
         Form {
-            Section("Profile") {
+            Section {
                 LabeledContent("Height") { trailingField($model.heightCm, "cm") }
-                LabeledContent("Weight") { trailingField($model.weightKg, "kg") }
+                LabeledContent("Weight") {
+                    if let weight = model.weightKg {
+                        VStack(alignment: .trailing, spacing: NL.Spacing.xxs) {
+                            Text(DashboardFormat.kg(weight)).monospacedDigit()
+                            if let day = model.weightDay {
+                                Text(Format.day(day, today: model.today)).font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                    } else {
+                        Text("No weight yet").foregroundStyle(.secondary)
+                    }
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityHint("Read-only. Add a weight on Today, in the Weight tile.")
                 Toggle("Birth date known", isOn: $model.hasBirthDate)
                 if model.hasBirthDate {
                     DatePicker("Birth date", selection: $model.birthDate, in: ...Date(), displayedComponents: .date)
@@ -94,6 +111,12 @@ private struct TargetsForm: View {
                     }
                 }
                 .pickerStyle(.navigationLink)
+            } header: {
+                Text("Profile")
+            } footer: {
+                Text(model.weightKg == nil
+                    ? "Weight comes from your weigh-ins: add one on Today → Weight, or allow Nutrilog to read weight from Apple Health."
+                    : "Weight is your latest weigh-in (Today → Weight, or Apple Health).")
             }
 
             Section {
@@ -121,7 +144,9 @@ private struct TargetsForm: View {
                         LabeledContent("Suggested target", value: unit.format(target)).bold()
                     }
                 } else {
-                    Text("Fill in height, weight, birth date and sex to calculate a target.")
+                    Text(model.weightKg == nil
+                        ? "Add a weight on Today and fill in height, birth date and sex to calculate a target."
+                        : "Fill in height, birth date and sex to calculate a target.")
                         .foregroundStyle(.secondary)
                 }
                 Toggle("Set calories manually", isOn: $model.overrideKcal)

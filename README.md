@@ -2,9 +2,9 @@
 
 **A free, ad-free, open-source, privacy-first nutrition & health tracker for iOS.**
 
-Log what you eat (barcode scan, search, recipes, saved meals) and see it next to how your body responds — weight trend, body fat, steps, sleep, resting heart rate, HRV — all pulled from Apple Health. No account, no cloud, no telemetry.
+Log what you eat (barcode scan, search, saved meals) and see it next to how your body responds — weight trend, body fat, steps, sleep, resting heart rate, HRV — all pulled from Apple Health. No account, no cloud, no telemetry.
 
-> Status: **v1.0 feature-complete** (phases 1–3 of the [roadmap](docs/SPEC.md#13-roadmap)): diary, barcode scanning, Apple Health, recipes, saved meals, adaptive TDEE with a weekly check-in, history, charts, weekly report, Shortcuts and widgets. Next is phase 4 (optional self-hosted sync and a web client). Release notes: [docs/RELEASE_NOTES_1.0.0.md](docs/RELEASE_NOTES_1.0.0.md).
+> Status: **v1.0 feature-complete** (phases 1–3 of the [roadmap](docs/SPEC.md#13-roadmap)): diary, barcode scanning, Apple Health, saved meals, adaptive TDEE with a weekly check-in, history, charts, weekly report, Shortcuts and widgets. Next is phase 4 (optional self-hosted sync and a web client). Release notes: [docs/RELEASE_NOTES_1.0.0.md](docs/RELEASE_NOTES_1.0.0.md).
 
 | Today | Trends | Weekly check-in |
 |---|---|---|
@@ -18,7 +18,7 @@ Log what you eat (barcode scan, search, recipes, saved meals) and see it next to
 
 ## Features
 
-- Fast food diary with meal slots, recents, favorites, quick-add, copy meal/day, **saved meals** (log a usual meal in one tap) and **recipes** (ingredients, cooked weight or servings, log by grams or servings)
+- Fast food diary with meal slots, recents, favorites, quick-add, copy meal/day, and **saved meals** (a list of foods with amounts, built from scratch or from a logged meal; log it in one tap)
 - Barcode scanning (VisionKit) with Open Food Facts lookup and one-tap manual entry when a product is missing
 - Offline search over a bundled USDA FoodData Central subset + your own foods (SQLite FTS5, diacritic-insensitive); online search in Open Food Facts and USDA
 - Calorie and macro targets, **adaptive maintenance (TDEE) estimate** from your intake and smoothed weight trend, and a **weekly check-in** that proposes a target — every number explains how it was computed

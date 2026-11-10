@@ -1,6 +1,8 @@
 #if os(iOS)
     import AVFoundation
+    import Combine
     import SwiftUI
+    import UIKit
     import VisionKit
 
     /// Live barcode scanner (FR-10) with torch toggle, haptic on detection, a 2 s same-code debounce, camera-permission
@@ -16,7 +18,10 @@
         @State private var detections = 0
         @State private var isTorchOn = false
         @State private var isShowingManualEntry = false
-        @Environment(\.scenePhase) private var scenePhase
+        /// Whether the app is in the foreground. Tracked from UIKit's notifications, not `\.scenePhase`: the
+        /// environment's scene phase is not dependable inside nested presentations (the food editor's scanner, #69),
+        /// and a phase stuck at "not active" would keep the camera from starting.
+        @State private var isAppActive = UIApplication.shared.applicationState != .background
 
         public init(isPaused: Bool = false, onScan: @escaping @MainActor (ScannedBarcode) -> Void) {
             self.isPaused = isPaused
@@ -30,7 +35,7 @@
                 availability: availability,
                 isPaused: isPaused,
                 isShowingManualEntry: isShowingManualEntry,
-                isAppActive: scenePhase == .active,
+                isAppActive: isAppActive,
             )
         }
 
@@ -39,10 +44,12 @@
                 .sensoryFeedback(.success, trigger: detections)
                 .task { await refreshAvailability(requestIfNeeded: true) }
                 // Re-check when coming back from Settings (or after the camera was busy).
-                .onChange(of: scenePhase) { _, phase in
-                    if phase == .active {
-                        Task { await refreshAvailability(requestIfNeeded: false) }
-                    }
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+                    isAppActive = true
+                    Task { await refreshAvailability(requestIfNeeded: false) }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
+                    isAppActive = false
                 }
                 // Whenever scanning stops, the torch goes off so the button never shows a stale state.
                 .onChange(of: isScanning) { _, scanning in

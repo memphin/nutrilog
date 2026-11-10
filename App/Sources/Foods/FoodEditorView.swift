@@ -214,7 +214,7 @@ private struct FoodEditorForm: View {
             }
 
             Section("Notes") {
-                TextField("Source, recipe details…", text: $model.notes, axis: .vertical)
+                TextField("Source, details…", text: $model.notes, axis: .vertical)
             }
 
             if !model.validationErrors.isEmpty, !model.name.isEmpty || !model.energy.isEmpty {
@@ -223,7 +223,8 @@ private struct FoodEditorForm: View {
                 }
             }
         }
-        .sheet(isPresented: $isScanning) {
+        // Full screen, like the scanner of Add Food: the camera didn't work in a sheet over this sheet (#69).
+        .fullScreenCover(isPresented: $isScanning) {
             BarcodeScanSheet { barcode in
                 switch model.insertScanned(candidates: barcode.candidates) {
                 case let .added(code):

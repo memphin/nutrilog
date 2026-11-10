@@ -20,6 +20,7 @@ struct DashboardData: Equatable {
     var totals: Nutrients = .zero
     var target: Target?
     var waterGoalMl: Double = 2500
+    var stepGoal: Int = StepGoal.defaultSteps
 
     var window: ClosedRange<LocalDay> {
         today.adding(days: -(Self.historyDays - 1)) ... today
@@ -118,6 +119,7 @@ struct DashboardSnapshot: Equatable {
     let water: WaterProgress
     let totals: Nutrients
     let target: Target?
+    let stepGoal: Int
     /// 7-day series per tile (`DashboardSnapshot.sparklines`), also the ones that can't be drawn.
     let sparklines: [DashboardTile: Sparkline]
 
@@ -144,6 +146,7 @@ struct DashboardSnapshot: Equatable {
         )
         totals = data.totals
         target = data.target
+        stepGoal = data.stepGoal
         sparklines = Self.sparklines(data: data, rows: rows, dayWeights: dayWeights)
     }
 
@@ -159,10 +162,6 @@ struct DashboardSnapshot: Equatable {
 
     var steps: Int? {
         todayMetrics?.steps
-    }
-
-    var activeKcal: Double? {
-        todayMetrics?.activeKcal
     }
 
     /// Today's active and resting energy; nil when neither is known.
@@ -187,7 +186,6 @@ struct DashboardSnapshot: Equatable {
         case .sleep: sleep != nil
         case .weight: weight != nil
         case .bodyFat: bodyFat != nil
-        case .activeEnergy: activeKcal != nil
         case .totalEnergy: energyBurned != nil
         case .restingHeartRate: restingHR != nil
         case .hrv: hrv != nil
@@ -273,8 +271,6 @@ enum TileHistory {
                 )
             case .bodyFat:
                 return TileHistoryRow(day: day, value: weights[day]?.bodyFatPct.map(DashboardFormat.percent))
-            case .activeEnergy:
-                return TileHistoryRow(day: day, value: row?.activeKcal.map { energyUnit.format($0) })
             case .totalEnergy:
                 let burned = EnergyBurned(activeKcal: row?.activeKcal, restingKcal: row?.basalKcal)
                 return TileHistoryRow(

@@ -35,24 +35,9 @@ extension DashboardSnapshot {
             parts.append("protein \(number(totals.proteinG)) grams, carbs \(number(totals.carbsG)) grams, fat \(number(totals.fatG)) grams")
             return parts
         case .steps:
-            return steps.map { ["\(number(Double($0))) steps"] } ?? []
+            return stepsParts(number)
         case .sleep:
-            guard let sleep else { return [] }
-            var parts: [String] = []
-            if let asleep = sleep.asleepMin {
-                parts.append("\(Self.spokenDuration(asleep)) asleep")
-            }
-            if let inBed = sleep.inBedMin {
-                parts.append("\(Self.spokenDuration(inBed)) in bed")
-            }
-            let stages: [(String, Int?)] = [
-                ("core", sleep.coreMin),
-                ("deep", sleep.deepMin),
-                ("REM", sleep.remMin),
-                ("awake", sleep.awakeMin),
-            ]
-            parts += stages.compactMap { name, minutes in minutes.map { "\(name) \(Self.spokenDuration($0))" } }
-            return parts
+            return sleepParts
         case .weight:
             guard let weight else { return [] }
             var parts = ["\(number(weight.latestKg, digits: 1)) kilograms", "trend \(number(weight.trendKg, digits: 1))"]
@@ -67,8 +52,6 @@ extension DashboardSnapshot {
         case .bodyFat:
             guard let bodyFat else { return [] }
             return ["\(number(bodyFat.pct, digits: 1)) percent"] + [measured(bodyFat.day)].compactMap(\.self)
-        case .activeEnergy:
-            return activeKcal.map { ["\(number(energyUnit.display($0))) \(spokenEnergy)"] } ?? []
         case .totalEnergy:
             guard let burned = energyBurned else { return [] }
             if let total = burned.totalKcal, let active = burned.activeKcal, let resting = burned.restingKcal {
@@ -93,8 +76,28 @@ extension DashboardSnapshot {
             parts += [measured(comparison.day)].compactMap(\.self)
             return parts
         case .water:
-            return ["\(number(water.totalMl)) of \(number(water.goalMl)) millilitres"]
+            return ["\(number(water.totalMl)) of \(number(water.goalMl)) millilitres", water.isGoalReached ? "goal reached" : "below goal"]
         }
+    }
+
+    /// "8,500 steps", "close to the goal of 10,000".
+    private func stepsParts(_ number: (Double, Int) -> String) -> [String] {
+        guard let steps else { return [] }
+        let goalText = number(Double(stepGoal), 0)
+        let goal = switch StepGoal.band(steps: Double(steps), goal: stepGoal) {
+        case .reached: "goal of \(goalText) reached"
+        case .near: "close to the goal of \(goalText)"
+        case .far: "below the goal of \(goalText)"
+        }
+        return ["\(number(Double(steps), 0)) steps", goal]
+    }
+
+    /// Like the tile: time asleep only; time in bed when that is all Health has. Stages are in the detail (#62).
+    private var sleepParts: [String] {
+        if let asleep = sleep?.asleepMin {
+            return ["\(Self.spokenDuration(asleep)) asleep"]
+        }
+        return sleep?.inBedMin.map { ["\(Self.spokenDuration($0)) in bed"] } ?? []
     }
 
     /// The tile's 7-day trend for VoiceOver ("up over 7 days"), spoken as the tile's value; nil without a chart or
