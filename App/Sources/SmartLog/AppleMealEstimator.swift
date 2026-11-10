@@ -46,9 +46,16 @@ struct AppleMealEstimator: MealEstimating {
         SystemLanguageModel.default.availability == .available
     }
 
+    // The iOS 27 APIs below (`capabilities`, `Attachment`, `LanguageModelError`) exist only in the iOS 27 SDK
+    // (Xcode 27, Swift 6.4). `#available` is a runtime check, so they are also gated at compile time to keep the
+    // app building with the iOS 26 SDK; such a build estimates from text only.
     var supportsPhotos: Bool {
+        #if compiler(>=6.4)
         guard #available(iOS 27.0, *) else { return false }
         return isAvailable && SystemLanguageModel.default.capabilities.contains(.vision)
+        #else
+        return false
+        #endif
     }
 
     func estimate(_ request: MealEstimateRequest) async throws -> [EstimatedFood] {
@@ -60,6 +67,7 @@ struct AppleMealEstimator: MealEstimating {
         let session = LanguageModelSession(instructions: Self.instructions)
         let meal: Meal
         do {
+            #if compiler(>=6.4)
             if let photo, #available(iOS 27.0, *) {
                 meal = try await session.respond(generating: Meal.self) {
                     Attachment(photo)
@@ -68,6 +76,9 @@ struct AppleMealEstimator: MealEstimating {
             } else {
                 meal = try await session.respond(to: text, generating: Meal.self).content
             }
+            #else
+            meal = try await session.respond(to: text, generating: Meal.self).content
+            #endif
         } catch is CancellationError {
             throw CancellationError()
         } catch {
@@ -86,12 +97,14 @@ struct AppleMealEstimator: MealEstimating {
     }
 
     private static func isRefusal(_ error: any Error) -> Bool {
+        #if compiler(>=6.4)
         if #available(iOS 27.0, *), let error = error as? LanguageModelError {
             switch error {
             case .guardrailViolation, .refusal: return true
             default: return false
             }
         }
+        #endif
         if case LanguageModelSession.GenerationError.guardrailViolation = error {
             return true
         }
