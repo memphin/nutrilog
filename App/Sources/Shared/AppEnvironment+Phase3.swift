@@ -54,7 +54,7 @@ extension AppEnvironment {
     /// Writes the weekly local backup when one is due. Runs off the main actor; best effort.
     func backupIfDue() {
         guard let backups else { return }
-        Task.detached(priority: .background) {
+        Task.detached(priority: .utility) {
             _ = try? backups.backupIfDue()
         }
     }
