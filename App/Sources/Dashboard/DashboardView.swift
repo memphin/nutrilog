@@ -203,13 +203,11 @@ private struct TileContent: View {
         case .energy:
             EnergyTileContent(totals: snapshot.totals, target: snapshot.target, unit: model.energyUnit)
         case .steps:
-            VStack(alignment: .leading, spacing: NL.Spacing.xxs) {
-                ValueText(
-                    snapshot.steps.map { $0.formatted() } ?? "—", unit: "steps",
-                    color: snapshot.steps.map { GoalColor.steps(Double($0), goal: snapshot.stepGoal) } ?? .primary,
-                )
-                Text("Goal \(snapshot.stepGoal.formatted())").font(.footnote).foregroundStyle(.secondary)
-            }
+            // The goal itself is not written on the tile; the colour says how the day compares with it.
+            ValueText(
+                snapshot.steps.map { $0.formatted() } ?? "—", unit: "steps",
+                color: snapshot.steps.map { GoalColor.steps(Double($0), goal: snapshot.stepGoal) } ?? .primary,
+            )
         case .sleep:
             SleepTileContent(sleep: snapshot.sleep, goalMin: snapshot.sleepGoalMin)
         case .weight:
