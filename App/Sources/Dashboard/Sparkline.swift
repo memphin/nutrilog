@@ -59,9 +59,16 @@ struct Sparkline: Equatable {
         points.count >= 2
     }
 
+    /// The points the trend is read from. Bars are daily amounts and today's is still growing (it would read as
+    /// "down" every morning), so they use complete days only; levels (lines) include today.
+    var trendPoints: [Point] {
+        mark == .bar ? points.filter { $0.index < Self.days - 1 } : points
+    }
+
     /// The least-squares slope over the window compared with the average: robust to one odd day and to gaps.
     var direction: Direction? {
-        guard isDrawable else { return nil }
+        let points = trendPoints
+        guard isDrawable, points.count >= 2 else { return nil }
         let count = Double(points.count)
         let meanX = points.reduce(0) { $0 + Double($1.index) } / count
         let meanY = points.reduce(0) { $0 + $1.value } / count

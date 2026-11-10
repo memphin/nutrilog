@@ -45,8 +45,26 @@ struct SparklineTests {
     @Test func `direction compares the slope with the average`() {
         #expect(Sparkline(days([6: 82.0, 3: 81.5, 0: 81.0]), today: today, mark: .line).direction == .down)
         #expect(Sparkline(days([6: 60, 5: 61, 4: 59, 3: 60, 2: 59, 1: 61, 0: 60]), today: today, mark: .line).direction == .steady)
-        #expect(Sparkline(days([1: 0, 0: 0]), today: today, mark: .bar).direction == .steady)
-        #expect(Sparkline(days([1: 0, 0: 5]), today: today, mark: .bar).accessibilitySummary == "up over 7 days")
+        #expect(Sparkline(days([2: 0, 1: 0, 0: 0]), today: today, mark: .bar).direction == .steady)
+        #expect(Sparkline(days([2: 0, 1: 5, 0: 0]), today: today, mark: .bar).accessibilitySummary == "up over 7 days")
+    }
+
+    @Test func `bar trends skip today's unfinished day, line trends include it`() {
+        // 8 a.m.: a steady week of steps and 500 so far today.
+        let morning = Sparkline(days([6: 8000, 5: 8100, 4: 7900, 3: 8000, 2: 8100, 1: 7900, 0: 500]), today: today, mark: .bar)
+        #expect(morning.isDrawable)
+        #expect(morning.points.count == 7) // today is still drawn
+        #expect(morning.trendPoints.count == 6)
+        #expect(morning.direction == .steady)
+        #expect(morning.accessibilitySummary == "steady over 7 days")
+        // Only yesterday complete: no trend to speak, the chart still shows.
+        let short = Sparkline(days([1: 8000, 0: 500]), today: today, mark: .bar)
+        #expect(short.isDrawable)
+        #expect(short.direction == nil)
+        // A level measured today counts.
+        let weight = Sparkline(days([2: 81.0, 1: 81.0, 0: 80.0]), today: today, mark: .line)
+        #expect(weight.trendPoints.count == 3)
+        #expect(weight.direction == .down)
     }
 
     @Test func `tiles get their series from one data set`() {
@@ -131,6 +149,23 @@ struct TotalEnergyTests {
         #expect(restingOnly.energyBurned?.totalKcal == nil)
         #expect(restingOnly.accessibilityLabel(of: .totalEnergy, state: .ready)
             == "Total energy, active energy unknown, resting 1,650 calories, no total yet")
+    }
+
+    @Test func `a partial day hides the total energy sparkline and its spoken trend`() {
+        var data = DashboardData(today: today)
+        let history = (1 ... 6).map { offset in
+            DailyMetricsRecord(DailyHealthMetrics(day: today.adding(days: -offset), activeKcal: 400, basalKcal: 1600), fetchedAt: Date())
+        }
+        data.metrics = history + [DailyMetricsRecord(DailyHealthMetrics(day: today, activeKcal: 420), fetchedAt: Date())]
+        let partial = DashboardSnapshot(data)
+        #expect(partial.sparklines[.totalEnergy]?.isDrawable == true) // the series exists…
+        #expect(partial.sparkline(for: .totalEnergy) == nil) // …but isn't shown next to a partial value
+        #expect(partial.accessibilityTrend(of: .totalEnergy, state: .ready) == nil)
+
+        data.metrics = history + [DailyMetricsRecord(DailyHealthMetrics(day: today, activeKcal: 420, basalKcal: 1600), fetchedAt: Date())]
+        let complete = DashboardSnapshot(data)
+        #expect(complete.sparkline(for: .totalEnergy) != nil)
+        #expect(complete.accessibilityTrend(of: .totalEnergy, state: .ready) == "steady over 7 days")
     }
 
     @Test func `with neither part the tile has no value`() {
@@ -229,6 +264,7 @@ struct FoodEditorBarcodeTests {
 
         let conflicts = try model.barcodeConflicts(in: foods)
         #expect(conflicts == [.init(barcode: "3017620422003", foodID: nutella.food.id, foodName: "Nutella")])
+        #expect(FoodEditorModel.moving(conflicts) == ["3017620422003": nutella.food.id])
         #expect(FoodEditorModel.conflictMessage(conflicts) == "This barcode is on 'Nutella' — move it here?")
         model.refreshBarcodeOwners(in: foods)
         #expect(model.owner(of: "3017620422003") == "Nutella")
@@ -240,13 +276,49 @@ struct FoodEditorBarcodeTests {
         #expect(try foods.food(barcode: "3017620422003")?.food.id == nutella.food.id)
 
         // "Move here".
-        let saved = try #require(try model.save(to: foods, movingBarcodes: Set(conflicts.map(\.barcode))))
+        let saved = try #require(try model.save(to: foods, movingBarcodes: FoodEditorModel.moving(conflicts)))
         #expect(try foods.food(barcode: "3017620422003")?.food.id == saved.food.id)
         #expect(try foods.detail(id: nutella.food.id)?.barcodes == [])
 
         // The food's own barcodes are never a conflict when editing it.
         let reopened = FoodEditorModel(energyUnit: .kcal, editing: saved)
         #expect(try reopened.barcodeConflicts(in: foods).isEmpty)
+    }
+
+    @Test func `a code stored under its other 8-digit reading on another food is a conflict`() throws {
+        let gum = try foods.save(FoodDetail(
+            food: Food(name: "Gum", per100: Nutrients(kcal: 200, proteinG: 0, carbsG: 60, fatG: 0)),
+            barcodes: ["0010000000009"], // UPC-E, expanded
+        ))
+        let model = filledEditor("Mint gum")
+        model.insertScanned(candidates: Barcode.candidates("01000009", symbology: .ean8))
+        let conflicts = try model.barcodeConflicts(in: foods)
+        #expect(conflicts == [.init(barcode: "01000009", storedBarcode: "0010000000009", foodID: gum.food.id, foodName: "Gum")])
+        model.refreshBarcodeOwners(in: foods)
+        #expect(model.owner(of: "01000009") == "Gum")
+        let saved = try #require(try model.save(to: foods, movingBarcodes: FoodEditorModel.moving(conflicts)))
+        #expect(try foods.detail(id: gum.food.id)?.barcodes == [])
+        #expect(try foods.food(barcodes: Barcode.candidates("01000009", symbology: .upcE))?.food.id == saved.food.id)
+    }
+
+    @Test func `moving fails if the code went to another food after the warning`() throws {
+        let first = try foods.save(FoodDetail(
+            food: Food(name: "First", per100: Nutrients(kcal: 1, proteinG: 0, carbsG: 0, fatG: 0)),
+            barcodes: ["3850104003455"],
+        ))
+        let model = filledEditor("Mine")
+        model.barcodes = ["3850104003455"]
+        let conflicts = try model.barcodeConflicts(in: foods)
+        // Meanwhile the code moved to another food.
+        try foods.softDelete(id: first.food.id)
+        let other = try foods.save(FoodDetail(
+            food: Food(name: "Other", per100: Nutrients(kcal: 1, proteinG: 0, carbsG: 0, fatG: 0)),
+            barcodes: ["3850104003455"],
+        ))
+        #expect(throws: PersistenceError.barcodeInUse(barcode: "3850104003455", foodID: other.food.id)) {
+            try model.save(to: foods, movingBarcodes: FoodEditorModel.moving(conflicts))
+        }
+        #expect(try foods.food(barcode: "3850104003455")?.food.id == other.food.id)
     }
 
     @Test func `deleting a barcode persists and the next scan no longer finds the food`() throws {

@@ -148,8 +148,13 @@ struct DashboardSnapshot: Equatable {
     }
 
     /// The tile's 7-day chart, nil when there are fewer than two days to draw or the tile has none.
+    /// Total energy without a total today (only one part known) has none either: a chart of totals next to a
+    /// partial value would read as if it were one of them.
     func sparkline(for tile: DashboardTile) -> Sparkline? {
-        sparklines[tile].flatMap { $0.isDrawable ? $0 : nil }
+        if tile == .totalEnergy, energyBurned?.totalKcal == nil {
+            return nil
+        }
+        return sparklines[tile].flatMap { $0.isDrawable ? $0 : nil }
     }
 
     var steps: Int? {

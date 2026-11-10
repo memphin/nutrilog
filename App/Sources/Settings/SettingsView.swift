@@ -261,11 +261,13 @@ struct DataSettingsView: View {
                 }
             }),
             titleVisibility: .visible,
-        ) {
-            Button("Merge with my data") { runImport(.merge) }
-            Button("Replace all my data", role: .destructive) { runImport(.replace) }
+            // The buttons get the file as presented: the binding's setter may already have cleared `pendingImport`.
+            presenting: pendingImport,
+        ) { data in
+            Button("Merge with my data") { runImport(data, mode: .merge) }
+            Button("Replace all my data", role: .destructive) { runImport(data, mode: .replace) }
             Button("Cancel", role: .cancel) { pendingImport = nil }
-        } message: {
+        } message: { _ in
             Text("How should the file be imported?")
         }
         .alert("Export & import", isPresented: Binding(get: { message != nil }, set: {
@@ -298,9 +300,9 @@ struct DataSettingsView: View {
         }
     }
 
-    private func runImport(_ mode: DataPortability.ImportMode) {
-        guard let data = pendingImport, let portability = environment.portability else { return }
+    private func runImport(_ data: Data, mode: DataPortability.ImportMode) {
         pendingImport = nil
+        guard let portability = environment.portability else { return }
         do {
             let summary = try portability.importJSON(data, mode: mode)
             message = "Imported: \(summary.inserted) new, \(summary.updated) updated, \(summary.skipped) unchanged."

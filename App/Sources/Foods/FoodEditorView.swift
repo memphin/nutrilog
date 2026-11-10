@@ -60,17 +60,17 @@ struct FoodEditorView: View {
             if !$0 {
                 conflicts = []
             }
-        })) {
+        }), presenting: conflicts) { presented in
+            // Uses the presented conflicts: the binding's setter may already have cleared `conflicts`.
             Button("Move Here") {
-                let moving = Set(conflicts.map(\.barcode))
                 conflicts = []
                 if let model {
-                    commit(model, movingBarcodes: moving)
+                    commit(model, movingBarcodes: FoodEditorModel.moving(presented))
                 }
             }
             Button("Cancel", role: .cancel) { conflicts = [] }
-        } message: {
-            Text(FoodEditorModel.conflictMessage(conflicts) + "\n\nIt will be removed from the other food.")
+        } message: { presented in
+            Text(FoodEditorModel.conflictMessage(presented) + "\n\nIt will be removed from the other food.")
         }
         .alert("Couldn't save", isPresented: Binding(get: { errorMessage != nil }, set: {
             if !$0 {
@@ -94,10 +94,10 @@ struct FoodEditorView: View {
             errorMessage = error.localizedDescription
             return
         }
-        commit(model, movingBarcodes: [])
+        commit(model, movingBarcodes: [:])
     }
 
-    private func commit(_ model: FoodEditorModel, movingBarcodes: Set<String>) {
+    private func commit(_ model: FoodEditorModel, movingBarcodes: [String: String]) {
         guard let foods = environment.foods else { return }
         do {
             guard let saved = try model.save(to: foods, movingBarcodes: movingBarcodes) else { return }

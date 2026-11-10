@@ -43,15 +43,25 @@ final class FoodEditorModel {
         case invalid
     }
 
-    /// A barcode in the form that another active food carries. Saving moves it here only after the user agrees
-    /// (`FoodRepository.save(_:movingBarcodes:)`), never silently.
+    /// A barcode in the form that another active food carries (in any reading of its digits). Saving moves it here
+    /// only after the user agrees (`FoodRepository.save(_:movingBarcodes:)`), never silently.
     struct BarcodeConflict: Equatable, Identifiable {
+        /// The code as listed in the editor.
         var barcode: String
+        /// The key the other food stores it under (another reading for some 8-digit codes).
+        var storedBarcode: String
         var foodID: String
         var foodName: String
 
+        init(barcode: String, storedBarcode: String? = nil, foodID: String, foodName: String) {
+            self.barcode = barcode
+            self.storedBarcode = storedBarcode ?? barcode
+            self.foodID = foodID
+            self.foodName = foodName
+        }
+
         var id: String {
-            barcode
+            storedBarcode
         }
     }
 
@@ -296,10 +306,10 @@ final class FoodEditorModel {
         }
     }
 
-    /// Codes in the list that another active food carries (checked exactly as saving checks them).
+    /// Codes in the list that another active food carries, also under another reading of the same digits.
     func barcodeConflicts(in foods: FoodRepository) throws -> [BarcodeConflict] {
         try foods.activeOwners(of: normalizedBarcodes, excluding: original?.food.id).map {
-            BarcodeConflict(barcode: $0.barcode, foodID: $0.food.id, foodName: $0.food.name)
+            BarcodeConflict(barcode: $0.barcode, storedBarcode: $0.storedBarcode, foodID: $0.food.id, foodName: $0.food.name)
         }
     }
 
@@ -323,10 +333,17 @@ final class FoodEditorModel {
         return "These barcodes are on other foods — move them here?\n" + lines.joined(separator: "\n")
     }
 
-    /// Saves the food. `movingBarcodes` are codes the user agreed to take from other foods (see
-    /// `barcodeConflicts(in:)`); any other conflict fails with `PersistenceError.barcodeInUse`.
+    /// What "Move here" passes to `save(to:movingBarcodes:)`: each stored code with the food the user agreed to take
+    /// it from, so a code that changed owner meanwhile fails instead of being taken.
+    static func moving(_ conflicts: [BarcodeConflict]) -> [String: String] {
+        Dictionary(conflicts.map { ($0.storedBarcode, $0.foodID) }) { first, _ in first }
+    }
+
+    /// Saves the food. `movingBarcodes` are codes the user agreed to take from other foods (code → that food's id,
+    /// see `barcodeConflicts(in:)`); any other conflict, or a code that changed owner meanwhile, fails with
+    /// `PersistenceError.barcodeInUse`.
     @discardableResult
-    func save(to foods: FoodRepository, movingBarcodes: Set<String> = []) throws -> FoodDetail? {
+    func save(to foods: FoodRepository, movingBarcodes: [String: String] = [:]) throws -> FoodDetail? {
         guard let detail = makeDetail() else { return nil }
         return try foods.save(detail, movingBarcodes: movingBarcodes)
     }
