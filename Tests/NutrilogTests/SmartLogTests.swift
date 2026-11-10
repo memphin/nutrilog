@@ -49,7 +49,7 @@ struct SmartLogTests {
         return (env, slot.id)
     }
 
-    @Test func `model estimate is reviewed, edited and logged as quick-add entries`() async throws {
+    @Test func `model estimate is reviewed, edited and logged as a food with its amount`() async throws {
         let rice = EstimatedFood(name: "Rice", grams: 200, per100: Nutrients(kcal: 130, proteinG: 2.5, carbsG: 28, fatG: 0.3))
         let (env, slotID) = try environment(estimator: StubEstimator(result: .success([rice])))
         let model = SmartLogModel()
@@ -67,9 +67,28 @@ struct SmartLogTests {
 
         try model.log(slotID: slotID, day: day, in: env)
         let entries = try #require(env.diary).diary(for: day).sections.flatMap(\.entries)
-        #expect(entries.map(\.displayName) == ["Rice (100 g)"])
-        #expect(entries[0].isQuickAdd)
+        #expect(entries.map(\.displayName) == ["Rice"])
+        #expect(!entries[0].isQuickAdd)
+        #expect(entries[0].grams == 100)
         #expect(entries[0].kcal == 130)
+        let foodID = try #require(entries[0].foodID)
+        #expect(try env.foods?.food(id: foodID)?.notes == SmartLogModel.estimatedFoodNotes)
+
+        // The amount can be changed afterwards; the nutrients follow it.
+        try #require(env.diary).updateQuantity(entryID: entries[0].id, quantity: .base(150))
+        let edited = try #require(env.diary).diary(for: day).sections.flatMap(\.entries)
+        #expect(edited[0].grams == 150)
+        #expect(abs(edited[0].kcal - 195) < 0.001)
+        #expect(abs(edited[0].carbsG - 42) < 0.001)
+
+        // The same estimate again reuses the food; the meal can be saved as a meal.
+        model.editInput()
+        await model.estimate(in: env)
+        try model.log(slotID: slotID, day: day, in: env)
+        let again = try #require(env.diary).diary(for: day).sections.flatMap(\.entries)
+        #expect(Set(again.compactMap(\.foodID)) == [foodID])
+        let meal = try #require(env.meals).createFromDiary(day: day, slotID: slotID, name: "Lunch")
+        #expect(meal.items.count == 2)
     }
 
     @Test func `without the model the description is matched to foods on the phone and logged as those foods`() async throws {

@@ -10,8 +10,20 @@ final class FoodsListModel {
     private(set) var foods: [Food] = []
     /// Saved meals, most used first.
     private(set) var meals: [MealTemplateDetail] = []
+    /// Today's meal slots with how many foods each holds, for "Meal from today".
+    private(set) var todaySlots: [TodaySlot] = []
     var query = ""
     var errorMessage: String?
+
+    struct TodaySlot: Identifiable, Hashable {
+        let slot: MealSlot
+        /// Food entries that can go into a saved meal (quick-adds have no food).
+        let foodCount: Int
+
+        var id: String {
+            slot.id
+        }
+    }
     let undo = UndoCenter()
 
     private let environment: AppEnvironment
@@ -46,6 +58,9 @@ final class FoodsListModel {
             let mine = try repo.customFoods()
             let favorites = try repo.favorites().filter { fav in !mine.contains { $0.id == fav.id } }
             foods = (mine + favorites).sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            todaySlots = try (environment.diary?.diary(for: environment.today).sections ?? []).map { section in
+                TodaySlot(slot: section.slot, foodCount: section.entries.count(where: { !$0.isQuickAdd && $0.foodID != nil && $0.grams > 0 }))
+            }
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -81,6 +96,17 @@ final class FoodsListModel {
                 guard let self, environment.dataGeneration == generation else { return }
                 restore(before)
             }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Saves the foods logged today in `slot` as a meal named `name` (the slot's name when empty).
+    func saveMeal(from slot: MealSlot, name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        do {
+            try environment.meals?.createFromDiary(day: environment.today, slotID: slot.id, name: trimmed.isEmpty ? slot.name : trimmed)
+            reload()
         } catch {
             errorMessage = error.localizedDescription
         }
