@@ -25,7 +25,7 @@ struct NutrilogApp: App {
         #if DEBUG
             // `-uiSampleData` launches with an in-memory database and sample entries (screenshots, UI checks).
             if ProcessInfo.processInfo.arguments.contains("-uiSampleData") {
-                return AppEnvironment.preview(sampleData: true)
+                return AppEnvironment.preview(sampleData: true, mealEstimator: AppleMealEstimator())
             }
         #endif
         return AppEnvironment.live()

@@ -155,6 +155,7 @@ Single user (the owner). Representative daily flows:
 - FR-5 Quick-add calories (and optional macros) without a food.
 - FR-6 Day summary: kcal consumed, remaining, P/C/F grams and % of target; fiber, sugar, sodium (sat. fat SHOULD).
 - FR-7 Notes per day (free text, e.g. "cheat day", "sick").
+- FR-8 Snap or describe a meal (SHOULD): a photo and/or a sentence becomes a list of foods with amounts to review, correct and log in one tap. The estimate is made on the device by the Apple Intelligence model (Foundation Models; a photo needs iOS 27) and logged as quick-add entries. Where the model isn't available, the text, or the labels of the on-device image classifier, are matched to foods on the phone and logged as those foods. Nothing is sent anywhere.
 
 ### 5.2 Barcode scanning (MUST)
 - FR-10 Scan EAN-13, EAN-8, UPC-A/E, Code-128 using **VisionKit `DataScannerViewController`**; continuous scanning, haptic on detect, torch toggle. (AVFoundation fallback not needed on iOS 26 hardware.)
@@ -421,6 +422,7 @@ All blocking decisions are made (D1–D9). The following defaults may be changed
 ---
 
 *Change log*
+- 1.6 — owner request: simpler logging with "Snap or describe a meal" (FR-8). Photo logging moves from "COULD, only if a free/local model is viable" (§3, §13 phase 5) to SHOULD, built on the free on-device Apple Intelligence model, with matching against local foods as the fallback. No new network destination (2026-11-10)
 - 1.3 — owner feedback (issues #62–#67, #69, #70): the sleep tile shows only time asleep (stages in its detail); a daily step goal colours step bars (green / orange / red) and the water goal colours water (red / green); Active energy is merged into one Total energy tile drawn as resting + active; profile weight is read-only (latest weigh-in); the dashboard is arranged in Settings → Dashboard and Today has no toolbar buttons. Supersedes the tile list of FR-41 where they differ (2026-11-10)
 - 1.4 — owner feedback (issues #72–#74): the sleep tile shows the time asleep as "7h 5min" with its 7-day bars, coloured by a sleep goal (Settings → Daily goals; green at the goal, orange up to an hour short, red further below); the weight tile shows the weight and its chart only; the HRV and resting heart rate values are coloured against the 30-day average (HRV: green at or above, orange up to 10% below, red further; resting heart rate: green at or below, orange up to 5% above, red further) (2026-11-10)
 - 1.5 — owner feedback: the Total energy tile shows the total and the active part only (resting stays in its detail); the steps tile no longer writes its goal; weight is coloured by the profile goal against the mean of the 7 days before (lose: green at or below, orange up to 0.5 kg above, red further; gain: mirrored; maintain: no colour); body fat likewise (green at or below, orange up to 0.5 points above, red further); water is red below 80% of its goal, orange from there, green at the goal (2026-11-10)

@@ -25,6 +25,7 @@ struct AddFoodView: View {
     @State private var showCreate = false
     @State private var showQuickAdd = false
     @State private var showScanner = false
+    @State private var showSmartLog = false
     @State private var errorMessage: String?
     @State private var scope: SearchScope = .local
     @State private var online = OnlineSearchModel()
@@ -53,6 +54,10 @@ struct AddFoodView: View {
         NavigationStack(path: $path) {
             List {
                 if query.trimmingCharacters(in: .whitespaces).isEmpty {
+                    Button { showSmartLog = true } label: {
+                        Label("Snap or describe a meal", systemImage: "sparkles")
+                    }
+
                     Picker("List", selection: $tab) {
                         ForEach(Tab.allCases) { Text($0.rawValue).tag($0) }
                     }
@@ -174,6 +179,9 @@ struct AddFoodView: View {
             }
             .fullScreenCover(isPresented: $showScanner, onDismiss: reloadLists) {
                 ScanView(target: target) { dismiss() }
+            }
+            .sheet(isPresented: $showSmartLog) {
+                SmartLogView(target: target) { dismiss() }
             }
             .sheet(isPresented: $showQuickAdd) {
                 QuickAddView(mode: .create(slotID: target.slotID, day: target.day)) { dismiss() }

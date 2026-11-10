@@ -25,6 +25,11 @@ final class AppEnvironment {
     let healthSync: HealthSyncService?
     /// Holds the user-entered USDA key (Settings).
     let usdaKeyStore: any USDAKeyStoring
+    /// Names what a photo shows, on the phone, for matching against local foods when the model can't take a photo.
+    let imageLabeler: any FoodImageLabeling
+    /// Estimates a meal from a photo or a description with the on-device Apple Intelligence model. Where that
+    /// isn't available, Smart log matches foods on the phone instead.
+    let mealEstimator: any MealEstimating
     /// Open Food Facts (live HTTP client; a stub in tests and previews). Used by the barcode pipeline.
     let openFoodFacts: any OpenFoodFactsClient
     /// Label photos taken for foods not found by a scan (FR-13); files in the app container, never in the database.
@@ -77,6 +82,8 @@ final class AppEnvironment {
         healthWriter: (any HealthWriting)? = nil,
         healthObserver: (any HealthObserving)? = nil,
         usdaKeyStore: any USDAKeyStoring = InMemoryUSDAKeyStore(),
+        mealEstimator: any MealEstimating = NoMealEstimator(),
+        imageLabeler: any FoodImageLabeling = NoFoodImageLabeler(),
         // Network-free / throwaway defaults so tests can't reach OFF or write into the app container; `live()`
         // passes the real ones.
         openFoodFacts: any OpenFoodFactsClient = StubOpenFoodFactsClient(),
@@ -114,6 +121,8 @@ final class AppEnvironment {
             healthWrites = nil
         }
         self.usdaKeyStore = usdaKeyStore
+        self.imageLabeler = imageLabeler
+        self.mealEstimator = mealEstimator
         self.openFoodFacts = openFoodFacts
         self.labelPhotos = labelPhotos
         self.offSearch = offSearch
@@ -325,6 +334,8 @@ final class AppEnvironment {
             healthWriter: health,
             healthObserver: health,
             usdaKeyStore: KeychainUSDAKeyStore(),
+            mealEstimator: AppleMealEstimator(),
+            imageLabeler: VisionFoodImageLabeler(),
             openFoodFacts: OpenFoodFactsHTTPClient(contact: config.offContact, appVersion: config.appVersion),
             labelPhotos: .live,
             offSearch: OpenFoodFactsSearchHTTPClient(contact: config.offContact, appVersion: config.appVersion),
@@ -343,6 +354,7 @@ final class AppEnvironment {
         health: (any HealthDataSource)? = nil,
         healthWriter: (any HealthWriting)? = nil,
         healthObserver: (any HealthObserving)? = nil,
+        mealEstimator: any MealEstimating = NoMealEstimator(),
         openFoodFacts: (any OpenFoodFactsClient)? = nil,
         labelPhotos: LabelPhotoStore? = nil,
         checkInReminder: (any CheckInReminderScheduling)? = nil,
@@ -360,6 +372,7 @@ final class AppEnvironment {
             health: health,
             healthWriter: healthWriter ?? FakeHealthWriter(mirror: health as? FakeHealthDataSource),
             healthObserver: healthObserver ?? FakeHealthObserver(),
+            mealEstimator: mealEstimator,
             // Never the network: an empty stub answers "not found".
             openFoodFacts: openFoodFacts ?? StubOpenFoodFactsClient(),
             labelPhotos: labelPhotos ?? .temporary(),

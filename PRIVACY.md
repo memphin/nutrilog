@@ -7,6 +7,7 @@ Nutrilog is built for one person's private use. The design rule is simple: **dat
 - A local cache of Open Food Facts product records you scanned (so repeat scans work offline).
 - A daily snapshot of Apple Health values you granted access to (steps, sleep, weight, body fat %, energy, resting heart rate, HRV, water). Apple Health remains the system of record; the snapshot can be deleted and recomputed at any time.
 - Your optional USDA API key — in the iOS Keychain.
+- A meal photo you take or choose for "Snap or describe a meal" is not stored: it is used for that one estimate and dropped.
 - Automatic backups: about once a week a full export is written to a folder inside the app's sandbox (the newest seven are kept). They never leave the device unless you share one.
 - Today's totals for the widgets (calories, macros, steps, sleep, weight, water) — in the app's App Group container on the device, readable only by Nutrilog and its own widget extension.
 
@@ -17,6 +18,8 @@ Nutrilog is built for one person's private use. The design rule is simple: **dat
 | `images.openfoodfacts.org` | A scanned product's card shows its photo | The image address (which names the product's barcode) |
 | `api.nal.usda.gov` | Only if you added a USDA key and search online | The search text and your key |
 | Apple Health (on-device) | You log food or water, or enter weight | Nutrient / water / weight samples, written only with your permission |
+
+"Snap or describe a meal" works on the device: the photo or text is read by the on-device Apple Intelligence model, or, where that isn't available, matched to foods already on the device. Neither is sent anywhere.
 
 Siri and Shortcuts actions, the widgets, the weekly check-in reminder (a local notification, off by default) and the weekly report image all work on the device; the report image goes only where you share it.
 
