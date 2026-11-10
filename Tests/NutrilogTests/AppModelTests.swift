@@ -162,21 +162,22 @@ struct FoodsListModelTests {
 
 @MainActor
 struct TargetsModelTests {
-    func model() throws -> TargetsModel {
+    func model(weightKg: Double? = nil) throws -> TargetsModel {
         let today = try #require(LocalDay("2026-11-09"))
         let model = TargetsModel(today: today)
         let env = AppEnvironment.preview()
         let profile = try #require(try env.profiles?.profile())
-        model.load(profile: profile, target: nil, latestWeightKg: nil)
+        model.load(profile: profile, target: nil, latestWeightKg: weightKg, weightDay: weightKg == nil ? nil : today)
         return model
     }
 
     @Test func `formula target from profile`() throws {
-        let m = try model()
+        // The weight is not a field of the form: it is the latest weigh-in (#65).
+        let m = try model(weightKg: 80)
+        #expect(m.weightKg == 80)
         #expect(m.formulaKcal == nil)
         #expect(!m.validationErrors.isEmpty)
         m.heightCm = "180"
-        m.weightKg = "80"
         m.sex = .male
         m.hasBirthDate = true
         m.birthDate = try #require(LocalDay("1996-11-09")).startDate() // 30 today
@@ -191,7 +192,6 @@ struct TargetsModelTests {
         #expect(target.kcal == 1590)
         #expect(target.origin == .formula)
         #expect(target.macros == MacroSplit.balanced.grams(forKcal: 1590))
-        #expect(m.newWeight == 80)
     }
 
     @Test func `manual override and gram macros`() throws {
@@ -234,7 +234,7 @@ struct TargetsModelTests {
         #expect(m.goal == .gain)
         #expect(m.rateKgPerWeek == 0.25)
         #expect(m.overrideKcal)
-        #expect(m.newWeight == nil) // unchanged weight is not stored again
+        #expect(m.weightKg == 70)
         #expect(m.updatedProfile()?.goalRateKgPerWeek == 0.25)
     }
 
@@ -261,17 +261,17 @@ struct TargetsModelTests {
         #expect(m.makeTarget()?.fatG == 80)
     }
 
-    @Test func `unchanged weight with more decimals is not stored again`() throws {
-        let today = try #require(LocalDay("2026-11-09"))
-        let profile = try #require(try AppEnvironment.preview().profiles?.profile())
-        let m = TargetsModel(today: today)
-        m.load(profile: profile, target: nil, latestWeightKg: 80.123)
-        #expect(m.weightKg == Format.field(80.123)) // "80.12"
-        #expect(m.newWeight == nil)
-        m.weightKg = "81"
-        #expect(m.newWeight == 81)
-        m.weightKg = Format.field(80.123)
-        #expect(m.newWeight == nil)
+    @Test func `without a weigh-in there is no formula target and the form says where to add one`() throws {
+        let m = try model()
+        m.heightCm = "180"
+        m.sex = .male
+        m.hasBirthDate = true
+        #expect(m.weightKg == nil && m.weightDay == nil)
+        #expect(m.formulaKcal == nil)
+        #expect(m.validationErrors.first?.contains("Today → Weight") == true)
+        m.overrideKcal = true
+        m.manualKcal = "2000"
+        #expect(m.validationErrors.isEmpty) // a manual target needs no weight
     }
 
     @Test func `saving writes the target and only what changed`() throws {

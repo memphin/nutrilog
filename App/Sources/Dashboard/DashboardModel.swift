@@ -61,11 +61,15 @@ final class DashboardModel {
 
     // MARK: Loading
 
-    /// Re-reads the settings the dashboard caches (layout, water sizes).
+    /// Re-reads the settings the dashboard caches (layout, water sizes, step goal) — they are edited in Settings.
     func reloadSettings() {
         guard let profiles = environment.profiles else { return }
         layout = DashboardLayout.load(from: profiles)
         waterSizes = WaterQuickAdd.sizes(from: profiles)
+        let stepGoal = StepGoal.load(from: profiles)
+        if data.stepGoal != stepGoal {
+            data.stepGoal = stepGoal
+        }
     }
 
     func reloadAccess() async {
@@ -76,7 +80,7 @@ final class DashboardModel {
     func observe() async {
         let today = environment.today
         if data.today != today {
-            data = DashboardData(today: today)
+            data = DashboardData(today: today, stepGoal: data.stepGoal)
         }
         await reloadAccess()
         await withDiscardingTaskGroup { group in
@@ -146,34 +150,6 @@ final class DashboardModel {
         }
         environment.markHealthOnboardingShown()
         await reloadAccess()
-    }
-
-    // MARK: Layout
-
-    func setVisible(_ tile: DashboardTile, _ visible: Bool) {
-        var updated = layout
-        updated.setVisible(tile, visible)
-        saveLayout(updated)
-    }
-
-    func moveTiles(fromOffsets source: IndexSet, toOffset destination: Int) {
-        var updated = layout
-        updated.move(fromOffsets: source, toOffset: destination)
-        saveLayout(updated)
-    }
-
-    func resetLayout() {
-        saveLayout(.default)
-    }
-
-    private func saveLayout(_ updated: DashboardLayout) {
-        guard let profiles = environment.profiles else { return }
-        do {
-            try updated.save(to: profiles)
-            layout = updated
-        } catch {
-            errorMessage = "Couldn't save the dashboard layout: \(error.localizedDescription)"
-        }
     }
 
     // MARK: Water (FR-46)

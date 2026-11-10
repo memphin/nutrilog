@@ -3,7 +3,7 @@ import Foundation
 
 /// What can be charted (FR-51, backlog #38).
 enum ChartMetric: String, CaseIterable, Identifiable {
-    case weight, bodyFat, energy, macros, steps, sleep, restingHeartRate, hrv, water, activeEnergy, totalEnergy
+    case weight, bodyFat, energy, macros, steps, sleep, restingHeartRate, hrv, water, totalEnergy
 
     var id: String {
         rawValue
@@ -20,8 +20,7 @@ enum ChartMetric: String, CaseIterable, Identifiable {
         case .restingHeartRate: "Resting heart rate"
         case .hrv: "HRV"
         case .water: "Water"
-        case .activeEnergy: "Active energy"
-        case .totalEnergy: "Total energy burned"
+        case .totalEnergy: "Total energy"
         }
     }
 
@@ -36,7 +35,6 @@ enum ChartMetric: String, CaseIterable, Identifiable {
         case .restingHeartRate: "heart"
         case .hrv: "waveform.path.ecg"
         case .water: "drop"
-        case .activeEnergy: "bolt.heart"
         case .totalEnergy: "flame.circle"
         }
     }
@@ -44,7 +42,7 @@ enum ChartMetric: String, CaseIterable, Identifiable {
     /// Bars for amounts per day; lines for measurements.
     var isBar: Bool {
         switch self {
-        case .energy, .macros, .steps, .sleep, .water, .activeEnergy, .totalEnergy: true
+        case .energy, .macros, .steps, .sleep, .water, .totalEnergy: true
         case .weight, .bodyFat, .restingHeartRate, .hrv: false
         }
     }
@@ -58,7 +56,6 @@ enum ChartMetric: String, CaseIterable, Identifiable {
         case .weight: .weight
         case .bodyFat: .bodyFat
         case .steps: .steps
-        case .activeEnergy: .activeEnergy
         case .totalEnergy: .totalEnergy
         case .restingHeartRate: .restingHeartRate
         case .hrv: .hrv
@@ -111,6 +108,9 @@ struct ChartPoint: Identifiable, Equatable {
     var proteinG: Double?
     var carbsG: Double?
     var fatG: Double?
+    /// Total energy only: the two parts of `value` (display units), drawn as one stacked bar (#66).
+    var resting: Double?
+    var active: Double?
 
     var id: LocalDay {
         day
@@ -160,7 +160,6 @@ enum ChartBuilder {
         case .restingHeartRate: day.restingHR
         case .hrv: day.hrvMs
         case .water: day.waterMl
-        case .activeEnergy: day.activeKcal.map(unit.display)
         case .totalEnergy: day.totalBurnedKcal.map(unit.display)
         }
     }
@@ -169,7 +168,7 @@ enum ChartBuilder {
         switch metric {
         case .weight: "kg"
         case .bodyFat: "%"
-        case .energy, .activeEnergy, .totalEnergy: unit.symbol
+        case .energy, .totalEnergy: unit.symbol
         case .macros: "g"
         case .steps: "steps"
         case .sleep: "h"
@@ -203,6 +202,12 @@ enum ChartBuilder {
                 point.proteinG = day.intake?.proteinG
                 point.carbsG = day.intake?.carbsG
                 point.fatG = day.intake?.fatG
+            case .totalEnergy:
+                // Only for a day with a total, so the two parts always add up to the bar.
+                if point.value != nil {
+                    point.resting = day.basalKcal.map(unit.display)
+                    point.active = day.activeKcal.map(unit.display)
+                }
             default:
                 break
             }
@@ -239,6 +244,7 @@ enum ChartBuilder {
                 value: Stats.mean(points.map(\.value)), reference: Stats.mean(points.map(\.reference)),
                 proteinG: Stats.mean(points.map(\.proteinG)), carbsG: Stats.mean(points.map(\.carbsG)),
                 fatG: Stats.mean(points.map(\.fatG)),
+                resting: Stats.mean(points.map(\.resting)), active: Stats.mean(points.map(\.active)),
             )
         }
     }

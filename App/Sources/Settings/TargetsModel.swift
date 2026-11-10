@@ -23,8 +23,10 @@ final class TargetsModel {
     var activity: ActivityLevel = .light
     var goal: GoalMode = .maintain
     var rateKgPerWeek = 0.5
-    var weightKg = ""
-    private(set) var storedWeightKg: Double?
+    /// The latest weight (weigh-ins in Nutrilog and Apple Health): read-only here, it is changed by weighing in (#65).
+    private(set) var weightKg: Double?
+    /// The day of that weight.
+    private(set) var weightDay: LocalDay?
 
     // Target
     var overrideKcal = false
@@ -47,7 +49,6 @@ final class TargetsModel {
     private var loadedPercents: [String]?
     private var loadedGrams: [String]?
     private var loadedFiber: String?
-    private var loadedWeight: String?
 
     init(today: LocalDay) {
         self.today = today
@@ -55,7 +56,7 @@ final class TargetsModel {
 
     // MARK: Loading
 
-    func load(profile: Profile, target: Target?, latestWeightKg: Double?) {
+    func load(profile: Profile, target: Target?, latestWeightKg: Double?, weightDay: LocalDay? = nil) {
         self.profile = profile
         currentTarget = target
         heightCm = Format.field(profile.heightCm)
@@ -67,9 +68,8 @@ final class TargetsModel {
         activity = profile.activityLevel
         goal = profile.goalMode
         rateKgPerWeek = profile.goalRateKgPerWeek > 0 ? profile.goalRateKgPerWeek : 0.5
-        storedWeightKg = latestWeightKg
-        weightKg = Format.field(latestWeightKg)
-        loadedWeight = weightKg
+        weightKg = latestWeightKg.flatMap { $0 > 0 ? $0 : nil }
+        self.weightDay = weightKg == nil ? nil : weightDay
         if let target {
             // A target from the weekly check-in is shown as it is, not replaced by the formula's suggestion.
             overrideKcal = target.origin != .formula
@@ -96,7 +96,7 @@ final class TargetsModel {
     }
 
     var bmr: Double? {
-        guard let height = Format.number(heightCm), height > 0, let weight = Format.number(weightKg), weight > 0,
+        guard let height = Format.number(heightCm), height > 0, let weight = weightKg,
               let age, let sex else { return nil }
         return Energy.mifflinStJeor(weightKg: weight, heightCm: height, ageYears: Double(age), sex: sex)
     }
@@ -146,16 +146,15 @@ final class TargetsModel {
         var errors: [String] = []
         if effectiveKcal == nil {
             errors
-                .append(overrideKcal ? "Enter a calorie target." : "Fill in height, weight, birth date and sex — or set calories manually.")
+                .append(overrideKcal ? "Enter a calorie target." : weightKg == nil
+                    ? "Add a weight (Today → Weight) and fill in height, birth date and sex — or set calories manually."
+                    : "Fill in height, birth date and sex — or set calories manually.")
         }
         if macroInput == .percent, split?.isValid != true {
             errors.append("Macro percentages must add up to 100 % (now \(Int(percentSum.rounded())) %).")
         }
         if macroInput == .grams, macros == nil {
             errors.append("Enter protein, carbs and fat in grams.")
-        }
-        if let weight = Format.number(weightKg), !WeightRepository.validKg.contains(weight) {
-            errors.append("Weight looks wrong.")
         }
         return errors
     }
@@ -191,15 +190,6 @@ final class TargetsModel {
         return profile
     }
 
-    /// New weight to store, when the user changed the field and it differs from the latest stored weight.
-    var newWeight: Double? {
-        guard weightKg != loadedWeight, let weight = Format.number(weightKg), WeightRepository.validKg.contains(weight) else { return nil }
-        if let stored = storedWeightKg, abs(stored - weight) < 0.001 {
-            return nil
-        }
-        return weight
-    }
-
     func makeTarget() -> Target? {
         guard validationErrors.isEmpty, let kcal = effectiveKcal, let macros else { return nil }
         let fiber = fiberG == loadedFiber ? currentTarget?.fiberG : Format.number(fiberG).flatMap { $0 > 0 ? $0 : nil }
@@ -212,19 +202,15 @@ final class TargetsModel {
     }
 
     /// Saves the form. The target — the point of this screen, validated as a whole — is written first, then
-    /// the profile and weight only when they changed, so a failure leaves as little half-saved as possible.
+    /// the profile only when it changed, so a failure leaves as little half-saved as possible.
     /// Returns false when the form is invalid (nothing is written).
     @discardableResult
     func save(to profiles: ProfileRepository) throws -> Bool {
         guard let target = makeTarget() else { return false }
         let profileToSave = updatedProfile().flatMap { $0 == profile ? nil : $0 }
-        let weightToAdd = newWeight
         try profiles.setTarget(target)
         if let profileToSave {
             try profiles.save(profileToSave)
-        }
-        if let weightToAdd {
-            try profiles.addWeight(kg: weightToAdd)
         }
         return true
     }

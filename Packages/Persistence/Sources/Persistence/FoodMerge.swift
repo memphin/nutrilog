@@ -5,13 +5,13 @@ import GRDB
 /// Duplicate foods: find likely duplicates and merge them (FR-26, backlog #41).
 public extension FoodRepository {
     /// Groups of active foods that are probably the same: they share a barcode (an Open Food Facts copy's source id
-    /// counts as one) or the same normalized name + brand. Recipes are never offered. Groups are ordered by the name
+    /// counts as one) or the same normalized name + brand. Groups are ordered by the name
     /// of their suggested keeper. In each group the suggested
     /// keeper comes first: complete data, then your own foods, then the most used, then the oldest.
     func duplicateGroups() throws -> [[FoodDetail]] {
         try database.reader.read { db in
             let foods = try Food
-                .filter(Food.Columns.deletedAt == nil && Food.Columns.source != FoodSource.recipe)
+                .filter(Food.Columns.deletedAt == nil)
                 .order(Food.Columns.createdAt, Food.Columns.id)
                 .fetchAll(db)
             var details: [String: FoodDetail] = [:]
@@ -38,8 +38,8 @@ public extension FoodRepository {
 
     /// Merges `removeIDs` into `keepID` in one transaction:
     ///
-    /// - diary entries, recipe ingredients and saved-meal items of the removed foods point to the kept food (diary
-    ///   snapshots are untouched, so history doesn't change);
+    /// - diary entries and saved-meal items of the removed foods point to the kept food (diary snapshots are
+    ///   untouched, so history doesn't change); so do rows of the legacy `recipe_ingredient` table;
     /// - barcodes move over; servings the kept food lacks (by label) are copied;
     /// - missing details of the kept food (brand, local name, image, Nutri-Score, optional nutrients) are filled in
     ///   from the removed ones; use counts add up, the latest use and a favorite mark are kept;
@@ -65,9 +65,6 @@ public extension FoodRepository {
             let stamp = Timestamp.string(now)
             for id in ids {
                 guard var removed = try Food.fetchOne(db, key: id), removed.deletedAt == nil else { throw PersistenceError.notFound(id) }
-                guard removed.source != .recipe, keep.source != .recipe else {
-                    throw PersistenceError.validation("recipes can't be merged")
-                }
                 for table in ["diary_entry", "recipe_ingredient"] {
                     try db.execute(
                         sql: "UPDATE \(table) SET food_id = ?, updated_at = ?, revision = revision + 1 WHERE food_id = ?",

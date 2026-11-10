@@ -11,6 +11,8 @@ struct MetricChartView: View {
     @State private var range: ChartRange = .month
     @State private var series: ChartSeries?
     @State private var selectedDate: Date?
+    /// The daily goal the bars are coloured by: steps (#63) or ml of water (#64); nil for the other metrics.
+    @State private var goal: Double?
 
     var body: some View {
         VStack(alignment: .leading, spacing: NL.Spacing.m) {
@@ -55,6 +57,11 @@ struct MetricChartView: View {
 
     private func load() {
         selectedDate = nil
+        goal = switch metric {
+        case .steps: environment.profiles.map { Double(StepGoal.load(from: $0)) }
+        case .water: try? environment.profiles?.profile().waterGoalMl
+        default: nil
+        }
         let stats = (try? StatsLoader.load(range.days(endingOn: environment.today), environment: environment)) ?? []
         series = ChartBuilder.series(
             metric, range: range, stats: stats, unit: environment.energyUnit, firstWeekday: Calendar.current.firstWeekday,
@@ -108,6 +115,12 @@ struct MetricChartView: View {
         } else {
             parts.append(point.value.map { ChartBuilder.format($0, metric, unit: unit) } ?? "No value")
         }
+        if let resting = point.resting, let active = point.active {
+            func number(_ value: Double) -> String {
+                value.formatted(.number.precision(.fractionLength(0)))
+            }
+            parts.append("resting \(number(resting)) + active \(number(active))")
+        }
         if let reference = point.reference {
             parts.append(metric == .weight
                 ? "trend \(reference.formatted(.number.precision(.fractionLength(1)))) kg"
@@ -138,14 +151,29 @@ struct MetricChartView: View {
                     .accessibilityLabel("Average")
                     .accessibilityValue(ChartBuilder.format(average, metric, unit: environment.energyUnit))
             }
+            if let goal {
+                RuleMark(y: .value("Goal", goal))
+                    .foregroundStyle(Color.primary.opacity(0.7))
+                    .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                    .annotation(position: .top, alignment: .trailing) {
+                        Text("goal").font(.caption2).foregroundStyle(.secondary)
+                    }
+                    .accessibilityLabel("Goal")
+                    .accessibilityValue(ChartBuilder.format(goal, metric, unit: environment.energyUnit))
+            }
             if let point = selectedPoint(series) {
                 RuleMark(x: .value("Selected", date(point).addingTimeInterval(Double(point.spanDays) * 43200)))
                     .foregroundStyle(Color.primary.opacity(0.25))
                     .accessibilityHidden(true)
             }
         }
-        .chartForegroundStyleScale(["Protein": NL.Palette.protein, "Carbs": NL.Palette.carbs, "Fat": NL.Palette.fat])
-        .chartLegend(metric == .macros ? .visible : .hidden)
+        .chartForegroundStyleScale(
+            domain: metric == .totalEnergy ? ["Resting", "Active"] : ["Protein", "Carbs", "Fat"],
+            range: metric == .totalEnergy
+                ? [Color.orange.opacity(0.45), Color.orange]
+                : [NL.Palette.protein, NL.Palette.carbs, NL.Palette.fat],
+        )
+        .chartLegend(metric == .macros || metric == .totalEnergy ? .visible : .hidden)
         .chartYScale(domain: .automatic(includesZero: metric.isBar))
         .chartXSelection(value: $selectedDate)
     }
@@ -177,6 +205,19 @@ struct MetricChartView: View {
                 .foregroundStyle(Color.primary.opacity(0.7))
                 .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
             }
+        case .totalEnergy:
+            // One bar per day (or week): resting below, active on top.
+            if let resting = point.resting, let active = point.active {
+                BarMark(x: .value("Day", date(point), unit: component), y: .value(series.unitLabel, resting))
+                    .foregroundStyle(by: .value("Part", "Resting"))
+                BarMark(x: .value("Day", date(point), unit: component), y: .value(series.unitLabel, active))
+                    .foregroundStyle(by: .value("Part", "Active"))
+            }
+        case .steps, .water:
+            if let value = point.value {
+                BarMark(x: .value("Day", date(point), unit: component), y: .value(series.unitLabel, value))
+                    .foregroundStyle(goalColor(value).opacity(0.85))
+            }
         case .weight:
             if let value = point.value {
                 PointMark(x: .value("Day", date(point), unit: .day), y: .value("kg", value))
@@ -206,11 +247,17 @@ struct MetricChartView: View {
         }
     }
 
+    /// Steps: green at the goal, orange close below, red further away. Water: red below the goal, green at it.
+    private func goalColor(_ value: Double) -> Color {
+        guard let goal else { return tint }
+        return metric == .water ? GoalColor.water(value, goalMl: goal) : GoalColor.steps(value, goal: Int(goal))
+    }
+
     private var tint: Color {
         switch metric {
         case .water: NL.Palette.water
         case .sleep: .indigo
-        case .steps, .activeEnergy, .totalEnergy: .orange
+        case .steps, .totalEnergy: .orange
         case .restingHeartRate: .red
         case .hrv: .purple
         default: .accentColor

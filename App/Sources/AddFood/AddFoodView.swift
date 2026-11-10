@@ -32,6 +32,7 @@ struct AddFoodView: View {
     @State private var meals: [MealTemplateDetail] = []
     @State private var loggingMeal: MealTemplateDetail?
     @State private var renamingMeal: MealTemplateDetail?
+    @State private var editingMeal: MealSelection?
     @State private var mealName = ""
 
     /// Where a typed search looks: this iPhone (own foods + bundled index) or online (OFF + USDA, backlog #22).
@@ -72,9 +73,11 @@ struct AddFoodView: View {
                             .buttonStyle(.plain)
                             .swipeActions(edge: .trailing) {
                                 Button("Delete", systemImage: "trash", role: .destructive) { deleteMeal(meal) }
+                                Button("Edit", systemImage: "pencil") { editingMeal = MealSelection(id: meal.id) }.tint(.blue)
                             }
                             .contextMenu {
-                                Button("Rename", systemImage: "pencil") {
+                                Button("Edit", systemImage: "pencil") { editingMeal = MealSelection(id: meal.id) }
+                                Button("Rename", systemImage: "character.cursor.ibeam") {
                                     mealName = meal.template.name
                                     renamingMeal = meal
                                 }
@@ -151,6 +154,9 @@ struct AddFoodView: View {
             .sheet(item: $loggingMeal, onDismiss: reloadLists) { meal in
                 MealLogSheet(meal: meal, target: target) { dismiss() }
             }
+            .sheet(item: $editingMeal, onDismiss: reloadLists) { selection in
+                MealEditorView(mealID: selection.id)
+            }
             .alert("Rename meal", isPresented: Binding(get: { renamingMeal != nil }, set: {
                 if !$0 {
                     renamingMeal = nil
@@ -209,8 +215,8 @@ struct AddFoodView: View {
         switch tab {
         case .recents: "Search above or create a food — it shows up here after you log it."
         case .favorites: "Tap the star on a food to keep it here."
-        case .mine: "Foods and recipes you create appear here."
-        case .meals: "In the diary, open a meal's menu and choose “Save as meal” to log it again in one tap."
+        case .mine: "Foods you create appear here."
+        case .meals: "Create a meal from foods in the Foods tab, or open a meal's menu in the diary and choose “Save as meal”."
         }
     }
 

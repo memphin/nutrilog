@@ -5,10 +5,6 @@ import Testing
 @testable import Persistence
 
 extension Fixture {
-    var recipes: RecipeRepository {
-        RecipeRepository(db, clock: clock.appClock)
-    }
-
     var meals: MealTemplateRepository {
         MealTemplateRepository(db, clock: clock.appClock)
     }
@@ -38,158 +34,6 @@ func sampleEstimate(end: LocalDay = day("2026-11-08"), baseline: Double? = 2500,
         return TDEEDay(day: date, kcalIn: 2000, entryCount: 5, isComplete: false, weightKg: samples[date], trendKg: trend[date])
     }
     return try AdaptiveTDEE.estimate(history: history, endDay: end, baselineKcal: baseline, previousKcal: previous).get()
-}
-
-struct RecipeRepositoryTests {
-    private func makeChili(_ f: Fixture, cooked: Double? = nil, servings: Double? = nil) throws -> Recipe {
-        let beans = try f.makeFood("Beans", kcal: 120, protein: 8, carbs: 20, fat: 0.5)
-        let beef = try f.makeFood("Beef", kcal: 250, protein: 26, carbs: 0, fat: 15)
-        return try f.recipes.save(RecipeDraft(
-            name: " Chili ", ingredients: [RecipeIngredient(food: beans, grams: 400), RecipeIngredient(food: beef, grams: 500)],
-            cookedWeightG: cooked, servingsCount: servings,
-        ))
-    }
-
-    @Test func `saving computes per-100 values and stores ingredient snapshots`() throws {
-        let f = try Fixture()
-        let chili = try makeChili(f)
-        #expect(chili.food.name == "Chili")
-        #expect(chili.food.source == .recipe)
-        // (480 + 1,250) kcal over 900 g.
-        #expect(abs(chili.food.kcal100 - 1730 / 9) < 1e-9)
-        #expect(chili.ingredients.map(\.displayName) == ["Beans", "Beef"])
-        #expect(chili.ingredients.map(\.sortOrder) == [0, 1])
-        #expect(chili.detail.servings.isEmpty)
-
-        let stored = try #require(try f.recipes.recipe(id: chili.id))
-        #expect(stored.ingredients.map(\.grams) == [400, 500])
-        #expect(stored.nutrition?.rawWeightG == 900)
-        #expect(try f.recipes.recipes().map(\.name) == ["Chili"])
-        // A recipe is a food: it shows up among "my foods" and in search.
-        #expect(try f.foods.customFoods().contains { $0.id == chili.id })
-        #expect(try f.recipes.recipe(id: #require(stored.ingredients[0].foodID)) == nil) // a plain food is not a recipe
-    }
-
-    @Test func `cooked weight and servings: log by grams or by serving`() throws {
-        let f = try Fixture()
-        let chili = try makeChili(f, cooked: 800, servings: 4)
-        #expect(abs(chili.food.kcal100 - 1730 / 8) < 1e-9)
-        let serving = try #require(chili.detail.servings.first)
-        #expect(serving.label == RecipeRepository.servingLabel)
-        #expect(serving.grams == 200)
-        #expect(chili.food.defaultServingID == serving.id)
-
-        let d = day("2026-11-09")
-        let byServing = try f.diary.log(
-            food: chili.food, quantity: .servings(count: 1, serving: serving.size), servingID: serving.id, slotID: "dinner", day: d,
-        )
-        #expect(abs(byServing.kcal - 1730 / 4) < 1e-9)
-        let byGrams = try f.diary.log(food: chili.food, quantity: .base(100), slotID: "dinner", day: d)
-        #expect(abs(byGrams.kcal - 1730 / 8) < 1e-9)
-    }
-
-    @Test func `editing a recipe does not change past diary entries`() throws {
-        let f = try Fixture()
-        let chili = try makeChili(f, cooked: 800, servings: 4)
-        let d = day("2026-11-09")
-        let entry = try f.diary.log(food: chili.food, quantity: .base(200), slotID: "dinner", day: d)
-        let before = try f.diary.totals(for: d)
-
-        // Re-cook: more beef, a different cooked weight, fewer servings.
-        f.clock.advance(60)
-        var draft = RecipeDraft(chili)
-        draft.ingredients[1].grams = 900
-        draft.cookedWeightG = 1000
-        draft.servingsCount = 2
-        let recooked = try f.recipes.save(draft)
-        #expect(recooked.id == chili.id)
-        #expect(recooked.food.kcal100 != chili.food.kcal100)
-        #expect(recooked.detail.servings.count == 1)
-        #expect(recooked.detail.servings[0].id == chili.detail.servings[0].id) // same serving row, new weight
-        #expect(recooked.detail.servings[0].grams == 500)
-        #expect(recooked.food.revision > chili.food.revision)
-        #expect(recooked.food.useCount == 1)
-
-        #expect(try f.diary.totals(for: d) == before)
-        #expect(try f.diary.entry(id: entry.id)?.kcal == entry.kcal)
-        // New entries use the new values.
-        let fresh = try f.diary.log(food: recooked.food, quantity: .base(200), slotID: "dinner", day: d.next)
-        #expect(fresh.kcal != entry.kcal)
-    }
-
-    @Test func `ingredient snapshots survive edits and deletion of the ingredient food`() throws {
-        let f = try Fixture()
-        let chili = try makeChili(f)
-        let beansID = try #require(chili.ingredients[0].foodID)
-        var beans = try #require(try f.foods.detail(id: beansID))
-        beans.food.per100 = Nutrients(kcal: 999, proteinG: 1, carbsG: 1, fatG: 1)
-        try f.foods.save(beans)
-        try f.foods.softDelete(id: beansID)
-        let stored = try #require(try f.recipes.recipe(id: chili.id))
-        #expect(stored.ingredients[0].kcal100 == 120)
-        #expect(stored.food.kcal100 == chili.food.kcal100)
-    }
-
-    @Test func `removing ingredients and the servings count`() throws {
-        let f = try Fixture()
-        let chili = try makeChili(f, servings: 3)
-        var draft = RecipeDraft(chili)
-        draft.ingredients.removeLast()
-        draft.servingsCount = nil
-        let saved = try f.recipes.save(draft)
-        #expect(saved.ingredients.count == 1)
-        #expect(saved.detail.servings.isEmpty)
-        #expect(saved.food.defaultServingID == nil)
-        #expect(saved.food.kcal100 == 120)
-        let all = try f.db.reader.read { db in try RecipeIngredient.filter(RecipeIngredient.Columns.recipeID == chili.id).fetchAll(db) }
-        #expect(all.count == 2)
-        #expect(all.count(where: { $0.deletedAt != nil }) == 1) // soft-deleted, kept for sync
-    }
-
-    @Test func `duplicate makes an independent copy`() throws {
-        let f = try Fixture()
-        let chili = try makeChili(f, cooked: 800, servings: 4)
-        let copy = try f.recipes.duplicate(id: chili.id)
-        #expect(copy.id != chili.id)
-        #expect(copy.food.name == "Chili copy")
-        #expect(copy.food.kcal100 == chili.food.kcal100)
-        #expect(copy.food.cookedWeightG == 800)
-        #expect(copy.detail.servings.map(\.grams) == [200])
-        #expect(copy.detail.servings[0].id != chili.detail.servings[0].id)
-        #expect(Set(copy.ingredients.map(\.id)).isDisjoint(with: chili.ingredients.map(\.id)))
-        #expect(copy.food.useCount == 0)
-
-        var draft = RecipeDraft(copy)
-        draft.ingredients[0].grams = 50
-        try f.recipes.save(draft)
-        #expect(try f.recipes.recipe(id: chili.id)?.ingredients[0].grams == 400)
-        #expect(try f.recipes.duplicate(id: chili.id, name: "Mild chili").food.name == "Mild chili")
-        #expect(throws: Persistence.PersistenceError.notFound("nope")) { try f.recipes.duplicate(id: "nope") }
-    }
-
-    @Test func `validation`() throws {
-        let f = try Fixture()
-        let rice = try f.makeFood("Rice")
-        #expect(throws: Persistence.PersistenceError.self) { try f.recipes.save(RecipeDraft(
-            name: "  ",
-            ingredients: [RecipeIngredient(food: rice, grams: 100)],
-        )) }
-        #expect(throws: Persistence.PersistenceError.self) { try f.recipes.save(RecipeDraft(name: "Empty", ingredients: [])) }
-        #expect(throws: Persistence.PersistenceError.self) {
-            try f.recipes.save(RecipeDraft(name: "Zero", ingredients: [RecipeIngredient(food: rice, grams: 0)]))
-        }
-        let recipe = try f.recipes.save(RecipeDraft(name: "Rice bowl", ingredients: [RecipeIngredient(food: rice, grams: 100)]))
-        var selfReference = RecipeDraft(recipe)
-        selfReference.ingredients.append(RecipeIngredient(food: recipe.food, grams: 50))
-        #expect(throws: Persistence.PersistenceError.self) { try f.recipes.save(selfReference) }
-        // A plain food can't be saved as a recipe.
-        #expect(throws: Persistence.PersistenceError.self) {
-            try f.recipes.save(RecipeDraft(id: rice.id, name: "X", ingredients: [RecipeIngredient(food: rice, grams: 100)]))
-        }
-        // Recipes can be ingredients of other recipes.
-        let nested = try f.recipes.save(RecipeDraft(name: "Lunch box", ingredients: [RecipeIngredient(food: recipe.food, grams: 200)]))
-        #expect(nested.food.kcal100 == recipe.food.kcal100)
-    }
 }
 
 struct MealTemplateRepositoryTests {
@@ -456,9 +300,7 @@ struct FoodMergeTests {
         let offCopy = try f.foods.save(off).food
         let scanned = try f.makeFood("Dukat milk", barcodes: ["4006381333931"])
         _ = try f.makeFood("Oats")
-        let rice = try f.makeFood("Rice")
-        // A recipe with the same name as a food is never offered.
-        try f.recipes.save(RecipeDraft(name: "Rice", ingredients: [RecipeIngredient(food: rice, grams: 100)]))
+        _ = try f.makeFood("Rice")
         try f.diary.log(food: typo, quantity: .base(100), slotID: "lunch", day: d)
 
         let groups = try f.foods.duplicateGroups()
@@ -469,7 +311,7 @@ struct FoodMergeTests {
         #expect(groups[1].map(\.food.id) == [typo.id, mine.id])
     }
 
-    @Test func `merge re-points entries, recipes and meals and keeps the best data`() throws {
+    @Test func `merge re-points entries and meals and keeps the best data`() throws {
         let f = try Fixture()
         let keep = try f.makeFood("Milk", kcal: 60, servings: [Serving(label: "glass", grams: 250)])
         var extraDetail = FoodDetail(
@@ -489,7 +331,17 @@ struct FoodMergeTests {
         try f.diary.log(food: keep, quantity: .base(100), slotID: "lunch", day: d)
         let carton = try #require(extra.servings.first { $0.label == "carton" })
         let meal = try f.meals.create(name: "Latte", items: [.init(foodID: extra.food.id, grams: 1000, servingID: carton.id)])
-        let recipe = try f.recipes.save(RecipeDraft(name: "Pudding", ingredients: [RecipeIngredient(food: extra.food, grams: 500)]))
+        // A row of the legacy recipe table (recipes were removed, issue #68) still follows the merge.
+        try f.db.writer.write { db in
+            try db.execute(
+                sql: """
+                INSERT INTO recipe_ingredient (id, recipe_id, food_id, display_name, grams, kcal_100, protein_g_100, carbs_g_100,
+                    fat_g_100, created_at, updated_at)
+                VALUES ('legacy', ?, ?, 'Milk', 500, 64, 3, 5, 3, '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z')
+                """,
+                arguments: [keep.id, extra.food.id],
+            )
+        }
         let totals = try f.diary.totals(for: d)
         f.clock.advance(3600)
 
@@ -515,9 +367,13 @@ struct FoodMergeTests {
         #expect(mealItem.item.servingID == nil)
         #expect(mealItem.item.grams == 1000)
         #expect(!mealItem.isFoodDeleted)
-        let ingredient = try #require(try f.recipes.recipe(id: recipe.id)?.ingredients.first)
-        #expect(ingredient.foodID == keep.id)
-        #expect(ingredient.kcal100 == 64) // snapshot untouched
+        let legacy = try #require(try f.db.reader.read { db in
+            try Row.fetchOne(db, sql: "SELECT food_id, kcal_100 FROM recipe_ingredient WHERE id = 'legacy'")
+        })
+        let legacyFoodID: String? = legacy["food_id"]
+        let legacyKcal: Double? = legacy["kcal_100"]
+        #expect(legacyFoodID == keep.id)
+        #expect(legacyKcal == 64) // snapshot untouched
 
         #expect(try f.foods.food(id: extra.food.id)?.deletedAt != nil)
         #expect(try f.foods.food(barcode: "4006381333931")?.food.id == keep.id)
@@ -541,9 +397,6 @@ struct FoodMergeTests {
         #expect(throws: Persistence.PersistenceError.self) { try f.foods.merge(keep: keep.id, remove: [keep.id]) }
         #expect(throws: Persistence.PersistenceError.self) { try f.foods.merge(keep: keep.id, remove: []) }
         #expect(throws: Persistence.PersistenceError.self) { try f.foods.merge(keep: "missing", remove: [other.id]) }
-        let recipe = try f.recipes.save(RecipeDraft(name: "Shake", ingredients: [RecipeIngredient(food: keep, grams: 100)]))
-        #expect(throws: Persistence.PersistenceError.self) { try f.foods.merge(keep: keep.id, remove: [recipe.id]) }
-        #expect(try f.foods.food(id: recipe.id)?.deletedAt == nil)
     }
 }
 
@@ -705,6 +558,6 @@ struct Phase3QueryTests {
         #expect(record.decision == nil)
         #expect(record.estimate == nil)
         #expect(record.rawTDEEKcal == nil)
-        #expect(DataPortability.schemaVersion == 7)
+        #expect(DataPortability.schemaVersion >= 7)
     }
 }

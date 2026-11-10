@@ -41,7 +41,7 @@ struct DuplicateFoodsView: View {
                     }
                     Button("Merge into the selected food") { merge(group) }
                 } footer: {
-                    Text("Diary entries, recipes and saved meals of the others move to the selected food. Logged values don't change.")
+                    Text("Diary entries and saved meals of the others move to the selected food. Logged values don't change.")
                 }
             }
         }

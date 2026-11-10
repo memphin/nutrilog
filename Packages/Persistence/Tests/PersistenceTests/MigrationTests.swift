@@ -49,6 +49,67 @@ struct MigrationTests {
         let applied = try queue.read { try Migrator.make().appliedMigrations($0) }
         #expect(applied == Migrator.migrations)
     }
+
+    @Test func `migration 008 turns recipes into ordinary custom foods and keeps their data`() throws {
+        let queue = try DatabaseQueue()
+        var old = DatabaseMigrator()
+        for name in Migrator.migrations.prefix(7) {
+            old.registerMigration(name) { db in try db.execute(sql: Migrator.sql(named: name)) }
+        }
+        try old.migrate(queue)
+        let stamp = "2026-01-01T00:00:00.000Z"
+        try queue.write { db in
+            for (id, source, kcal) in [("oats", "custom", 370.0), ("chili", "recipe", 190.0), ("cola", "off", 42.0)] {
+                try db.execute(
+                    sql: """
+                    INSERT INTO food (id, name, source, kcal_100, protein_g_100, carbs_g_100, fat_g_100, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, 10, 20, 5, ?, ?)
+                    """,
+                    arguments: [id, id.capitalized, source, kcal, stamp, stamp],
+                )
+            }
+            try db.execute(
+                sql: """
+                INSERT INTO recipe_ingredient (id, recipe_id, food_id, display_name, grams, kcal_100, protein_g_100, carbs_g_100,
+                    fat_g_100, created_at, updated_at)
+                VALUES ('i1', 'chili', 'oats', 'Oats', 100, 370, 13, 60, 7, ?, ?)
+                """,
+                arguments: [stamp, stamp],
+            )
+        }
+        let db = try AppDatabase(queue)
+        #expect(try queue.read { try Migrator.make().appliedMigrations($0) } == Migrator.migrations)
+        let foods = FoodRepository(db)
+        let chili = try #require(try foods.food(id: "chili"))
+        #expect(chili.source == .custom)
+        #expect(chili.kcal100 == 190)
+        #expect(chili.revision == 2)
+        #expect(chili.updatedAt > chili.createdAt) // the migration's timestamp parses like any other
+        // Other foods are untouched; the old ingredient rows stay.
+        let oats = try #require(try foods.food(id: "oats"))
+        #expect(oats.source == .custom)
+        #expect(oats.revision == 1)
+        #expect(try foods.food(id: "cola")?.source == .off)
+        #expect(try queue.read { try Int.fetchOne($0, sql: "SELECT COUNT(*) FROM recipe_ingredient") } == 1)
+        #expect(try queue.read { try Int.fetchOne($0, sql: "SELECT COUNT(*) FROM food WHERE source = 'recipe'") } == 0)
+        #expect(try foods.customFoods().map(\.id) == ["chili", "oats"])
+    }
+
+    @Test func `importing an old export turns its recipes into custom foods`() throws {
+        let f = try Fixture()
+        let oats = try f.makeFood("Oats")
+        try f.db.writer.write { db in
+            try db.execute(sql: "UPDATE food SET source = 'recipe' WHERE id = ?", arguments: [oats.id])
+        }
+        let export = try f.portability.exportJSON()
+        #expect(String(bytes: export, encoding: .utf8)?.contains("\"recipe\"") == true)
+
+        let target = try Fixture()
+        try target.portability.importJSON(export, mode: .replace)
+        #expect(try target.foods.food(id: oats.id)?.source == .custom)
+        try f.portability.importJSON(export, mode: .merge)
+        #expect(try f.foods.food(id: oats.id)?.source == .custom)
+    }
 }
 
 struct OnDiskDatabaseTests {

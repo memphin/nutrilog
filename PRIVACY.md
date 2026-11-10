@@ -3,7 +3,7 @@
 Nutrilog is built for one person's private use. The design rule is simple: **data stays on the device unless you explicitly export it.**
 
 ## What is stored
-- Your food diary, custom foods, recipes, saved meals, targets and profile — in an SQLite database inside the app's sandbox, protected by iOS Data Protection (encrypted at rest).
+- Your food diary, custom foods, saved meals, targets and profile — in an SQLite database inside the app's sandbox, protected by iOS Data Protection (encrypted at rest).
 - A local cache of Open Food Facts product records you scanned (so repeat scans work offline).
 - A daily snapshot of Apple Health values you granted access to (steps, sleep, weight, body fat %, energy, resting heart rate, HRV, water). Apple Health remains the system of record; the snapshot can be deleted and recomputed at any time.
 - Your optional USDA API key — in the iOS Keychain.

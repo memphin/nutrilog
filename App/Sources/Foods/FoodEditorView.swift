@@ -115,8 +115,12 @@ struct FoodEditorView: View {
 private struct FoodEditorForm: View {
     @Bindable var model: FoodEditorModel
     let foods: FoodRepository?
+    @Environment(AppEnvironment.self) private var environment
     @State private var isScanning = false
     @State private var scanNotice: String?
+    /// Shown at the top after a scan filled the form (#69).
+    @State private var filledNotice: String?
+    @State private var isLookingUp = false
 
     var body: some View {
         Form {
@@ -125,6 +129,19 @@ private struct FoodEditorForm: View {
                 TextField("Local name (e.g. Croatian)", text: $model.nameLocal)
                 TextField("Brand", text: $model.brand)
                 Toggle("Liquid (measured in ml)", isOn: $model.isLiquid)
+                if !model.isEditing {
+                    // Like the scanner of Add Food: a known product fills the form (#69).
+                    Button("Scan barcode to fill in", systemImage: "barcode.viewfinder") {
+                        scanNotice = nil
+                        isScanning = true
+                    }
+                }
+            } footer: {
+                if isLookingUp {
+                    Text("Looking the product up…")
+                } else if let filledNotice {
+                    Text(filledNotice)
+                }
             }
 
             Section {
@@ -214,7 +231,7 @@ private struct FoodEditorForm: View {
             }
 
             Section("Notes") {
-                TextField("Source, recipe details…", text: $model.notes, axis: .vertical)
+                TextField("Source, details…", text: $model.notes, axis: .vertical)
             }
 
             if !model.validationErrors.isEmpty, !model.name.isEmpty || !model.energy.isEmpty {
@@ -223,12 +240,14 @@ private struct FoodEditorForm: View {
                 }
             }
         }
-        .sheet(isPresented: $isScanning) {
+        // Full screen, like the scanner of Add Food (#69).
+        .fullScreenCover(isPresented: $isScanning) {
             BarcodeScanSheet { barcode in
                 switch model.insertScanned(candidates: barcode.candidates) {
                 case let .added(code):
                     scanNotice = "Added \(code)."
                     isScanning = false
+                    lookUp(barcode.candidates, code: code)
                     return nil
                 case let .duplicate(code):
                     scanNotice = "\(code) is already on this food."
@@ -237,6 +256,30 @@ private struct FoodEditorForm: View {
                 case .invalid:
                     return "\(barcode.payload) isn't a product barcode (EAN / UPC). Try another code."
                 }
+            }
+        }
+    }
+
+    /// Looks the scanned product up and fills a new food's form with it (your foods first, then Open Food Facts).
+    private func lookUp(_ candidates: [String], code: String) {
+        guard model.canFillFromLookup else { return }
+        filledNotice = nil
+        isLookingUp = true
+        Task {
+            let outcome = await model.lookUpScanned(candidates: candidates, using: environment.barcodeLookup)
+            isLookingUp = false
+            switch outcome {
+            case let .filled(name):
+                filledNotice = "Filled in from Open Food Facts: \(name). Check the values against the label."
+                scanNotice = "Added \(code) — product found."
+            case let .existing(name):
+                scanNotice = "Added \(code). It is already on your food '\(name)'."
+            case .notFound:
+                scanNotice = "Added \(code). The product isn't on Open Food Facts — enter the values from the label."
+            case .failed:
+                scanNotice = "Added \(code). Couldn't look the product up — enter the values from the label."
+            case .skipped:
+                break
             }
         }
     }

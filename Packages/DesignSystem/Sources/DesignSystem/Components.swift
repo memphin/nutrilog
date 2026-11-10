@@ -161,12 +161,11 @@ public struct NutrientRow: View {
 /// Small capsule telling where a food comes from (FR-20).
 public struct SourceBadge: View {
     public enum Kind: String, Sendable, CaseIterable {
-        case custom, recipe, bundled, off, usda
+        case custom, bundled, off, usda
 
         public var title: String {
             switch self {
             case .custom: "Mine"
-            case .recipe: "Recipe"
             case .bundled: "USDA"
             case .off: "OFF"
             case .usda: "USDA"
@@ -176,7 +175,6 @@ public struct SourceBadge: View {
         public var accessibilityTitle: String {
             switch self {
             case .custom: "Your food"
-            case .recipe: "Your recipe"
             case .bundled, .usda: "USDA FoodData Central"
             case .off: "Open Food Facts"
             }
@@ -185,7 +183,6 @@ public struct SourceBadge: View {
         var tint: Color {
             switch self {
             case .custom: .blue
-            case .recipe: .purple
             case .bundled, .usda: .green
             case .off: .orange
             }

@@ -32,6 +32,8 @@ struct Sparkline: Equatable {
         /// 0 for the window's first day … `days - 1` for today.
         var index: Int
         var value: Double
+        /// The lower part of a stacked bar (Total energy: resting; the rest of `value` is active). nil: one bar.
+        var base: Double?
 
         var id: Int {
             index
@@ -44,13 +46,15 @@ struct Sparkline: Equatable {
     /// Days with a value, oldest first. Days without one are gaps (no zero is invented).
     let points: [Point]
 
-    /// - Parameter values: the metric per day; only the `days` days ending `today` are used.
-    init(_ values: [LocalDay: Double], today: LocalDay, mark: Mark) {
+    /// - Parameters:
+    ///   - values: the metric per day; only the `days` days ending `today` are used.
+    ///   - bases: the lower part of each day's stacked bar, where there is one.
+    init(_ values: [LocalDay: Double], today: LocalDay, mark: Mark, bases: [LocalDay: Double] = [:]) {
         self.mark = mark
         points = (0 ..< Self.days).compactMap { index in
             let day = today.adding(days: index - (Self.days - 1))
             guard let value = values[day], value.isFinite else { return nil }
-            return Point(day: day, index: index, value: value)
+            return Point(day: day, index: index, value: value, base: bases[day].map { min(max($0, 0), value) })
         }
     }
 
@@ -100,7 +104,8 @@ struct Sparkline: Equatable {
 // MARK: - Series per tile
 
 extension DashboardSnapshot {
-    /// The 7-day series of every tile that has one. The calories tile has none: its ring is about today.
+    /// The 7-day series of every tile that has one. The calories tile has none (its ring is about today), nor has
+    /// sleep (the tile shows last night only, #62).
     static func sparklines(
         data: DashboardData,
         rows: [DailyHealthMetrics],
@@ -137,12 +142,11 @@ extension DashboardSnapshot {
 
         let steps = series { $0.steps.map(Double.init) }
         let total = series { EnergyBurned(activeKcal: $0.activeKcal, restingKcal: $0.basalKcal).totalKcal }
-        let sleepHours = series { ($0.sleepAsleepMin ?? $0.sleepInBedMin).map { Double($0) / 60 } }
+        // Each total is drawn as resting + active (#66).
+        let resting = series { EnergyBurned(activeKcal: $0.activeKcal, restingKcal: $0.basalKcal).totalKcal == nil ? nil : $0.basalKcal }
         return [
             .steps: Sparkline(steps, today: today, mark: .bar),
-            .activeEnergy: Sparkline(series(\.activeKcal), today: today, mark: .bar),
-            .totalEnergy: Sparkline(total, today: today, mark: .bar),
-            .sleep: Sparkline(sleepHours, today: today, mark: .bar),
+            .totalEnergy: Sparkline(total, today: today, mark: .bar, bases: resting),
             .water: Sparkline(water, today: today, mark: .bar),
             .weight: Sparkline(WeightTrend.trendByDay(weightByDay, through: today), today: today, mark: .line),
             .bodyFat: Sparkline(bodyFatByDay, today: today, mark: .line),
@@ -152,21 +156,67 @@ extension DashboardSnapshot {
     }
 }
 
+// MARK: - Goal colours
+
+/// The colours of values measured against a daily goal (#63, #64).
+enum GoalColor {
+    static let reached = Color.green
+    static let near = Color.orange
+    static let missed = Color.red
+
+    /// Steps: green at or above the goal, orange close below it, red far below.
+    static func steps(_ steps: Double, goal: Int) -> Color {
+        switch StepGoal.band(steps: steps, goal: goal) {
+        case .reached: reached
+        case .near: near
+        case .far: missed
+        }
+    }
+
+    /// Water: red below the goal, green at or above it.
+    static func water(_ ml: Double, goalMl: Double) -> Color {
+        goalMl > 0 && ml < goalMl ? missed : reached
+    }
+}
+
+extension DashboardSnapshot {
+    /// The colour of one day's bar on a tile's sparkline; nil for tiles without a goal (the tile's tint is used).
+    func goalColor(of tile: DashboardTile, value: Double) -> Color? {
+        switch tile {
+        case .steps: GoalColor.steps(value, goal: stepGoal)
+        case .water: GoalColor.water(value, goalMl: water.goalMl)
+        default: nil
+        }
+    }
+}
+
 // MARK: - View
 
 /// The tile's sparkline: no axes, no interaction, hidden from VoiceOver (the tile speaks the trend instead).
 struct SparklineView: View {
     let sparkline: Sparkline
     var tint: Color = NL.Palette.trend
+    /// A bar's own colour (goal colours); nil uses `tint`, dimmed for past days.
+    var color: (Sparkline.Point) -> Color? = { _ in nil }
 
     private static let categories = (0 ..< Sparkline.days).map(String.init)
 
     var body: some View {
         Chart(sparkline.points) { point in
             if sparkline.mark == .bar {
-                BarMark(x: .value("Day", String(point.index)), y: .value("Value", point.value), width: .fixed(10))
-                    .foregroundStyle(tint.opacity(point.index == Sparkline.days - 1 ? 1 : 0.45))
-                    .clipShape(RoundedRectangle(cornerRadius: 3))
+                let x = PlottableValue.value("Day", String(point.index))
+                let isToday = point.index == Sparkline.days - 1
+                if let base = point.base {
+                    // Stacked: the lower part lighter, the upper part full.
+                    BarMark(x: x, y: .value("Value", base), width: .fixed(10))
+                        .foregroundStyle(tint.opacity(isToday ? 0.5 : 0.25))
+                    BarMark(x: x, y: .value("Value", point.value - base), width: .fixed(10))
+                        .foregroundStyle(tint.opacity(isToday ? 1 : 0.6))
+                } else {
+                    BarMark(x: x, y: .value("Value", point.value), width: .fixed(10))
+                        .foregroundStyle((color(point) ?? tint).opacity(isToday ? 1 : color(point) == nil ? 0.45 : 0.6))
+                        .clipShape(RoundedRectangle(cornerRadius: 3))
+                }
             } else {
                 LineMark(x: .value("Day", String(point.index)), y: .value("Value", point.value))
                     .foregroundStyle(tint)

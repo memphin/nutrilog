@@ -8,6 +8,7 @@ import UniformTypeIdentifiers
 struct SettingsView: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var waterGoal = 2500.0
+    @State private var stepGoal = StepGoal.defaultSteps
     @State private var errorMessage: String?
     @State private var usdaKeyDraft = ""
 
@@ -16,6 +17,7 @@ struct SettingsView: View {
             Form {
                 Section {
                     NavigationLink("Profile & targets") { ProfileTargetsView() }
+                    NavigationLink("Dashboard") { DashboardSettingsView() }
                     NavigationLink("Meal slots") { MealSlotsEditor() }
                     NavigationLink("Apple Health") { HealthSettingsView() }
                     NavigationLink("Weekly check-in") { CheckInSettingsView() }
@@ -26,11 +28,25 @@ struct SettingsView: View {
                         Text("Kilocalories (kcal)").tag(EnergyUnit.kcal)
                         Text("Kilojoules (kJ)").tag(EnergyUnit.kilojoules)
                     }
+                }
+
+                Section {
+                    Stepper(value: $stepGoal, in: StepGoal.validRange, step: StepGoal.step) {
+                        LabeledContent("Steps", value: stepGoal.formatted())
+                    }
+                    .onChange(of: stepGoal) { saveStepGoal() }
                     Stepper(value: $waterGoal, in: 500 ... 6000, step: 250) {
-                        LabeledContent("Daily water goal", value: "\(Int(waterGoal)) ml")
+                        LabeledContent("Water", value: "\(Int(waterGoal)) ml")
                     }
                     .onChange(of: waterGoal) { saveWaterGoal() }
                     NavigationLink("Water quick-add sizes") { WaterSettingsView() }
+                } header: {
+                    Text("Daily goals")
+                } footer: {
+                    Text(
+                        "Steps are green on a day that reached the goal, orange close below it and red further away. "
+                            + "Water is red below the goal and green once it is reached.",
+                    )
                 }
 
                 Section {
@@ -67,6 +83,7 @@ struct SettingsView: View {
             // Re-read after an import replaced the data.
             .task(id: environment.dataGeneration) {
                 waterGoal = (try? environment.profiles?.profile().waterGoalMl) ?? 2500
+                stepGoal = environment.profiles.map(StepGoal.load(from:)) ?? StepGoal.defaultSteps
             }
             .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: {
                 if !$0 {
@@ -137,6 +154,15 @@ struct SettingsView: View {
                 errorMessage = "Couldn't save the energy unit: \(error.localizedDescription)"
             }
         })
+    }
+
+    private func saveStepGoal() {
+        guard let profiles = environment.profiles, StepGoal.load(from: profiles) != stepGoal else { return }
+        do {
+            try StepGoal.save(stepGoal, to: profiles)
+        } catch {
+            errorMessage = "Couldn't save the step goal: \(error.localizedDescription)"
+        }
     }
 
     private func saveWaterGoal() {

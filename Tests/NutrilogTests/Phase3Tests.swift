@@ -345,45 +345,131 @@ struct DiaryPhase3Tests {
         #expect(try meals.templates().isEmpty)
     }
 
-    @Test func `recipe editor: amounts, scaling and validation`() throws {
-        let foods = try #require(env.foods), recipes = try #require(env.recipes)
+    @Test func `meal editor: create a meal from foods`() throws {
+        let foods = try #require(env.foods), meals = try #require(env.meals)
         let rice = try foods.save(FoodDetail(food: Food(name: "Rice", per100: Nutrients(kcal: 360, proteinG: 7, carbsG: 79, fatG: 1)))).food
-        let model = RecipeEditorModel()
+        let milk = try foods.save(FoodDetail(
+            food: Food(name: "Milk", per100: Nutrients(kcal: 60, proteinG: 3, carbsG: 5, fatG: 3), isLiquid: true),
+        )).food
+        let model = MealEditorModel()
         #expect(model.isNew)
-        #expect(model.validationErrors.count == 2)
-        model.name = "Plain rice"
+        #expect(model.validationErrors == ["Give the meal a name.", "Add at least one food."])
+        #expect(model.totals == .zero)
+
+        model.name = " Rice pudding "
         model.add(rice)
-        #expect(model.rows[0].gramsText == "100")
-        model.rows[0].gramsText = "200"
-        model.cookedText = "500"
-        model.servingsText = "2"
+        model.add(milk)
+        #expect(model.rows.map(\.amountText) == ["100", "100"])
+        #expect(model.rows.map(\.food.baseUnit) == [.grams, .milliliters])
+        model.rows[0].amountText = "50"
+        model.rows[1].amountText = "200,5"
         #expect(model.validationErrors.isEmpty)
-        let nutrition = try #require(model.nutrition)
-        #expect(nutrition.per100.kcal == 144)
-        #expect(nutrition.servingG == 250)
+        #expect(model.rows[1].amount == 200.5) // "," or "." as the decimal separator
+        #expect(abs(model.totals.kcal - (180 + 120.3)) < 0.001)
+        #expect(abs(model.totals.proteinG - (3.5 + 6.015)) < 0.001)
 
-        model.scale(by: 1.5)
-        #expect(model.rows[0].grams == 300)
-        #expect(Format.number(model.cookedText) == 750)
-        #expect(model.nutrition?.per100.kcal == 144) // a bigger batch of the same dish
-
-        model.rows[0].gramsText = "abc"
-        #expect(model.validationErrors == ["Every ingredient needs an amount greater than zero."])
-        model.rows[0].gramsText = "300"
-        model.servingsText = "0"
+        model.rows[1].amountText = "abc"
+        #expect(model.validationErrors == ["Every food needs an amount greater than zero."])
+        #expect(model.items == nil)
+        #expect(model.totals.kcal == 180) // an invalid amount counts as nothing
+        #expect(throws: PersistenceError.self) { try model.save(to: meals) }
+        #expect(try meals.templates().isEmpty)
+        model.rows[1].amountText = "0"
         #expect(model.validationErrors.count == 1)
-        model.servingsText = "3"
+        model.rows[1].amountText = "200"
+        model.move(fromOffsets: [1], toOffset: 0)
 
-        let saved = try model.save(to: recipes)
+        let saved = try model.save(to: meals)
         #expect(!model.isNew)
-        #expect(saved.food.source == .recipe)
-        let reopened = try RecipeEditorModel(recipe: #require(try recipes.recipe(id: saved.id)))
-        #expect(reopened.name == "Plain rice")
-        #expect(reopened.rows.map(\.gramsText) == ["300"])
-        #expect(reopened.cookedText == "750")
-        #expect(reopened.servingsText == "3")
-        reopened.remove(atOffsets: [0])
-        #expect(reopened.validationErrors == ["Add at least one ingredient."])
+        #expect(!model.hasChanges)
+        #expect(saved.template.name == "Rice pudding")
+        #expect(saved.items.map(\.food.id) == [milk.id, rice.id])
+        #expect(saved.items.map(\.item.grams) == [200, 50])
+        #expect(saved.totals.kcal == 300)
+        #expect(try meals.templates().map(\.id) == [saved.id])
+        // Saving again updates the same meal.
+        model.name = "Pudding"
+        #expect(model.hasChanges)
+        #expect(try model.save(to: meals).id == saved.id)
+        #expect(try meals.templates().map(\.template.name) == ["Pudding"])
+    }
+
+    @Test func `meal editor: change amounts, remove and add foods of an existing meal`() throws {
+        let foods = try #require(env.foods), meals = try #require(env.meals)
+        let oats = try foods.save(FoodDetail(
+            food: Food(name: "Oats", per100: Nutrients(kcal: 380, proteinG: 13, carbsG: 68, fatG: 6)),
+            servings: [Serving(label: "cup", grams: 80)],
+        ))
+        let milk = try foods.save(FoodDetail(
+            food: Food(name: "Milk", per100: Nutrients(kcal: 60, proteinG: 3, carbsG: 5, fatG: 3), isLiquid: true),
+        )).food
+        let honey = try foods.save(FoodDetail(food: Food(name: "Honey", per100: Nutrients(kcal: 300, proteinG: 0, carbsG: 80, fatG: 0))))
+            .food
+        let cup = try #require(oats.servings.first)
+        let meal = try meals.create(name: "Porridge", slotHint: "breakfast", items: [
+            .init(foodID: oats.food.id, grams: 80, servingID: cup.id),
+            .init(foodID: milk.id, grams: 250),
+            .init(foodID: honey.id, grams: 10),
+        ])
+
+        let model = try MealEditorModel(meal: #require(try meals.detail(id: meal.id)))
+        #expect(!model.isNew && !model.hasChanges)
+        #expect(model.name == "Porridge")
+        #expect(model.rows.map(\.amountText) == ["80", "250", "10"])
+        #expect(abs(model.totals.kcal - (304 + 150 + 30)) < 0.001)
+        #expect(model.validationErrors.isEmpty)
+
+        model.rows[1].amountText = "300"
+        model.remove(atOffsets: [2])
+        #expect(model.hasChanges)
+        #expect(abs(model.totals.kcal - (304 + 180)) < 0.001)
+        let saved = try model.save(to: meals)
+        #expect(saved.id == meal.id)
+        #expect(saved.template.name == "Porridge")
+        #expect(saved.template.mealSlotHint == "breakfast")
+        #expect(saved.items.map(\.food.id) == [oats.food.id, milk.id])
+        #expect(saved.items.map(\.item.grams) == [80, 300])
+        #expect(saved.items[0].item.servingID == cup.id) // an untouched item keeps its serving
+        #expect(try meals.templates().count == 1)
+
+        // Rename only: the items are left alone.
+        let renamed = try MealEditorModel(meal: #require(try meals.detail(id: meal.id)))
+        renamed.name = "Big porridge"
+        let itemIDs = saved.items.map(\.id)
+        #expect(try renamed.save(to: meals).items.map(\.id) == itemIDs)
+        #expect(try meals.detail(id: meal.id)?.template.name == "Big porridge")
+
+        // A changed amount drops the serving; a removed-everything meal can't be saved.
+        renamed.rows[0].amountText = "40"
+        renamed.add(honey)
+        let again = try renamed.save(to: meals)
+        #expect(again.items.map(\.item.grams) == [40, 300, 100])
+        #expect(again.items[0].item.servingID == nil)
+        renamed.remove(atOffsets: [0, 1, 2])
+        #expect(renamed.validationErrors == ["Add at least one food."])
+        renamed.name = "  "
+        #expect(renamed.validationErrors == ["Give the meal a name.", "Add at least one food."])
+        #expect(throws: PersistenceError.self) { try renamed.save(to: meals) }
+        #expect(try meals.detail(id: meal.id)?.items.count == 3)
+    }
+
+    @Test func `foods tab lists meals and deleting one can be undone`() throws {
+        let foods = try #require(env.foods), meals = try #require(env.meals)
+        let rice = try foods.save(FoodDetail(food: Food(name: "Rice", per100: Nutrients(kcal: 360, proteinG: 7, carbsG: 79, fatG: 1)))).food
+        let meal = try meals.create(name: "Lunch box", items: [.init(foodID: rice.id, grams: 150)])
+        let model = FoodsListModel(environment: env)
+        model.reload()
+        #expect(model.meals.map(\.id) == [meal.id])
+        model.query = "rice"
+        #expect(model.filteredMeals.count == 1) // a meal is found by its foods too
+        model.query = "soup"
+        #expect(model.filteredMeals.isEmpty)
+
+        model.delete(meal)
+        #expect(model.meals.isEmpty)
+        #expect(model.undo.current?.message == "Deleted Lunch box")
+        model.undo.current?.undo()
+        #expect(model.meals.map(\.id) == [meal.id])
     }
 
     @Test func `the history calendar asks the diary for a day`() {

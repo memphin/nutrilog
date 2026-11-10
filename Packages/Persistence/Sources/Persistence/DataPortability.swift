@@ -156,6 +156,12 @@ public struct DataPortability: Sendable {
                     }
                 }
             }
+            // Exports made before recipes were removed (issue #68) may hold recipe foods: like migration 008, they
+            // become ordinary custom foods.
+            try db.execute(
+                sql: "UPDATE food SET source = ?, updated_at = ?, revision = revision + 1 WHERE source = ?",
+                arguments: [FoodSource.custom.rawValue, Timestamp.string(now), FoodSource.recipe.rawValue],
+            )
             // Replace wipes every table, so a partial file must not leave the app without a profile or meal slots.
             // Checking the result (not the file's keys) keeps older, smaller-schema backups importable.
             if mode == .replace {

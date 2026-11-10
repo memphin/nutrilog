@@ -60,8 +60,8 @@
                 NavigationStack { MetricChartScreen(metric: .macros) }
             case "chartSteps":
                 NavigationStack { MetricChartScreen(metric: .steps) }
-            case "recipe":
-                RecipeEditorView(recipeID: try? environment.recipes?.recipes().first?.id)
+            case "meal":
+                MealEditorView(mealID: (try? environment.meals?.templates())?.first?.id)
             case "duplicates":
                 NavigationStack { DuplicateFoodsView() }
             case "backups":

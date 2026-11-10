@@ -153,7 +153,7 @@ struct DashboardAccessibilityTests {
         #expect(snapshot.accessibilityLabel(of: .steps, state: .noData(HealthKitClient.noDataMessage))
             == "Steps, no data. No data found — check Health permissions")
         #expect(snapshot.accessibilityLabel(of: .sleep, state: .needsAccess) == "Sleep, no data. \(TileState.needsAccessMessage)")
-        #expect(snapshot.accessibilityLabel(of: .water, state: .ready) == "Water, 0 of 2,500 millilitres")
+        #expect(snapshot.accessibilityLabel(of: .water, state: .ready) == "Water, 0 of 2,500 millilitres, below goal")
         #expect(snapshot.accessibilityLabel(of: .energy, state: .ready).hasPrefix("Calories, 0 calories eaten"))
         #expect(DashboardSnapshot.spokenDuration(425) == "7 hours 5 minutes")
         #expect(DashboardSnapshot.spokenDuration(60) == "1 hour")

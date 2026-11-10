@@ -3,7 +3,7 @@ import DesignSystem
 import Persistence
 import SwiftUI
 
-/// "Foods" tab: your custom foods and favorites — create, edit, favorite, delete (with undo).
+/// "Foods" tab: your saved meals, custom foods and favorites — create, edit, favorite, delete (with undo).
 struct FoodsListView: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var model: FoodsListModel?
@@ -29,55 +29,42 @@ private struct FoodsListContent: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var editing: FoodDetail?
     @State private var showCreate = false
-    @State private var showCreateRecipe = false
-    @State private var editingRecipe: RecipeSelection?
-
-    /// A recipe opened in the recipe editor.
-    struct RecipeSelection: Identifiable {
-        let id: String
-    }
+    @State private var showCreateMeal = false
+    @State private var editingMeal: MealSelection?
 
     var body: some View {
         List {
-            if model.foods.isEmpty {
+            if model.foods.isEmpty, model.meals.isEmpty {
                 EmptyStateView(
                     "No foods yet",
                     systemImage: "fork.knife",
-                    message: "Create foods for things you eat often — local specialties, home recipes, packaged products.",
+                    message: "Create foods for things you eat often — local specialties, home cooking, packaged products — "
+                        + "and combine foods into meals.",
                 )
                 .listRowBackground(Color.clear)
             }
-            ForEach(model.filtered) { food in
-                Button {
-                    if food.source == .recipe {
-                        editingRecipe = RecipeSelection(id: food.id)
-                    } else {
-                        editing = model.detail(for: food)
-                    }
-                } label: {
-                    HStack {
-                        FoodRow(
-                            name: food.name,
-                            brand: food.brand,
-                            per100: food.per100,
-                            source: food.source,
-                            unit: environment.energyUnit,
-                            isLiquid: food.isLiquid,
-                        )
-                        if food.isFavorite {
-                            Image(systemName: "star.fill").foregroundStyle(.yellow).accessibilityLabel("Favorite")
+            if !model.filteredMeals.isEmpty {
+                Section("Meals") {
+                    ForEach(model.filteredMeals) { meal in
+                        Button { editingMeal = MealSelection(id: meal.id) } label: {
+                            MealRow(meal: meal, unit: environment.energyUnit)
+                        }
+                        .buttonStyle(.plain)
+                        .swipeActions(edge: .trailing) {
+                            Button("Delete", systemImage: "trash", role: .destructive) { model.delete(meal) }
                         }
                     }
                 }
-                .buttonStyle(.plain)
-                .swipeActions(edge: .trailing) {
-                    Button("Delete", systemImage: "trash", role: .destructive) { model.delete(food) }
-                }
-                .swipeActions(edge: .leading) {
-                    Button(food.isFavorite ? "Unfavorite" : "Favorite", systemImage: food.isFavorite ? "star.slash" : "star") {
-                        model.toggleFavorite(food)
+            }
+            if !model.filtered.isEmpty {
+                Section {
+                    ForEach(model.filtered) { food in
+                        foodRow(food)
                     }
-                    .tint(.yellow)
+                } header: {
+                    if !model.meals.isEmpty {
+                        Text("Foods")
+                    }
                 }
             }
         }
@@ -87,7 +74,7 @@ private struct FoodsListContent: View {
             ToolbarItem(placement: .primaryAction) {
                 Menu("New", systemImage: "plus") {
                     Button("New food", systemImage: "fork.knife") { showCreate = true }
-                    Button("New recipe", systemImage: "frying.pan") { showCreateRecipe = true }
+                    Button("New meal", systemImage: "takeoutbag.and.cup.and.straw") { showCreateMeal = true }
                 }
             }
         }
@@ -101,16 +88,11 @@ private struct FoodsListContent: View {
         .sheet(item: $editing, onDismiss: reload) { detail in
             FoodEditorView(editing: detail)
         }
-        .sheet(isPresented: $showCreateRecipe, onDismiss: reload) {
-            RecipeEditorView()
+        .sheet(isPresented: $showCreateMeal, onDismiss: reload) {
+            MealEditorView()
         }
-        .sheet(item: $editingRecipe, onDismiss: reload) { selection in
-            // Duplicating opens the copy next.
-            RecipeEditorView(recipeID: selection.id) { saved in
-                if saved.id != selection.id {
-                    Task { editingRecipe = RecipeSelection(id: saved.id) }
-                }
-            }
+        .sheet(item: $editingMeal, onDismiss: reload) { selection in
+            MealEditorView(mealID: selection.id, onDeleted: { model.mealWasDeleted($0) })
         }
         .alert("Error", isPresented: Binding(get: { model.errorMessage != nil }, set: {
             if !$0 {
@@ -119,6 +101,35 @@ private struct FoodsListContent: View {
         })) {
             Button("OK", role: .cancel) {}
         } message: { Text(model.errorMessage ?? "") }
+    }
+
+    /// Any food — a legacy recipe food included — opens in the ordinary food editor.
+    private func foodRow(_ food: Food) -> some View {
+        Button { editing = model.detail(for: food) } label: {
+            HStack {
+                FoodRow(
+                    name: food.name,
+                    brand: food.brand,
+                    per100: food.per100,
+                    source: food.source,
+                    unit: environment.energyUnit,
+                    isLiquid: food.isLiquid,
+                )
+                if food.isFavorite {
+                    Image(systemName: "star.fill").foregroundStyle(.yellow).accessibilityLabel("Favorite")
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .swipeActions(edge: .trailing) {
+            Button("Delete", systemImage: "trash", role: .destructive) { model.delete(food) }
+        }
+        .swipeActions(edge: .leading) {
+            Button(food.isFavorite ? "Unfavorite" : "Favorite", systemImage: food.isFavorite ? "star.slash" : "star") {
+                model.toggleFavorite(food)
+            }
+            .tint(.yellow)
+        }
     }
 
     private func reload() {

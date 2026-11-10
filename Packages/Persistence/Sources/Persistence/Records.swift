@@ -5,7 +5,11 @@ import GRDB
 // MARK: - Food
 
 public enum FoodSource: String, Codable, Sendable, CaseIterable, DatabaseValueConvertible {
-    case custom, off, usda, bundled, recipe
+    case custom, off, usda, bundled
+    /// Legacy: recipes were removed in favour of saved meals (issue #68). Migration 008 and the JSON import turn
+    /// recipe foods into `custom` ones, so nothing writes this value any more; the case stays so old rows and old
+    /// exports still decode. Treat it like `custom`.
+    case recipe
 }
 
 public enum DataQuality: String, Codable, Sendable, DatabaseValueConvertible {

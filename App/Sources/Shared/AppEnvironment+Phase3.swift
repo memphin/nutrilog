@@ -12,10 +12,6 @@ extension AppEnvironment {
     /// Set once by `NutrilogApp`.
     static var shared: AppEnvironment?
 
-    var recipes: RecipeRepository? {
-        db.map { RecipeRepository($0, clock: clock) }
-    }
-
     /// Saved meals (FR-24).
     var meals: MealTemplateRepository? {
         db.map { MealTemplateRepository($0, clock: clock) }

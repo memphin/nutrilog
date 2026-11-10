@@ -168,8 +168,8 @@ Single user (the owner). Representative daily flows:
 - FR-21 Search is diacritic- and case-insensitive; supports Croatian and English names (custom foods can have both).
 - FR-22 "Recent" (last 50 logged) and "Favorites" (starred) lists; frequency-ranked suggestions per meal slot (e.g. breakfast foods first in the morning).
 - FR-23 Custom food: name, brand, barcode(s), serving definitions (e.g. "1 slice = 25 g"), nutrients per 100 g (kcal, P, C, F mandatory; fiber, sugar, sat. fat, sodium optional; micronutrients COULD, post-v1 — the schema reserves a JSON `micros` column so adding them later needs no migration), source note.
-- FR-24 Saved meals (bundle of entries with quantities, loggable in one tap, editable at log time).
-- FR-25 Recipes: ingredients + cooked total weight (or number of servings) → nutrients per 100 g / per serving; log by grams or servings; re-cook with changed weights.
+- FR-24 Saved meals (a named list of foods with amounts; created from scratch or from a logged meal, editable, loggable in one tap, amounts editable at log time).
+- FR-25 ~~Recipes: ingredients + cooked total weight (or number of servings) → nutrients per 100 g / per serving; log by grams or servings; re-cook with changed weights.~~ Removed in favour of saved meals (issue #68): the app has foods and meals only; existing recipes became ordinary custom foods. Mentions of recipes elsewhere in this document are historical.
 - FR-26 Verified/curated flag and "last used" timestamp; duplicates merge tool (SHOULD).
 
 ### 5.4 Targets & profile (MUST)
@@ -298,7 +298,7 @@ Food
   servings [{label, grams}], defaultServingId?, imageURL?, isFavorite, lastUsedAt, useCount,
   dataQuality (complete|partialMacros|energyOnly), notes?, createdAt, updatedAt, deletedAt?, revision
 
-Recipe (extends Food with source=recipe)
+Recipe (extends Food with source=recipe) — removed, see FR-25; `source=recipe` and the `recipe_ingredient` table remain only as legacy schema
   ingredients [{foodId, grams, snapshotPer100g}], cookedWeightG?, servingsCount?
 
 MealTemplate ("saved meal")
@@ -421,6 +421,8 @@ All blocking decisions are made (D1–D9). The following defaults may be changed
 ---
 
 *Change log*
+- 1.3 — owner feedback (issues #62–#67, #69, #70): the sleep tile shows only time asleep (stages in its detail); a daily step goal colours step bars (green / orange / red) and the water goal colours water (red / green); Active energy is merged into one Total energy tile drawn as resting + active; profile weight is read-only (latest weigh-in); the dashboard is arranged in Settings → Dashboard and Today has no toolbar buttons. Supersedes the tile list of FR-41 where they differ (2026-11-10)
+- 1.2 — recipes removed in favour of saved meals, which can now be created and edited as a list of foods with amounts (issue #68); migration 008 turns recipe foods into custom foods (2026-11-10)
 - 1.1 — phase 3 implemented (recipes, saved meals, weight trend, adaptive TDEE and weekly check-in, history calendar, charts, weekly report, App Intents, duplicate merge and backups, widgets). Clarifications made while building it: FR-41's weight tile uses the §5.4.1 trend (α = 0.1) instead of a separate 7-day EMA, so every screen shows one trend; the trend's outlier rule compares a weigh-in with the previous accepted one (at most 3 days earlier) and accepts a jump that the next weigh-in confirms; the estimate also needs ≥ 2 weigh-ins and a trend spanning ≥ 7 days of the window; "medium" confidence = ≥ 10 logged days and ≥ 4 weigh-ins; proposed targets never go below 1,200 kcal and are not lowered while under-logging is suspected; widgets read a snapshot written by the app rather than the database; App Intents are part of the app target (2026-11-10)
 - 1.0 — approved baseline; draft markers removed (2026-11-09)
 - 0.1 — initial research + draft (2026-11-09)

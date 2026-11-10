@@ -93,7 +93,7 @@ public enum FoodSearchResult: Hashable, Sendable, Identifiable {
         }
     }
 
-    /// Source badge (FR-20): custom, recipe, bundled (USDA), off, usda.
+    /// Source badge (FR-20): custom, bundled (USDA), off, usda.
     public var source: FoodSource {
         switch self {
         case let .food(food): food.source
