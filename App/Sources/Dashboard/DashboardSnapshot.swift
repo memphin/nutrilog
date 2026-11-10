@@ -14,6 +14,8 @@ struct DashboardData: Equatable {
     var manualWeights: [WeightEntry] = []
     /// Water logged in Nutrilog today.
     var water: [WaterEntry] = []
+    /// Water logged in Nutrilog per day over the sparkline window (today included), in ml.
+    var waterByDay: [LocalDay: Double] = [:]
     /// Today's diary totals.
     var totals: Nutrients = .zero
     var target: Target?
@@ -21,6 +23,11 @@ struct DashboardData: Equatable {
 
     var window: ClosedRange<LocalDay> {
         today.adding(days: -(Self.historyDays - 1)) ... today
+    }
+
+    /// The days of the tiles' sparklines, today included.
+    var sparklineWindow: ClosedRange<LocalDay> {
+        today.adding(days: -(Sparkline.days - 1)) ... today
     }
 
     /// [midnight of the window's first day, midnight after today) — manual weights to read.
@@ -68,6 +75,31 @@ struct SleepValue: Equatable {
     }
 }
 
+/// Energy burned on one day: active (exercise, movement) plus resting (basal). The total is shown only when both are
+/// known — half of it presented as "total" would read as a low-burn day.
+struct EnergyBurned: Equatable {
+    var activeKcal: Double?
+    var restingKcal: Double?
+
+    /// nil unless both parts are known.
+    var totalKcal: Double? {
+        guard let activeKcal, let restingKcal else { return nil }
+        return activeKcal + restingKcal
+    }
+
+    var hasValue: Bool {
+        activeKcal != nil || restingKcal != nil
+    }
+
+    /// "Active 420 kcal · Resting 1,650 kcal"; a missing part says so.
+    func breakdown(_ unit: EnergyUnit) -> String {
+        [
+            "Active \(activeKcal.map { unit.format($0) } ?? "unknown")",
+            "Resting \(restingKcal.map { unit.format($0) } ?? "unknown")",
+        ].joined(separator: " · ")
+    }
+}
+
 struct BodyFatValue: Equatable {
     var day: LocalDay
     var pct: Double
@@ -86,6 +118,8 @@ struct DashboardSnapshot: Equatable {
     let water: WaterProgress
     let totals: Nutrients
     let target: Target?
+    /// 7-day series per tile (`DashboardSnapshot.sparklines`), also the ones that can't be drawn.
+    let sparklines: [DashboardTile: Sparkline]
 
     init(_ data: DashboardData, calendar: Calendar = .current) {
         today = data.today
@@ -110,6 +144,17 @@ struct DashboardSnapshot: Equatable {
         )
         totals = data.totals
         target = data.target
+        sparklines = Self.sparklines(data: data, rows: rows, dayWeights: dayWeights)
+    }
+
+    /// The tile's 7-day chart, nil when there are fewer than two days to draw or the tile has none.
+    /// Total energy without a total today (only one part known) has none either: a chart of totals next to a
+    /// partial value would read as if it were one of them.
+    func sparkline(for tile: DashboardTile) -> Sparkline? {
+        if tile == .totalEnergy, energyBurned?.totalKcal == nil {
+            return nil
+        }
+        return sparklines[tile].flatMap { $0.isDrawable ? $0 : nil }
     }
 
     var steps: Int? {
@@ -118,6 +163,12 @@ struct DashboardSnapshot: Equatable {
 
     var activeKcal: Double? {
         todayMetrics?.activeKcal
+    }
+
+    /// Today's active and resting energy; nil when neither is known.
+    var energyBurned: EnergyBurned? {
+        let burned = EnergyBurned(activeKcal: todayMetrics?.activeKcal, restingKcal: todayMetrics?.basalKcal)
+        return burned.hasValue ? burned : nil
     }
 
     /// Last night (the night ending today).
@@ -137,6 +188,7 @@ struct DashboardSnapshot: Equatable {
         case .weight: weight != nil
         case .bodyFat: bodyFat != nil
         case .activeEnergy: activeKcal != nil
+        case .totalEnergy: energyBurned != nil
         case .restingHeartRate: restingHR != nil
         case .hrv: hrv != nil
         }
@@ -223,6 +275,13 @@ enum TileHistory {
                 return TileHistoryRow(day: day, value: weights[day]?.bodyFatPct.map(DashboardFormat.percent))
             case .activeEnergy:
                 return TileHistoryRow(day: day, value: row?.activeKcal.map { energyUnit.format($0) })
+            case .totalEnergy:
+                let burned = EnergyBurned(activeKcal: row?.activeKcal, restingKcal: row?.basalKcal)
+                return TileHistoryRow(
+                    day: day,
+                    value: burned.totalKcal.map { energyUnit.format($0) },
+                    detail: burned.hasValue ? burned.breakdown(energyUnit) : nil,
+                )
             case .restingHeartRate:
                 return TileHistoryRow(day: day, value: row?.restingHR.map(DashboardFormat.bpm))
             case .hrv:
@@ -234,7 +293,8 @@ enum TileHistory {
                 return TileHistoryRow(
                     day: day,
                     value: total > 0 ? DashboardFormat.ml(total) : nil,
-                    detail: other > 0 && logged > 0 ? "\(DashboardFormat.ml(logged)) in Nutrilog, \(DashboardFormat.ml(other)) from other apps" : nil,
+                    detail: other > 0 && logged > 0 ?
+                        "\(DashboardFormat.ml(logged)) in Nutrilog, \(DashboardFormat.ml(other)) from other apps" : nil,
                 )
             }
         }

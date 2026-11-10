@@ -26,6 +26,45 @@ final class FoodEditorModel {
         var amount: String = ""
     }
 
+    /// One barcode row. A stable id keeps the text field, swipe-to-delete and the remove button on the right row
+    /// while rows are added and removed.
+    struct BarcodeDraft: Identifiable, Equatable {
+        var id: String = newID()
+        var code: String = ""
+    }
+
+    /// What a scan did to the barcode list.
+    enum ScanResult: Equatable {
+        /// The normalized code was added.
+        case added(String)
+        /// The code (in any of its readings) is already in the list.
+        case duplicate(String)
+        /// Not a retail product code (e.g. a Code-128 lot number).
+        case invalid
+    }
+
+    /// A barcode in the form that another active food carries (in any reading of its digits). Saving moves it here
+    /// only after the user agrees (`FoodRepository.save(_:movingBarcodes:)`), never silently.
+    struct BarcodeConflict: Equatable, Identifiable {
+        /// The code as listed in the editor.
+        var barcode: String
+        /// The key the other food stores it under (another reading for some 8-digit codes).
+        var storedBarcode: String
+        var foodID: String
+        var foodName: String
+
+        init(barcode: String, storedBarcode: String? = nil, foodID: String, foodName: String) {
+            self.barcode = barcode
+            self.storedBarcode = storedBarcode ?? barcode
+            self.foodID = foodID
+            self.foodName = foodName
+        }
+
+        var id: String {
+            storedBarcode
+        }
+    }
+
     // Identity
     var name = ""
     var nameLocal = ""
@@ -48,7 +87,15 @@ final class FoodEditorModel {
 
     var servings: [ServingDraft] = []
     var defaultServingID: String?
-    var barcodes: [String] = []
+    var barcodeRows: [BarcodeDraft] = []
+    /// Normalized code → name of the other active food carrying it (`refreshBarcodeOwners(in:)`), for the row hint.
+    private(set) var barcodeOwners: [String: String] = [:]
+
+    /// The barcode texts in row order (empty rows included).
+    var barcodes: [String] {
+        get { barcodeRows.map(\.code) }
+        set { barcodeRows = newValue.map { BarcodeDraft(code: $0) } }
+    }
 
     let energyUnit: EnergyUnit
     private(set) var original: FoodDetail?
@@ -145,7 +192,7 @@ final class FoodEditorModel {
                 break
             }
         }
-        for code in barcodes where !code.isEmpty && Barcode.normalize(code) == nil {
+        for code in barcodes where !code.trimmingCharacters(in: .whitespaces).isEmpty && Barcode.normalize(code) == nil {
             errors.append("Barcode \(code) is not valid.")
         }
         return errors
@@ -207,11 +254,98 @@ final class FoodEditorModel {
             return serving
         }
         food.defaultServingID = savedServings.contains { $0.id == defaultServingID } ? defaultServingID : nil
-        return FoodDetail(food: food, servings: savedServings, barcodes: barcodes.filter { !$0.isEmpty })
+        return FoodDetail(
+            food: food, servings: savedServings,
+            barcodes: barcodes.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty },
+        )
     }
 
     func addServing() {
         servings.append(ServingDraft())
+    }
+
+    // MARK: Barcodes
+
+    /// Adds an empty row to type a code into.
+    func addBarcodeRow() {
+        barcodeRows.append(BarcodeDraft())
+    }
+
+    func removeBarcode(id: BarcodeDraft.ID) {
+        barcodeRows.removeAll { $0.id == id }
+    }
+
+    func removeBarcodes(atOffsets offsets: IndexSet) {
+        barcodeRows.remove(atOffsets: offsets)
+    }
+
+    /// Adds a scanned (or typed-in-the-scanner) code: its normalized form (`ScannedBarcode.candidates`, most likely
+    /// first) goes into the first empty row or a new one. A code already listed in any of its readings — an
+    /// 8-digit code can be EAN-8 or UPC-E — isn't added twice.
+    @discardableResult
+    func insertScanned(candidates: [String]) -> ScanResult {
+        guard let code = candidates.first else { return .invalid }
+        let scanned = Set(candidates)
+        if let row = barcodeRows.first(where: { !scanned.isDisjoint(with: Barcode.candidates($0.code)) }) {
+            return .duplicate(Barcode.normalize(row.code) ?? row.code) // as the list shows it
+        }
+        if let empty = barcodeRows.firstIndex(where: { $0.code.trimmingCharacters(in: .whitespaces).isEmpty }) {
+            barcodeRows[empty].code = code
+        } else {
+            barcodeRows.append(BarcodeDraft(code: code))
+        }
+        return .added(code)
+    }
+
+    /// The normalized, valid, de-duplicated codes the food will be saved with.
+    var normalizedBarcodes: [String] {
+        barcodeRows.compactMap { Barcode.normalize($0.code) }.reduce(into: []) { result, code in
+            if !result.contains(code) {
+                result.append(code)
+            }
+        }
+    }
+
+    /// Codes in the list that another active food carries, also under another reading of the same digits.
+    func barcodeConflicts(in foods: FoodRepository) throws -> [BarcodeConflict] {
+        try foods.activeOwners(of: normalizedBarcodes, excluding: original?.food.id).map {
+            BarcodeConflict(barcode: $0.barcode, storedBarcode: $0.storedBarcode, foodID: $0.food.id, foodName: $0.food.name)
+        }
+    }
+
+    /// Re-reads which listed codes are on another food, for the row hint.
+    func refreshBarcodeOwners(in foods: FoodRepository) {
+        let conflicts = (try? barcodeConflicts(in: foods)) ?? []
+        barcodeOwners = Dictionary(conflicts.map { ($0.barcode, $0.foodName) }) { first, _ in first }
+    }
+
+    /// The other food carrying the code typed in a row, if any.
+    func owner(of code: String) -> String? {
+        Barcode.normalize(code).flatMap { barcodeOwners[$0] }
+    }
+
+    /// "This barcode is on 'Nutella' — move it here?"; one line per food when there are several.
+    static func conflictMessage(_ conflicts: [BarcodeConflict]) -> String {
+        if conflicts.count == 1, let conflict = conflicts.first {
+            return "This barcode is on '\(conflict.foodName)' — move it here?"
+        }
+        let lines = conflicts.map { "\($0.barcode) is on '\($0.foodName)'" }
+        return "These barcodes are on other foods — move them here?\n" + lines.joined(separator: "\n")
+    }
+
+    /// What "Move here" passes to `save(to:movingBarcodes:)`: each stored code with the food the user agreed to take
+    /// it from, so a code that changed owner meanwhile fails instead of being taken.
+    static func moving(_ conflicts: [BarcodeConflict]) -> [String: String] {
+        Dictionary(conflicts.map { ($0.storedBarcode, $0.foodID) }) { first, _ in first }
+    }
+
+    /// Saves the food. `movingBarcodes` are codes the user agreed to take from other foods (code → that food's id,
+    /// see `barcodeConflicts(in:)`); any other conflict, or a code that changed owner meanwhile, fails with
+    /// `PersistenceError.barcodeInUse`.
+    @discardableResult
+    func save(to foods: FoodRepository, movingBarcodes: [String: String] = [:]) throws -> FoodDetail? {
+        guard let detail = makeDetail() else { return nil }
+        return try foods.save(detail, movingBarcodes: movingBarcodes)
     }
 
     // MARK: Helpers

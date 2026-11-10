@@ -308,6 +308,19 @@ struct WaterRepositoryTests {
         }
     }
 
+    @Test func `range observation lists the days' entries, not deleted ones`() async throws {
+        let f = try Fixture()
+        let today = day("2026-11-09")
+        try f.water.add(ml: 100, day: today.adding(days: -7)) // outside
+        let old = try f.water.add(ml: 200, day: today.adding(days: -6))
+        let deleted = try f.water.add(ml: 300, day: today.adding(days: -1))
+        try f.water.softDelete(ids: [deleted.id])
+        var iterator = f.water.observeEntries(in: today.adding(days: -6) ... today).makeAsyncIterator()
+        #expect(try await iterator.next()?.map(\.id) == [old.id])
+        try f.water.add(ml: 250, day: today)
+        #expect(try await iterator.next()?.map(\.ml) == [200, 250])
+    }
+
     @Test func `observation follows the day`() async throws {
         let f = try Fixture()
         let today = day("2026-11-09")

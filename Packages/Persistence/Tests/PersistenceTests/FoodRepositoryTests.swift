@@ -66,6 +66,81 @@ struct FoodRepositoryTests {
         #expect(try f.foods.food(barcode: "4006381333931")?.food.id == second.id)
     }
 
+    @Test func `moving a barcode from an active food needs consent and unlinks it there`() throws {
+        let f = try Fixture()
+        let first = try f.makeFood("First", barcodes: ["4006381333931", "3850104003455"])
+        let draft = FoodDetail(
+            food: Food(name: "Second", per100: Nutrients(kcal: 1, proteinG: 0, carbsG: 0, fatG: 0)),
+            barcodes: ["4006381333931"],
+        )
+        // The editor asks first: the owner is reported (the food being edited is not its own conflict).
+        let owners = try f.foods.activeOwners(of: ["4006381333931", "0036000291452"], excluding: draft.food.id)
+        #expect(owners.map(\.barcode) == ["4006381333931"])
+        #expect(owners.map(\.food.id) == [first.id])
+        #expect(try f.foods.activeOwners(of: ["4006381333931"], excluding: first.id).isEmpty)
+        // Without consent nothing changes.
+        #expect(throws: PersistenceError.barcodeInUse(barcode: "4006381333931", foodID: first.id)) {
+            try f.foods.save(draft)
+        }
+        #expect(try f.foods.food(barcode: "4006381333931")?.food.id == first.id)
+
+        f.clock.advance(60)
+        let second = try f.foods.save(draft, movingBarcodes: ["4006381333931": first.id])
+        #expect(try f.foods.food(barcode: "4006381333931")?.food.id == second.food.id)
+        let previous = try #require(try f.foods.detail(id: first.id))
+        #expect(previous.barcodes == ["3850104003455"])
+        #expect(previous.food.revision == 2) // its barcodes changed
+        #expect(previous.food.updatedAt == f.clock.now)
+    }
+
+    @Test func `a move agreed for one owner fails if the code changed owner meanwhile`() throws {
+        let f = try Fixture()
+        let first = try f.makeFood("First", barcodes: ["4006381333931"])
+        // The editor asked about `first`; before saving, the code was moved to `other` elsewhere.
+        try f.foods.softDelete(id: first.id)
+        let other = try f.makeFood("Other", barcodes: ["4006381333931"])
+        let draft = FoodDetail(
+            food: Food(name: "Mine", per100: Nutrients(kcal: 1, proteinG: 0, carbsG: 0, fatG: 0)),
+            barcodes: ["4006381333931"],
+        )
+        #expect(throws: PersistenceError.barcodeInUse(barcode: "4006381333931", foodID: other.id)) {
+            try f.foods.save(draft, movingBarcodes: ["4006381333931": first.id])
+        }
+        #expect(try f.foods.food(barcode: "4006381333931")?.food.id == other.id)
+        #expect(try f.foods.detail(id: draft.food.id) == nil) // the whole save rolled back
+    }
+
+    @Test func `owners are found under another reading of an 8-digit code and moved from there`() throws {
+        let f = try Fixture()
+        // Stored as UPC-E (expanded) on one food; the editor has the EAN-8 reading of the same digits.
+        let gum = try f.makeFood("Gum", barcodes: ["0010000000009"])
+        let owners = try f.foods.activeOwners(of: ["01000009"], excluding: nil)
+        #expect(owners == [BarcodeOwner(barcode: "01000009", storedBarcode: "0010000000009", food: gum)])
+
+        let draft = FoodDetail(
+            food: Food(name: "Gum, mint", per100: Nutrients(kcal: 1, proteinG: 0, carbsG: 0, fatG: 0)),
+            barcodes: ["01000009"],
+        )
+        let saved = try f.foods.save(draft, movingBarcodes: ["0010000000009": gum.id])
+        #expect(try f.foods.detail(id: gum.id)?.barcodes == [])
+        #expect(try f.foods.food(barcode: "01000009", symbology: .upcE)?.food.id == saved.food.id)
+    }
+
+    @Test func `removing a barcode unlinks it so a scan no longer finds the food`() throws {
+        let f = try Fixture()
+        let food = try f.makeFood("Ajvar", barcodes: ["3850104003455", "4006381333931"])
+        var detail = try #require(try f.foods.detail(id: food.id))
+        detail.barcodes = ["4006381333931"]
+        try f.foods.save(detail)
+        #expect(try f.foods.food(barcode: "3850104003455") == nil)
+        #expect(try f.foods.detail(id: food.id)?.barcodes == ["4006381333931"])
+        let rows = try f.db.reader.read { db in try FoodBarcode.fetchCount(db) }
+        #expect(rows == 1)
+        // The freed code can go on another food without a conflict.
+        let other = try f.makeFood("Other ajvar", barcodes: ["3850104003455"])
+        #expect(try f.foods.food(barcode: "3850104003455")?.food.id == other.id)
+    }
+
     @Test func `update bumps revision and timestamp and syncs servings`() throws {
         let f = try Fixture()
         let created = try f.foods.save(FoodDetail(

@@ -45,7 +45,12 @@ extension DashboardSnapshot {
             if let inBed = sleep.inBedMin {
                 parts.append("\(Self.spokenDuration(inBed)) in bed")
             }
-            let stages: [(String, Int?)] = [("core", sleep.coreMin), ("deep", sleep.deepMin), ("REM", sleep.remMin), ("awake", sleep.awakeMin)]
+            let stages: [(String, Int?)] = [
+                ("core", sleep.coreMin),
+                ("deep", sleep.deepMin),
+                ("REM", sleep.remMin),
+                ("awake", sleep.awakeMin),
+            ]
             parts += stages.compactMap { name, minutes in minutes.map { "\(name) \(Self.spokenDuration($0))" } }
             return parts
         case .weight:
@@ -53,7 +58,9 @@ extension DashboardSnapshot {
             var parts = ["\(number(weight.latestKg, digits: 1)) kilograms", "trend \(number(weight.trendKg, digits: 1))"]
             if let change = weight.trendChange7d {
                 let rounded = (change * 10).rounded() / 10
-                parts.append(rounded == 0 ? "unchanged in 7 days" : "\(rounded < 0 ? "down" : "up") \(number(abs(rounded), digits: 1)) in 7 days")
+                parts
+                    .append(rounded == 0 ? "unchanged in 7 days" :
+                        "\(rounded < 0 ? "down" : "up") \(number(abs(rounded), digits: 1)) in 7 days")
             }
             parts += [measured(weight.latest.day)].compactMap(\.self)
             return parts
@@ -62,6 +69,20 @@ extension DashboardSnapshot {
             return ["\(number(bodyFat.pct, digits: 1)) percent"] + [measured(bodyFat.day)].compactMap(\.self)
         case .activeEnergy:
             return activeKcal.map { ["\(number(energyUnit.display($0))) \(spokenEnergy)"] } ?? []
+        case .totalEnergy:
+            guard let burned = energyBurned else { return [] }
+            if let total = burned.totalKcal, let active = burned.activeKcal, let resting = burned.restingKcal {
+                return [
+                    "\(number(energyUnit.display(total))) \(spokenEnergy)",
+                    "active \(number(energyUnit.display(active)))",
+                    "resting \(number(energyUnit.display(resting)))",
+                ]
+            }
+            // Only one part is known: say which, and that there is no total.
+            func part(_ value: Double?, _ name: String) -> String {
+                value.map { "\(name) \(number(energyUnit.display($0))) \(spokenEnergy)" } ?? "\(name) energy unknown"
+            }
+            return [part(burned.activeKcal, "active"), part(burned.restingKcal, "resting"), "no total yet"]
         case .restingHeartRate, .hrv:
             guard let comparison = tile == .hrv ? hrv : restingHR else { return [] }
             let unit = tile == .hrv ? "milliseconds" : "beats per minute"
@@ -74,6 +95,13 @@ extension DashboardSnapshot {
         case .water:
             return ["\(number(water.totalMl)) of \(number(water.goalMl)) millilitres"]
         }
+    }
+
+    /// The tile's 7-day trend for VoiceOver ("up over 7 days"), spoken as the tile's value; nil without a chart or
+    /// when the tile shows no value.
+    func accessibilityTrend(of tile: DashboardTile, state: TileState) -> String? {
+        guard state == .ready else { return nil }
+        return sparkline(for: tile)?.accessibilitySummary
     }
 
     /// "7 hours 5 minutes", "45 minutes".
