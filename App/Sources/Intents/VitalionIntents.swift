@@ -123,7 +123,7 @@ struct RemainingCaloriesIntent: AppIntent {
 
 struct LogWaterIntent: AppIntent {
     static let title: LocalizedStringResource = "Log Water"
-    static let description = IntentDescription("Logs water for today (also written to Apple Health).", categoryName: "Water")
+    static let description = IntentDescription("Logs water for today (also written to the Health app).", categoryName: "Water")
     static let openAppWhenRun = false
 
     @Parameter(title: "Amount (ml)", default: 250, inclusiveRange: (1, 5000))
