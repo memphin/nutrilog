@@ -3,7 +3,7 @@ import Foundation
 import HealthKitClient
 import Persistence
 import Testing
-@testable import Nutrilog
+@testable import Vitalion
 
 /// Fills an environment with `days` of history ending yesterday: three quick-adds a day adding up to `kcal`, and a
 /// morning weigh-in that follows the energy balance for a true expenditure of `tdee`.

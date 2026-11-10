@@ -15,8 +15,8 @@ struct IntentActions {
 
         var localizedStringResource: LocalizedStringResource {
             switch self {
-            case .databaseUnavailable: "Nutrilog's data isn't available right now. Open the app and try again."
-            case .foodNotFound: "That food is no longer in Nutrilog."
+            case .databaseUnavailable: "Vitalion's data isn't available right now. Open the app and try again."
+            case .foodNotFound: "That food is no longer in Vitalion."
             case .invalidAmount: "The amount must be greater than zero."
             case .noMealSlot: "There is no active meal to log to."
             }
@@ -103,7 +103,7 @@ struct IntentActions {
         let unit = environment.energyUnit
         let status = try remaining()
         guard let left = status.remainingKcal else {
-            return "You've had \(unit.format(status.consumedKcal)) today. Set a calorie target in Nutrilog to see what's left."
+            return "You've had \(unit.format(status.consumedKcal)) today. Set a calorie target in Vitalion to see what's left."
         }
         return left >= 0
             ? "You have \(unit.format(left)) left today."

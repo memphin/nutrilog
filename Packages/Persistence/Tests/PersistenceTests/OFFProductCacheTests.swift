@@ -208,7 +208,7 @@ struct FoodCopyTests {
     }
 
     @Test func `concurrent copies produce one food`() async throws {
-        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("nutrilog-\(UUID().uuidString)")
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("vitalion-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: dir) }
         let foods = try FoodRepository(AppDatabase.onDisk(directory: dir)) // a pool: real concurrent writers
         let detail = offCopy()

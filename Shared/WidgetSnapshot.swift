@@ -3,6 +3,7 @@ import Foundation
 /// What the widgets show (FR-70, backlog #42): a small snapshot of today the app writes to the shared App Group
 /// container after every change. The widget extension never opens the database.
 struct WidgetSnapshot: Codable, Equatable {
+    /// Identifiers keep the app's former name (Nutrilog): changing them would cut installed copies off from their data.
     static let appGroup = "group.hr.ivanjuric.nutrilog"
     static let key = "widgetSnapshot.v1"
 

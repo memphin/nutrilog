@@ -3,7 +3,7 @@ import Foundation
 import HealthKitClient
 import Persistence
 import Testing
-@testable import Nutrilog
+@testable import Vitalion
 
 // MARK: - Tile state, layout, settings
 
@@ -302,7 +302,7 @@ struct DashboardModelTests {
         #expect(values(entry.id) == [.bodyMass: 81.5])
     }
 
-    @Test func `with writing off, weights stay in Nutrilog`() async throws {
+    @Test func `with writing off, weights stay in Vitalion`() async throws {
         let model = DashboardModel(environment: env)
         try env.healthWrites?.setEnabled(false)
         model.saveWeight(kg: 80, bodyFatPct: nil, measuredAt: clock.appClock.now())

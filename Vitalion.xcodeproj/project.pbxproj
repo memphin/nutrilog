@@ -1,0 +1,1168 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0016A64F9BA490E7FBA59272 /* MealLogSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95EED48DFC8DD7C6D110221B /* MealLogSheet.swift */; };
+		001F6EECF9FC5DD36D98F630 /* ScanLogging.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99465C5FA3B1C6B129AA300B /* ScanLogging.swift */; };
+		00A97CE919A552D8F16DFC3C /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B32B0099874D197AF1C4CFB /* SettingsView.swift */; };
+		00D539336B940A88CD9B652D /* AppEnvironmentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3D1C9580AC14854A05181BB /* AppEnvironmentTests.swift */; };
+		035005A4660128FD5DEEF43A /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65CB71012E9A8D3148E74F61 /* DashboardView.swift */; };
+		03F30914B5193485F88F9FA0 /* QuantitySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 912A68A271BB201D964BA3DD /* QuantitySheet.swift */; };
+		04E8976C47069667EB0EBEA0 /* DashboardAccessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC8F7BBD0100CDEC8139683A /* DashboardAccessibility.swift */; };
+		0BC2FA83C32E5065225F3A5C /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85F339FF75258A4DD030AC2E /* WidgetSnapshot.swift */; };
+		0C1A4A708131EF290E974C98 /* WidgetSnapshotWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6977B5AEE305566A1963AD20 /* WidgetSnapshotWriter.swift */; };
+		0DC0BB505D9E18E992924738 /* FoodEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FA4EA6323E6B2F2F5C12EA4 /* FoodEditorView.swift */; };
+		0DEB286310433A42C13AC843 /* HealthWriteService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4360E2194A6D16C45FF4D0C4 /* HealthWriteService.swift */; };
+		0EE82979F3035BB3E93E17F2 /* OnlineSearchModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AE5D0EAEEDB279344EE6A38 /* OnlineSearchModel.swift */; };
+		101DB5A7A0CDCB1ACD5C9E0D /* DiaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FF06B1DEF475ED5D95EB252 /* DiaryView.swift */; };
+		11AB9D2D171F045F86CCC74A /* MealEditorModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA6CD3E2A75CDEAED32FC937 /* MealEditorModel.swift */; };
+		14DDA87A51B7C682A1D79CEE /* HealthSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6F1000F849D9C825042F5BC /* HealthSyncService.swift */; };
+		1827D48BF3FA36152BE08C7A /* DashboardTiles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72C954B5795DDCACDCBA6BB8 /* DashboardTiles.swift */; };
+		1A21A5FF648E3E5110034173 /* WeightEntrySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97DA4A909B6C3A6F354680A4 /* WeightEntrySheet.swift */; };
+		1A5D56FF536B75EAEC9ABF78 /* IngredientPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80D0B3A2046C75086ED91AAA /* IngredientPicker.swift */; };
+		1A97AEF6376A4C2E760AAD96 /* MealPhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2F38B07CDBC88FC4F971C55 /* MealPhoto.swift */; };
+		1D263C99D7752E5DA8CE0945 /* BodyFatWritePrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81DCBF32ECEF29FE83A9A0E5 /* BodyFatWritePrompt.swift */; };
+		1D5157EE0327A73236295706 /* CheckInModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE25CF5A3FA9ABD5B5C0FC9 /* CheckInModel.swift */; };
+		22462DF09A1DFAA471195F83 /* ScanFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15CD6B45F2D27884C9DF1AC9 /* ScanFlowTests.swift */; };
+		2468A27C53F080F27D2D433F /* Formatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA071653A47DC8AB30CF4395 /* Formatting.swift */; };
+		24D0BA814C82A4EDB7B3B9DB /* FoodsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8117C7DDF9F0BB7DB2B724B1 /* FoodsListView.swift */; };
+		250EDAB61789387C3AEB7D7B /* HealthSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86595941723DB0F799B20B3A /* HealthSettingsView.swift */; };
+		2FBC98A3BC78A551B7B8B95E /* FoodIndex in Resources */ = {isa = PBXBuildFile; fileRef = FE0D3099F76B1F620D7A791D /* FoodIndex */; };
+		3A1F5417ABC547BE4E353C4D /* StubOpenFoodFactsSearchClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F442D68C2027C87F84FC6F0 /* StubOpenFoodFactsSearchClient.swift */; };
+		3A4FB3F3A1F282E55185103A /* DashboardSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50846937FB47D64F6C7FF29D /* DashboardSettingsView.swift */; };
+		3ECFC0DA93A20EDA8A972387 /* Sparkline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01EE353FF2D90F6EFF2F3B3B /* Sparkline.swift */; };
+		421CEB7BA2BE3816DB3899C1 /* FoodEditorLookupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E2F70519A059DDAC9177C03 /* FoodEditorLookupTests.swift */; };
+		48CF0140E6C20D235385AFE3 /* SmartLogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43D66CA0BD012691840B5848 /* SmartLogTests.swift */; };
+		4B3249A25400669043F23BFD /* TileDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB5B6EE728347650CA8871CD /* TileDetailView.swift */; };
+		4E6E423EA294CE432DABE3EE /* DebugScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 398357AEBA3E46B5F2975E21 /* DebugScreens.swift */; };
+		500A55BBB04F419C3FD99DD4 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85F339FF75258A4DD030AC2E /* WidgetSnapshot.swift */; };
+		505E17A0BABCDB042C4D3E87 /* USDAKeyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BB2D69D4FB95D1FA2E9F2EF /* USDAKeyStore.swift */; };
+		507C57C26A7F77EA28A17B7B /* HistoryCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8BD0F43DB2B86EA3164A4EF /* HistoryCalendarView.swift */; };
+		5EB6FD38A3E2CFB65AB558EE /* DashboardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDEB1244CC8F017910BEA427 /* DashboardTests.swift */; };
+		5F840E3018A414B035EDE468 /* ScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E06A37F87F80825C3EB8E826 /* ScanView.swift */; };
+		6048E5248FB4F93014ED6B8F /* FoodLookup in Frameworks */ = {isa = PBXBuildFile; productRef = B8CBC1F50763FB9CEFB6F4E5 /* FoodLookup */; };
+		61C770810AECE6E470E23402 /* HealthKitClient in Frameworks */ = {isa = PBXBuildFile; productRef = 21058B4AB52F76D665E5A05D /* HealthKitClient */; };
+		6397A708118A0AE52F85AFCC /* Phase3Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A47272A21296D029D00872F /* Phase3Tests.swift */; };
+		66C1DDA4C05D84E5E41D2D0B /* MealEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51648512C272F5BAB2CCDAEB /* MealEditorView.swift */; };
+		6A6D7FB5AE670D82694327BC /* VitalionWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0A83FF24C8E676D75F22F754 /* VitalionWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		6D194374FD4F19E37CBF2910 /* DuplicateFoodsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB96FF471284934C83435DA /* DuplicateFoodsView.swift */; };
+		701533A39ABFFDA97FACA724 /* WaterSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2515177D4C70E1D8F6C51DDB /* WaterSettingsView.swift */; };
+		70FB1EF9E4C1215967A03CE2 /* DashboardAccessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37EF81A77CEAC542C034074D /* DashboardAccessTests.swift */; };
+		74B2381D81030F4F1E7A5741 /* VitalionIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = C765BACA160F1ECF2058D539 /* VitalionIntents.swift */; };
+		790621B1B50CB4C7B4CB880D /* TestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = B676A848F8A4FD5E187A9F63 /* TestSupport.swift */; };
+		8542CDA8DAFD67E8F8BE182E /* OnlineResultsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBFC8A195B20CF85237483E9 /* OnlineResultsView.swift */; };
+		85CAC62B98EA1EF2D62E3099 /* BarcodeResolutionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E03AFAD5C0A1F4E335A85AF0 /* BarcodeResolutionView.swift */; };
+		87E1F6A8AD99A986439D6A7D /* DashboardModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C25FBE25FD065F70F074E151 /* DashboardModel.swift */; };
+		88260E7EF4714B470A23977C /* ProfileTargetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8314DEA8188E56FC03ED32C3 /* ProfileTargetsView.swift */; };
+		899883FC0E437839BF4F8843 /* HealthTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69B66F3373A92F44845F68B4 /* HealthTests.swift */; };
+		8DB27045B44240C76FD57872 /* DashboardSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A6C8154BF03A64FECDE2B0 /* DashboardSnapshot.swift */; };
+		906AE94CDC142A300A23FEB7 /* SmartLogModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50DE4B047A2C8A513CF35E38 /* SmartLogModel.swift */; };
+		92B074339D108435ECF60481 /* FoodsListModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD383A5C27B3EEBA52E452DD /* FoodsListModel.swift */; };
+		98AA9AE21C945F046186B911 /* ChartData.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF6487B9D40F670D92683369 /* ChartData.swift */; };
+		99A4733FF7F89C6172A89DF3 /* TrendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC84424AD8A575A259628DBB /* TrendsView.swift */; };
+		99FEAD95FA282EE3EAB24206 /* AddFoodView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F5613F997C8E4249B281438 /* AddFoodView.swift */; };
+		9CC15F4FEEBB6E186D24B1D5 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F4638235FA94DB5B79F0E95 /* RootView.swift */; };
+		9CDD697C2CE53B51833C0BEA /* StatsLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EDDD808D19DB3854B8D610A /* StatsLoader.swift */; };
+		9DFC1A1DD5062A64161E7B51 /* ScanLogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDDCA8E80C7E59133FC80BB1 /* ScanLogTests.swift */; };
+		9E44E217669F9D9D3B02D684 /* Scanner in Frameworks */ = {isa = PBXBuildFile; productRef = 109B13F8FBA8F197909A34BA /* Scanner */; };
+		9E5A8AC1856736495E2320D3 /* HealthOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAEA9B4600E43C70FAFDE929 /* HealthOnboardingView.swift */; };
+		A04A0BA89987C028C80F00DB /* Core in Frameworks */ = {isa = PBXBuildFile; productRef = DA4BCA0B907586F8CAC36B6B /* Core */; };
+		A62871BC5EADE61B26FA7058 /* VitalionApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 145A72571885772849F7177C /* VitalionApp.swift */; };
+		AD927069E95106E2C219841C /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E60E5672E7C562F57BC66FA /* AppConfig.swift */; };
+		B4615829B52B63295D15AA47 /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = B68B4221126F81E26762C323 /* DesignSystem */; };
+		B6AB84B938F35F68C4F5AF1F /* DiarySheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85B4D360C226611E7D4CEC65 /* DiarySheets.swift */; };
+		BC3E09C8E5BF15FBA7B833EE /* StubOpenFoodFactsClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51D67B28981C0A28E21D725 /* StubOpenFoodFactsClient.swift */; };
+		C05C8B9A5A3AC01597866772 /* QuickAddView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55EC2E5E56394F5A6918F97A /* QuickAddView.swift */; };
+		C752D515FA30C2B855B481E7 /* WeeklyReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 169CFAAE31AD51A338310634 /* WeeklyReportView.swift */; };
+		C8B442427C7C78DC75B0D3F9 /* AppleMealEstimator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8A212470BB71FD1A31EB4E0 /* AppleMealEstimator.swift */; };
+		CA198D75AB48BEC1DE37F7AA /* MetricChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B635EC1EE150FFE724B4A62D /* MetricChartView.swift */; };
+		CB6221947B8992CA1EFEDC96 /* OnlineSearchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BA3CBA42FC3C42A0F41781B /* OnlineSearchTests.swift */; };
+		D07E24984F4338BF87992581 /* DiaryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCC70763AAEBD410E4DF9815 /* DiaryModel.swift */; };
+		D1EDC409D6C35023BB9FC5F8 /* IntentActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C12F08E320C3A4A2C61245E /* IntentActions.swift */; };
+		D1F832013B37E2BC43954B4E /* BackupsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0583A6CE45E2E519F019A6FF /* BackupsView.swift */; };
+		D240C801D1F58BD8F3EAE44C /* USDAKeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00652CD81B32347A8298794 /* USDAKeyTests.swift */; };
+		D302A63BD349DDC0689E6B43 /* CheckInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7326C092CB2CF226670ECEB /* CheckInView.swift */; };
+		D33EC33651141E5B8CBC4B74 /* Expenditure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F3CA8ECBD0C8936637C8DBC /* Expenditure.swift */; };
+		D6BF7D02A3FFA88EA3A9D8B4 /* FoodSources in Frameworks */ = {isa = PBXBuildFile; productRef = 4896686C4D5E07F669D3661E /* FoodSources */; };
+		D966635131B7160864F40550 /* LabelPhotoStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7B466B5B167E23658F3B7FF /* LabelPhotoStore.swift */; };
+		DBA3F521232C925D59674D47 /* AppModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2251AD561F7592E7581BA671 /* AppModelTests.swift */; };
+		E0B92D28BE843F8C8BD7745B /* UndoToast.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAA8712BDFB82B06E9D3D9CE /* UndoToast.swift */; };
+		E7400BC0044C7A9C72F3879A /* HealthWriteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BA0B226DE90A3D156F5DE73 /* HealthWriteTests.swift */; };
+		E79249404E49D2FE1C4F6248 /* CheckInReminder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00DA0585BCECB7C3CF0878AF /* CheckInReminder.swift */; };
+		E9AB0EBB3F16BAB6CE22CE6F /* TargetsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CBECB4E316C0FF9D7CD73B7 /* TargetsModel.swift */; };
+		E9F85BDB6FBC4693524D81C4 /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00A71BA2FB94437522BC7E68 /* AppEnvironment.swift */; };
+		EBBFB7B09F80562ED1768340 /* SmartLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CA1AF81E2A95BA54BA93489 /* SmartLogView.swift */; };
+		F24E164ED80A77F65A034D8F /* AppEnvironment+Phase3.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0132070C8E481EA07DAC3BCA /* AppEnvironment+Phase3.swift */; };
+		F2AD53CFD77AE4DAD05E83F3 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = 508A134839066A2A33F7021E /* Persistence */; };
+		F54FE8A13339B259394123ED /* VitalionWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = F73C55816F89B0EF934D2D82 /* VitalionWidgets.swift */; };
+		F5A77DD86A2582A7256BE805 /* DashboardFeedbackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 751975B9265E5F9AECC45D73 /* DashboardFeedbackTests.swift */; };
+		F6997FB68C7E9629093EAE46 /* ProductCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 233510B95C35C985722A7C17 /* ProductCardView.swift */; };
+		F72F9D54A6ABBA933BFB4D8D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 429A64C38EE3E8005CA79961 /* Assets.xcassets */; };
+		F93F4E915889302AFF9AF665 /* ServingWeightPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC590F990B912FBF5FE09941 /* ServingWeightPrompt.swift */; };
+		FA2619CC0F0FF26AC076FAF2 /* FoodEditorModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10B6F66AAC55153F7490F76 /* FoodEditorModel.swift */; };
+		FD0280E87A662ECE0D410834 /* ScanFlowModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CDA5AF8DBBC3637F6563E9E /* ScanFlowModel.swift */; };
+		FF4E877C3198F6122BBF6A49 /* OwnerFeedbackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1833E37492B23EEBE2FE79A6 /* OwnerFeedbackTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		367CE2B48D23308854B5209F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 67B323786A0F39AAA7807E4A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DF83B17FD9C4590EDC0D20FA;
+			remoteInfo = VitalionWidgets;
+		};
+		E86A368F0C9EAC181B3E4B43 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 67B323786A0F39AAA7807E4A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A413CEF60AEA3BCCD7B8A656;
+			remoteInfo = Vitalion;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		1BBE9AF58796C6428C64BFD2 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				6A6D7FB5AE670D82694327BC /* VitalionWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		00A71BA2FB94437522BC7E68 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
+		00DA0585BCECB7C3CF0878AF /* CheckInReminder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckInReminder.swift; sourceTree = "<group>"; };
+		0132070C8E481EA07DAC3BCA /* AppEnvironment+Phase3.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppEnvironment+Phase3.swift"; sourceTree = "<group>"; };
+		01EE353FF2D90F6EFF2F3B3B /* Sparkline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sparkline.swift; sourceTree = "<group>"; };
+		0583A6CE45E2E519F019A6FF /* BackupsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupsView.swift; sourceTree = "<group>"; };
+		0A83FF24C8E676D75F22F754 /* VitalionWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = VitalionWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		0E2F70519A059DDAC9177C03 /* FoodEditorLookupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodEditorLookupTests.swift; sourceTree = "<group>"; };
+		0E7DC27A52B4580444E9532C /* FoodSources */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FoodSources; path = Packages/FoodSources; sourceTree = SOURCE_ROOT; };
+		112641AFE0BDBA2BF649E84E /* Core */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Core; path = Packages/Core; sourceTree = SOURCE_ROOT; };
+		145A72571885772849F7177C /* VitalionApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VitalionApp.swift; sourceTree = "<group>"; };
+		15CD6B45F2D27884C9DF1AC9 /* ScanFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanFlowTests.swift; sourceTree = "<group>"; };
+		169CFAAE31AD51A338310634 /* WeeklyReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyReportView.swift; sourceTree = "<group>"; };
+		1833E37492B23EEBE2FE79A6 /* OwnerFeedbackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwnerFeedbackTests.swift; sourceTree = "<group>"; };
+		1A47272A21296D029D00872F /* Phase3Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Phase3Tests.swift; sourceTree = "<group>"; };
+		1E3AAC9A8782E4521AA9304F /* Scanner */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Scanner; path = Packages/Scanner; sourceTree = SOURCE_ROOT; };
+		2251AD561F7592E7581BA671 /* AppModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModelTests.swift; sourceTree = "<group>"; };
+		233510B95C35C985722A7C17 /* ProductCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductCardView.swift; sourceTree = "<group>"; };
+		2515177D4C70E1D8F6C51DDB /* WaterSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaterSettingsView.swift; sourceTree = "<group>"; };
+		37EF81A77CEAC542C034074D /* DashboardAccessTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardAccessTests.swift; sourceTree = "<group>"; };
+		398357AEBA3E46B5F2975E21 /* DebugScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugScreens.swift; sourceTree = "<group>"; };
+		3F5613F997C8E4249B281438 /* AddFoodView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddFoodView.swift; sourceTree = "<group>"; };
+		429A64C38EE3E8005CA79961 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		4360E2194A6D16C45FF4D0C4 /* HealthWriteService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthWriteService.swift; sourceTree = "<group>"; };
+		43D66CA0BD012691840B5848 /* SmartLogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartLogTests.swift; sourceTree = "<group>"; };
+		47439C2107E649CA04F96C83 /* FoodLookup */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FoodLookup; path = Packages/FoodLookup; sourceTree = SOURCE_ROOT; };
+		4AE5D0EAEEDB279344EE6A38 /* OnlineSearchModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnlineSearchModel.swift; sourceTree = "<group>"; };
+		4CA1AF81E2A95BA54BA93489 /* SmartLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartLogView.swift; sourceTree = "<group>"; };
+		4F4638235FA94DB5B79F0E95 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		4FA4EA6323E6B2F2F5C12EA4 /* FoodEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodEditorView.swift; sourceTree = "<group>"; };
+		50846937FB47D64F6C7FF29D /* DashboardSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardSettingsView.swift; sourceTree = "<group>"; };
+		50DE4B047A2C8A513CF35E38 /* SmartLogModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartLogModel.swift; sourceTree = "<group>"; };
+		5160930D4897048DD0B73B46 /* Vitalion.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Vitalion.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		51648512C272F5BAB2CCDAEB /* MealEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealEditorView.swift; sourceTree = "<group>"; };
+		55EC2E5E56394F5A6918F97A /* QuickAddView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddView.swift; sourceTree = "<group>"; };
+		5BA0B226DE90A3D156F5DE73 /* HealthWriteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthWriteTests.swift; sourceTree = "<group>"; };
+		5CB96FF471284934C83435DA /* DuplicateFoodsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicateFoodsView.swift; sourceTree = "<group>"; };
+		5CDA5AF8DBBC3637F6563E9E /* ScanFlowModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanFlowModel.swift; sourceTree = "<group>"; };
+		5F442D68C2027C87F84FC6F0 /* StubOpenFoodFactsSearchClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StubOpenFoodFactsSearchClient.swift; sourceTree = "<group>"; };
+		65CB71012E9A8D3148E74F61 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		6647BB02B3D0561CC2C4B63C /* App.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = App.xcconfig; sourceTree = "<group>"; };
+		687AF879EF8D32A5F544158A /* VitalionTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = VitalionTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		6977B5AEE305566A1963AD20 /* WidgetSnapshotWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotWriter.swift; sourceTree = "<group>"; };
+		69B66F3373A92F44845F68B4 /* HealthTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthTests.swift; sourceTree = "<group>"; };
+		6BA3CBA42FC3C42A0F41781B /* OnlineSearchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnlineSearchTests.swift; sourceTree = "<group>"; };
+		6BC0669B4BB9DD8FE9B279F7 /* VitalionWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = VitalionWidgets.entitlements; sourceTree = "<group>"; };
+		6EDDD808D19DB3854B8D610A /* StatsLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsLoader.swift; sourceTree = "<group>"; };
+		72C954B5795DDCACDCBA6BB8 /* DashboardTiles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardTiles.swift; sourceTree = "<group>"; };
+		751975B9265E5F9AECC45D73 /* DashboardFeedbackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardFeedbackTests.swift; sourceTree = "<group>"; };
+		7B32B0099874D197AF1C4CFB /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		7C12F08E320C3A4A2C61245E /* IntentActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentActions.swift; sourceTree = "<group>"; };
+		80D0B3A2046C75086ED91AAA /* IngredientPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngredientPicker.swift; sourceTree = "<group>"; };
+		8117C7DDF9F0BB7DB2B724B1 /* FoodsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodsListView.swift; sourceTree = "<group>"; };
+		81DCBF32ECEF29FE83A9A0E5 /* BodyFatWritePrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyFatWritePrompt.swift; sourceTree = "<group>"; };
+		8314DEA8188E56FC03ED32C3 /* ProfileTargetsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileTargetsView.swift; sourceTree = "<group>"; };
+		85B4D360C226611E7D4CEC65 /* DiarySheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiarySheets.swift; sourceTree = "<group>"; };
+		85F339FF75258A4DD030AC2E /* WidgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshot.swift; sourceTree = "<group>"; };
+		86595941723DB0F799B20B3A /* HealthSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSettingsView.swift; sourceTree = "<group>"; };
+		8E60E5672E7C562F57BC66FA /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
+		912A68A271BB201D964BA3DD /* QuantitySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuantitySheet.swift; sourceTree = "<group>"; };
+		95EED48DFC8DD7C6D110221B /* MealLogSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealLogSheet.swift; sourceTree = "<group>"; };
+		97DA4A909B6C3A6F354680A4 /* WeightEntrySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightEntrySheet.swift; sourceTree = "<group>"; };
+		983B961F60EB23E4DE3E070D /* Persistence */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Persistence; path = Packages/Persistence; sourceTree = SOURCE_ROOT; };
+		99465C5FA3B1C6B129AA300B /* ScanLogging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanLogging.swift; sourceTree = "<group>"; };
+		9A2585A2A3E80A3D28DEDE7B /* DesignSystem */ = {isa = PBXFileReference; lastKnownFileType = folder; name = DesignSystem; path = Packages/DesignSystem; sourceTree = SOURCE_ROOT; };
+		9BB2D69D4FB95D1FA2E9F2EF /* USDAKeyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USDAKeyStore.swift; sourceTree = "<group>"; };
+		9CBECB4E316C0FF9D7CD73B7 /* TargetsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetsModel.swift; sourceTree = "<group>"; };
+		9F3CA8ECBD0C8936637C8DBC /* Expenditure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Expenditure.swift; sourceTree = "<group>"; };
+		9FF06B1DEF475ED5D95EB252 /* DiaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryView.swift; sourceTree = "<group>"; };
+		A3D1C9580AC14854A05181BB /* AppEnvironmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironmentTests.swift; sourceTree = "<group>"; };
+		A51D67B28981C0A28E21D725 /* StubOpenFoodFactsClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StubOpenFoodFactsClient.swift; sourceTree = "<group>"; };
+		AC84424AD8A575A259628DBB /* TrendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsView.swift; sourceTree = "<group>"; };
+		B2F38B07CDBC88FC4F971C55 /* MealPhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPhoto.swift; sourceTree = "<group>"; };
+		B635EC1EE150FFE724B4A62D /* MetricChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricChartView.swift; sourceTree = "<group>"; };
+		B676A848F8A4FD5E187A9F63 /* TestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSupport.swift; sourceTree = "<group>"; };
+		B6F1000F849D9C825042F5BC /* HealthSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSyncService.swift; sourceTree = "<group>"; };
+		B7326C092CB2CF226670ECEB /* CheckInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckInView.swift; sourceTree = "<group>"; };
+		BC590F990B912FBF5FE09941 /* ServingWeightPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServingWeightPrompt.swift; sourceTree = "<group>"; };
+		BCC70763AAEBD410E4DF9815 /* DiaryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryModel.swift; sourceTree = "<group>"; };
+		BD383A5C27B3EEBA52E452DD /* FoodsListModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodsListModel.swift; sourceTree = "<group>"; };
+		C00652CD81B32347A8298794 /* USDAKeyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USDAKeyTests.swift; sourceTree = "<group>"; };
+		C10B6F66AAC55153F7490F76 /* FoodEditorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodEditorModel.swift; sourceTree = "<group>"; };
+		C25FBE25FD065F70F074E151 /* DashboardModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardModel.swift; sourceTree = "<group>"; };
+		C3A6C8154BF03A64FECDE2B0 /* DashboardSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardSnapshot.swift; sourceTree = "<group>"; };
+		C3F5E4D53E42EE47D0391980 /* HealthKitClient */ = {isa = PBXFileReference; lastKnownFileType = folder; name = HealthKitClient; path = Packages/HealthKitClient; sourceTree = SOURCE_ROOT; };
+		C765BACA160F1ECF2058D539 /* VitalionIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VitalionIntents.swift; sourceTree = "<group>"; };
+		CC8F7BBD0100CDEC8139683A /* DashboardAccessibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardAccessibility.swift; sourceTree = "<group>"; };
+		CDDCA8E80C7E59133FC80BB1 /* ScanLogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanLogTests.swift; sourceTree = "<group>"; };
+		CEE25CF5A3FA9ABD5B5C0FC9 /* CheckInModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckInModel.swift; sourceTree = "<group>"; };
+		CF6487B9D40F670D92683369 /* ChartData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartData.swift; sourceTree = "<group>"; };
+		D7C112271DD8E6E1BC1CBB87 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		DA6CD3E2A75CDEAED32FC937 /* MealEditorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealEditorModel.swift; sourceTree = "<group>"; };
+		DAA8712BDFB82B06E9D3D9CE /* UndoToast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoToast.swift; sourceTree = "<group>"; };
+		E03AFAD5C0A1F4E335A85AF0 /* BarcodeResolutionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeResolutionView.swift; sourceTree = "<group>"; };
+		E06A37F87F80825C3EB8E826 /* ScanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanView.swift; sourceTree = "<group>"; };
+		E7B466B5B167E23658F3B7FF /* LabelPhotoStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabelPhotoStore.swift; sourceTree = "<group>"; };
+		E8BD0F43DB2B86EA3164A4EF /* HistoryCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryCalendarView.swift; sourceTree = "<group>"; };
+		EA071653A47DC8AB30CF4395 /* Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formatting.swift; sourceTree = "<group>"; };
+		EAEA9B4600E43C70FAFDE929 /* HealthOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthOnboardingView.swift; sourceTree = "<group>"; };
+		EBFC8A195B20CF85237483E9 /* OnlineResultsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnlineResultsView.swift; sourceTree = "<group>"; };
+		EDEB1244CC8F017910BEA427 /* DashboardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardTests.swift; sourceTree = "<group>"; };
+		F73C55816F89B0EF934D2D82 /* VitalionWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VitalionWidgets.swift; sourceTree = "<group>"; };
+		F8A212470BB71FD1A31EB4E0 /* AppleMealEstimator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleMealEstimator.swift; sourceTree = "<group>"; };
+		FB5B6EE728347650CA8871CD /* TileDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TileDetailView.swift; sourceTree = "<group>"; };
+		FE0D3099F76B1F620D7A791D /* FoodIndex */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FoodIndex; path = Resources/FoodIndex; sourceTree = SOURCE_ROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		16FF4B2F3358F6A5842AC3B9 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A04A0BA89987C028C80F00DB /* Core in Frameworks */,
+				F2AD53CFD77AE4DAD05E83F3 /* Persistence in Frameworks */,
+				D6BF7D02A3FFA88EA3A9D8B4 /* FoodSources in Frameworks */,
+				6048E5248FB4F93014ED6B8F /* FoodLookup in Frameworks */,
+				61C770810AECE6E470E23402 /* HealthKitClient in Frameworks */,
+				9E44E217669F9D9D3B02D684 /* Scanner in Frameworks */,
+				B4615829B52B63295D15AA47 /* DesignSystem in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		09F2E91191870388C2D1C5C7 /* Meals */ = {
+			isa = PBXGroup;
+			children = (
+				80D0B3A2046C75086ED91AAA /* IngredientPicker.swift */,
+				DA6CD3E2A75CDEAED32FC937 /* MealEditorModel.swift */,
+				51648512C272F5BAB2CCDAEB /* MealEditorView.swift */,
+				95EED48DFC8DD7C6D110221B /* MealLogSheet.swift */,
+			);
+			path = Meals;
+			sourceTree = "<group>";
+		};
+		3343D5E58A2E7A30B0C27C57 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				798EE2244E0C70347FFACC80 /* Resources */,
+				A2D49D713CBFD9B94DDB0C29 /* Sources */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		367E10EAA88CBED7EE1619A7 /* CheckIn */ = {
+			isa = PBXGroup;
+			children = (
+				CEE25CF5A3FA9ABD5B5C0FC9 /* CheckInModel.swift */,
+				00DA0585BCECB7C3CF0878AF /* CheckInReminder.swift */,
+				B7326C092CB2CF226670ECEB /* CheckInView.swift */,
+			);
+			path = CheckIn;
+			sourceTree = "<group>";
+		};
+		3B06C676DC6A628C31099EB5 /* Intents */ = {
+			isa = PBXGroup;
+			children = (
+				7C12F08E320C3A4A2C61245E /* IntentActions.swift */,
+				C765BACA160F1ECF2058D539 /* VitalionIntents.swift */,
+			);
+			path = Intents;
+			sourceTree = "<group>";
+		};
+		4A919DE4AF0F45314AA35E24 /* Trends */ = {
+			isa = PBXGroup;
+			children = (
+				CF6487B9D40F670D92683369 /* ChartData.swift */,
+				9F3CA8ECBD0C8936637C8DBC /* Expenditure.swift */,
+				E8BD0F43DB2B86EA3164A4EF /* HistoryCalendarView.swift */,
+				B635EC1EE150FFE724B4A62D /* MetricChartView.swift */,
+				6EDDD808D19DB3854B8D610A /* StatsLoader.swift */,
+				AC84424AD8A575A259628DBB /* TrendsView.swift */,
+				169CFAAE31AD51A338310634 /* WeeklyReportView.swift */,
+			);
+			path = Trends;
+			sourceTree = "<group>";
+		};
+		629A370EF6E5D17E292D71FA /* Diary */ = {
+			isa = PBXGroup;
+			children = (
+				BCC70763AAEBD410E4DF9815 /* DiaryModel.swift */,
+				85B4D360C226611E7D4CEC65 /* DiarySheets.swift */,
+				9FF06B1DEF475ED5D95EB252 /* DiaryView.swift */,
+			);
+			path = Diary;
+			sourceTree = "<group>";
+		};
+		6C738300C23E81371D6A1B43 /* SmartLog */ = {
+			isa = PBXGroup;
+			children = (
+				F8A212470BB71FD1A31EB4E0 /* AppleMealEstimator.swift */,
+				B2F38B07CDBC88FC4F971C55 /* MealPhoto.swift */,
+				50DE4B047A2C8A513CF35E38 /* SmartLogModel.swift */,
+				4CA1AF81E2A95BA54BA93489 /* SmartLogView.swift */,
+			);
+			path = SmartLog;
+			sourceTree = "<group>";
+		};
+		726A1E6A431DE4268D9718D6 /* Health */ = {
+			isa = PBXGroup;
+			children = (
+				EAEA9B4600E43C70FAFDE929 /* HealthOnboardingView.swift */,
+				86595941723DB0F799B20B3A /* HealthSettingsView.swift */,
+				B6F1000F849D9C825042F5BC /* HealthSyncService.swift */,
+				4360E2194A6D16C45FF4D0C4 /* HealthWriteService.swift */,
+			);
+			path = Health;
+			sourceTree = "<group>";
+		};
+		76E3179E830B7111A78E10A9 /* Foods */ = {
+			isa = PBXGroup;
+			children = (
+				C10B6F66AAC55153F7490F76 /* FoodEditorModel.swift */,
+				4FA4EA6323E6B2F2F5C12EA4 /* FoodEditorView.swift */,
+				BD383A5C27B3EEBA52E452DD /* FoodsListModel.swift */,
+				8117C7DDF9F0BB7DB2B724B1 /* FoodsListView.swift */,
+			);
+			path = Foods;
+			sourceTree = "<group>";
+		};
+		775AB02EE2DC04B047A7D08E /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				112641AFE0BDBA2BF649E84E /* Core */,
+				9A2585A2A3E80A3D28DEDE7B /* DesignSystem */,
+				47439C2107E649CA04F96C83 /* FoodLookup */,
+				0E7DC27A52B4580444E9532C /* FoodSources */,
+				C3F5E4D53E42EE47D0391980 /* HealthKitClient */,
+				983B961F60EB23E4DE3E070D /* Persistence */,
+				1E3AAC9A8782E4521AA9304F /* Scanner */,
+			);
+			path = Packages;
+			sourceTree = "<group>";
+		};
+		798EE2244E0C70347FFACC80 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				429A64C38EE3E8005CA79961 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		7C150E0D563331A2384EAADF /* Widgets */ = {
+			isa = PBXGroup;
+			children = (
+				D7C112271DD8E6E1BC1CBB87 /* Info.plist */,
+				6BC0669B4BB9DD8FE9B279F7 /* VitalionWidgets.entitlements */,
+				F73C55816F89B0EF934D2D82 /* VitalionWidgets.swift */,
+			);
+			path = Widgets;
+			sourceTree = "<group>";
+		};
+		94804F66DB4C9FEA3CF2BD49 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				FE0D3099F76B1F620D7A791D /* FoodIndex */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		96830CCF228179D233371435 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				85F339FF75258A4DD030AC2E /* WidgetSnapshot.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		A2D49D713CBFD9B94DDB0C29 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				8E60E5672E7C562F57BC66FA /* AppConfig.swift */,
+				00A71BA2FB94437522BC7E68 /* AppEnvironment.swift */,
+				4F4638235FA94DB5B79F0E95 /* RootView.swift */,
+				145A72571885772849F7177C /* VitalionApp.swift */,
+				F1846F92F4582AF2647FC1B2 /* AddFood */,
+				367E10EAA88CBED7EE1619A7 /* CheckIn */,
+				C0187A4E14A06DE0AB15794C /* Dashboard */,
+				629A370EF6E5D17E292D71FA /* Diary */,
+				76E3179E830B7111A78E10A9 /* Foods */,
+				726A1E6A431DE4268D9718D6 /* Health */,
+				3B06C676DC6A628C31099EB5 /* Intents */,
+				09F2E91191870388C2D1C5C7 /* Meals */,
+				F8B58BDC1474393BCC1552F3 /* Scan */,
+				A68567B7D2872A68A88DF355 /* Settings */,
+				F392E79BDDBB6DF448947001 /* Shared */,
+				6C738300C23E81371D6A1B43 /* SmartLog */,
+				4A919DE4AF0F45314AA35E24 /* Trends */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		A68567B7D2872A68A88DF355 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				0583A6CE45E2E519F019A6FF /* BackupsView.swift */,
+				E03AFAD5C0A1F4E335A85AF0 /* BarcodeResolutionView.swift */,
+				50846937FB47D64F6C7FF29D /* DashboardSettingsView.swift */,
+				5CB96FF471284934C83435DA /* DuplicateFoodsView.swift */,
+				8314DEA8188E56FC03ED32C3 /* ProfileTargetsView.swift */,
+				7B32B0099874D197AF1C4CFB /* SettingsView.swift */,
+				9CBECB4E316C0FF9D7CD73B7 /* TargetsModel.swift */,
+				9BB2D69D4FB95D1FA2E9F2EF /* USDAKeyStore.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		B902A2B1980504E5ED6CCF81 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				5160930D4897048DD0B73B46 /* Vitalion.app */,
+				687AF879EF8D32A5F544158A /* VitalionTests.xctest */,
+				0A83FF24C8E676D75F22F754 /* VitalionWidgets.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		C0187A4E14A06DE0AB15794C /* Dashboard */ = {
+			isa = PBXGroup;
+			children = (
+				81DCBF32ECEF29FE83A9A0E5 /* BodyFatWritePrompt.swift */,
+				CC8F7BBD0100CDEC8139683A /* DashboardAccessibility.swift */,
+				C25FBE25FD065F70F074E151 /* DashboardModel.swift */,
+				C3A6C8154BF03A64FECDE2B0 /* DashboardSnapshot.swift */,
+				72C954B5795DDCACDCBA6BB8 /* DashboardTiles.swift */,
+				65CB71012E9A8D3148E74F61 /* DashboardView.swift */,
+				01EE353FF2D90F6EFF2F3B3B /* Sparkline.swift */,
+				FB5B6EE728347650CA8871CD /* TileDetailView.swift */,
+				2515177D4C70E1D8F6C51DDB /* WaterSettingsView.swift */,
+				97DA4A909B6C3A6F354680A4 /* WeightEntrySheet.swift */,
+			);
+			path = Dashboard;
+			sourceTree = "<group>";
+		};
+		C74E589E131DFE55276C1384 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				6647BB02B3D0561CC2C4B63C /* App.xcconfig */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
+		CEA8AD6BF71E66FE8EB5BBC2 = {
+			isa = PBXGroup;
+			children = (
+				3343D5E58A2E7A30B0C27C57 /* App */,
+				C74E589E131DFE55276C1384 /* Config */,
+				775AB02EE2DC04B047A7D08E /* Packages */,
+				94804F66DB4C9FEA3CF2BD49 /* Resources */,
+				96830CCF228179D233371435 /* Shared */,
+				E59167E4BB0EB01F25E55CCF /* Tests */,
+				7C150E0D563331A2384EAADF /* Widgets */,
+				B902A2B1980504E5ED6CCF81 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		D54A87B927BFD964BFEF2C12 /* VitalionTests */ = {
+			isa = PBXGroup;
+			children = (
+				A3D1C9580AC14854A05181BB /* AppEnvironmentTests.swift */,
+				2251AD561F7592E7581BA671 /* AppModelTests.swift */,
+				37EF81A77CEAC542C034074D /* DashboardAccessTests.swift */,
+				751975B9265E5F9AECC45D73 /* DashboardFeedbackTests.swift */,
+				EDEB1244CC8F017910BEA427 /* DashboardTests.swift */,
+				0E2F70519A059DDAC9177C03 /* FoodEditorLookupTests.swift */,
+				69B66F3373A92F44845F68B4 /* HealthTests.swift */,
+				5BA0B226DE90A3D156F5DE73 /* HealthWriteTests.swift */,
+				6BA3CBA42FC3C42A0F41781B /* OnlineSearchTests.swift */,
+				1833E37492B23EEBE2FE79A6 /* OwnerFeedbackTests.swift */,
+				1A47272A21296D029D00872F /* Phase3Tests.swift */,
+				15CD6B45F2D27884C9DF1AC9 /* ScanFlowTests.swift */,
+				CDDCA8E80C7E59133FC80BB1 /* ScanLogTests.swift */,
+				43D66CA0BD012691840B5848 /* SmartLogTests.swift */,
+				B676A848F8A4FD5E187A9F63 /* TestSupport.swift */,
+				C00652CD81B32347A8298794 /* USDAKeyTests.swift */,
+			);
+			path = VitalionTests;
+			sourceTree = "<group>";
+		};
+		E59167E4BB0EB01F25E55CCF /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				D54A87B927BFD964BFEF2C12 /* VitalionTests */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		F1846F92F4582AF2647FC1B2 /* AddFood */ = {
+			isa = PBXGroup;
+			children = (
+				3F5613F997C8E4249B281438 /* AddFoodView.swift */,
+				EBFC8A195B20CF85237483E9 /* OnlineResultsView.swift */,
+				4AE5D0EAEEDB279344EE6A38 /* OnlineSearchModel.swift */,
+				912A68A271BB201D964BA3DD /* QuantitySheet.swift */,
+				55EC2E5E56394F5A6918F97A /* QuickAddView.swift */,
+				BC590F990B912FBF5FE09941 /* ServingWeightPrompt.swift */,
+				5F442D68C2027C87F84FC6F0 /* StubOpenFoodFactsSearchClient.swift */,
+			);
+			path = AddFood;
+			sourceTree = "<group>";
+		};
+		F392E79BDDBB6DF448947001 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				0132070C8E481EA07DAC3BCA /* AppEnvironment+Phase3.swift */,
+				398357AEBA3E46B5F2975E21 /* DebugScreens.swift */,
+				EA071653A47DC8AB30CF4395 /* Formatting.swift */,
+				DAA8712BDFB82B06E9D3D9CE /* UndoToast.swift */,
+				6977B5AEE305566A1963AD20 /* WidgetSnapshotWriter.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		F8B58BDC1474393BCC1552F3 /* Scan */ = {
+			isa = PBXGroup;
+			children = (
+				E7B466B5B167E23658F3B7FF /* LabelPhotoStore.swift */,
+				233510B95C35C985722A7C17 /* ProductCardView.swift */,
+				5CDA5AF8DBBC3637F6563E9E /* ScanFlowModel.swift */,
+				99465C5FA3B1C6B129AA300B /* ScanLogging.swift */,
+				E06A37F87F80825C3EB8E826 /* ScanView.swift */,
+				A51D67B28981C0A28E21D725 /* StubOpenFoodFactsClient.swift */,
+			);
+			path = Scan;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A413CEF60AEA3BCCD7B8A656 /* Vitalion */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FB166D8CDB3252E8FEF96959 /* Build configuration list for PBXNativeTarget "Vitalion" */;
+			buildPhases = (
+				793602F5CE6288546C1C3FC0 /* Sources */,
+				D227B347D1C6BF6ED9C594EA /* Resources */,
+				16FF4B2F3358F6A5842AC3B9 /* Frameworks */,
+				1BBE9AF58796C6428C64BFD2 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0452A4BF994017E917F9AC26 /* PBXTargetDependency */,
+			);
+			name = Vitalion;
+			packageProductDependencies = (
+				DA4BCA0B907586F8CAC36B6B /* Core */,
+				508A134839066A2A33F7021E /* Persistence */,
+				4896686C4D5E07F669D3661E /* FoodSources */,
+				B8CBC1F50763FB9CEFB6F4E5 /* FoodLookup */,
+				21058B4AB52F76D665E5A05D /* HealthKitClient */,
+				109B13F8FBA8F197909A34BA /* Scanner */,
+				B68B4221126F81E26762C323 /* DesignSystem */,
+			);
+			productName = Vitalion;
+			productReference = 5160930D4897048DD0B73B46 /* Vitalion.app */;
+			productType = "com.apple.product-type.application";
+		};
+		DF83B17FD9C4590EDC0D20FA /* VitalionWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1AB14BD6828B08C45201E8E9 /* Build configuration list for PBXNativeTarget "VitalionWidgets" */;
+			buildPhases = (
+				F2FBC883271E3187976F9ECA /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = VitalionWidgets;
+			packageProductDependencies = (
+			);
+			productName = VitalionWidgets;
+			productReference = 0A83FF24C8E676D75F22F754 /* VitalionWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		F3C192A5CCE79BF9A2BDA88F /* VitalionTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10D0B0C7B01FDD51465AD04 /* Build configuration list for PBXNativeTarget "VitalionTests" */;
+			buildPhases = (
+				2A654B3C6C7AA8FB44E0836F /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A676DA071F511FD41830857F /* PBXTargetDependency */,
+			);
+			name = VitalionTests;
+			packageProductDependencies = (
+			);
+			productName = VitalionTests;
+			productReference = 687AF879EF8D32A5F544158A /* VitalionTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		67B323786A0F39AAA7807E4A /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					A413CEF60AEA3BCCD7B8A656 = {
+						ProvisioningStyle = Automatic;
+					};
+					DF83B17FD9C4590EDC0D20FA = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = E16EA2D67CF7D115098A0B7E /* Build configuration list for PBXProject "Vitalion" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = CEA8AD6BF71E66FE8EB5BBC2;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				15B7C3B507AEA1C5A62DC5B6 /* XCLocalSwiftPackageReference "Packages/Core" */,
+				36D11FABDBCC4AE5C61854CD /* XCLocalSwiftPackageReference "Packages/DesignSystem" */,
+				8ECCF2829271D1F10919AA63 /* XCLocalSwiftPackageReference "Packages/FoodLookup" */,
+				AED8DD15EDC38C491CDC61D8 /* XCLocalSwiftPackageReference "Packages/FoodSources" */,
+				43387EE41D8FAC76DD71B4E1 /* XCLocalSwiftPackageReference "Packages/HealthKitClient" */,
+				3314C9060236FB26BF63AD5C /* XCLocalSwiftPackageReference "Packages/Persistence" */,
+				3226C8BE5165684EE4C35B12 /* XCLocalSwiftPackageReference "Packages/Scanner" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = B902A2B1980504E5ED6CCF81 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A413CEF60AEA3BCCD7B8A656 /* Vitalion */,
+				DF83B17FD9C4590EDC0D20FA /* VitalionWidgets */,
+				F3C192A5CCE79BF9A2BDA88F /* VitalionTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		D227B347D1C6BF6ED9C594EA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F72F9D54A6ABBA933BFB4D8D /* Assets.xcassets in Resources */,
+				2FBC98A3BC78A551B7B8B95E /* FoodIndex in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		2A654B3C6C7AA8FB44E0836F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				00D539336B940A88CD9B652D /* AppEnvironmentTests.swift in Sources */,
+				DBA3F521232C925D59674D47 /* AppModelTests.swift in Sources */,
+				70FB1EF9E4C1215967A03CE2 /* DashboardAccessTests.swift in Sources */,
+				F5A77DD86A2582A7256BE805 /* DashboardFeedbackTests.swift in Sources */,
+				5EB6FD38A3E2CFB65AB558EE /* DashboardTests.swift in Sources */,
+				421CEB7BA2BE3816DB3899C1 /* FoodEditorLookupTests.swift in Sources */,
+				899883FC0E437839BF4F8843 /* HealthTests.swift in Sources */,
+				E7400BC0044C7A9C72F3879A /* HealthWriteTests.swift in Sources */,
+				CB6221947B8992CA1EFEDC96 /* OnlineSearchTests.swift in Sources */,
+				FF4E877C3198F6122BBF6A49 /* OwnerFeedbackTests.swift in Sources */,
+				6397A708118A0AE52F85AFCC /* Phase3Tests.swift in Sources */,
+				22462DF09A1DFAA471195F83 /* ScanFlowTests.swift in Sources */,
+				9DFC1A1DD5062A64161E7B51 /* ScanLogTests.swift in Sources */,
+				48CF0140E6C20D235385AFE3 /* SmartLogTests.swift in Sources */,
+				790621B1B50CB4C7B4CB880D /* TestSupport.swift in Sources */,
+				D240C801D1F58BD8F3EAE44C /* USDAKeyTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		793602F5CE6288546C1C3FC0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				99FEAD95FA282EE3EAB24206 /* AddFoodView.swift in Sources */,
+				AD927069E95106E2C219841C /* AppConfig.swift in Sources */,
+				F24E164ED80A77F65A034D8F /* AppEnvironment+Phase3.swift in Sources */,
+				E9F85BDB6FBC4693524D81C4 /* AppEnvironment.swift in Sources */,
+				C8B442427C7C78DC75B0D3F9 /* AppleMealEstimator.swift in Sources */,
+				D1F832013B37E2BC43954B4E /* BackupsView.swift in Sources */,
+				85CAC62B98EA1EF2D62E3099 /* BarcodeResolutionView.swift in Sources */,
+				1D263C99D7752E5DA8CE0945 /* BodyFatWritePrompt.swift in Sources */,
+				98AA9AE21C945F046186B911 /* ChartData.swift in Sources */,
+				1D5157EE0327A73236295706 /* CheckInModel.swift in Sources */,
+				E79249404E49D2FE1C4F6248 /* CheckInReminder.swift in Sources */,
+				D302A63BD349DDC0689E6B43 /* CheckInView.swift in Sources */,
+				04E8976C47069667EB0EBEA0 /* DashboardAccessibility.swift in Sources */,
+				87E1F6A8AD99A986439D6A7D /* DashboardModel.swift in Sources */,
+				3A4FB3F3A1F282E55185103A /* DashboardSettingsView.swift in Sources */,
+				8DB27045B44240C76FD57872 /* DashboardSnapshot.swift in Sources */,
+				1827D48BF3FA36152BE08C7A /* DashboardTiles.swift in Sources */,
+				035005A4660128FD5DEEF43A /* DashboardView.swift in Sources */,
+				4E6E423EA294CE432DABE3EE /* DebugScreens.swift in Sources */,
+				D07E24984F4338BF87992581 /* DiaryModel.swift in Sources */,
+				B6AB84B938F35F68C4F5AF1F /* DiarySheets.swift in Sources */,
+				101DB5A7A0CDCB1ACD5C9E0D /* DiaryView.swift in Sources */,
+				6D194374FD4F19E37CBF2910 /* DuplicateFoodsView.swift in Sources */,
+				D33EC33651141E5B8CBC4B74 /* Expenditure.swift in Sources */,
+				FA2619CC0F0FF26AC076FAF2 /* FoodEditorModel.swift in Sources */,
+				0DC0BB505D9E18E992924738 /* FoodEditorView.swift in Sources */,
+				92B074339D108435ECF60481 /* FoodsListModel.swift in Sources */,
+				24D0BA814C82A4EDB7B3B9DB /* FoodsListView.swift in Sources */,
+				2468A27C53F080F27D2D433F /* Formatting.swift in Sources */,
+				9E5A8AC1856736495E2320D3 /* HealthOnboardingView.swift in Sources */,
+				250EDAB61789387C3AEB7D7B /* HealthSettingsView.swift in Sources */,
+				14DDA87A51B7C682A1D79CEE /* HealthSyncService.swift in Sources */,
+				0DEB286310433A42C13AC843 /* HealthWriteService.swift in Sources */,
+				507C57C26A7F77EA28A17B7B /* HistoryCalendarView.swift in Sources */,
+				1A5D56FF536B75EAEC9ABF78 /* IngredientPicker.swift in Sources */,
+				D1EDC409D6C35023BB9FC5F8 /* IntentActions.swift in Sources */,
+				D966635131B7160864F40550 /* LabelPhotoStore.swift in Sources */,
+				11AB9D2D171F045F86CCC74A /* MealEditorModel.swift in Sources */,
+				66C1DDA4C05D84E5E41D2D0B /* MealEditorView.swift in Sources */,
+				0016A64F9BA490E7FBA59272 /* MealLogSheet.swift in Sources */,
+				1A97AEF6376A4C2E760AAD96 /* MealPhoto.swift in Sources */,
+				CA198D75AB48BEC1DE37F7AA /* MetricChartView.swift in Sources */,
+				8542CDA8DAFD67E8F8BE182E /* OnlineResultsView.swift in Sources */,
+				0EE82979F3035BB3E93E17F2 /* OnlineSearchModel.swift in Sources */,
+				F6997FB68C7E9629093EAE46 /* ProductCardView.swift in Sources */,
+				88260E7EF4714B470A23977C /* ProfileTargetsView.swift in Sources */,
+				03F30914B5193485F88F9FA0 /* QuantitySheet.swift in Sources */,
+				C05C8B9A5A3AC01597866772 /* QuickAddView.swift in Sources */,
+				9CC15F4FEEBB6E186D24B1D5 /* RootView.swift in Sources */,
+				FD0280E87A662ECE0D410834 /* ScanFlowModel.swift in Sources */,
+				001F6EECF9FC5DD36D98F630 /* ScanLogging.swift in Sources */,
+				5F840E3018A414B035EDE468 /* ScanView.swift in Sources */,
+				F93F4E915889302AFF9AF665 /* ServingWeightPrompt.swift in Sources */,
+				00A97CE919A552D8F16DFC3C /* SettingsView.swift in Sources */,
+				906AE94CDC142A300A23FEB7 /* SmartLogModel.swift in Sources */,
+				EBBFB7B09F80562ED1768340 /* SmartLogView.swift in Sources */,
+				3ECFC0DA93A20EDA8A972387 /* Sparkline.swift in Sources */,
+				9CDD697C2CE53B51833C0BEA /* StatsLoader.swift in Sources */,
+				BC3E09C8E5BF15FBA7B833EE /* StubOpenFoodFactsClient.swift in Sources */,
+				3A1F5417ABC547BE4E353C4D /* StubOpenFoodFactsSearchClient.swift in Sources */,
+				E9AB0EBB3F16BAB6CE22CE6F /* TargetsModel.swift in Sources */,
+				4B3249A25400669043F23BFD /* TileDetailView.swift in Sources */,
+				99A4733FF7F89C6172A89DF3 /* TrendsView.swift in Sources */,
+				505E17A0BABCDB042C4D3E87 /* USDAKeyStore.swift in Sources */,
+				E0B92D28BE843F8C8BD7745B /* UndoToast.swift in Sources */,
+				A62871BC5EADE61B26FA7058 /* VitalionApp.swift in Sources */,
+				74B2381D81030F4F1E7A5741 /* VitalionIntents.swift in Sources */,
+				701533A39ABFFDA97FACA724 /* WaterSettingsView.swift in Sources */,
+				C752D515FA30C2B855B481E7 /* WeeklyReportView.swift in Sources */,
+				1A21A5FF648E3E5110034173 /* WeightEntrySheet.swift in Sources */,
+				500A55BBB04F419C3FD99DD4 /* WidgetSnapshot.swift in Sources */,
+				0C1A4A708131EF290E974C98 /* WidgetSnapshotWriter.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F2FBC883271E3187976F9ECA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F54FE8A13339B259394123ED /* VitalionWidgets.swift in Sources */,
+				0BC2FA83C32E5065225F3A5C /* WidgetSnapshot.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		0452A4BF994017E917F9AC26 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DF83B17FD9C4590EDC0D20FA /* VitalionWidgets */;
+			targetProxy = 367CE2B48D23308854B5209F /* PBXContainerItemProxy */;
+		};
+		A676DA071F511FD41830857F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A413CEF60AEA3BCCD7B8A656 /* Vitalion */;
+			targetProxy = E86A368F0C9EAC181B3E4B43 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0DC77B5A9223315C558C5E2B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		16E723965A0C6067A6229939 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = hr.ivanjuric.nutrilog.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Vitalion.app/Vitalion";
+			};
+			name = Release;
+		};
+		6077ED56FFBEF1D4191A33C1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 6647BB02B3D0561CC2C4B63C /* App.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/Vitalion.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = hr.ivanjuric.nutrilog;
+				PRODUCT_NAME = Vitalion;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		AB63EC430B0A130FF18EE4D3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 6647BB02B3D0561CC2C4B63C /* App.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Widgets/VitalionWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = Widgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = hr.ivanjuric.nutrilog.widgets;
+				PRODUCT_NAME = VitalionWidgets;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		B1024173AA675AD7B08F69EF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = hr.ivanjuric.nutrilog.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Vitalion.app/Vitalion";
+			};
+			name = Debug;
+		};
+		B2EF69B4D74AF9D1755464F0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		C85F17665AC41118B711930B /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 6647BB02B3D0561CC2C4B63C /* App.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/Vitalion.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = hr.ivanjuric.nutrilog;
+				PRODUCT_NAME = Vitalion;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		F09BA5AB9659BE8E6A3E92B9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 6647BB02B3D0561CC2C4B63C /* App.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Widgets/VitalionWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = Widgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = hr.ivanjuric.nutrilog.widgets;
+				PRODUCT_NAME = VitalionWidgets;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1AB14BD6828B08C45201E8E9 /* Build configuration list for PBXNativeTarget "VitalionWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AB63EC430B0A130FF18EE4D3 /* Debug */,
+				F09BA5AB9659BE8E6A3E92B9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A10D0B0C7B01FDD51465AD04 /* Build configuration list for PBXNativeTarget "VitalionTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B1024173AA675AD7B08F69EF /* Debug */,
+				16E723965A0C6067A6229939 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E16EA2D67CF7D115098A0B7E /* Build configuration list for PBXProject "Vitalion" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0DC77B5A9223315C558C5E2B /* Debug */,
+				B2EF69B4D74AF9D1755464F0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FB166D8CDB3252E8FEF96959 /* Build configuration list for PBXNativeTarget "Vitalion" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6077ED56FFBEF1D4191A33C1 /* Debug */,
+				C85F17665AC41118B711930B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		15B7C3B507AEA1C5A62DC5B6 /* XCLocalSwiftPackageReference "Packages/Core" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Core;
+		};
+		3226C8BE5165684EE4C35B12 /* XCLocalSwiftPackageReference "Packages/Scanner" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Scanner;
+		};
+		3314C9060236FB26BF63AD5C /* XCLocalSwiftPackageReference "Packages/Persistence" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Persistence;
+		};
+		36D11FABDBCC4AE5C61854CD /* XCLocalSwiftPackageReference "Packages/DesignSystem" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/DesignSystem;
+		};
+		43387EE41D8FAC76DD71B4E1 /* XCLocalSwiftPackageReference "Packages/HealthKitClient" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/HealthKitClient;
+		};
+		8ECCF2829271D1F10919AA63 /* XCLocalSwiftPackageReference "Packages/FoodLookup" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/FoodLookup;
+		};
+		AED8DD15EDC38C491CDC61D8 /* XCLocalSwiftPackageReference "Packages/FoodSources" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/FoodSources;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		109B13F8FBA8F197909A34BA /* Scanner */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Scanner;
+		};
+		21058B4AB52F76D665E5A05D /* HealthKitClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = HealthKitClient;
+		};
+		4896686C4D5E07F669D3661E /* FoodSources */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FoodSources;
+		};
+		508A134839066A2A33F7021E /* Persistence */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Persistence;
+		};
+		B68B4221126F81E26762C323 /* DesignSystem */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DesignSystem;
+		};
+		B8CBC1F50763FB9CEFB6F4E5 /* FoodLookup */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FoodLookup;
+		};
+		DA4BCA0B907586F8CAC36B6B /* Core */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Core;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 67B323786A0F39AAA7807E4A /* Project object */;
+}

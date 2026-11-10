@@ -376,7 +376,7 @@ struct CheckInSettingsView: View {
                     ForEach(Self.weekdays, id: \.number) { Text($0.name).tag($0.number) }
                 }
             } footer: {
-                Text("On this day Nutrilog shows your week and proposes a calorie target. You can also open it any time from Trends.")
+                Text("On this day Vitalion shows your week and proposes a calorie target. You can also open it any time from Trends.")
             }
             Section {
                 Toggle("Remind me", isOn: $reminderOn)
@@ -437,7 +437,7 @@ struct CheckInSettingsView: View {
             }
             guard await reminder.requestAuthorization() else {
                 reminderOn = false
-                message = "Notifications are turned off for Nutrilog. Allow them in the Settings app to get the reminder."
+                message = "Notifications are turned off for Vitalion. Allow them in the Settings app to get the reminder."
                 return
             }
             do {

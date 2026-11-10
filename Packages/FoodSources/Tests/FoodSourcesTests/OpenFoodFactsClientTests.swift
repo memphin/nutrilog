@@ -3,7 +3,7 @@ import Testing
 @testable import FoodSources
 
 struct OpenFoodFactsClientTests {
-    private static let contact = "https://github.com/memphin/nutrilog"
+    private static let contact = "https://github.com/memphin/vitalion"
     private static let nutella = "3017620422003"
 
     private func makeClient(_ transport: StubTransport, sleeper: SleepRecorder = SleepRecorder()) -> OpenFoodFactsHTTPClient {
@@ -24,7 +24,7 @@ struct OpenFoodFactsClientTests {
         #expect(fields == OFFProduct.fields.joined(separator: ","))
         #expect(OFFProduct.fields.contains("nutriments"))
         #expect(OFFProduct.fields.contains("serving_quantity"))
-        #expect(request.value(forHTTPHeaderField: "User-Agent") == "Nutrilog/1.2 (https://github.com/memphin/nutrilog)")
+        #expect(request.value(forHTTPHeaderField: "User-Agent") == "Vitalion/1.2 (https://github.com/memphin/vitalion)")
         #expect(request.timeoutInterval == 8)
         #expect(request.httpMethod == "GET")
     }

@@ -9,7 +9,7 @@ enum AppTab: String, Hashable, CaseIterable {
 
 extension AppEnvironment {
     /// The environment of the running app, for code the system starts outside the view tree (App Intents).
-    /// Set once by `NutrilogApp`.
+    /// Set once by `VitalionApp`.
     static var shared: AppEnvironment?
 
     /// Saved meals (FR-24).

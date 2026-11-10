@@ -131,7 +131,7 @@ struct WeightReconcilerTests {
     }
 
     @Test func `own weight samples are not read back from Health`() {
-        let own = HealthSource(name: "Nutrilog", bundleIdentifier: "hr.ivanjuric.nutrilog")
+        let own = HealthSource(name: "Vitalion", bundleIdentifier: "hr.ivanjuric.nutrilog")
         let batch = HealthDataBatch(days: day("2026-11-09") ... day("2026-11-10"), samples: [
             .bodyMass: [
                 HealthQuantitySample(start: time("2026-11-09 07:00", zagreb), value: 80, source: own),

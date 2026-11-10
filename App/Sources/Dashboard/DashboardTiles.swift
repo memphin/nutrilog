@@ -96,7 +96,7 @@ enum DashboardTile: String, CaseIterable, Codable, Identifiable, Hashable {
                 + "very individual, so compare it with your own 7- and 30-day averages, not with other people. The value is green at or above "
                 + "your 30-day average, orange slightly below it and red more than 10% below."
         case .steps, .sleep, .weight, .bodyFat:
-            "Days without a value had no data in Apple Health — or Nutrilog may not have permission to read it."
+            "Days without a value had no data in Apple Health — or Vitalion may not have permission to read it."
         }
     }
 

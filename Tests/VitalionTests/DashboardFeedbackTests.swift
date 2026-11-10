@@ -3,7 +3,7 @@ import Foundation
 import Persistence
 import SwiftUI
 import Testing
-@testable import Nutrilog
+@testable import Vitalion
 
 // Owner feedback after the second device test (#62–#67, #70): a quieter sleep tile, a step goal with goal-coloured
 // bars, water coloured by its goal, one Total energy tile drawn as resting + active, and metric descriptions.

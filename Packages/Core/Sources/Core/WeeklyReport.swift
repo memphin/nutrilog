@@ -17,7 +17,7 @@ public struct DayStats: Hashable, Sendable {
     public var basalKcal: Double?
     public var restingHR: Double?
     public var hrvMs: Double?
-    /// Water from Nutrilog and other apps; nil when there is none.
+    /// Water from Vitalion and other apps; nil when there is none.
     public var waterMl: Double?
     public var weightKg: Double?
     public var bodyFatPct: Double?

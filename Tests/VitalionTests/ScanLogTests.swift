@@ -4,7 +4,7 @@ import FoodSources
 import Foundation
 import Persistence
 import Testing
-@testable import Nutrilog
+@testable import Vitalion
 
 /// The scan flow writes the local scan log (backlog #30) that Settings → Barcode resolution reads.
 @MainActor

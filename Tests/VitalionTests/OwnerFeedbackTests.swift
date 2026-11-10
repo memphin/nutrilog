@@ -3,7 +3,7 @@ import Foundation
 import HealthKitClient
 import Persistence
 import Testing
-@testable import Nutrilog
+@testable import Vitalion
 
 // Owner feedback after the first device test: 7-day sparklines and a Total energy tile on Today; scanning and
 // removing barcodes in the food editor.
@@ -100,7 +100,7 @@ struct SparklineTests {
         #expect(total?.points.allSatisfy { $0.base == 1600 } == true)
         #expect(steps?.points.allSatisfy { $0.base == nil } == true)
 
-        // Water: Nutrilog's own plus other apps', days with neither are gaps.
+        // Water: Vitalion's own plus other apps', days with neither are gaps.
         let water = snapshot.sparklines[.water]
         #expect(water?.points.map(\.index) == [1, 5, 6])
         #expect(water?.points.map(\.value) == [250, 500, 750])

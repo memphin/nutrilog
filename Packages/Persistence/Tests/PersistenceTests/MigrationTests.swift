@@ -114,7 +114,7 @@ struct MigrationTests {
 
 struct OnDiskDatabaseTests {
     @Test func `opens migrates and reopens on disk`() throws {
-        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("nutrilog-\(UUID().uuidString)")
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("vitalion-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: dir) }
         let first = try AppDatabase.onDisk(directory: dir)
         try first.writer.write { db in

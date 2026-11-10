@@ -2,8 +2,8 @@ import Core
 import Foundation
 import GRDB
 
-/// Water logged in Nutrilog (`water_entry`, FR-46). Water logged by other apps is read from Health into
-/// `daily_metrics.water_ml` (which leaves out Nutrilog's own Health samples); the day's total is the sum of both.
+/// Water logged in Vitalion (`water_entry`, FR-46). Water logged by other apps is read from Health into
+/// `daily_metrics.water_ml` (which leaves out Vitalion's own Health samples); the day's total is the sum of both.
 public struct WaterEntry: Codable, Hashable, Identifiable, Sendable, SyncedRecord {
     public static let databaseTableName = "water_entry"
 
@@ -63,12 +63,12 @@ public struct WaterRepository: Sendable {
         try database.reader.read { db in try Self.request(day).fetchAll(db) }
     }
 
-    /// The day's water logged in Nutrilog, in ml.
+    /// The day's water logged in Vitalion, in ml.
     public func totalMl(for day: LocalDay) throws -> Double {
         try entries(for: day).reduce(0) { $0 + $1.ml }
     }
 
-    /// Water logged in Nutrilog per day (ml) for the days in `days` that have any.
+    /// Water logged in Vitalion per day (ml) for the days in `days` that have any.
     public func totals(in days: ClosedRange<LocalDay>) throws -> [LocalDay: Double] {
         try database.reader.read { db in
             let rows = try Row.fetchAll(db, sql: """

@@ -92,5 +92,5 @@ public enum HealthKitClient {
     public static let noDataMessage = "No data found — check Health permissions"
 
     /// Where the user changes Health permissions for the app.
-    public static let permissionsPath = "Settings › Health › Data Access & Devices › Nutrilog"
+    public static let permissionsPath = "Settings › Health › Data Access & Devices › Vitalion"
 }

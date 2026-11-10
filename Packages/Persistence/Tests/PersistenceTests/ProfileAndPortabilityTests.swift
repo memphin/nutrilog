@@ -144,7 +144,7 @@ struct DataPortabilityTests {
         let f = try populated()
         let json = try DataPortability(f.db, clock: f.clock.appClock).exportJSON()
         let object = try #require(try JSONSerialization.jsonObject(with: json) as? [String: Any])
-        #expect(object["format"] as? String == "nutrilog-export")
+        #expect(object["format"] as? String == "vitalion-export")
         #expect(object["schemaVersion"] as? Int == Migrator.migrations.count)
         let tables = try #require(object["tables"] as? [String: [[String: Any]]])
         #expect(tables["diary_entry"]?.count == 3)
@@ -193,11 +193,15 @@ struct DataPortabilityTests {
             try p.importJSON(Data(#"{"format":"other","schemaVersion":1,"exportedAt":"x","tables":{}}"#.utf8), mode: .merge)
         }
         #expect(throws: DataPortability.ImportError.newerSchema(file: 99, supported: Migrator.migrations.count)) {
+            try p.importJSON(Data(#"{"format":"vitalion-export","schemaVersion":99,"exportedAt":"x","tables":{}}"#.utf8), mode: .merge)
+        }
+        // Files exported before the rename (Nutrilog) are still recognised as exports.
+        #expect(throws: DataPortability.ImportError.newerSchema(file: 99, supported: Migrator.migrations.count)) {
             try p.importJSON(Data(#"{"format":"nutrilog-export","schemaVersion":99,"exportedAt":"x","tables":{}}"#.utf8), mode: .merge)
         }
         #expect(throws: DataPortability.ImportError.unknownTable("evil")) {
             try p.importJSON(
-                Data(#"{"format":"nutrilog-export","schemaVersion":1,"exportedAt":"x","tables":{"evil":[]}}"#.utf8),
+                Data(#"{"format":"vitalion-export","schemaVersion":1,"exportedAt":"x","tables":{"evil":[]}}"#.utf8),
                 mode: .merge,
             )
         }
@@ -209,7 +213,7 @@ struct DataPortabilityTests {
         for tables in [#"{"food":[]}"#, #"{"food":[],"profile":[],"meal_slot":[]}"#] {
             #expect(throws: DataPortability.ImportError.incompleteBackup) {
                 try p.importJSON(
-                    Data(#"{"format":"nutrilog-export","schemaVersion":1,"exportedAt":"x","tables":\#(tables)}"#.utf8),
+                    Data(#"{"format":"vitalion-export","schemaVersion":1,"exportedAt":"x","tables":\#(tables)}"#.utf8),
                     mode: .replace,
                 )
             }
@@ -226,7 +230,7 @@ struct DataPortabilityTests {
             """)
         }
         func file(_ id: String, owner: String, uuid: String) -> Data {
-            Data(#"{"format":"nutrilog-export","schemaVersion":1,"exportedAt":"x","tables":{"healthkit_link":[{"id":"\#(id)","owner_table":"\#(owner)","owner_id":"w2","hk_type":"t","hk_uuid":"\#(uuid)","created_at":"2026-11-09T11:00:00Z"}]}}"#.utf8)
+            Data(#"{"format":"vitalion-export","schemaVersion":1,"exportedAt":"x","tables":{"healthkit_link":[{"id":"\#(id)","owner_table":"\#(owner)","owner_id":"w2","hk_type":"t","hk_uuid":"\#(uuid)","created_at":"2026-11-09T11:00:00Z"}]}}"#.utf8)
         }
         let p = DataPortability(f.db)
         let clash = try p.importJSON(file("remote", owner: "weight_entry", uuid: "HK-1"), mode: .merge)

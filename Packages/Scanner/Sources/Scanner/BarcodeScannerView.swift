@@ -184,7 +184,7 @@
         private var message: String {
             switch reason {
             case .denied:
-                "Nutrilog needs the camera to scan product barcodes. Turn on Camera for Nutrilog in Settings, "
+                "Vitalion needs the camera to scan product barcodes. Turn on Camera for Vitalion in Settings, "
                     + "or type the barcode instead."
             case .restricted:
                 "Camera access is restricted on this device, e.g. by Screen Time. You can type the barcode instead."

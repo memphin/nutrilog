@@ -30,7 +30,7 @@ Account Holder or Admin role.
 1. Open [developer.apple.com/account](https://developer.apple.com/account) and go to **Certificates, Identifiers &
    Profiles → Identifiers**. Click **+**, choose **App IDs**, then **App**.
 2. Fill in:
-   - **Description:** `Nutrilog`
+   - **Description:** `Vitalion`
    - **Bundle ID:** Explicit, `hr.ivanjuric.nutrilog`
 3. Under **Capabilities**, enable **HealthKit**, which also covers background delivery.
 4. Click **Continue**, then **Register**.
@@ -48,7 +48,7 @@ The app embeds a widget extension (`hr.ivanjuric.nutrilog.widgets`), and both sh
 App ID and the group by itself on the first signed build. If the archive step fails on signing instead, register them
 by hand:
 
-1. **Identifiers → +  → App Groups**: description `Nutrilog`, identifier `group.hr.ivanjuric.nutrilog`.
+1. **Identifiers → +  → App Groups**: description `Vitalion`, identifier `group.hr.ivanjuric.nutrilog`.
 2. **Identifiers → + → App IDs → App**: bundle ID `hr.ivanjuric.nutrilog.widgets`, capability **App Groups**.
 3. Open the `hr.ivanjuric.nutrilog` App ID, enable **App Groups** on it too, and select the group on both IDs.
 
@@ -60,8 +60,8 @@ widgets and the Shortcuts actions on a real device (the simulator tests don't co
 1. Open [appstoreconnect.apple.com](https://appstoreconnect.apple.com) and go to **Apps**. Click **+**, then **New App**.
 2. Fill in:
    - **Platforms:** iOS
-   - **Name:** `Nutrilog`. The name must be unique on the App Store. If it is taken, pick another, such as
-     `Nutrilog Tracker`. It does not have to match the name on the home screen.
+   - **Name:** `Vitalion`. The name must be unique on the App Store. If it is taken, pick another, such as
+     `Vitalion Tracker`. It does not have to match the name on the home screen.
    - **Primary Language:** your choice
    - **Bundle ID:** `hr.ivanjuric.nutrilog`
    - **SKU:** `nutrilog`
@@ -102,7 +102,7 @@ base64 -i /path/to/AuthKey_<KEY_ID>.p8 | gh secret set ASC_KEY_P8
 gh secret set APPLE_TEAM_ID --body "<TEAM_ID>"
 # Optional:
 gh secret set USDA_FDC_API_KEY --body "<your FDC key>"
-gh secret set OFF_USER_AGENT_CONTACT --body "https:/\$()/github.com/memphin/nutrilog"
+gh secret set OFF_USER_AGENT_CONTACT --body "https:/\$()/github.com/memphin/vitalion"
 ```
 
 | Secret | Required | What it is |
@@ -124,7 +124,7 @@ If any required secret is missing, the job fails on its first step and names the
 
    ```sh
    git switch main && git pull
-   git tag -a v0.2.0 -m "Nutrilog 0.2.0"
+   git tag -a v0.2.0 -m "Vitalion 0.2.0"
    git push origin v0.2.0
    ```
 

@@ -1,15 +1,15 @@
 import Core
 import Foundation
 
-/// Writing Nutrilog's own entries to Apple Health (backlog #27, FR-43, FR-46). A separate protocol next to
+/// Writing Vitalion's own entries to Apple Health (backlog #27, FR-43, FR-46). A separate protocol next to
 /// `HealthDataSource`: `LiveHealthDataSource` adopts both, tests use `FakeHealthWriter`.
 ///
-/// Every sample carries the id of the Nutrilog row it mirrors (`HKMetadataKeyExternalUUID`) plus a sync identifier
+/// Every sample carries the id of the Vitalion row it mirrors (`HKMetadataKeyExternalUUID`) plus a sync identifier
 /// "<row id>.<type>" and a sync version that grows with every edit and every retry (`syncVersion`). Deleting by
 /// external id therefore removes everything written for a row, even when the `healthkit_link` rows were lost (e.g. the
 /// app was killed between saving and storing the link), and a rewrite always outranks an older copy Health holds.
 ///
-/// Loop prevention (SPEC §3.4): only rows the user entered in Nutrilog (diary and water entries, manual weights)
+/// Loop prevention (SPEC §3.4): only rows the user entered in Vitalion (diary and water entries, manual weights)
 /// are ever turned into drafts. Values read from Health go to `daily_metrics` and never reach a writer.
 public protocol HealthWriting: Sendable {
     /// False on devices without a Health store.
@@ -34,7 +34,7 @@ public struct HealthSampleDraft: Hashable, Sendable {
     public var value: Double
     /// Start and end of the (instantaneous) sample.
     public var date: Date
-    /// The Nutrilog row id (`diary_entry.id`, `water_entry.id`) → `HKMetadataKeyExternalUUID`.
+    /// The Vitalion row id (`diary_entry.id`, `water_entry.id`) → `HKMetadataKeyExternalUUID`.
     public var externalID: String
     /// → `HKMetadataKeySyncVersion`; see `HealthSamples.syncVersion(revision:attempt:)`.
     public var version: Int
@@ -76,7 +76,7 @@ public extension HealthWriteType {
     }
 }
 
-/// Builds the drafts for Nutrilog rows.
+/// Builds the drafts for Vitalion rows.
 public enum HealthSamples {
     /// The sync version of a write: `revision * 1000 + attempt`. It grows with every edit (revision) and every retry
     /// of the same revision (attempt), so a re-save after a crash or a failed try never carries the same version as a

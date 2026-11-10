@@ -3,7 +3,7 @@ import Foundation
 import HealthKitClient
 import Persistence
 import Testing
-@testable import Nutrilog
+@testable import Vitalion
 
 /// Health access on the dashboard: connect from anywhere, new types after an update (PR #57 review).
 @MainActor

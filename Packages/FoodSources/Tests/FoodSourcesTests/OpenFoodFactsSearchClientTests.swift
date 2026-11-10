@@ -3,8 +3,8 @@ import Testing
 @testable import FoodSources
 
 struct OpenFoodFactsSearchClientTests {
-    private static let contact = "https://github.com/memphin/nutrilog"
-    private static let userAgent = "Nutrilog/1.2 (https://github.com/memphin/nutrilog)"
+    private static let contact = "https://github.com/memphin/vitalion"
+    private static let userAgent = "Vitalion/1.2 (https://github.com/memphin/vitalion)"
 
     private func makeClient(_ transport: StubTransport) -> OpenFoodFactsSearchHTTPClient {
         OpenFoodFactsSearchHTTPClient(contact: Self.contact, appVersion: "1.2", transport: transport)
@@ -38,7 +38,7 @@ struct OpenFoodFactsSearchClientTests {
     }
 
     @Test func `blank contact falls back to the app name and version`() {
-        #expect(OpenFoodFactsSearchHTTPClient(contact: "  ", appVersion: "2.0").userAgent == "Nutrilog/2.0")
+        #expect(OpenFoodFactsSearchHTTPClient(contact: "  ", appVersion: "2.0").userAgent == "Vitalion/2.0")
     }
 
     @Test func `blank query returns nothing without a request`() async throws {

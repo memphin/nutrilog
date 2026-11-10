@@ -130,7 +130,7 @@ extension DashboardSnapshot {
             bodyFatByDay[weight.day] = weight.bodyFatPct
         }
 
-        // Water: logged in Nutrilog plus other apps' water from Health, as on the tile; a day with neither is a gap.
+        // Water: logged in Vitalion plus other apps' water from Health, as on the tile; a day with neither is a gap.
         var water: [LocalDay: Double] = data.waterByDay
         for row in recent {
             if let other = row.waterMl {

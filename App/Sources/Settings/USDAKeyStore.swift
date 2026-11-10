@@ -27,6 +27,7 @@ struct KeychainError: LocalizedError, CustomStringConvertible {
 
 /// ``USDAKeyStoring`` in the Keychain: a generic password, this device only, readable after the first unlock.
 struct KeychainUSDAKeyStore: USDAKeyStoring {
+    /// Keeps the app's former name (Nutrilog) so a key saved before the rename is still found.
     var service = "hr.ivanjuric.nutrilog.usda-fdc"
     var account = "api-key"
 

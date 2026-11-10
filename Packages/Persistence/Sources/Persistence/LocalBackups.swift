@@ -18,7 +18,9 @@ public struct LocalBackups: Sendable {
     public static let keep = 7
     /// A new automatic backup is due this long after the last one.
     public static let interval: TimeInterval = 7 * 86400
-    static let prefix = "nutrilog-backup-"
+    static let prefix = "vitalion-backup-"
+    /// Backups written while the app was named Nutrilog: still listed, restorable and pruned.
+    static let legacyPrefixes = ["nutrilog-backup-"]
 
     let directory: URL
     let portability: DataPortability
@@ -81,15 +83,15 @@ public struct LocalBackups: Sendable {
         try FileManager.default.removeItem(at: backup.url)
     }
 
-    // MARK: File names — "nutrilog-backup-20261109T140312Z.json" (UTC)
+    // MARK: File names — "vitalion-backup-20261109T140312Z.json" (UTC)
 
     static func fileName(for date: Date) -> String {
         prefix + formatter().string(from: date) + ".json"
     }
 
     static func date(fromFileName name: String) -> Date? {
-        guard name.hasPrefix(prefix), name.hasSuffix(".json") else { return nil }
-        return formatter().date(from: String(name.dropFirst(prefix.count).dropLast(".json".count)))
+        guard name.hasSuffix(".json"), let used = ([prefix] + legacyPrefixes).first(where: name.hasPrefix) else { return nil }
+        return formatter().date(from: String(name.dropFirst(used.count).dropLast(".json".count)))
     }
 
     private static func formatter() -> DateFormatter {

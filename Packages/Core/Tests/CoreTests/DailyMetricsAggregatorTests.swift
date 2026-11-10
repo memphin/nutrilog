@@ -81,21 +81,21 @@ struct DailyMetricsAggregatorTests {
         #expect(rows.count == 3)
     }
 
-    @Test func `water written by Nutrilog itself is not read back`() {
-        let nutrilog = HealthSource(name: "Nutrilog", bundleIdentifier: "hr.ivanjuric.nutrilog", productType: "iPhone17,1")
+    @Test func `water written by Vitalion itself is not read back`() {
+        let vitalion = HealthSource(name: "Vitalion", bundleIdentifier: "hr.ivanjuric.nutrilog", productType: "iPhone17,1")
         let other = HealthFixtures.healthApp
         let batch = HealthDataBatch(days: day("2026-11-08") ... day("2026-11-10"), statistics: [
             .dietaryWater: [
                 // Ours + another app's: only the other app's water is kept.
                 dailyStatistic("2026-11-08", 1250, sources: [
-                    SourceContribution(source: nutrilog, sum: 750), SourceContribution(source: other, sum: 500),
+                    SourceContribution(source: vitalion, sum: 750), SourceContribution(source: other, sum: 500),
                 ]),
                 // Only ours: no "other apps" water at all.
-                dailyStatistic("2026-11-09", 600, sources: [SourceContribution(source: nutrilog, sum: 600)]),
+                dailyStatistic("2026-11-09", 600, sources: [SourceContribution(source: vitalion, sum: 600)]),
                 // Only another app's.
                 dailyStatistic("2026-11-10", 330, sources: [SourceContribution(source: other, sum: 330)]),
             ],
-            .steps: [dailyStatistic("2026-11-09", 100, sources: [SourceContribution(source: nutrilog, sum: 100)])],
+            .steps: [dailyStatistic("2026-11-09", 100, sources: [SourceContribution(source: vitalion, sum: 100)])],
         ])
         let rows = Dictionary(
             uniqueKeysWithValues: DailyMetricsAggregator.aggregate(
@@ -113,11 +113,11 @@ struct DailyMetricsAggregatorTests {
     }
 
     @Test func `excluded water never goes negative`() {
-        let nutrilog = HealthSource(name: "Nutrilog", bundleIdentifier: "app", productType: nil)
+        let vitalion = HealthSource(name: "Vitalion", bundleIdentifier: "app", productType: nil)
         // Per-source sums are taken before de-duplication, so they can exceed the de-duplicated total.
         let batch = HealthDataBatch(days: day("2026-11-09") ... day("2026-11-09"), statistics: [
             .dietaryWater: [dailyStatistic("2026-11-09", 500, sources: [
-                SourceContribution(source: nutrilog, sum: 600), SourceContribution(source: HealthFixtures.healthApp, sum: 200),
+                SourceContribution(source: vitalion, sum: 600), SourceContribution(source: HealthFixtures.healthApp, sum: 200),
             ])],
         ])
         let rows = DailyMetricsAggregator.aggregate(batch, calendar: zagreb, excludingOwnSamplesFrom: ["app"])

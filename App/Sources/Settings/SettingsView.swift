@@ -333,11 +333,11 @@ struct DataSettingsView: View {
             try? FileManager.default.removeItem(at: dir)
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             let stamp = environment.today.isoString
-            let json = dir.appendingPathComponent("nutrilog-\(stamp).json")
+            let json = dir.appendingPathComponent("vitalion-\(stamp).json")
             try portability.exportJSON().write(to: json)
             var files = [json]
             for (name, content) in try portability.exportCSV().sorted(by: { $0.key < $1.key }) {
-                let url = dir.appendingPathComponent("nutrilog-\(stamp)-\(name)")
+                let url = dir.appendingPathComponent("vitalion-\(stamp)-\(name)")
                 try Data(content.utf8).write(to: url)
                 files.append(url)
             }
@@ -360,9 +360,9 @@ struct DataSettingsView: View {
                 message = "Imported, but the settings couldn't be reloaded: \(error.localizedDescription)"
             }
         } catch DataPortability.ImportError.newerSchema {
-            message = "This file was made by a newer version of Nutrilog. Update the app first."
+            message = "This file was made by a newer version of Vitalion. Update the app first."
         } catch DataPortability.ImportError.notAnExport {
-            message = "This isn't a Nutrilog export file."
+            message = "This isn't a Vitalion export file."
         } catch DataPortability.ImportError.incompleteBackup {
             message = "This file is incomplete (no profile or meal slots), so nothing was replaced. Try Merge instead."
         } catch {
@@ -388,7 +388,7 @@ struct NetworkInfoView: View {
                 ("/api/v2/product/{barcode}.json", "Product lookup when a barcode isn't in the local cache"),
                 ("/cgi/search.pl", "Packaged-food search in Add Food → Online"),
             ],
-            sent: "The barcode or the search text, and a User-Agent naming the app (Nutrilog and its version). No account.",
+            sent: "The barcode or the search text, and a User-Agent naming the app (Vitalion and its version). No account.",
         ),
         Host(
             host: "images.openfoodfacts.org",
@@ -426,7 +426,7 @@ struct NetworkInfoView: View {
                 EmptyView()
             } footer: {
                 Text(
-                    "These are the only hosts Nutrilog contacts, and only when you scan a barcode or search online. "
+                    "These are the only hosts Vitalion contacts, and only when you scan a barcode or search online. "
                         + "No analytics, no tracking, no accounts.",
                 )
             }
@@ -443,7 +443,7 @@ struct AboutView: View {
         List {
             Section {
                 LabeledContent("Version", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—")
-                Link("Source code on GitHub", destination: URL(string: "https://github.com/memphin/nutrilog")!)
+                Link("Source code on GitHub", destination: URL(string: "https://github.com/memphin/vitalion")!)
             }
             Section("Data sources") {
                 Text(Self.offAttribution).font(.footnote)
@@ -451,7 +451,7 @@ struct AboutView: View {
             }
             Section("Open-source licenses") {
                 VStack(alignment: .leading, spacing: NL.Spacing.xs) {
-                    Text("Nutrilog").bold()
+                    Text("Vitalion").bold()
                     Text("MIT License © 2026 Ivan Juric").font(.footnote).foregroundStyle(.secondary)
                 }
                 VStack(alignment: .leading, spacing: NL.Spacing.xs) {
@@ -460,7 +460,7 @@ struct AboutView: View {
                 }
             }
             Section {
-                Text("Nutrilog is not a medical device and provides no medical advice.").font(.footnote)
+                Text("Vitalion is not a medical device and provides no medical advice.").font(.footnote)
             }
         }
         .navigationTitle("About")

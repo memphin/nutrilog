@@ -1,4 +1,4 @@
-# Nutrilog
+# Vitalion
 
 **A free, ad-free, open-source, privacy-first nutrition & health tracker for iOS.**
 
@@ -40,19 +40,19 @@ Not planned: ads, subscriptions, social features, coaching, analytics SDKs.
 ## Build
 
 ```bash
-git clone https://github.com/memphin/nutrilog.git
-cd nutrilog
+git clone https://github.com/memphin/vitalion.git
+cd vitalion
 cp Config/Secrets.xcconfig.template Config/Secrets.xcconfig   # optional: USDA key, Team ID
-open Nutrilog.xcodeproj
+open Vitalion.xcodeproj
 ```
 
-1. Put your Apple Developer Team ID in `Config/Secrets.xcconfig` (`DEVELOPMENT_TEAM = ...`) or pick your team in Xcode → `Nutrilog` target → Signing & Capabilities.
+1. Put your Apple Developer Team ID in `Config/Secrets.xcconfig` (`DEVELOPMENT_TEAM = ...`) or pick your team in Xcode → `Vitalion` target → Signing & Capabilities.
 2. HealthKit (with *Background Delivery*) and the App Group the widgets read from (`group.hr.ivanjuric.nutrilog`) are already declared in the entitlements. With your own bundle ID, change the group in `project.yml` and `Shared/WidgetSnapshot.swift` to match.
 3. Run on a real iPhone (HealthKit is limited in the simulator). Simulator builds and tests work without a team.
 
-The Xcode project is generated from `project.yml` with [XcodeGen](https://github.com/yonaskolb/XcodeGen). After changing targets, files or settings: `brew install xcodegen && xcodegen generate`, and commit both `project.yml` and `Nutrilog.xcodeproj`.
+The Xcode project is generated from `project.yml` with [XcodeGen](https://github.com/yonaskolb/XcodeGen). After changing targets, files or settings: `brew install xcodegen && xcodegen generate`, and commit both `project.yml` and `Vitalion.xcodeproj`.
 
-Tests: `xcodebuild test -project Nutrilog.xcodeproj -scheme Nutrilog -destination 'platform=iOS Simulator,name=iPhone 17' CODE_SIGNING_ALLOWED=NO`, or `swift test` inside any `Packages/<name>`.
+Tests: `xcodebuild test -project Vitalion.xcodeproj -scheme Vitalion -destination 'platform=iOS Simulator,name=iPhone 17' CODE_SIGNING_ALLOWED=NO`, or `swift test` inside any `Packages/<name>`.
 
 ### Optional: USDA FoodData Central key
 
@@ -88,4 +88,4 @@ Issues and PRs welcome — read [CONTRIBUTING.md](CONTRIBUTING.md) first. This i
 
 Code: [MIT](LICENSE). Bundled datasets keep their own licenses (see above).
 
-*Nutrilog is not a medical device and provides no medical advice.*
+*Vitalion is not a medical device and provides no medical advice.*

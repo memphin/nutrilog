@@ -1,5 +1,5 @@
-// Base build settings for the Nutrilog app target. Committed; contains no secrets.
+// Base build settings for the Vitalion app target. Committed; contains no secrets.
 // Local, git-ignored values (USDA key, team ID) come from Secrets.xcconfig if it exists.
 USDA_FDC_API_KEY =
-OFF_USER_AGENT_CONTACT = https:/$()/github.com/memphin/nutrilog
+OFF_USER_AGENT_CONTACT = https:/$()/github.com/memphin/vitalion
 #include? "Secrets.xcconfig"

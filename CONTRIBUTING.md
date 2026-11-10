@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest. Nutrilog is a personal, spare-time project — contributions are welcome but please read this first.
+Thanks for your interest. Vitalion is a personal, spare-time project — contributions are welcome but please read this first.
 
 ## Ground rules
 - The product scope is defined in [docs/SPEC.md](docs/SPEC.md). Features outside it (ads, accounts, social, analytics) will not be accepted. Propose scope changes as an issue first.

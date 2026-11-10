@@ -31,7 +31,7 @@ extension AppEnvironment {
     }
 }
 
-/// "Allow body fat writing" — a one-time offer for users who connected Health before Nutrilog wrote body fat.
+/// "Allow body fat writing" — a one-time offer for users who connected Health before Vitalion wrote body fat.
 /// Shown in Settings → Apple Health and on the weight sheet; hidden once answered or dismissed.
 struct BodyFatWritePrompt: View {
     @Environment(AppEnvironment.self) private var environment
@@ -42,7 +42,7 @@ struct BodyFatWritePrompt: View {
         Group {
             if isOffered {
                 Section {
-                    Text("Nutrilog can now also write the body fat you enter with a weight to Apple Health.")
+                    Text("Vitalion can now also write the body fat you enter with a weight to Apple Health.")
                         .font(.subheadline)
                     Button("Allow body fat writing") { allow() }
                     Button("Not now", role: .cancel) {

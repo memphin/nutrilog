@@ -128,7 +128,7 @@ struct WeightEntrySheet: View {
 
     private var footer: String {
         environment.healthWrites?.isEnabled == false
-            ? "Writing to Apple Health is off, so this weight stays in Nutrilog."
+            ? "Writing to Apple Health is off, so this weight stays in Vitalion."
             : "Also saved to Apple Health as weight and body fat."
     }
 

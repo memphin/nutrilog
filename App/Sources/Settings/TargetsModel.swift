@@ -23,7 +23,7 @@ final class TargetsModel {
     var activity: ActivityLevel = .light
     var goal: GoalMode = .maintain
     var rateKgPerWeek = 0.5
-    /// The latest weight (weigh-ins in Nutrilog and Apple Health): read-only here, it is changed by weighing in (#65).
+    /// The latest weight (weigh-ins in Vitalion and Apple Health): read-only here, it is changed by weighing in (#65).
     private(set) var weightKg: Double?
     /// The day of that weight.
     private(set) var weightDay: LocalDay?

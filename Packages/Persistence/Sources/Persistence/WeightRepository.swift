@@ -2,7 +2,7 @@ import Core
 import Foundation
 import GRDB
 
-/// Weights entered by hand in Nutrilog (`weight_entry`, FR-42; UI in backlog #29). Weights from a scale are read
+/// Weights entered by hand in Vitalion (`weight_entry`, FR-42; UI in backlog #29). Weights from a scale are read
 /// from Health into `daily_metrics`; `WeightReconciler` merges both. Every change is queued for the Apple Health
 /// writer in the same transaction (`healthkit_outbox`), like diary and water entries.
 public struct WeightRepository: Sendable {

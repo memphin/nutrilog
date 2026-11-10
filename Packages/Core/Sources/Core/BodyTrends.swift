@@ -5,7 +5,7 @@ import Foundation
 
 // MARK: - Reconciling manual and Health weights
 
-/// A weight Nutrilog's user entered by hand (`weight_entry`).
+/// A weight Vitalion's user entered by hand (`weight_entry`).
 public struct ManualWeight: Hashable, Sendable {
     public var measuredAt: Date
     public var kg: Double
@@ -46,7 +46,7 @@ public struct DayWeight: Hashable, Sendable {
 
 /// Merges manual weights with the values read from Health (`daily_metrics`).
 ///
-/// Nutrilog writes manual weights to Health too, but the Health sync ignores Nutrilog's own weight samples
+/// Vitalion writes manual weights to Health too, but the Health sync ignores Vitalion's own weight samples
 /// (`DailyMetricsAggregator.aggregate(_:calendar:excludingOwnSamplesFrom:)`), so a manual weigh-in is never counted
 /// twice: it reaches the dashboard only through `weight_entry`, immediately, whether or not writing to Health is on.
 ///

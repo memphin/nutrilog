@@ -4,7 +4,7 @@ import FoodSources
 import Foundation
 import Persistence
 import Testing
-@testable import Nutrilog
+@testable import Vitalion
 
 /// Scanning in Foods → New food (#69): the code is added and the product is looked up like in Add Food's scanner,
 /// so a known product fills the form. Model level with a stub Open Food Facts client (the simulator has no camera).

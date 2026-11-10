@@ -12,7 +12,7 @@ public struct DailyHealthMetrics: Hashable, Sendable, Codable {
     public var sleepDeepMin: Int?
     public var sleepRemMin: Int?
     public var sleepAwakeMin: Int?
-    /// First weigh-in of the day from *other* sources: weights Nutrilog wrote itself (manual entries) are excluded,
+    /// First weigh-in of the day from *other* sources: weights Vitalion wrote itself (manual entries) are excluded,
     /// they live in `weight_entry` and `WeightReconciler` merges both.
     public var weightKg: Double?
     /// Body fat in percent (18.5), from the same measurement as the weight when there is one.
@@ -20,7 +20,7 @@ public struct DailyHealthMetrics: Hashable, Sendable, Codable {
     public var restingHR: Double?
     /// Average SDNN of the samples taken 00:00–09:00.
     public var hrvSDNNms: Double?
-    /// Water logged in Health by *other* apps. Water Nutrilog wrote itself is excluded (see
+    /// Water logged in Health by *other* apps. Water Vitalion wrote itself is excluded (see
     /// `DailyMetricsAggregator.aggregate(_:calendar:excludingOwnSamplesFrom:)`): it lives in `water_entry`, and the day's
     /// total is `water_entry` + this value, so nothing is counted twice whether or not writing to Health is on.
     public var waterMl: Double?
@@ -138,7 +138,7 @@ public extension DailyHealthMetrics {
 /// - Resting heart rate: the latest sample of the day from the highest-priority source (Apple Watch first).
 /// - HRV: the average of the samples taken 00:00–09:00, Apple Watch samples only when there are any.
 /// - Sleep: `SleepAggregator` for the night ending on the day.
-/// - Water: as the cumulative metrics, minus the water written by the sources in `excludingOwnSamplesFrom` (Nutrilog
+/// - Water: as the cumulative metrics, minus the water written by the sources in `excludingOwnSamplesFrom` (Vitalion
 ///   itself), so water the app logged and wrote to Health is not counted twice (SPEC §3.4 write loops, FR-46).
 /// - Weight and body fat written by those sources (manual weights, FR-42) are ignored the same way: they live in
 ///   `weight_entry`, and `WeightReconciler` merges them with the values read here.
@@ -149,7 +149,7 @@ public enum DailyMetricsAggregator {
     public static let sameMeasurementTolerance: TimeInterval = 5 * 60
 
     /// - Parameter excludingOwnSamplesFrom: bundle identifiers whose `dietaryWater` contribution is subtracted and
-    ///   whose weight and body fat samples are ignored — Nutrilog's own, so what the app logged (and wrote to Health)
+    ///   whose weight and body fat samples are ignored — Vitalion's own, so what the app logged (and wrote to Health)
     ///   is not read back as data from other apps.
     public static func aggregate(
         _ batch: HealthDataBatch,

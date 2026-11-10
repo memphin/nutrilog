@@ -44,7 +44,7 @@ struct ServingWeightPrompt: View {
                     Text("How much does “\(servingLabel)” weigh?")
                 } footer: {
                     Text(
-                        "\(detail.food.name) only lists nutrition per serving. With the weight, Nutrilog stores values "
+                        "\(detail.food.name) only lists nutrition per serving. With the weight, Vitalion stores values "
                             + "per 100 \(detail.food.baseUnit.symbol) so you can log any amount. Skip to log by servings only.",
                     )
                 }
