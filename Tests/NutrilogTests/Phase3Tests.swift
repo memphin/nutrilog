@@ -377,7 +377,7 @@ struct DiaryPhase3Tests {
         let saved = try model.save(to: recipes)
         #expect(!model.isNew)
         #expect(saved.food.source == .recipe)
-        let reopened = try RecipeEditorModel(recipe: #require(recipes.recipe(id: saved.id)))
+        let reopened = try RecipeEditorModel(recipe: #require(try recipes.recipe(id: saved.id)))
         #expect(reopened.name == "Plain rice")
         #expect(reopened.rows.map(\.gramsText) == ["300"])
         #expect(reopened.cookedText == "750")
