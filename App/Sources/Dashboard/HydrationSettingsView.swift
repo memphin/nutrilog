@@ -48,7 +48,7 @@ struct HydrationSettingsView: View {
             switch goalMode {
             case .weight:
                 if let trendKg {
-                    let goal = HydrationGoal.ml(weightKg: trendKg, mode: .weight, fixedMl: fixedGoalMl)
+                    let goal = HydrationGoalResolver.goalMl(on: environment.today, mode: .weight, fixedMl: fixedGoalMl, trendKg: trendKg)
                     Text("\(Self.number(goal)) ml at \(trendKg.formatted(.number.precision(.fractionLength(1)))) kg")
                         .monospacedDigit()
                 } else {
@@ -147,7 +147,8 @@ struct HydrationSettingsView: View {
             goalMode = profile.waterGoalMode
             fixedGoalMl = profile.waterGoalMl
         }
-        trendKg = (try? environment.dailyMetrics?.weightTrendKg(onOrBefore: environment.today)) ?? nil
+        let today = environment.today
+        trendKg = HydrationGoalResolver.trendsKg(in: today ... today, from: environment.dailyMetrics)[today]
     }
 
     private func saveGoal(mode: HydrationGoalMode, fixedMl: Double) {

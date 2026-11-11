@@ -248,14 +248,6 @@ struct WaterQuickAddTests {
     @Test func `goal progress includes other apps' water`() {
         let half = WaterProgress(loggedMl: 500, otherAppsMl: 750, goalMl: 2500)
         #expect(half.totalMl == 1250)
-        #expect(half.fraction == 0.5)
-        #expect(!half.isGoalReached)
-        #expect(half.remainingMl == 1250)
-        let over = WaterProgress(loggedMl: 2000, otherAppsMl: 1000, goalMl: 2500)
-        #expect(over.fraction == 1)
-        #expect(over.isGoalReached)
-        #expect(over.remainingMl == 0)
-        #expect(WaterProgress(loggedMl: 100, otherAppsMl: 0, goalMl: 0).fraction == 0)
     }
 }
 

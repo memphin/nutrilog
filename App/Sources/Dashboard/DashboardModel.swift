@@ -148,10 +148,18 @@ final class DashboardModel {
         }
     }
 
+    /// The window's Health rows, and with them the weight trends of the hydration goal (a trend from before the
+    /// window counts too, so they are read from the database rather than from the rows).
     private func observeMetrics() async {
         guard let repo = environment.dailyMetrics else { return }
         let window = data.window
-        await DiaryModel.resubscribing { repo.observeMetrics(in: window) } onValue: { data.metrics = $0 } onError: { report($0) }
+        await DiaryModel.resubscribing { repo.observeMetrics(in: window) } onValue: { rows in
+            data.metrics = rows
+            let trends = HydrationGoalResolver.trendsKg(in: window, from: repo)
+            if data.weightTrends != trends {
+                data.weightTrends = trends
+            }
+        } onError: { report($0) }
     }
 
     private func observeWeights() async {

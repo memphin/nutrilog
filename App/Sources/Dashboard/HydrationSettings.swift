@@ -112,10 +112,24 @@ struct HydrationSettings: Equatable {
 
 // MARK: - Goal
 
-/// The day's hydration goal from the profile: 30 ml/kg of the weight trend (weight mode) or the fixed amount.
+/// The day's hydration goal (spec §1): 30 ml/kg of the latest weight trend on or before the day, however old (weight
+/// mode), or the fixed amount. The one goal lookup: Today's tile and detail, Settings and the reminders all read the
+/// weight with `trendsKg(in:from:)` and the goal with `goalMl`, so they always agree.
 enum HydrationGoalResolver {
+    /// The weight each day's goal uses: the latest stored trend on or before the day, also one from before `days`
+    /// (`DailyMetricsRepository.weightTrends(in:)`). Days before the first trend are absent; so is everything when
+    /// the trends can't be read (the goal then falls back like without a weight).
+    static func trendsKg(in days: ClosedRange<LocalDay>, from metrics: DailyMetricsRepository?) -> [LocalDay: Double] {
+        (try? metrics?.weightTrends(in: days)) ?? [:]
+    }
+
     /// `trendKg` is the weight trend on or before `day` (nil when none is known: the fallback goal).
-    static func goalMl(on _: LocalDay, profile: Profile, trendKg: Double?) -> Double {
-        HydrationGoal.ml(weightKg: trendKg, mode: profile.waterGoalMode, fixedMl: profile.waterGoalMl)
+    static func goalMl(on day: LocalDay, profile: Profile, trendKg: Double?) -> Double {
+        goalMl(on: day, mode: profile.waterGoalMode, fixedMl: profile.waterGoalMl, trendKg: trendKg)
+    }
+
+    /// The same, with the profile's goal mode and fixed amount given separately.
+    static func goalMl(on _: LocalDay, mode: HydrationGoalMode, fixedMl: Double, trendKg: Double?) -> Double {
+        HydrationGoal.ml(weightKg: trendKg, mode: mode, fixedMl: fixedMl)
     }
 }

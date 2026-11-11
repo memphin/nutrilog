@@ -57,8 +57,8 @@ struct HydrationStripLayout: Equatable {
 }
 
 /// Today's drinks from wake-up to bedtime (spec §3): a bubble per drink (plain water in the water colour, other
-/// drinks in the secondary chart colour), stretches without a drink tinted, a tick at now. One VoiceOver element,
-/// e.g. "8 drinks, longest gap 4 h 30 min".
+/// drinks orange), stretches without a drink tinted, a tick at now. One VoiceOver element, e.g. "8 drinks, longest
+/// gap 4 h 30 min".
 struct HydrationStrip: View {
     let day: HydrationDay
 
@@ -105,7 +105,7 @@ struct HydrationStrip: View {
     private static func color(_ kind: FluidIntake.Kind) -> Color {
         switch kind {
         case .water: NL.Palette.water
-        case .other: .secondary
+        case .other: .orange
         }
     }
 

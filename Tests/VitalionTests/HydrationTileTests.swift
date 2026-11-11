@@ -29,22 +29,21 @@ struct HydrationTileTests {
         FluidIntake(id: UUID().uuidString, ml: ml, at: date, kind: .other, source: source, name: name)
     }
 
-    /// Today's dashboard data: the drinks, other apps' water and the weight trend (on `trendDay`, default today).
+    /// Today's dashboard data: the drinks, other apps' water and the weight trend, stored on `trendDay` (default
+    /// today) and carried forward to today as `HydrationGoalResolver.trendsKg(in:from:)` reads it.
     func data(
         _ intakes: [FluidIntake], otherAppsMl: Double? = nil, trendKg: Double? = nil, trendDay: LocalDay? = nil,
     ) -> DashboardData {
         var data = DashboardData(today: today)
         data.hydrationIntakes = [today: intakes]
-        var rows: [LocalDay: DailyMetricsRecord] = [
-            today: DailyMetricsRecord(DailyHealthMetrics(day: today, waterMl: otherAppsMl), fetchedAt: Date()),
-        ]
+        data.metrics = [DailyMetricsRecord(DailyHealthMetrics(day: today, waterMl: otherAppsMl), fetchedAt: Date())]
         if let trendKg {
-            let day = trendDay ?? today
-            var row = rows[day] ?? DailyMetricsRecord(DailyHealthMetrics(day: day), fetchedAt: Date())
-            row.weightTrendKg = trendKg
-            rows[day] = row
+            var day = trendDay ?? today
+            while day <= today {
+                data.weightTrends[day] = trendKg
+                day = day.next
+            }
         }
-        data.metrics = rows.values.sorted { $0.day < $1.day }
         return data
     }
 
@@ -81,15 +80,17 @@ struct HydrationTileTests {
         #expect(WaterGoal.band(status: behind.status) == .near)
         #expect(GoalColor.hydration(behind.status) == GoalColor.near)
 
-        // Green on pace or at the goal, red during a long gap.
+        // Plain on pace, green at the goal, orange during a long gap too; never red.
         let onPace = day(data([water(1000, at: at(13))], trendKg: 80), now: at(14, 30))
         #expect(onPace.status == .onPace)
-        #expect(GoalColor.hydration(onPace.status) == GoalColor.reached)
+        #expect(WaterGoal.band(status: onPace.status) == nil)
+        #expect(GoalColor.hydration(onPace.status) == .primary)
         let reached = day(data([water(2400, at: at(9))], trendKg: 80), now: at(14, 30))
         #expect(GoalColor.hydration(reached.status) == GoalColor.reached)
         let gap = day(data([water(500, at: at(8))], trendKg: 80), now: at(12))
         #expect(gap.status == .inGap(since: at(8)))
-        #expect(GoalColor.hydration(gap.status) == GoalColor.missed)
+        #expect(WaterGoal.band(status: gap.status) == .near)
+        #expect(GoalColor.hydration(gap.status) == GoalColor.near)
 
         // VoiceOver says what the colour says.
         let snapshot = DashboardSnapshot(data([water(300, at: at(14))], trendKg: 80), calendar: calendar)
@@ -110,11 +111,9 @@ struct HydrationTileTests {
         fixed.waterGoalMl = 3000
         #expect(DashboardSnapshot(fixed, calendar: calendar).water.goalMl == 3000)
 
-        // Each day of the sparkline is coloured against its own goal: 70 kg (2 100 ml) five days ago, 80 kg today.
-        var history = data([], trendKg: 80)
-        var earlier = DailyMetricsRecord(DailyHealthMetrics(day: today.adding(days: -5)), fetchedAt: Date())
-        earlier.weightTrendKg = 70
-        history.metrics.insert(earlier, at: 0)
+        // Each day of the sparkline is coloured against its own goal: 70 kg (2 100 ml) until yesterday, 80 kg today.
+        var history = data([], trendKg: 70, trendDay: today.adding(days: -5))
+        history.weightTrends[today] = 80
         #expect(history.hydrationGoalMl(on: today.adding(days: -5)) == 2100)
         #expect(history.hydrationGoalMl(on: today.adding(days: -4)) == 2100)
         #expect(history.hydrationGoalMl(on: today) == 2400)
@@ -261,5 +260,28 @@ struct HydrationTileModelTests {
         defer { task.cancel() }
         #expect(await waitUntil { model.snapshot.water.goalMl == 3000 })
         #expect(model.hydrationDay(at: model.now).gapThreshold == 90 * 60)
+    }
+
+    @Test func `a weight trend from before the history window still sets the goal, as in Settings`() async throws {
+        let env = AppEnvironment.preview(clock: ManualClock().appClock)
+        let metrics = try #require(env.dailyMetrics)
+        // The last weight is 90 days old, well before the dashboard's 60-day window.
+        let old = env.today.adding(days: -90)
+        #expect(!DashboardData(today: env.today).window.contains(old))
+        _ = try metrics.upsert([DailyHealthMetrics(day: old, weightKg: 80)])
+        _ = try metrics.setWeightTrends([old: 80])
+
+        let model = DashboardModel(environment: env)
+        let task = Task { await model.observe() }
+        defer { task.cancel() }
+        #expect(await waitUntil { model.snapshot.water.goalMl == 2400 })
+        #expect(model.hydrationDay(at: model.now).goalMl == 2400)
+
+        // Settings → Hydration reads the weight and the goal the same way.
+        let today = env.today
+        let settingsTrendKg = HydrationGoalResolver.trendsKg(in: today ... today, from: env.dailyMetrics)[today]
+        #expect(settingsTrendKg == 80)
+        let profile = try #require(env.profiles).profile()
+        #expect(HydrationGoalResolver.goalMl(on: today, profile: profile, trendKg: settingsTrendKg) == model.snapshot.water.goalMl)
     }
 }

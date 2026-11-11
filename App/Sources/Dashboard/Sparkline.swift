@@ -190,9 +190,9 @@ enum GoalColor {
         color(WaterGoal.band(ml: ml, goalMl: goalMl))
     }
 
-    /// Today's hydration, by its status (`WaterGoal.band(status:)`).
+    /// Today's hydration, by its status (`WaterGoal.band(status:)`): the primary text colour on pace.
     static func hydration(_ status: HydrationStatus) -> Color {
-        color(WaterGoal.band(status: status))
+        WaterGoal.band(status: status).map(color) ?? .primary
     }
 }
 

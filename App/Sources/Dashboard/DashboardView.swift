@@ -432,7 +432,7 @@ struct WaterTileContent: View {
     let add: (Int) -> Void
 
     var body: some View {
-        // Green at the goal or on pace, orange behind pace, red during a long gap without a drink.
+        // Green at the goal, orange behind pace or during a long gap without a drink, plain on pace.
         let color = GoalColor.hydration(day.status)
         VStack(alignment: .leading, spacing: NL.Spacing.s) {
             HStack(alignment: .firstTextBaseline) {

@@ -460,13 +460,13 @@ enum WaterGoal {
         return ml >= goalMl * nearShare ? .near : .far
     }
 
-    /// Today, by where the day stands: green at the goal or on pace, orange behind pace, red during a long stretch
-    /// without a drink.
-    static func band(status: HydrationStatus) -> GoalBand {
+    /// Today, by where the day stands: green at the goal, orange behind pace or during a long stretch without a
+    /// drink; nil (no colour) on pace.
+    static func band(status: HydrationStatus) -> GoalBand? {
         switch status {
-        case .goalReached, .onPace: .reached
-        case .behind: .near
-        case .inGap: .far
+        case .goalReached: .reached
+        case .onPace: nil
+        case .behind, .inGap: .near
         }
     }
 }

@@ -20,6 +20,9 @@ struct DashboardData: Equatable {
     /// Today's diary totals.
     var totals: Nutrients = .zero
     var target: Target?
+    /// The weight each day of the history window's hydration goal uses: the latest stored trend on or before the
+    /// day, however old (`HydrationGoalResolver.trendsKg(in:from:)`).
+    var weightTrends: [LocalDay: Double] = [:]
     /// The fixed hydration goal, used when `waterGoalMode` is `.fixed`.
     var waterGoalMl: Double = 2500
     var waterGoalMode: HydrationGoalMode = .weight
@@ -51,11 +54,9 @@ struct DashboardData: Equatable {
         DateInterval(start: window.lowerBound.startDate(calendar: calendar), end: today.next.startDate(calendar: calendar))
     }
 
-    /// The hydration goal of `day`: from the latest weight trend on or before it in `metrics` (the history window),
-    /// or the fixed amount (`HydrationGoal`).
+    /// The hydration goal of `day` (`HydrationGoalResolver`).
     func hydrationGoalMl(on day: LocalDay) -> Double {
-        let trendKg = metrics.filter { $0.day <= day && $0.weightTrendKg != nil }.max { $0.day < $1.day }?.weightTrendKg
-        return HydrationGoal.ml(weightKg: trendKg, mode: waterGoalMode, fixedMl: waterGoalMl)
+        HydrationGoalResolver.goalMl(on: day, mode: waterGoalMode, fixedMl: waterGoalMl, trendKg: weightTrends[day])
     }
 }
 
@@ -70,20 +71,6 @@ struct WaterProgress: Equatable {
 
     var totalMl: Double {
         loggedMl + otherAppsMl
-    }
-
-    /// 0…1 for drawing.
-    var fraction: Double {
-        guard goalMl > 0 else { return 0 }
-        return min(max(totalMl / goalMl, 0), 1)
-    }
-
-    var isGoalReached: Bool {
-        goalMl > 0 && totalMl >= goalMl
-    }
-
-    var remainingMl: Double {
-        max(goalMl - totalMl, 0)
     }
 }
 
