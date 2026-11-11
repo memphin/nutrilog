@@ -15,13 +15,14 @@ struct HydrationSettingsView: View {
     @State private var goalMode: HydrationGoalMode = .weight
     @State private var fixedGoalMl = HydrationGoal.fallbackMl
     @State private var trendKg: Double?
+    @State private var quickAddRows = WaterQuickAdd.defaultSizes.map { WaterQuickAddRow(ml: $0) }
     @State private var notificationsDenied = false
     @State private var errorMessage: String?
 
     var body: some View {
         Form {
             goalSection
-            WaterQuickAddSizesSection(errorMessage: $errorMessage)
+            WaterQuickAddSizesSection(rows: $quickAddRows, errorMessage: $errorMessage)
             daySection
             remindersSection
         }
@@ -141,6 +142,7 @@ struct HydrationSettingsView: View {
     private func load() {
         guard let profiles = environment.profiles else { return }
         settings = HydrationSettings.load(from: profiles)
+        quickAddRows = WaterQuickAddSizesSection.rows(for: WaterQuickAdd.sizes(from: profiles), reusing: quickAddRows)
         if let profile = try? profiles.profile() {
             goalMode = profile.waterGoalMode
             fixedGoalMl = profile.waterGoalMl
@@ -198,17 +200,20 @@ struct HydrationSettingsView: View {
 // MARK: - Quick-add sizes
 
 /// The water quick-add sizes (FR-46): up to four button sizes in ml, as sections of `HydrationSettingsView`.
+/// One quick-add size on screen. The id stays with the row while its value changes (and the rows re-sort), so a held
+/// stepper keeps acting on the same row and a deleted row is the one that animates away.
+private struct WaterQuickAddRow: Identifiable, Equatable {
+    let id = UUID()
+    var ml: Int
+}
+
 private struct WaterQuickAddSizesSection: View {
-    /// One size on screen. The id stays with the row while its value changes (and the rows re-sort), so a held
-    /// stepper keeps acting on the same row and a deleted row is the one that animates away.
-    private struct SizeRow: Identifiable, Equatable {
-        let id = UUID()
-        var ml: Int
-    }
+    typealias SizeRow = WaterQuickAddRow
 
     @Environment(AppEnvironment.self) private var environment
+    /// Loaded by `HydrationSettingsView` with the rest of the screen, so they're current before any row appears.
+    @Binding var rows: [SizeRow]
     @Binding var errorMessage: String?
-    @State private var rows: [SizeRow] = WaterQuickAdd.defaultSizes.map { SizeRow(ml: $0) }
 
     var body: some View {
         Section {
@@ -244,11 +249,6 @@ private struct WaterQuickAddSizesSection: View {
         Section {
             Button("Reset to 250 and 500 ml") { save(Self.rows(for: WaterQuickAdd.defaultSizes, reusing: rows)) }
         }
-        .task(id: environment.dataGeneration) {
-            if let profiles = environment.profiles {
-                rows = Self.rows(for: WaterQuickAdd.sizes(from: profiles), reusing: rows)
-            }
-        }
     }
 
     private func canStep(_ row: SizeRow, by delta: Int) -> Bool {
@@ -276,7 +276,7 @@ private struct WaterQuickAddSizesSection: View {
     }
 
     /// `sizes` as rows in their order, reusing the id of an existing row with the same value where there is one.
-    private static func rows(for sizes: [Int], reusing existing: [SizeRow]) -> [SizeRow] {
+    static func rows(for sizes: [Int], reusing existing: [SizeRow]) -> [SizeRow] {
         var remaining = existing
         return sizes.map { ml in
             if let index = remaining.firstIndex(where: { $0.ml == ml }) {

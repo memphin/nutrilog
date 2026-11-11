@@ -46,7 +46,7 @@ struct SettingsView: View {
                 } footer: {
                     Text(
                         "Steps and sleep are green on a day that reached the goal, orange close below it (sleep: up to an "
-                            + "hour short) and red further away. Water is red far below the goal, orange from 80% of it and green once it is reached.",
+                            + "hour short) and red further away. Hydration is red far below the goal, orange from 80% of it and green once it is reached.",
                     )
                 }
 
