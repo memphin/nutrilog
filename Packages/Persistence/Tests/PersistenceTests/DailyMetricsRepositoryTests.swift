@@ -136,4 +136,42 @@ struct DailyMetricsRepositoryTests {
         let restored = try DailyMetricsRepository(other).metrics(on: day("2026-11-09"))
         #expect(restored?.metrics == sample("2026-11-09"))
     }
+
+    @Test func `woke at round trips`() throws {
+        let f = try Fixture()
+        let repo = DailyMetricsRepository(f.db, clock: f.clock.appClock)
+        var night = sample("2026-11-09")
+        night.wokeAt = Date(timeIntervalSince1970: 1_794_288_600) // 2026-11-10 06:50 UTC
+        #expect(try repo.upsert([night]) == 1)
+        #expect(try repo.metrics(on: night.day)?.wokeAt == night.wokeAt)
+        #expect(try repo.metrics(on: night.day)?.metrics == night)
+        #expect(try repo.upsert([night]) == 0)
+
+        var earlier = night
+        earlier.wokeAt = night.wokeAt?.addingTimeInterval(-1800)
+        #expect(try repo.upsert([earlier]) == 1)
+        #expect(try repo.metrics(on: night.day)?.wokeAt == earlier.wokeAt)
+    }
+
+    @Test func `weight trend on or before`() throws {
+        let f = try Fixture()
+        let repo = DailyMetricsRepository(f.db, clock: f.clock.appClock)
+        let first = day("2026-11-03")
+        try repo.upsert([sample("2026-11-02"), sample("2026-11-03"), sample("2026-11-04"), sample("2026-11-05")])
+        try repo.setWeightTrends([first: 80, first.adding(days: 2): 81]) // 11-04 and 11-02 have no trend
+
+        #expect(try repo.weightTrendKg(onOrBefore: day("2026-11-02")) == nil)
+        #expect(try repo.weightTrendKg(onOrBefore: first) == 80)
+        #expect(try repo.weightTrendKg(onOrBefore: day("2026-11-04")) == 80)
+        #expect(try repo.weightTrendKg(onOrBefore: day("2026-11-05")) == 81)
+        #expect(try repo.weightTrendKg(onOrBefore: day("2026-12-01")) == 81)
+
+        let trends = try repo.weightTrends(in: day("2026-11-01") ... day("2026-11-07"))
+        #expect(trends == [
+            day("2026-11-03"): 80, day("2026-11-04"): 80, day("2026-11-05"): 81, day("2026-11-06"): 81, day("2026-11-07"): 81,
+        ])
+        // A range after the last trend still carries it; one before any trend is empty.
+        #expect(try repo.weightTrends(in: day("2026-11-20") ... day("2026-11-21")) == [day("2026-11-20"): 81, day("2026-11-21"): 81])
+        #expect(try repo.weightTrends(in: day("2026-10-01") ... day("2026-11-02")).isEmpty)
+    }
 }

@@ -164,6 +164,36 @@ public struct DailyMetricsRepository: Sendable {
         }
     }
 
+    /// The latest stored weight trend on or before `day` (e.g. the body weight for the hydration goal), or nil when
+    /// there is none yet.
+    public func weightTrendKg(onOrBefore day: LocalDay) throws -> Double? {
+        try database.reader.read { db in try Self.weightTrendKg(db, onOrBefore: day) }
+    }
+
+    /// For each day in `days`, the latest stored weight trend on or before it. Days before the first trend are absent.
+    public func weightTrends(in days: ClosedRange<LocalDay>) throws -> [LocalDay: Double] {
+        try database.reader.read { db in
+            var trends: [LocalDay: Double] = [:]
+            for row in try Row.fetchAll(db, sql: """
+            SELECT day, weight_trend_kg FROM daily_metrics
+            WHERE weight_trend_kg IS NOT NULL AND day >= ? AND day <= ?
+            """, arguments: [days.lowerBound, days.upperBound]) {
+                trends[row["day"]] = row["weight_trend_kg"]
+            }
+            var result: [LocalDay: Double] = [:]
+            var latest = try Self.weightTrendKg(db, onOrBefore: days.lowerBound)
+            var day = days.lowerBound
+            while day <= days.upperBound {
+                latest = trends[day] ?? latest
+                if let latest {
+                    result[day] = latest
+                }
+                day = day.next
+            }
+            return result
+        }
+    }
+
     public func metrics(on day: LocalDay) throws -> DailyMetricsRecord? {
         try database.reader.read { db in try DailyMetricsRecord.fetchOne(db, key: day) }
     }
@@ -203,6 +233,12 @@ public struct DailyMetricsRepository: Sendable {
     /// Empties the cache (it can always be rebuilt from Health).
     public func deleteAll() throws {
         try database.writer.write { db in _ = try DailyMetricsRecord.deleteAll(db) }
+    }
+
+    private static func weightTrendKg(_ db: Database, onOrBefore day: LocalDay) throws -> Double? {
+        try Double.fetchOne(db, sql: """
+        SELECT weight_trend_kg FROM daily_metrics WHERE weight_trend_kg IS NOT NULL AND day <= ? ORDER BY day DESC LIMIT 1
+        """, arguments: [day])
     }
 
     private static func request(_ days: ClosedRange<LocalDay>) -> QueryInterfaceRequest<DailyMetricsRecord> {

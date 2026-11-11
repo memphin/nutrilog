@@ -13,12 +13,8 @@ ALTER TABLE daily_metrics ADD COLUMN woke_at TEXT;
 -- How the daily goal is set: 'weight' (30 ml per kg of trend weight) or 'fixed' (`water_goal_ml`).
 ALTER TABLE profile ADD COLUMN water_goal_mode TEXT NOT NULL DEFAULT 'weight' CHECK (water_goal_mode IN ('weight','fixed'));
 
--- Existing entries of drinks under the automatic rule (active and deleted). Entries whose food row is gone stay NULL.
-UPDATE diary_entry SET fluid_ml = grams
-WHERE food_id IN (SELECT id FROM food WHERE is_liquid = 1 AND fat_g_100 <= 50) AND grams > 0;
-
--- A goal the user changed from the 2500 ml default stays as their fixed amount; everyone else gets the weight-based one.
-UPDATE profile SET water_goal_mode = 'fixed' WHERE water_goal_ml <> 2500;
+-- The backfills of existing diary entries and the goal mode run after this file, in Swift (`HydrationBackfill`), so
+-- importing an older export can run them again.
 
 -- Diary entries that are drinks, for the hydration timeline (few rows match, so a partial index stays small).
 CREATE INDEX idx_diary_entry_fluid ON diary_entry(day) WHERE fluid_ml > 0 AND deleted_at IS NULL;

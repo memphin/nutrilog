@@ -213,8 +213,19 @@ public struct DiaryRepository: Sendable {
         }
     }
 
-    /// Inserts one food entry with a snapshot of `food`'s per-100 values, queues its Health write and records the
-    /// food's use. A soft-deleted food (an item of a saved meal) is still logged; only its use isn't recorded.
+    /// The fluid (ml) an entry of `baseAmount` g/ml of `food` counts toward hydration, snapshotted like its nutrients:
+    /// `baseAmount` when the food counts as fluid (Core `FluidRule`, with the food's override), nil when it doesn't or
+    /// there is no amount. A solid food the user marked as a drink counts its grams as ml.
+    public static func fluidMl(for food: Food, baseAmount: Double) -> Double? {
+        guard baseAmount > 0,
+              FluidRule.counts(isLiquid: food.isLiquid, fatPer100: food.per100.fatG, override: food.countsAsFluid)
+        else { return nil }
+        return baseAmount
+    }
+
+    /// Inserts one food entry with a snapshot of `food`'s per-100 values and its fluid (``fluidMl(for:baseAmount:)``),
+    /// queues its Health write and records the food's use. A soft-deleted food (an item of a saved meal) is still
+    /// logged; only its use isn't recorded.
     static func insertFoodEntry(
         _ db: Database, food: Food, quantity: Quantity, servingID: String?, slotID: String, day: LocalDay, now: Date,
     ) throws -> DiaryEntry {
@@ -228,6 +239,7 @@ public struct DiaryRepository: Sendable {
             nutrients: nutrients, loggedAt: now,
             sortOrder: nextSortOrder(db, day: day, slotID: slotID),
         )
+        entry.fluidMl = fluidMl(for: food, baseAmount: quantity.baseAmount)
         try entry.insert(db)
         try queueHealthWrite(db, ids: [entry.id], now: now)
 
@@ -270,8 +282,8 @@ public struct DiaryRepository: Sendable {
 
     // MARK: Edits
 
-    /// Changes the amount of a food entry. The existing snapshot is scaled, so later edits to the food
-    /// never leak into history (NFR-4).
+    /// Changes the amount of a food entry. The existing snapshot (nutrients and fluid) is scaled, so later edits to
+    /// the food never leak into history (NFR-4).
     public func updateQuantity(entryID: String, quantity: Quantity) throws {
         guard quantity.baseAmount > 0 else { throw PersistenceError.validation("amount must be greater than zero") }
         try EntryLimits.validate(amount: quantity.baseAmount)
@@ -284,6 +296,7 @@ public struct DiaryRepository: Sendable {
             // into history (NFR-4), so it can't be resized — log it again instead.
             guard entry.grams > 0 else { throw PersistenceError.validation("entry has no amount to scale") }
             entry.nutrients = entry.nutrients.scaled(by: newAmount / entry.grams)
+            entry.fluidMl = entry.fluidMl.map { $0 * newAmount / entry.grams }
             entry.grams = newAmount
             entry.servingLabel = quantity.servingLabel
             entry.stampUpdated(now)

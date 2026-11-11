@@ -285,6 +285,97 @@ struct DataPortabilityTests {
         #expect(elapsed < .seconds(2))
     }
 
+    // MARK: Hydration
+
+    private func liquid(_ f: Fixture, _ name: String, fat: Double = 0, countsAsFluid: Bool? = nil) throws -> Food {
+        var food = Food(name: name, per100: Nutrients(kcal: 50, proteinG: 3, carbsG: 5, fatG: fat), isLiquid: true)
+        food.countsAsFluid = countsAsFluid
+        return try f.foods.save(FoodDetail(food: food)).food
+    }
+
+    @Test func `export import keeps hydration columns`() throws {
+        let f = try Fixture()
+        let d = day("2026-11-09")
+        let cola = try f.diary.log(food: liquid(f, "Cola"), quantity: .base(330), slotID: "snacks", day: d)
+        // Switched off although liquid: an import must not apply the automatic rule again.
+        let shake = try f.diary.log(food: liquid(f, "Shake", countsAsFluid: false), quantity: .base(300), slotID: "snacks", day: d)
+        let espresso = try f.caffeine.add(mg: 64, day: d, drinkID: "espresso")
+        let custom = try f.caffeine.add(mg: 80, day: d, ml: 200)
+        var profile = try f.profiles.profile()
+        profile.waterGoalMl = 3000 // a custom amount kept for later, while the goal follows the weight
+        profile.waterGoalMode = .weight
+        try f.profiles.save(profile)
+        let woke = Date(timeIntervalSince1970: 1_794_288_600)
+        try DailyMetricsRepository(f.db, clock: f.clock.appClock).upsert([DailyHealthMetrics(day: d, wokeAt: woke)])
+        let json = try DataPortability(f.db, clock: f.clock.appClock).exportJSON()
+
+        let target = try Fixture()
+        try DataPortability(target.db, clock: f.clock.appClock).importJSON(json, mode: .replace)
+        #expect(try DataPortability(target.db, clock: f.clock.appClock).exportJSON() == json)
+        #expect(try target.diary.entry(id: cola.id)?.fluidMl == 330)
+        #expect(try target.diary.entry(id: shake.id)?.fluidMl == nil)
+        #expect(try target.foods.food(id: #require(shake.foodID))?.countsAsFluid == false)
+        #expect(try target.caffeine.entry(id: espresso.id)?.ml == 30)
+        #expect(try target.caffeine.entry(id: custom.id)?.ml == 200)
+        #expect(try target.profiles.profile().waterGoalMode == .weight)
+        #expect(try target.profiles.profile().waterGoalMl == 3000)
+        #expect(try DailyMetricsRepository(target.db).metrics(on: d)?.wokeAt == woke)
+    }
+
+    /// An export of `f` as an app before hydration tracking (schema 12) wrote it: without the hydration columns.
+    private func preHydrationExport(_ f: Fixture) throws -> Data {
+        let json = try DataPortability(f.db, clock: f.clock.appClock).exportJSON()
+        var object = try #require(try JSONSerialization.jsonObject(with: json) as? [String: Any])
+        var tables = try #require(object["tables"] as? [String: [[String: Any]]])
+        let removed: [String: String] = [
+            "diary_entry": "fluid_ml", "food": "counts_as_fluid", "caffeine_entry": "ml", "daily_metrics": "woke_at",
+            "profile": "water_goal_mode",
+        ]
+        for (table, column) in removed {
+            tables[table] = tables[table]?.map { $0.filter { $0.key != column } }
+        }
+        object["tables"] = tables
+        object["schemaVersion"] = 12
+        return try JSONSerialization.data(withJSONObject: object)
+    }
+
+    @Test func `an export from before hydration gets the hydration backfills`() throws {
+        let f = try Fixture()
+        let d = day("2026-11-09")
+        let milk = try f.diary.log(food: liquid(f, "Milk", fat: 3.5), quantity: .base(250), slotID: "breakfast", day: d)
+        let bread = try f.diary.log(food: f.makeFood("Bread"), quantity: .base(50), slotID: "breakfast", day: d)
+        f.clock.advance(60)
+        let espresso = try f.caffeine.add(mg: 64, day: d, drinkID: "espresso", name: "Espresso")
+        var profile = try f.profiles.profile()
+        profile.waterGoalMl = 3000
+        try f.profiles.save(profile)
+        let old = try preHydrationExport(f)
+
+        let target = try Fixture()
+        try DataPortability(target.db, clock: f.clock.appClock).importJSON(old, mode: .replace)
+        #expect(try target.profiles.profile().waterGoalMode == .fixed)
+        #expect(try target.diary.entry(id: milk.id)?.fluidMl == 250)
+        #expect(try target.diary.entry(id: bread.id)?.fluidMl == nil)
+        #expect(try target.caffeine.entry(id: espresso.id)?.ml == 30)
+        #expect(try HydrationRepository(target.db).intakes(in: d ... d)[d]?.map(\.ml) == [250, 30])
+
+        // Merge: only the file's rows are repaired; newer local rows keep their hydration values.
+        let local = try Fixture()
+        local.clock.advance(3600)
+        let shake = try local.diary.log(
+            food: liquid(local, "Shake", countsAsFluid: false), quantity: .base(300), slotID: "snacks", day: d,
+        )
+        var localProfile = try local.profiles.profile()
+        localProfile.waterGoalMl = 3000
+        localProfile.waterGoalMode = .weight
+        try local.profiles.save(localProfile)
+        try DataPortability(local.db, clock: local.clock.appClock).importJSON(old, mode: .merge)
+        #expect(try local.profiles.profile().waterGoalMode == .weight)
+        #expect(try local.diary.entry(id: shake.id)?.fluidMl == nil)
+        #expect(try local.diary.entry(id: milk.id)?.fluidMl == 250)
+        #expect(try local.caffeine.entry(id: espresso.id)?.ml == 30)
+    }
+
     @Test func `timestamps parse both formats`() {
         #expect(Timestamp.date("2026-11-09T14:03:12.345Z") != nil)
         #expect(Timestamp.date("2026-11-09T14:03:12Z") != nil)

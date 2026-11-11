@@ -279,9 +279,11 @@ public struct MealPlanRepository: Sendable {
                       try !Self.isEaten(db, planned) else { continue }
                 var displayName = planned.displayName
                 var nutrients = planned.nutrients
-                if !planned.isQuickAdd, let foodID = planned.foodID, var food = try Food.fetchOne(db, key: foodID),
-                   food.deletedAt == nil
-                {
+                // The fluid comes from the food as it is now, like logging it now would (also for a food deleted since,
+                // whose logged drinks stay drinks); a quick-add or a plan whose food row is gone has none.
+                let food = try planned.isQuickAdd ? nil : planned.foodID.flatMap { try Food.fetchOne(db, key: $0) }
+                let fluidMl = food.flatMap { DiaryRepository.fluidMl(for: $0, baseAmount: planned.grams) }
+                if var food, food.deletedAt == nil {
                     // A 0 g plan (legacy or imported) has no amount to re-snapshot: it keeps its own estimate and name.
                     if planned.grams > 0 {
                         displayName = food.name
@@ -292,12 +294,13 @@ public struct MealPlanRepository: Sendable {
                     food.stampUpdated(now)
                     try food.update(db)
                 }
-                let entry = try DiaryEntry(
+                var entry = try DiaryEntry(
                     day: planned.day, mealSlotID: planned.mealSlotID, foodID: planned.foodID, displayName: displayName,
                     grams: planned.grams, servingLabel: planned.servingLabel, isQuickAdd: planned.isQuickAdd,
                     nutrients: nutrients, loggedAt: now,
                     sortOrder: DiaryRepository.nextSortOrder(db, day: planned.day, slotID: planned.mealSlotID),
                 )
+                entry.fluidMl = fluidMl
                 try entry.insert(db)
                 planned.eatenEntryID = entry.id
                 planned.stampUpdated(now)

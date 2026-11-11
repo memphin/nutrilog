@@ -104,17 +104,23 @@ public struct CaffeineRepository: Sendable {
     // MARK: Writes
 
     /// Logs `mg` of caffeine on `day`, drunk now (or at `loggedAt`). `drinkID` is the preset's id, `name` the label to
-    /// show (blank names are stored as nil).
+    /// show (blank names are stored as nil). `ml` is the drink's volume for hydration; without it a preset drink stores
+    /// its serving (`CaffeineDrink.servingMl`) and a custom amount none.
     @discardableResult
     public func add(
-        mg: Double, day: LocalDay, loggedAt: Date? = nil, drinkID: String? = nil, name: String? = nil,
+        mg: Double, day: LocalDay, loggedAt: Date? = nil, drinkID: String? = nil, name: String? = nil, ml: Double? = nil,
     ) throws -> CaffeineEntry {
         try Self.validate(mg: mg)
+        if let ml {
+            guard ml > 0, ml.isFinite else { throw PersistenceError.validation("amount must be greater than zero") }
+            try EntryLimits.validate(amount: ml)
+        }
+        let volume = ml ?? drinkID.flatMap(CaffeineDrink.preset(id:))?.servingMl
         let now = clock.now()
         return try database.writer.write { db in
             let entry = CaffeineEntry(
                 id: newID(), day: day, loggedAt: loggedAt ?? now, mg: mg, drinkID: drinkID, name: Self.cleaned(name),
-                createdAt: now, updatedAt: now, deletedAt: nil, revision: 1,
+                ml: volume, createdAt: now, updatedAt: now, deletedAt: nil, revision: 1,
             )
             try entry.insert(db)
             return entry
