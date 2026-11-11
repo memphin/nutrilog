@@ -45,6 +45,7 @@ struct SettingsView: View {
                     }
                     .onChange(of: waterGoal) { saveWaterGoal() }
                     NavigationLink("Water quick-add sizes") { WaterSettingsView() }
+                    NavigationLink("Caffeine") { CaffeineSettingsView() }
                 } header: {
                     Text("Daily goals")
                 } footer: {

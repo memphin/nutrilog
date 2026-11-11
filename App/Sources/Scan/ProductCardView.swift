@@ -215,6 +215,9 @@ struct ProductCardView: View {
             if let sodium = n.sodiumMg {
                 NutrientRow("Salt", value: Salt.saltG(fromSodiumMg: sodium))
             }
+            if let caffeine = n.caffeineMg {
+                NutrientRow("Caffeine", value: caffeine, unit: "mg")
+            }
         }
     }
 }

@@ -12,6 +12,8 @@ public enum NL {
         public static let over = Color.red
         public static let fiber = Color.brown
         public static let water = Color.cyan
+        /// Caffeine: the quick-add buttons and the curve of the caffeine tile.
+        public static let caffeine = Color.brown
         public static let secondaryText = Color.secondary
         public static let track = Color.secondary.opacity(0.18)
         /// Small trend charts (the dashboard's 7-day sparklines) of metrics without a color of their own.

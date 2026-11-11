@@ -259,8 +259,8 @@ struct DataPortabilityTests {
         let lines = diary.components(separatedBy: "\r\n").filter { !$0.isEmpty }
         #expect(lines.count == 3) // header + 2 active entries
         #expect(lines[0].hasPrefix("day,meal,food,amount,unit"))
-        #expect(lines[1] == #"2026-11-08,Breakfast,"Kruh, ""domaći""",60,g,2 × slice,150,6,6,1.2,,,,,0,"#)
-        #expect(lines[2].hasPrefix(#"2026-11-08,Dinner,"Pizza, slice",,,,285.5,12,36,10,,,,640,1,"#))
+        #expect(lines[1] == #"2026-11-08,Breakfast,"Kruh, ""domaći""",60,g,2 × slice,150,6,6,1.2,,,,,,0,"#)
+        #expect(lines[2].hasPrefix(#"2026-11-08,Dinner,"Pizza, slice",,,,285.5,12,36,10,,,,640,,1,"#))
         let weights = try #require(files["weights.csv"])
         #expect(weights.contains(",81.25,17.5,manual"))
     }

@@ -4,7 +4,7 @@ import GRDB
 import Testing
 @testable import Persistence
 
-/// A bundled / USDA copy merged away (Duplicate foods) stays merged: `food.merged_into_id`, migration 011.
+/// A bundled / USDA copy merged away (Duplicate foods) stays merged: `food.merged_into_id`, migration 012.
 struct FoodMergeTrackingTests {
     private let raw = BundledFood(
         id: "b1", sourceID: "171705", name: "Bananas, raw", per100: Nutrients(kcal: 89, proteinG: 1.1, carbsG: 22.8, fatG: 0.3),
@@ -127,10 +127,10 @@ struct FoodMergeTrackingTests {
         #expect(revived.deletedAt == nil)
     }
 
-    @Test func `migration 011 adds the column to an existing database`() throws {
+    @Test func `migration 012 adds the column to an existing database`() throws {
         let queue = try DatabaseQueue()
         var old = DatabaseMigrator()
-        for name in Migrator.migrations.prefix(while: { $0 != "011_food_merged_into" }) {
+        for name in Migrator.migrations.prefix(while: { $0 != "012_food_merged_into" }) {
             if let migrate = Migrator.codedMigration(named: name, deviceCalendar: .gregorian) {
                 old.registerMigration(name, migrate: migrate)
             } else {
@@ -171,7 +171,7 @@ struct FoodMergeTrackingTests {
         #expect(try target.foods.localCopy(of: raw).id == mine.id)
         #expect(try DataPortability(target.db, clock: target.clock.appClock).exportJSON() == export)
 
-        // An export made before migration 011 has no `merged_into_id` key and an older schema version.
+        // An export made before migration 012 has no `merged_into_id` key and an older schema version.
         var file = try JSONDecoder().decode(ExportFile.self, from: export)
         file.schemaVersion = DataPortability.schemaVersion - 1
         file.tables["food"] = file.tables["food"]?.map { $0.filter { $0.key != "merged_into_id" } }

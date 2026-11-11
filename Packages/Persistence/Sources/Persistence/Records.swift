@@ -35,6 +35,7 @@ public struct Food: Codable, Hashable, Identifiable, Sendable, SyncedRecord {
     public var sugarG100: Double?
     public var satFatG100: Double?
     public var sodiumMg100: Double?
+    public var caffeineMg100: Double?
     public var microsJSON: String?
     public var isLiquid: Bool
     public var defaultServingID: String?
@@ -72,6 +73,7 @@ public struct Food: Codable, Hashable, Identifiable, Sendable, SyncedRecord {
         case sugarG100 = "sugar_g_100"
         case satFatG100 = "sat_fat_g_100"
         case sodiumMg100 = "sodium_mg_100"
+        case caffeineMg100 = "caffeine_mg_100"
         case microsJSON = "micros_json"
         case isLiquid = "is_liquid"
         case defaultServingID = "default_serving_id"
@@ -119,6 +121,7 @@ public struct Food: Codable, Hashable, Identifiable, Sendable, SyncedRecord {
         sugarG100 = per100.sugarG
         satFatG100 = per100.satFatG
         sodiumMg100 = per100.sodiumMg
+        caffeineMg100 = per100.caffeineMg
         self.isLiquid = isLiquid
         self.dataQuality = dataQuality
         isFavorite = false
@@ -137,6 +140,7 @@ public struct Food: Codable, Hashable, Identifiable, Sendable, SyncedRecord {
             Nutrients(
                 kcal: kcal100, proteinG: proteinG100, carbsG: carbsG100, fatG: fatG100,
                 fiberG: fiberG100, sugarG: sugarG100, satFatG: satFatG100, sodiumMg: sodiumMg100,
+                caffeineMg: caffeineMg100,
             )
         }
         set {
@@ -148,6 +152,7 @@ public struct Food: Codable, Hashable, Identifiable, Sendable, SyncedRecord {
             sugarG100 = newValue.sugarG
             satFatG100 = newValue.satFatG
             sodiumMg100 = newValue.sodiumMg
+            caffeineMg100 = newValue.caffeineMg
         }
     }
 
@@ -314,6 +319,7 @@ public struct DiaryEntry: Codable, Hashable, Identifiable, Sendable, SyncedRecor
     public var sugarG: Double?
     public var satFatG: Double?
     public var sodiumMg: Double?
+    public var caffeineMg: Double?
     public var note: String?
     public var loggedAt: Date
     public var sortOrder: Int
@@ -336,6 +342,7 @@ public struct DiaryEntry: Codable, Hashable, Identifiable, Sendable, SyncedRecor
         case sugarG = "sugar_g"
         case satFatG = "sat_fat_g"
         case sodiumMg = "sodium_mg"
+        case caffeineMg = "caffeine_mg"
         case loggedAt = "logged_at"
         case sortOrder = "sort_order"
         case createdAt = "created_at"
@@ -365,6 +372,7 @@ public struct DiaryEntry: Codable, Hashable, Identifiable, Sendable, SyncedRecor
         sugarG = nutrients.sugarG
         satFatG = nutrients.satFatG
         sodiumMg = nutrients.sodiumMg
+        caffeineMg = nutrients.caffeineMg
         self.loggedAt = loggedAt
         self.sortOrder = sortOrder
         createdAt = loggedAt
@@ -377,7 +385,7 @@ public struct DiaryEntry: Codable, Hashable, Identifiable, Sendable, SyncedRecor
         get {
             Nutrients(
                 kcal: kcal, proteinG: proteinG, carbsG: carbsG, fatG: fatG,
-                fiberG: fiberG, sugarG: sugarG, satFatG: satFatG, sodiumMg: sodiumMg,
+                fiberG: fiberG, sugarG: sugarG, satFatG: satFatG, sodiumMg: sodiumMg, caffeineMg: caffeineMg,
             )
         }
         set {
@@ -389,6 +397,7 @@ public struct DiaryEntry: Codable, Hashable, Identifiable, Sendable, SyncedRecor
             sugarG = newValue.sugarG
             satFatG = newValue.satFatG
             sodiumMg = newValue.sodiumMg
+            caffeineMg = newValue.caffeineMg
         }
     }
 }

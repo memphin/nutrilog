@@ -4,7 +4,7 @@ import Foundation
 ///
 /// - Energy: whole kcal.
 /// - Macros, fiber, sugar, sat fat: whole grams from 10 g, otherwise one decimal (0.4 g stays visible).
-/// - Sodium: whole mg.
+/// - Sodium, caffeine: whole mg.
 public enum DisplayRounding {
     /// 2^63 — the first magnitude `Int` cannot hold. `Double(Int.max)` rounds up to exactly this value, so comparing
     /// against `Double(Int.max)` would let 2^63 through and trap.
@@ -57,6 +57,7 @@ public extension Nutrients {
             sugarG: sugarG.map(DisplayRounding.grams),
             satFatG: satFatG.map(DisplayRounding.grams),
             sodiumMg: sodiumMg.map { Double(DisplayRounding.milligrams($0)) },
+            caffeineMg: caffeineMg.map { Double(DisplayRounding.milligrams($0)) },
         )
     }
 }

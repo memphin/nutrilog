@@ -104,12 +104,44 @@ public struct DiaryRepository: Sendable {
         }
     }
 
+    // MARK: Caffeine
+
+    /// Active entries with caffeine (`caffeine_mg > 0`) of every day in `days`, by `logged_at` — the diary's caffeine
+    /// doses. ``CaffeineRepository/observeIntakes(in:)`` combines them with the caffeine quick-adds.
+    public func caffeineIntakes(in days: ClosedRange<LocalDay>) throws -> [DiaryCaffeineIntake] {
+        try database.reader.read { db in try Self.caffeineIntakes(db, in: days) }
+    }
+
+    public func observeCaffeineIntakes(in days: ClosedRange<LocalDay>) -> AsyncValueObservation<[DiaryCaffeineIntake]> {
+        ValueObservation
+            .tracking { db in try Self.caffeineIntakes(db, in: days) }
+            .removeDuplicates()
+            .values(in: database.reader)
+    }
+
+    static func caffeineIntakes(_ db: Database, in days: ClosedRange<LocalDay>) throws -> [DiaryCaffeineIntake] {
+        let rows = try Row.fetchAll(db, sql: """
+        SELECT id, day, logged_at, caffeine_mg, display_name FROM diary_entry
+        WHERE caffeine_mg > 0 AND deleted_at IS NULL AND day >= ? AND day <= ?
+        ORDER BY logged_at, id
+        """, arguments: [days.lowerBound, days.upperBound])
+        return rows.compactMap { row in
+            // `logged_at` is ISO-8601 TEXT (see `Timestamp`); a row that doesn't parse can't be placed on the curve.
+            guard let loggedAt = (row["logged_at"] as String?).flatMap(Timestamp.date) else { return nil }
+            return DiaryCaffeineIntake(
+                id: row["id"], day: row["day"], loggedAt: loggedAt, mg: row["caffeine_mg"], name: row["display_name"],
+            )
+        }
+        // Text order can differ from time order when imported timestamps lack the fraction; sort by the parsed time.
+        .sorted { ($0.loggedAt, $0.id) < ($1.loggedAt, $1.id) }
+    }
+
     static func daySummaries(_ db: Database, in days: ClosedRange<LocalDay>) throws -> [DiaryDaySummary] {
         var result: [LocalDay: DiaryDaySummary] = [:]
         let rows = try Row.fetchAll(db, sql: """
         SELECT day, COUNT(*) AS entries, SUM(kcal) AS kcal, SUM(protein_g) AS protein_g, SUM(carbs_g) AS carbs_g,
                SUM(fat_g) AS fat_g, SUM(fiber_g) AS fiber_g, SUM(sugar_g) AS sugar_g, SUM(sat_fat_g) AS sat_fat_g,
-               SUM(sodium_mg) AS sodium_mg
+               SUM(sodium_mg) AS sodium_mg, SUM(caffeine_mg) AS caffeine_mg
         FROM diary_entry WHERE deleted_at IS NULL AND day >= ? AND day <= ? GROUP BY day
         """, arguments: [days.lowerBound, days.upperBound])
         for row in rows {
@@ -119,6 +151,7 @@ public struct DiaryRepository: Sendable {
                 totals: Nutrients(
                     kcal: row["kcal"], proteinG: row["protein_g"], carbsG: row["carbs_g"], fatG: row["fat_g"],
                     fiberG: row["fiber_g"], sugarG: row["sugar_g"], satFatG: row["sat_fat_g"], sodiumMg: row["sodium_mg"],
+                    caffeineMg: row["caffeine_mg"],
                 ),
                 entryCount: row["entries"], isComplete: false,
             )

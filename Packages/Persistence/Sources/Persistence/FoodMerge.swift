@@ -105,6 +105,7 @@ public extension FoodRepository {
                     keep.sugarG100 = keep.sugarG100 ?? removed.sugarG100
                     keep.satFatG100 = keep.satFatG100 ?? removed.satFatG100
                     keep.sodiumMg100 = keep.sodiumMg100 ?? removed.sodiumMg100
+                    keep.caffeineMg100 = keep.caffeineMg100 ?? removed.caffeineMg100
                 }
                 keep.useCount += removed.useCount
                 keep.lastUsedAt = [keep.lastUsedAt, removed.lastUsedAt].compactMap(\.self).max()

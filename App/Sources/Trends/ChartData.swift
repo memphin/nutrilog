@@ -47,18 +47,19 @@ enum ChartMetric: String, CaseIterable, Identifiable {
         }
     }
 
-    /// The chart a dashboard tile opens.
-    init(tile: DashboardTile) {
-        self = switch tile {
-        case .energy: .energy
-        case .water: .water
-        case .sleep: .sleep
-        case .weight: .weight
-        case .bodyFat: .bodyFat
-        case .steps: .steps
-        case .totalEnergy: .totalEnergy
-        case .restingHeartRate: .restingHeartRate
-        case .hrv: .hrv
+    /// The chart a dashboard tile opens; nil for caffeine, whose detail draws its own curve.
+    init?(tile: DashboardTile) {
+        switch tile {
+        case .energy: self = .energy
+        case .water: self = .water
+        case .sleep: self = .sleep
+        case .weight: self = .weight
+        case .bodyFat: self = .bodyFat
+        case .steps: self = .steps
+        case .totalEnergy: self = .totalEnergy
+        case .restingHeartRate: self = .restingHeartRate
+        case .hrv: self = .hrv
+        case .caffeine: return nil
         }
     }
 }

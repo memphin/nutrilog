@@ -808,7 +808,10 @@ struct TrendsDataTests {
     }
 
     @Test func `every dashboard tile opens its own chart`() {
-        #expect(Set(DashboardTile.allCases.map { ChartMetric(tile: $0) }).count == DashboardTile.allCases.count)
+        // Caffeine draws its own curve in its detail (no daily-metric chart).
+        let charted = DashboardTile.allCases.filter { $0 != .caffeine }
+        #expect(Set(charted.compactMap { ChartMetric(tile: $0) }).count == charted.count)
+        #expect(ChartMetric(tile: .caffeine) == nil)
         #expect(ChartMetric.allCases.allSatisfy { !$0.title.isEmpty && !$0.systemImage.isEmpty })
         #expect(ChartBuilder.format(7.42, .sleep, unit: .kcal) == "\(7.4.formatted(.number.precision(.fractionLength(1)))) h")
     }

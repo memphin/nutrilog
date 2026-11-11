@@ -55,6 +55,8 @@ public final class BundledFoodIndex: Sendable {
             per100: Nutrients(
                 kcal: row["kcal_100"], proteinG: row["protein_g_100"], carbsG: row["carbs_g_100"], fatG: row["fat_g_100"],
                 fiberG: row["fiber_g_100"], sugarG: row["sugar_g_100"], satFatG: row["sat_fat_g_100"], sodiumMg: row["sodium_mg_100"],
+                // Optional column: indexes built without it read as nil.
+                caffeineMg: row["caffeine_mg_100"],
             ),
         )
     }

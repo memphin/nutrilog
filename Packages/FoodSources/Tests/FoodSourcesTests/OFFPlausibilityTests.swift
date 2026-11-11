@@ -79,6 +79,18 @@ struct OFFPlausibilityTests {
         #expect(isClose(draft.nutrients.sodiumMg, 40000))
     }
 
+    @Test func `caffeine above 5 g per 100 g is dropped`() {
+        let draft = map(Self.macros.merging(["energy-kcal_100g": 500, "caffeine_100g": 32]) { $1 })
+        #expect(draft.nutrients.caffeineMg == nil) // 32 mg typed into the gram field
+        #expect(draft.dataQuality == .complete) // caffeine is optional
+    }
+
+    @Test func `instant coffee powder caffeine is plausible`() {
+        let draft = map(["energy-kcal_100g": 350, "proteins_100g": 12, "carbohydrates_100g": 75, "fat_100g": 0.5,
+                         "caffeine_100g": 4])
+        #expect(isClose(draft.nutrients.caffeineMg, 4000))
+    }
+
     // MARK: - Servings
 
     private static let tabletServing: [String: Double] = [

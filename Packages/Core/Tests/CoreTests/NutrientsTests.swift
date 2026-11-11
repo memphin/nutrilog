@@ -53,6 +53,22 @@ struct NutrientsTests {
         #expect(sum.sodiumMg == 15)
     }
 
+    @Test func `caffeine scales, adds up, rounds and survives coding like sodium`() throws {
+        let coffee = Nutrients(kcal: 2, proteinG: 0.3, carbsG: 0, fatG: 0, caffeineMg: 40) // per 100 ml
+        #expect(Nutrients(kcal: 1, proteinG: 0, carbsG: 0, fatG: 0).caffeineMg == nil)
+        #expect(coffee.scaled(toGrams: 240).caffeineMg == 96)
+        #expect(oats.scaled(toGrams: 50).caffeineMg == nil)
+        #expect((coffee + oats).caffeineMg == 40) // nil + 40
+        #expect((oats + oats).caffeineMg == nil)
+        #expect((coffee + coffee).caffeineMg == 80)
+        #expect(Nutrients(kcal: 0, proteinG: 0, carbsG: 0, fatG: 0, caffeineMg: 63.6).displayRounded.caffeineMg == 64)
+        let data = try JSONEncoder().encode(coffee)
+        #expect(try JSONDecoder().decode(Nutrients.self, from: data) == coffee)
+        // Older JSON without the key still decodes.
+        let legacy = Data(#"{"kcal":1,"proteinG":2,"carbsG":3,"fatG":4,"sodiumMg":5}"#.utf8)
+        #expect(try JSONDecoder().decode(Nutrients.self, from: legacy).caffeineMg == nil)
+    }
+
     @Test func `plus equals and sum`() {
         var total = Nutrients.zero
         total += oats

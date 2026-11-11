@@ -16,6 +16,7 @@ import pandas as pd
 NUTRIENTS = {
     1008: "kcal_100", 1003: "protein_g_100", 1005: "carbs_g_100", 1004: "fat_g_100",
     1079: "fiber_g_100", 2000: "sugar_g_100", 1258: "sat_fat_g_100", 1093: "sodium_mg_100",
+    1057: "caffeine_mg_100",
 }
 
 # Foundation foods often report energy only as Atwater general (2047) / specific (2048) factors.
@@ -91,7 +92,8 @@ def write(df: pd.DataFrame, out: Path):
         CREATE TABLE bundled_food (
             id TEXT PRIMARY KEY, source_id TEXT NOT NULL, name TEXT NOT NULL,
             kcal_100 REAL NOT NULL, protein_g_100 REAL NOT NULL, carbs_g_100 REAL NOT NULL, fat_g_100 REAL NOT NULL,
-            fiber_g_100 REAL, sugar_g_100 REAL, sat_fat_g_100 REAL, sodium_mg_100 REAL
+            fiber_g_100 REAL, sugar_g_100 REAL, sat_fat_g_100 REAL, sodium_mg_100 REAL,
+            caffeine_mg_100 REAL
         );
         CREATE VIRTUAL TABLE bundled_food_fts USING fts5(name, content='bundled_food', content_rowid='rowid',
             tokenize="unicode61 remove_diacritics 2");
@@ -103,8 +105,8 @@ def write(df: pd.DataFrame, out: Path):
         rows.append((str(uuid.uuid5(uuid.NAMESPACE_URL, f"fdc:{r.fdc_id}")), str(r.fdc_id), r.description,
                      r.kcal_100, r.protein_g_100, r.carbs_g_100, r.fat_g_100,
                      *(None if pd.isna(getattr(r, c)) else float(getattr(r, c))
-                       for c in ("fiber_g_100", "sugar_g_100", "sat_fat_g_100", "sodium_mg_100"))))
-    con.executemany("INSERT INTO bundled_food VALUES (?,?,?,?,?,?,?,?,?,?,?)", rows)
+                       for c in ("fiber_g_100", "sugar_g_100", "sat_fat_g_100", "sodium_mg_100", "caffeine_mg_100"))))
+    con.executemany("INSERT INTO bundled_food VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", rows)
     con.execute("INSERT INTO bundled_food_fts(bundled_food_fts) VALUES ('rebuild')")
     con.commit(); con.close()
     print(f"wrote {len(rows)} foods → {out}")

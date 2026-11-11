@@ -4,7 +4,7 @@ import GRDB
 import Testing
 @testable import Persistence
 
-/// Migration 010 and the same repair after an import: days written under a non-Gregorian device calendar before
+/// Migration 011 and the same repair after an import: days written under a non-Gregorian device calendar before
 /// `LocalDay` always used the Gregorian one.
 struct StoredDayMigrationTests {
     static let old = "2026-01-01T00:00:00.000Z"
@@ -12,12 +12,15 @@ struct StoredDayMigrationTests {
     static let newer = "2026-11-11T08:00:00.000Z"
 
     /// A database migrated up to 009, as the app had it before the fix.
-    static func preFixDatabase() throws -> DatabaseQueue {
+    /// A database as an app from before the fix left it: schema 9 (1.1.2) by default, or everything before the repair
+    /// migration with `withCaffeine` (a build that already had migration 010).
+    static func preFixDatabase(withCaffeine: Bool = false) throws -> DatabaseQueue {
         var config = Configuration()
         config.foreignKeysEnabled = true
         let queue = try DatabaseQueue(configuration: config)
         var migrator = DatabaseMigrator()
-        for name in Migrator.migrations.prefix(9) {
+        let names = withCaffeine ? Array(Migrator.migrations.prefix(while: { $0 != "011_gregorian_days" })) : Array(Migrator.migrations.prefix(9))
+        for name in names {
             migrator.registerMigration(name) { db in try db.execute(sql: Migrator.sql(named: name)) }
         }
         try migrator.migrate(queue)
@@ -188,7 +191,7 @@ struct StoredDayMigrationTests {
         #expect(try value(db, "SELECT value FROM setting WHERE key = 'healthLastSyncedAt'") == "784000000.5")
     }
 
-    @Test func `migration 010 repairs a buddhist history in every table`() throws {
+    @Test func `migration 011 repairs a buddhist history in every table`() throws {
         let queue = try Self.preFixDatabase()
         try queue.write(Self.insertBuddhistHistory)
         try Migrator.make(deviceCalendar: .buddhist).migrate(queue)
@@ -205,6 +208,25 @@ struct StoredDayMigrationTests {
         // Opening the app database afterwards applies nothing more.
         _ = try AppDatabase(queue)
         try queue.read(Self.assertBuddhistHistoryRepaired)
+    }
+
+    @Test func `caffeine drinks logged before the fix move to their gregorian day`() throws {
+        // A database already on the caffeine schema (migration 010) when the repair arrives.
+        let queue = try Self.preFixDatabase(withCaffeine: true)
+        let old = "2026-11-10T07:00:00.000Z"
+        try queue.write { db in
+            for (id, day) in [("c1", "2569-11-10"), ("c2", "2026-11-10")] {
+                try db.execute(
+                    sql: "INSERT INTO caffeine_entry (id, day, logged_at, mg, created_at, updated_at) VALUES (?, ?, ?, 80, ?, ?)",
+                    arguments: [id, day, old, old, old],
+                )
+            }
+        }
+        try Migrator.make(deviceCalendar: .buddhist).migrate(queue)
+        let days = try queue.read { db in try String.fetchAll(db, sql: "SELECT day FROM caffeine_entry ORDER BY id") }
+        let revisions = try queue.read { db in try Int.fetchAll(db, sql: "SELECT revision FROM caffeine_entry ORDER BY id") }
+        #expect(days == ["2026-11-10", "2026-11-10"])
+        #expect(revisions == [2, 1])
     }
 
     @Test func `a device switched back to gregorian infers the buddhist days`() throws {
@@ -258,7 +280,8 @@ struct StoredDayMigrationTests {
     // MARK: A Gregorian database is not written
 
     @Test func `a gregorian database is untouched`() throws {
-        let queue = try Self.preFixDatabase()
+        // On the caffeine schema already, so the only migrations left to apply are the repair and later ones.
+        let queue = try Self.preFixDatabase(withCaffeine: true)
         try queue.write { db in
             try Self.diary(db, "d1", day: "2026-11-10")
             try Self.diary(db, "d2", day: "2024-02-29")
@@ -274,8 +297,8 @@ struct StoredDayMigrationTests {
             try db.execute(sql: "UPDATE profile SET birth_date = '1985-03-04', updated_at = ?", arguments: [Self.old])
             try Self.setting(db, "checkInPromptedDay", #""2026-11-09""#)
         }
-        let tables = ["diary_entry", "planned_entry", "water_entry", "day_note", "daily_metrics", "target", "tdee_estimate",
-                      "profile", "setting"]
+        let tables = ["diary_entry", "planned_entry", "water_entry", "caffeine_entry", "day_note", "daily_metrics", "target",
+                      "tdee_estimate", "profile", "setting"]
         func snapshot() throws -> [String: [Row]] {
             try queue.read { db in
                 try Dictionary(uniqueKeysWithValues: tables.map { table in

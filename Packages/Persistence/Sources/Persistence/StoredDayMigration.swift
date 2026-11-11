@@ -2,11 +2,12 @@ import Core
 import Foundation
 import GRDB
 
-/// Moves days stored under a non-Gregorian device calendar to their Gregorian day (migration 010, and after every JSON
+/// Moves days stored under a non-Gregorian device calendar to their Gregorian day (migration 011, and after every JSON
 /// import, since a backup made before the fix holds the same days). See `StoredDayRepair` for which values are
 /// converted; anything it can't convert with certainty is left as it is.
 ///
-/// Repaired: `diary_entry.day`, `planned_entry.day`, `water_entry.day`, `day_note.day`, `daily_metrics.day`,
+/// Repaired: `diary_entry.day`, `planned_entry.day`, `water_entry.day`, `caffeine_entry.day`, `day_note.day`,
+/// `daily_metrics.day`,
 /// `target.effective_from`, `tdee_estimate.computed_for_day`, the days inside `tdee_estimate.details_json`,
 /// `profile.birth_date` (with the birth-date window) and "YYYY-MM-DD" strings inside `setting.value` (e.g. the
 /// check-in prompt day). Changed rows get `updated_at = now` and `revision + 1` where the table has them; nothing is
@@ -21,7 +22,7 @@ import GRDB
 ///   others are soft-deleted (`deleted_at`), so nothing disappears from a sync log.
 /// - `tdee_estimate`: a second check-in on a day replaces the first (`CheckInRepository.record`) — the most recently
 ///   updated row stays, the others are deleted (the table has no tombstones).
-/// - `diary_entry`, `planned_entry`, `water_entry`: many rows per day are normal; every row is kept.
+/// - `diary_entry`, `planned_entry`, `water_entry`, `caffeine_entry`: many rows per day are normal; every row is kept.
 enum StoredDayMigration {
     /// Runs the repair in `db`'s current transaction. Returns the number of rows changed or deleted.
     @discardableResult
@@ -33,7 +34,7 @@ enum StoredDayMigration {
             stamp: Timestamp.string(now),
         )
         var changes = 0
-        for table in ["diary_entry", "planned_entry", "water_entry"] {
+        for table in ["diary_entry", "planned_entry", "water_entry", "caffeine_entry"] where try db.tableExists(table) {
             changes += try repairPlainDays(db, table: table, context)
         }
         changes += try repairDayNotes(db, context)

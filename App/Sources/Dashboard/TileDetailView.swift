@@ -4,8 +4,22 @@ import Persistence
 import SwiftUI
 
 /// A tile's detail: its chart (FR-51, backlog #38) and the last 14 days as a list. Weight lists the manual entries
-/// (edit, delete with undo); water lists today's entries (delete with undo).
+/// (edit, delete with undo); water lists today's entries (delete with undo). Caffeine has its own detail
+/// (`CaffeineDetailView`).
 struct TileDetailView: View {
+    let tile: DashboardTile
+    @Bindable var model: DashboardModel
+
+    var body: some View {
+        if tile == .caffeine {
+            CaffeineDetailView(model: model)
+        } else {
+            MetricDetailView(tile: tile, model: model)
+        }
+    }
+}
+
+private struct MetricDetailView: View {
     let tile: DashboardTile
     @Bindable var model: DashboardModel
     @State private var weightSheet: WeightSheetTarget?
@@ -14,8 +28,10 @@ struct TileDetailView: View {
     var body: some View {
         List {
             Section {
-                MetricChartView(metric: ChartMetric(tile: tile))
-                    .listRowInsets(EdgeInsets(top: NL.Spacing.m, leading: NL.Spacing.l, bottom: NL.Spacing.m, trailing: NL.Spacing.l))
+                if let metric = ChartMetric(tile: tile) {
+                    MetricChartView(metric: metric)
+                        .listRowInsets(EdgeInsets(top: NL.Spacing.m, leading: NL.Spacing.l, bottom: NL.Spacing.m, trailing: NL.Spacing.l))
+                }
                 if tile == .energy {
                     NavigationLink("Macros chart") { MetricChartScreen(metric: .macros) }
                 }

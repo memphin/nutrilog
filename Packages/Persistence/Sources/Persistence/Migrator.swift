@@ -16,12 +16,13 @@ public enum Migrator {
         "007_tdee_estimate_details",
         "008_recipes_to_foods",
         "009_planned_entry",
-        "010_gregorian_days", // Swift-coded, see `codedMigration`
-        "011_food_merged_into",
-        // "012_<description>",
+        "010_caffeine",
+        "011_gregorian_days", // Swift-coded, see `codedMigration`
+        "012_food_merged_into",
+        // "013_<description>",
     ]
 
-    /// `deviceCalendar`: the calendar the device uses now, which migration 010 needs to tell which calendar the
+    /// `deviceCalendar`: the calendar the device uses now, which migration 011 needs to tell which calendar the
     /// stored days were written in. The default is read here, at the one place the migrator is built for the app.
     public static func make(deviceCalendar: Calendar.Identifier = Calendar.current.identifier) throws -> DatabaseMigrator {
         var migrator = DatabaseMigrator()
@@ -45,7 +46,7 @@ public enum Migrator {
         named name: String, deviceCalendar: Calendar.Identifier,
     ) -> (@Sendable (Database) throws -> Void)? {
         switch name {
-        case "010_gregorian_days":
+        case "011_gregorian_days":
             // Days written before `LocalDay` always used the Gregorian calendar (e.g. "2569-11-11" on a Buddhist iPhone).
             { db in
                 let now = Date()

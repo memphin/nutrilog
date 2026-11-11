@@ -16,8 +16,8 @@ public struct DataPortability: Sendable {
     /// and `barcode_scan_log` (private, device-local scan diagnostics).
     static let tables = [
         "meal_slot", "food", "serving", "food_barcode", "recipe_ingredient", "meal_template", "meal_template_item",
-        "diary_entry", "planned_entry", "healthkit_link", "day_note", "water_entry", "weight_entry", "daily_metrics", "profile",
-        "target", "tdee_estimate", "setting",
+        "diary_entry", "planned_entry", "healthkit_link", "day_note", "water_entry", "caffeine_entry", "weight_entry",
+        "daily_metrics", "profile", "target", "tdee_estimate", "setting",
     ]
 
     public enum ImportMode: Sendable {
@@ -184,7 +184,7 @@ public struct DataPortability: Sendable {
                 arguments: [FoodSource.custom.rawValue, Timestamp.string(now), FoodSource.recipe.rawValue],
             )
             // Exports made before `LocalDay` always used the Gregorian calendar may hold days in the device calendar
-            // (e.g. "2569-11-11" on a Buddhist iPhone): like migration 010, they move to their Gregorian day.
+            // (e.g. "2569-11-11" on a Buddhist iPhone): like migration 011, they move to their Gregorian day.
             try StoredDayMigration.run(db, deviceCalendar: deviceCalendar, today: LocalDay(now), now: now)
             // Replace wipes every table, so a partial file must not leave the app without a profile or meal slots.
             // Checking the result (not the file's keys) keeps older, smaller-schema backups importable.
@@ -239,7 +239,7 @@ public struct DataPortability: Sendable {
         try database.reader.read { db in
             var diary = [[
                 "day", "meal", "food", "amount", "unit", "serving", "kcal", "protein_g", "carbs_g", "fat_g",
-                "fiber_g", "sugar_g", "sat_fat_g", "sodium_mg", "quick_add", "note",
+                "fiber_g", "sugar_g", "sat_fat_g", "sodium_mg", "caffeine_mg", "quick_add", "note",
             ]]
             let rows = try Row.fetchAll(db, sql: """
             SELECT e.*, s.name AS slot_name, s.sort_order AS slot_order, COALESCE(f.is_liquid, 0) AS liquid
@@ -258,7 +258,7 @@ public struct DataPortability: Sendable {
                     row["serving_label"] ?? "",
                     Self.number(row["kcal"]), Self.number(row["protein_g"]), Self.number(row["carbs_g"]), Self.number(row["fat_g"]),
                     Self.number(row["fiber_g"]), Self.number(row["sugar_g"]), Self.number(row["sat_fat_g"]), Self.number(row["sodium_mg"]),
-                    isQuickAdd ? "1" : "0", row["note"] ?? "",
+                    Self.number(row["caffeine_mg"]), isQuickAdd ? "1" : "0", row["note"] ?? "",
                 ])
             }
 

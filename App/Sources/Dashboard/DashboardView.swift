@@ -104,15 +104,35 @@ struct DashboardTileView: View {
     let open: () -> Void
 
     var body: some View {
+        if tile == .caffeine {
+            // The amount in the body changes by the minute.
+            TimelineView(.periodic(from: .now, by: 60)) { _ in
+                card(now: model.now)
+            }
+        } else {
+            card(now: model.now)
+        }
+    }
+
+    /// Tiles with buttons inside (quick-add) keep them reachable for VoiceOver.
+    private var hasInlineButtons: Bool {
+        tile == .water || tile == .caffeine
+    }
+
+    private var detailHint: String {
+        tile == .caffeine ? "Shows the caffeine curve and today's drinks" : "Shows the last 14 days"
+    }
+
+    @ViewBuilder private func card(now: Date) -> some View {
         let state = model.state(of: tile)
         let snapshot = model.snapshot
         // Only for a tile with a value: no chart when there is no data or no access.
         let sparkline = state == .ready ? snapshot.sparkline(for: tile) : nil
         let trend = snapshot.accessibilityTrend(of: tile, state: state)
         let card = VStack(alignment: .leading, spacing: NL.Spacing.s) {
-            header(trend: trend)
+            header(trend: trend, now: now)
             if state == .ready {
-                TileContent(tile: tile, model: model)
+                TileContent(tile: tile, model: model, now: now)
                 if let sparkline {
                     SparklineView(sparkline: sparkline, tint: tile == .totalEnergy ? .orange : NL.Palette.trend) {
                         snapshot.goalColor(of: tile, value: $0.value)
@@ -129,17 +149,17 @@ struct DashboardTileView: View {
         // A tap on the tile opens its detail; buttons inside (water quick-add, Connect) keep their own taps.
         .onTapGesture(perform: open)
 
-        if tile == .water, state == .ready {
+        if hasInlineButtons, state == .ready {
             // Keeps its quick-add buttons reachable; the header is the focusable "open details" button.
             card.accessibilityElement(children: .contain)
         } else {
             // One element: "Weight, 81.4 kilograms". Activating opens the detail.
             card
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(snapshot.accessibilityLabel(of: tile, state: state, energyUnit: model.energyUnit))
+                .accessibilityLabel(snapshot.accessibilityLabel(of: tile, state: state, energyUnit: model.energyUnit, now: now))
                 .accessibilityValue(trend ?? "")
                 .accessibilityAddTraits(.isButton)
-                .accessibilityHint("Shows the last 14 days")
+                .accessibilityHint(detailHint)
                 .accessibilityAction(.default, open)
                 .accessibilityActions {
                     if state == .needsAccess {
@@ -149,17 +169,17 @@ struct DashboardTileView: View {
         }
     }
 
-    @ViewBuilder private func header(trend: String?) -> some View {
+    @ViewBuilder private func header(trend: String?, now: Date) -> some View {
         let label = Label(tile.title, systemImage: tile.systemImage)
             .font(NL.Typography.label)
             .foregroundStyle(.secondary)
             .labelStyle(.titleAndIcon)
-        if tile == .water {
+        if hasInlineButtons {
             Button(action: open) { label }
                 .buttonStyle(.plain)
-                .accessibilityLabel(model.snapshot.accessibilityLabel(of: .water, state: .ready))
+                .accessibilityLabel(model.snapshot.accessibilityLabel(of: tile, state: .ready, now: now))
                 .accessibilityValue(trend ?? "")
-                .accessibilityHint("Shows the last 14 days")
+                .accessibilityHint(detailHint)
         } else {
             label
         }
@@ -196,6 +216,7 @@ private struct TileContent: View {
     @Environment(AppEnvironment.self) private var environment
     let tile: DashboardTile
     let model: DashboardModel
+    let now: Date
 
     var body: some View {
         let snapshot = model.snapshot
@@ -248,6 +269,10 @@ private struct TileContent: View {
             )
         case .water:
             WaterTileContent(water: snapshot.water, sizes: model.waterSizes) { model.addWater(ml: $0) }
+        case .caffeine:
+            CaffeineTileContent(
+                status: model.caffeineStatus(at: now), drinks: snapshot.caffeineSettings.quickAddDrinks,
+            ) { model.addCaffeine(drink: $0) }
         }
     }
 }
