@@ -88,12 +88,13 @@ struct DashboardFeedbackTests {
         #expect(GoalColor.water(2500, goalMl: 2500) == GoalColor.reached)
         #expect(GoalColor.water(3000, goalMl: 2500) == GoalColor.reached)
         var data = DashboardData(today: today)
+        data.waterGoalMode = .fixed
         data.waterGoalMl = 2000
         data.metrics = [DailyMetricsRecord(DailyHealthMetrics(day: today, waterMl: 2100), fetchedAt: Date())]
         let snapshot = DashboardSnapshot(data)
         #expect(snapshot.goalColor(of: .water, value: 1500) == GoalColor.missed)
         #expect(snapshot.goalColor(of: .water, value: 2000) == GoalColor.reached)
-        #expect(snapshot.accessibilityLabel(of: .water, state: .ready) == "Water, 2,100 of 2,000 millilitres, goal reached")
+        #expect(snapshot.accessibilityLabel(of: .water, state: .ready) == "Hydration, 2,100 of 2,000 millilitres, goal reached")
     }
 
     // MARK: Total energy (#66)

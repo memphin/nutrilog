@@ -97,8 +97,8 @@ final class DashboardModel {
 
     // MARK: Loading
 
-    /// Re-reads the settings the dashboard caches (layout, water sizes, step and sleep goals, caffeine) — they are
-    /// edited in Settings.
+    /// Re-reads the settings the dashboard caches (layout, water sizes, step and sleep goals, caffeine, hydration) —
+    /// they are edited in Settings.
     func reloadSettings() {
         guard let profiles = environment.profiles else { return }
         layout = DashboardLayout.load(from: profiles)
@@ -115,6 +115,10 @@ final class DashboardModel {
         if data.caffeineSettings != caffeineSettings {
             data.caffeineSettings = caffeineSettings
         }
+        let hydrationSettings = HydrationSettings.load(from: profiles)
+        if data.hydrationSettings != hydrationSettings {
+            data.hydrationSettings = hydrationSettings
+        }
     }
 
     func reloadAccess() async {
@@ -126,15 +130,17 @@ final class DashboardModel {
         let today = environment.today
         if data.today != today {
             data = DashboardData(
-                today: today, stepGoal: data.stepGoal, sleepGoalMin: data.sleepGoalMin, goalMode: data.goalMode,
-                caffeineSettings: data.caffeineSettings,
+                today: today, waterGoalMl: data.waterGoalMl, waterGoalMode: data.waterGoalMode,
+                hydrationSettings: data.hydrationSettings, stepGoal: data.stepGoal, sleepGoalMin: data.sleepGoalMin,
+                goalMode: data.goalMode, caffeineSettings: data.caffeineSettings,
             )
         }
         await reloadAccess()
         await withDiscardingTaskGroup { group in
             group.addTask { await self.observeMetrics() }
             group.addTask { await self.observeWeights() }
-            group.addTask { await self.observeWater() }
+            group.addTask { await self.observeWater(today) }
+            group.addTask { await self.observeHydration() }
             group.addTask { await self.observeCaffeine() }
             group.addTask { await self.observeDiary(today) }
             group.addTask { await self.observeTarget(today) }
@@ -154,15 +160,17 @@ final class DashboardModel {
         await DiaryModel.resubscribing { repo.observeEntries(in: interval) } onValue: { data.manualWeights = $0 } onError: { report($0) }
     }
 
-    /// One observation for the sparkline's 7 days: today's entries for the tile, daily totals for the chart.
-    private func observeWater() async {
+    /// Today's water entries, for the detail's list.
+    private func observeWater(_ day: LocalDay) async {
         guard let repo = environment.water else { return }
+        await DiaryModel.resubscribing { repo.observeEntries(for: day) } onValue: { data.water = $0 } onError: { report($0) }
+    }
+
+    /// Every drink of the sparkline's 7 days in one observation: today's for the tile, daily totals for the chart.
+    private func observeHydration() async {
+        guard let repo = environment.hydration else { return }
         let window = data.sparklineWindow
-        let today = data.today
-        await DiaryModel.resubscribing { repo.observeEntries(in: window) } onValue: { entries in
-            data.water = entries.filter { $0.day == today }
-            data.waterByDay = entries.reduce(into: [:]) { $0[$1.day, default: 0] += $1.ml }
-        } onError: { report($0) }
+        await DiaryModel.resubscribing { repo.observeIntakes(in: window) } onValue: { data.hydrationIntakes = $0 } onError: { report($0) }
     }
 
     /// Yesterday's and today's caffeine, quick-adds and diary entries in one observation.
@@ -188,6 +196,9 @@ final class DashboardModel {
             if let goal = profile?.waterGoalMl {
                 data.waterGoalMl = goal
             }
+            if let mode = profile?.waterGoalMode, data.waterGoalMode != mode {
+                data.waterGoalMode = mode
+            }
             if let mode = profile?.goalMode, data.goalMode != mode {
                 data.goalMode = mode
             }
@@ -211,7 +222,12 @@ final class DashboardModel {
         await reloadAccess()
     }
 
-    // MARK: Water (FR-46)
+    // MARK: Hydration (FR-46)
+
+    /// Today's hydration at `now`, for the tile and the detail.
+    func hydrationDay(at now: Date) -> HydrationDay {
+        snapshot.hydrationDay(now: now, calendar: calendar)
+    }
 
     /// Logs `ml` now and offers undo (which soft-deletes the entry again).
     func addWater(ml: Int) {

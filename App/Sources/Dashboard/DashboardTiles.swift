@@ -49,7 +49,7 @@ enum DashboardTile: String, CaseIterable, Codable, Identifiable, Hashable {
         case .totalEnergy: "Total energy"
         case .restingHeartRate: "Resting heart rate"
         case .hrv: "HRV"
-        case .water: "Water"
+        case .water: "Hydration"
         case .caffeine: "Caffeine"
         }
     }
@@ -451,13 +451,23 @@ enum WeeklyBand {
     }
 }
 
-/// Water against its daily goal: green at the goal, orange from `nearShare` of it, red below.
+/// Hydration against its daily goal. A day's total: green at the goal, orange from `nearShare` of it, red below.
 enum WaterGoal {
     static let nearShare = 0.8
 
     static func band(ml: Double, goalMl: Double) -> GoalBand {
         guard goalMl > 0, ml < goalMl else { return .reached }
         return ml >= goalMl * nearShare ? .near : .far
+    }
+
+    /// Today, by where the day stands: green at the goal or on pace, orange behind pace, red during a long stretch
+    /// without a drink.
+    static func band(status: HydrationStatus) -> GoalBand {
+        switch status {
+        case .goalReached, .onPace: .reached
+        case .behind: .near
+        case .inGap: .far
+        }
     }
 }
 

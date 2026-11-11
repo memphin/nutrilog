@@ -12,14 +12,18 @@ struct DashboardData: Equatable {
     var metrics: [DailyMetricsRecord] = []
     /// Manual weights of the history window.
     var manualWeights: [WeightEntry] = []
-    /// Water logged in Vitalion today.
+    /// Water logged in Vitalion today (the detail's list of entries).
     var water: [WaterEntry] = []
-    /// Water logged in Vitalion per day over the sparkline window (today included), in ml.
-    var waterByDay: [LocalDay: Double] = [:]
+    /// Every drink logged in Vitalion (water, diary drinks, caffeine drinks) per day over the sparkline window, today
+    /// included.
+    var hydrationIntakes: [LocalDay: [FluidIntake]] = [:]
     /// Today's diary totals.
     var totals: Nutrients = .zero
     var target: Target?
+    /// The fixed hydration goal, used when `waterGoalMode` is `.fixed`.
     var waterGoalMl: Double = 2500
+    var waterGoalMode: HydrationGoalMode = .weight
+    var hydrationSettings = HydrationSettings.default
     var stepGoal: Int = StepGoal.defaultSteps
     var sleepGoalMin: Int = SleepGoal.defaultMinutes
     /// The profile's goal (lose, maintain, gain): which way the weight should move.
@@ -46,11 +50,20 @@ struct DashboardData: Equatable {
     func weightInterval(calendar: Calendar = .current) -> DateInterval {
         DateInterval(start: window.lowerBound.startDate(calendar: calendar), end: today.next.startDate(calendar: calendar))
     }
+
+    /// The hydration goal of `day`: from the latest weight trend on or before it in `metrics` (the history window),
+    /// or the fixed amount (`HydrationGoal`).
+    func hydrationGoalMl(on day: LocalDay) -> Double {
+        let trendKg = metrics.filter { $0.day <= day && $0.weightTrendKg != nil }.max { $0.day < $1.day }?.weightTrendKg
+        return HydrationGoal.ml(weightKg: trendKg, mode: waterGoalMode, fixedMl: waterGoalMl)
+    }
 }
 
-/// Today's water: logged in Vitalion plus other apps' water from Health (FR-46). Vitalion's own Health samples are
-/// already left out of `otherAppsMl`, so nothing is counted twice.
+/// Today's hydration, whatever the time: every drink logged in Vitalion plus other apps' water from Health (FR-46).
+/// Vitalion's own Health samples are already left out of `otherAppsMl`, so nothing is counted twice. Pace, gaps and
+/// status depend on the time: `DashboardSnapshot.hydrationDay(now:calendar:)`.
 struct WaterProgress: Equatable {
+    /// Water, diary drinks and caffeine drinks logged in Vitalion.
     var loggedMl: Double
     var otherAppsMl: Double
     var goalMl: Double
@@ -71,6 +84,34 @@ struct WaterProgress: Equatable {
 
     var remainingMl: Double {
         max(goalMl - totalMl, 0)
+    }
+}
+
+/// The Hydration tile's texts (spec §3): "1,840 / 2,400 ml" and "1,300 water · 540 drinks", grouped by `locale`.
+/// Water from other apps is water; "drinks" are all the others.
+enum HydrationTileText {
+    /// "1,840".
+    static func amount(_ day: HydrationDay, locale: Locale = .autoupdatingCurrent) -> String {
+        number(day.totalMl, locale)
+    }
+
+    /// "/ 2,400 ml".
+    static func goal(_ day: HydrationDay, locale: Locale = .autoupdatingCurrent) -> String {
+        "/ \(number(day.goalMl, locale)) ml"
+    }
+
+    /// "1,840 / 2,400 ml".
+    static func total(_ day: HydrationDay, locale: Locale = .autoupdatingCurrent) -> String {
+        "\(amount(day, locale: locale)) \(goal(day, locale: locale))"
+    }
+
+    /// "1,300 water · 540 drinks".
+    static func breakdown(_ day: HydrationDay, locale: Locale = .autoupdatingCurrent) -> String {
+        "\(number(day.waterMl + day.otherAppsMl, locale)) water · \(number(day.otherDrinksMl, locale)) drinks"
+    }
+
+    private static func number(_ ml: Double, _ locale: Locale) -> String {
+        ml.formatted(.number.precision(.fractionLength(0)).locale(locale))
     }
 }
 
@@ -128,6 +169,13 @@ struct DashboardSnapshot: Equatable {
     let restingHR: BaselineComparison?
     let hrv: BaselineComparison?
     let water: WaterProgress
+    /// Today's drinks logged in Vitalion, in time order.
+    let hydrationIntakes: [FluidIntake]
+    /// When Apple Health says the user woke up today.
+    let wokeAt: Date?
+    let hydrationSettings: HydrationSettings
+    /// The hydration goal of each sparkline day, from that day's weight trend.
+    let hydrationGoals: [LocalDay: Double]
     let totals: Nutrients
     let target: Target?
     let stepGoal: Int
@@ -158,11 +206,18 @@ struct DashboardSnapshot: Equatable {
             .flatMap { day in day.bodyFatPct.map { BodyFatValue(day: day.day, pct: $0) } }
         restingHR = MetricBaseline.compare(Self.values(rows, \.restingHR), today: data.today)
         hrv = MetricBaseline.compare(Self.values(rows, \.hrvSDNNms), today: data.today)
+        hydrationIntakes = data.hydrationIntakes[data.today] ?? []
         water = WaterProgress(
-            loggedMl: data.water.reduce(0) { $0 + $1.ml },
+            loggedMl: hydrationIntakes.reduce(0) { $0 + $1.ml },
             otherAppsMl: todayMetrics?.waterMl ?? 0,
-            goalMl: data.waterGoalMl,
+            goalMl: data.hydrationGoalMl(on: data.today),
         )
+        wokeAt = todayMetrics?.wokeAt
+        hydrationSettings = data.hydrationSettings
+        hydrationGoals = Dictionary(uniqueKeysWithValues: (0 ..< Sparkline.days).map { offset in
+            let day = data.today.adding(days: -offset)
+            return (day, data.hydrationGoalMl(on: day))
+        })
         totals = data.totals
         target = data.target
         stepGoal = data.stepGoal
@@ -179,6 +234,14 @@ struct DashboardSnapshot: Equatable {
         sparklines = Self.sparklines(data: data, rows: rows, dayWeights: dayWeights)
         caffeine = data.caffeine
         caffeineSettings = data.caffeineSettings
+    }
+
+    /// Today's hydration at `now`: totals, pace, gaps and status.
+    func hydrationDay(now: Date, calendar: Calendar = .current) -> HydrationDay {
+        HydrationDayBuilder.make(
+            day: today, intakes: hydrationIntakes, otherAppsMl: water.otherAppsMl, wokeAt: wokeAt,
+            settings: hydrationSettings, goalMl: water.goalMl, now: now, calendar: calendar,
+        )
     }
 
     /// Caffeine at `now`: the amount in the body, today's total, the sleep outlook.

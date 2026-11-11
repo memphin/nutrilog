@@ -83,7 +83,16 @@ struct SparklineTests {
             )
             return DailyMetricsRecord(metrics, fetchedAt: Date())
         }
-        data.waterByDay = [today: 750, today.adding(days: -5): 250]
+        let noon = today.date(atHour: 12)
+        data.hydrationIntakes = [
+            today: [
+                FluidIntake(id: "w1", ml: 500, at: noon, kind: .water, source: .water, name: "Water"),
+                FluidIntake(id: "d1", ml: 250, at: noon, kind: .other, source: .diary, name: "Cola"),
+            ],
+            today.adding(days: -5): [
+                FluidIntake(id: "w2", ml: 250, at: today.adding(days: -5).date(atHour: 12), kind: .water, source: .water, name: "Water"),
+            ],
+        ]
         let snapshot = DashboardSnapshot(data)
 
         let steps = snapshot.sparklines[.steps]
@@ -100,7 +109,7 @@ struct SparklineTests {
         #expect(total?.points.allSatisfy { $0.base == 1600 } == true)
         #expect(steps?.points.allSatisfy { $0.base == nil } == true)
 
-        // Water: Vitalion's own plus other apps', days with neither are gaps.
+        // Hydration: every drink logged in Vitalion plus other apps' water, days with neither are gaps.
         let water = snapshot.sparklines[.water]
         #expect(water?.points.map(\.index) == [1, 5, 6])
         #expect(water?.points.map(\.value) == [250, 500, 750])

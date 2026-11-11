@@ -51,7 +51,7 @@ private struct MetricDetailView: View {
                 }
             case .water:
                 Section {
-                    WaterTileContent(water: model.snapshot.water, sizes: model.waterSizes) { model.addWater(ml: $0) }
+                    WaterTileContent(day: model.hydrationDay(at: model.now), sizes: model.waterSizes) { model.addWater(ml: $0) }
                 } footer: {
                     Text("Water you log here is also written to Apple Health. Water from other apps is included in the total.")
                 }

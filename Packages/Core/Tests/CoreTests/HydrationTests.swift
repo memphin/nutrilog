@@ -73,6 +73,14 @@ struct HydrationTests {
         #expect(day.lastIntakeAt == t(12))
     }
 
+    @Test func `intakes in time order`() {
+        let coffee = FluidIntake(id: "c1", ml: 240, at: t(9), kind: .other, source: .caffeine, name: "Filter coffee")
+        let glass = FluidIntake(id: "w1", ml: 500, at: t(15), kind: .water, source: .water, name: "Water")
+        let early = FluidIntake(id: "w2", ml: 250, at: t(6), kind: .water, source: .water, name: "Water")
+        // Every intake, also one before wake (for the strip and the detail's list), sorted by time.
+        #expect(day([glass, coffee, early], now: t(16)).intakes == [early, coffee, glass])
+    }
+
     // MARK: - Pace
 
     @Test func `pace is linear to bedtime minus one hour`() {

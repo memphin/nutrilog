@@ -130,6 +130,8 @@ public struct HydrationDay: Sendable {
     public let behindMarginMl: Double
     public let now: Date
 
+    /// Every intake of the day in time order, also those outside the waking window.
+    public let intakes: [FluidIntake]
     public let totalMl: Double
     /// Plain water from timed intakes.
     public let waterMl: Double
@@ -162,6 +164,7 @@ public struct HydrationDay: Sendable {
         self.otherAppsMl = otherAppsMl
 
         let sorted = intakes.sorted { $0.at < $1.at }
+        self.intakes = sorted
         waterMl = sorted.filter { $0.kind == .water }.reduce(0) { $0 + $1.ml }
         otherDrinksMl = sorted.filter { $0.kind == .other }.reduce(0) { $0 + $1.ml }
         totalMl = waterMl + otherDrinksMl + otherAppsMl
