@@ -17,11 +17,14 @@ public struct SleepSummary: Hashable, Sendable, Codable {
     public var awake: TimeInterval
     /// Asleep without a stage (older watchOS, third-party apps).
     public var unspecified: TimeInterval
+    /// When the user woke up: the end of the last asleep sample ending by noon on the night's day. Nil when the
+    /// source recorded no asleep samples before noon. Afternoon naps do not move it.
+    public var wokeAt: Date?
 
     public init(
         night: LocalDay, source: HealthSource, asleep: TimeInterval?, inBed: TimeInterval,
         core: TimeInterval = 0, deep: TimeInterval = 0, rem: TimeInterval = 0, awake: TimeInterval = 0,
-        unspecified: TimeInterval = 0,
+        unspecified: TimeInterval = 0, wokeAt: Date? = nil,
     ) {
         self.night = night
         self.source = source
@@ -32,6 +35,7 @@ public struct SleepSummary: Hashable, Sendable, Codable {
         self.rem = rem
         self.awake = awake
         self.unspecified = unspecified
+        self.wokeAt = wokeAt
     }
 
     /// True when the source reports stages (Apple Watch with watchOS 9+).
@@ -78,7 +82,7 @@ public enum SleepAggregator {
         guard !inWindow.isEmpty else { return nil }
 
         let candidates = Dictionary(grouping: inWindow, by: \.source.bundleIdentifier).values.map { group in
-            measure(group, night: night)
+            measure(group, night: night, calendar: calendar)
         }
         return candidates.min { lhs, rhs in
             if lhs.source.kind != rhs.source.kind {
@@ -114,7 +118,7 @@ public enum SleepAggregator {
     static let fallbackPrecedence: [SleepStage] = [.asleepDeep, .asleepREM, .asleepCore, .awake, .asleepUnspecified, .inBed]
 
     /// Sweeps over the samples of one source, assigning every covered moment to exactly one stage.
-    private static func measure(_ samples: [SleepSample], night: LocalDay) -> SleepSummary {
+    private static func measure(_ samples: [SleepSample], night: LocalDay, calendar: Calendar) -> SleepSummary {
         // The earliest sample names the source; all samples of the group share its bundle identifier.
         let sorted = samples.sorted { ($0.start, $0.end) < ($1.start, $1.end) }
         let source = sorted.first(where: { $0.source.kind == .appleWatch })?.source ?? sorted[0].source
@@ -144,6 +148,8 @@ public enum SleepAggregator {
         let rem = totals[.asleepREM] ?? 0
         let unspecified = totals[.asleepUnspecified] ?? 0
         let hasAsleepSamples = samples.contains { $0.stage.isAsleep }
+        let noon = night.date(atHour: 12, calendar: calendar)
+        let wokeAt = samples.filter { $0.stage.isAsleep && $0.end <= noon }.map(\.end).max()
         return SleepSummary(
             night: night,
             source: source,
@@ -154,6 +160,7 @@ public enum SleepAggregator {
             rem: rem,
             awake: totals[.awake] ?? 0,
             unspecified: unspecified,
+            wokeAt: wokeAt,
         )
     }
 }
