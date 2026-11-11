@@ -29,3 +29,5 @@ struct AppConfig: Sendable {
         offContact = contact.isEmpty ? Self.defaultOFFContact : contact
     }
 }
+
+// CI timing probe: reverted in the next commit.
