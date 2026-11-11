@@ -36,11 +36,12 @@ renamed **Hydration**.
   for that night; NULL when none. Written by the sleep import.
 - `profile.water_goal_mode TEXT NOT NULL DEFAULT 'weight' CHECK (water_goal_mode IN ('weight','fixed'))`.
   Migration sets `'fixed'` where `water_goal_ml != 2500`. `water_goal_ml` stays the fixed amount.
-- Settings (JSON in the settings store, like caffeine settings), key `hydrationSettings`:
-  `fallbackWakeMinutes` (420), `gapThresholdMinutes` (180, range 60–360), `behindMarginMl` (500, range 250–1000),
-  `remindersEnabled` (false).
-- Bedtime moves to a shared key `bedtimeMinutes` (default 23:00); migration copies the caffeine settings' bedtime.
-  Caffeine settings read and write the shared key.
+- Settings (one key each in the profile settings store, like the caffeine settings — `SettingKey`):
+  `hydrationFallbackWakeMinutes` (420), `hydrationGapMinutes` (180, range 60–360, step 30),
+  `hydrationBehindMarginMl` (500, range 250–1000, step 50), `hydrationRemindersEnabled` (false).
+- Bedtime: the existing `caffeineBedtimeMinutes` key becomes the app's one bedtime (no data move); it is edited in
+  both Caffeine and Hydration settings.
+- Goal weight: the latest `daily_metrics.weight_trend_kg` on or before the day.
 - Export/import include the new columns and settings.
 
 ## 2. Core logic (`Packages/Core/Sources/Core/Hydration.swift`, pure)
@@ -108,7 +109,7 @@ entry's `day`. Device time zone.
 Tests (Swift Testing, TDD):
 - Core `HydrationTests`: totals/breakdown; pace start/mid/end/invalid; gaps none/between/ongoing/night/threshold;
   status precedence; reminder gap-wins/behind-wins/goal-reached/too-late/tomorrow; `FluidRule`; `HydrationGoal`.
-- Persistence: migration 013 backfills and goal-mode/bedtime carry-over; diary `fluid_ml` at log and on edit;
+- Persistence: migration 013 backfills and goal-mode carry-over; diary `fluid_ml` at log and on edit;
   caffeine `ml`; sleep import `woke_at` ignoring afternoon naps.
 - App: tile snapshot numbers/status; reminder service with fake scheduler; notification action logs water.
 - Manual: simulator full-day strip and chart; reminder firing and action.
