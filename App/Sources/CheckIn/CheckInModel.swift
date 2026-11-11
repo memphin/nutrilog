@@ -74,14 +74,31 @@ final class CheckInModel {
         record(.skipped, kcal: nil)
     }
 
-    /// The target written for `kcal`: the current target's macro split (30 / 40 / 30 without one) at the new
-    /// energy, fiber unchanged, effective today, origin adaptive.
+    /// The target written for `kcal`, fiber unchanged, effective today, origin adaptive. Its macros are the current
+    /// target's: unchanged when the energy is, otherwise scaled by new / current kcal (whole grams). Without a current
+    /// target (or with one of no energy) they are 30 / 40 / 30 or the current macros' split at the new energy.
     func makeTarget(kcal: Double) -> Target? {
         guard let snapshot else { return nil }
-        let split = snapshot.currentTarget.map { MacroSplit(from: $0.macros) } ?? .balanced
         return Target(
-            effectiveFrom: snapshot.today, kcal: kcal, macros: split.grams(forKcal: kcal),
+            effectiveFrom: snapshot.today, kcal: kcal, macros: Self.macros(forKcal: kcal, current: snapshot.currentTarget),
             fiberG: snapshot.currentTarget?.fiberG, origin: .adaptive,
+        )
+    }
+
+    /// The macros of a check-in target at `kcal`: see `makeTarget(kcal:)`.
+    static func macros(forKcal kcal: Double, current: Target?) -> MacroTargets {
+        guard let current else { return MacroSplit.balanced.grams(forKcal: kcal) }
+        if kcal == current.kcal {
+            return current.macros
+        }
+        guard current.kcal.isFinite, current.kcal > 0, current.macros.kcal > 0 else {
+            return MacroSplit(from: current.macros).grams(forKcal: kcal)
+        }
+        let factor = kcal / current.kcal
+        return MacroTargets(
+            proteinG: (current.proteinG * factor).rounded(),
+            carbsG: (current.carbsG * factor).rounded(),
+            fatG: (current.fatG * factor).rounded(),
         )
     }
 
@@ -130,7 +147,8 @@ final class CheckInModel {
                 kind: .intake, title: "Average intake", value: unit.format(estimate.meanIntakeKcal),
                 explanation: "The mean of your diary totals on the \(estimate.loggedDays) logged days of the last "
                     + "\(estimate.windowDays). A day counts as logged with at least \(AdaptiveTDEE.minimumEntries) entries or when you "
-                    + "marked it as fully logged; other days are left out rather than counted as zero.",
+                    + "marked it as fully logged; other days are left out rather than counted as zero."
+                    + partialDaysSentence(estimate),
             ),
             CheckInFact(
                 kind: .estimate, title: "Estimated maintenance", value: unit.format(estimate.kcal),
@@ -168,11 +186,30 @@ final class CheckInModel {
     }
 
     static func trendExplanation(_ estimate: TDEEEstimate) -> String {
-        "Your weight trend went from \(kg2(estimate.trendStartKg)) on \(date(estimate.trendStartDay)) to "
+        let measured: String = switch estimate.resolvedWeightMethod {
+        case .trend: "Your weight trend went"
+        case .weighInLine: "A straight line through your weigh-ins goes"
+        }
+        var text = "\(measured) from \(kg2(estimate.trendStartKg)) on \(date(estimate.trendStartDay)) to "
             + "\(kg2(estimate.trendEndKg)) on \(date(estimate.day)): \(DashboardFormat.kgChange(estimate.trendChangeKg)) in "
             + "\(estimate.trendSpanDays) days, which is \(DashboardFormat.kgChange(estimate.weeklyChangeKg)) per week.\n\n"
-            + "The trend is a smoothed average of your weigh-ins (each one moves it by 10 %), so single heavy or light "
-            + "mornings barely show. Weigh-ins that jump more than 2.5 % from one day to the next count even less."
+            + "The trend is a smoothed average of your weigh-ins (each daily one moves it by 10 %, one after a gap more), "
+            + "so single heavy or light mornings barely show. Weigh-ins that jump more than 2.5 % from one day to the next "
+            + "count even less."
+        if estimate.resolvedWeightMethod == .weighInLine {
+            text += "\n\nA young trend still lags behind your weigh-ins, so until it is \(AdaptiveTDEE.matureTrendDays) days "
+                + "old with weigh-ins on at least \(AdaptiveTDEE.denseWeighIns) of the last \(AdaptiveTDEE.windowDays) days, "
+                + "the change is measured with the line instead."
+        }
+        return text
+    }
+
+    /// " 1 partly logged day was left out too: …", or empty when none was.
+    static func partialDaysSentence(_ estimate: TDEEEstimate) -> String {
+        let count = estimate.partialDaysLeftOut
+        guard count > 0 else { return "" }
+        return " \(count) partly logged day\(count == 1 ? " was" : "s were") left out too: under half of your usual day "
+            + "and not marked as fully logged."
     }
 
     static func goalExplanation(_ goalChangeKgPerWeek: Double, unit: EnergyUnit) -> String {
@@ -187,7 +224,9 @@ final class CheckInModel {
     static func estimateExplanation(_ estimate: TDEEEstimate, unit: EnergyUnit) -> String {
         let balance = estimate.dailyBalanceKcal
         var text = "Maintenance = average intake − energy stored per day.\n\n"
-            + "You ate \(unit.format(estimate.meanIntakeKcal)) a day. Your trend changed by "
+            + "You ate \(unit.format(estimate.meanIntakeKcal)) a day.\(partialDaysSentence(estimate)) "
+            + "\(estimate.resolvedWeightMethod.explanation) "
+            + "Your weight changed by "
             + "\(DashboardFormat.kgChange(estimate.trendChangeKg)) in \(estimate.trendSpanDays) days; at 7,700 kcal per kg that is "
             + "\(unit.format(abs(balance))) a day \(balance < 0 ? "taken from your reserves" : "stored").\n\n"
             + "\(unit.format(estimate.meanIntakeKcal)) \(balance < 0 ? "+" : "−") \(unit.format(abs(balance))) = \(unit.format(estimate.rawKcal))."
@@ -207,7 +246,9 @@ final class CheckInModel {
 
     static func confidenceExplanation(_ estimate: TDEEEstimate) -> String {
         "\(estimate.loggedDays) of the last \(estimate.windowDays) days are logged and \(estimate.weighIns) have a weigh-in.\n\n"
-            + "High: at least \(AdaptiveTDEE.highConfidenceDays) days of history with 80 % of them logged.\n"
+            + "High: at least \(AdaptiveTDEE.highConfidenceDays) days of history with 80 % of them logged, and a weight trend "
+            + "at least \(AdaptiveTDEE.matureTrendDays) days old with weigh-ins on at least \(AdaptiveTDEE.denseWeighIns) of "
+            + "the last \(AdaptiveTDEE.windowDays) days.\n"
             + "Medium: at least \(AdaptiveTDEE.mediumLoggedDays) logged days and \(AdaptiveTDEE.mediumWeighIns) weigh-ins in the "
             + "last \(AdaptiveTDEE.windowDays) days.\nLow: anything less — treat the number as a rough guide."
     }

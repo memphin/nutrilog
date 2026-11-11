@@ -115,7 +115,8 @@ public struct FoodSearch: Sendable {
     }
 
     /// User foods first — foods already logged before unused ones, then by FTS rank (bm25), use count and
-    /// recency — followed by bundled foods that have no local copy yet. Prefix matching, case- and
+    /// recency — followed by bundled foods that have no local copy yet (a copy merged into a still-active food counts as
+    /// one). Prefix matching, case- and
     /// diacritic-insensitive ("cokolada" finds "Čokolada", "chick br" finds "Chicken breast").
     public func search(_ query: String, limit: Int = 50) throws -> [FoodSearchResult] {
         guard let pattern = Self.ftsPattern(query) else { return [] }
@@ -130,9 +131,27 @@ public struct FoodSearch: Sendable {
         var results = foods.map(FoodSearchResult.food)
         guard results.count < limit, let bundled else { return results }
 
-        let copied = Set(foods.filter { $0.source == .bundled }.compactMap(\.sourceID))
+        // The bundled index is built from USDA FDC with `source_id` = FDC id, the ids online USDA search returns, so a
+        // food saved from either is the same as the bundled row.
+        let copied = Set(foods.filter { $0.source == .bundled || $0.source == .usda }.compactMap(\.sourceID))
+        // A copy merged into another food (Duplicate foods) counts as local while the kept food is active: the kept
+        // food stands for it (shown above when it matches the query itself), so the bundled row doesn't come back.
         let alreadyLocal = try database.reader.read { db in
-            try Set(String.fetchAll(db, sql: "SELECT source_id FROM food WHERE source = 'bundled' AND source_id IS NOT NULL AND deleted_at IS NULL"))
+            var ids = try Set(String.fetchAll(db, sql: """
+            SELECT source_id FROM food
+            WHERE source IN ('bundled', 'usda') AND source_id IS NOT NULL AND deleted_at IS NULL
+            """))
+            let merged = try Food.fetchAll(db, sql: """
+            SELECT * FROM food
+            WHERE source IN ('bundled', 'usda') AND source_id IS NOT NULL AND deleted_at IS NOT NULL
+              AND merged_into_id IS NOT NULL
+            """)
+            for food in merged {
+                if let sourceID = food.sourceID, !ids.contains(sourceID), try FoodRepository.mergeKeeper(db, of: food) != nil {
+                    ids.insert(sourceID)
+                }
+            }
+            return ids
         }
         for item in try bundled.search(query, limit: limit) where !copied.contains(item.sourceID) && !alreadyLocal.contains(item.sourceID) {
             results.append(.bundled(item))

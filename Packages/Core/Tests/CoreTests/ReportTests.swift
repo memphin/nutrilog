@@ -78,6 +78,30 @@ struct WeeklyReportTests {
         #expect(report.balanceKcal == -400)
     }
 
+    @Test func `today's unfinished Health totals are left out of the averages`() {
+        var days = week([1900, 2100, 2000, 2000, 2000, 2000, nil])
+        for index in days.indices {
+            days[index].steps = 9000
+            days[index].waterMl = 2000
+        }
+        let today = monday.adding(days: 6)
+        days[6].steps = 1500 // 8 am
+        days[6].waterMl = 250
+        days[6].sleepMin = 480
+        let report = WeeklyReport(days: days, today: today)
+        #expect(report.averageSteps == 9000)
+        #expect(report.averageWaterMl == 2000)
+        #expect(report.averageSleepMin == Stats.mean(days.map { $0.sleepMin.map(Double.init) })) // last night is over
+        // Without `today` (a past week) every day counts, as before.
+        let past = WeeklyReport(days: days)
+        let everyDay: Double = (6 * 9000 + 1500) / 7 // typed here: inline in #expect it times out the type-checker on CI
+        #expect(past.averageSteps == everyDay)
+        #expect(WeeklyReport(days: days, today: today.next).averageSteps == past.averageSteps)
+        // Only today in the range: no average yet rather than a misleading one.
+        let onlyToday = WeeklyReport(days: [days[6]], today: today)
+        #expect(onlyToday.averageSteps == nil && onlyToday.averageWaterMl == nil)
+    }
+
     @Test func `best and worst day by distance from the target`() {
         let report = WeeklyReport(days: week([1900, 2100, nil, 2500, 2010, nil, 1400]))
         #expect(report.bestDay?.day == monday.adding(days: 4))

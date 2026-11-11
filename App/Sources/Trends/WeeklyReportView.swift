@@ -10,10 +10,12 @@ enum WeeklyReportLoader {
         // One extra day in front for the trend before the week.
         let stats = try StatsLoader.load(weekStart.previous ... end, environment: environment)
         let snapshot = try? Expenditure.snapshot(environment: environment)
-        // Today is still being logged: it counts once it is over or marked as fully logged (as in the charts).
+        // Today is still being logged: it counts once it is over or marked as fully logged (as in the charts). Its
+        // steps and water are still growing, so the report leaves them out of the averages (as the charts do too).
         return WeeklyReport(
             days: IntakeStats.finished(Array(stats.dropFirst()), today: environment.today), trendBefore: stats.first?.trendKg,
             expenditureKcal: expenditure(for: end, snapshot: snapshot, environment: environment),
+            today: environment.today,
         )
     }
 
@@ -65,8 +67,8 @@ struct WeeklyReportView: View {
         .navigationTitle("Weekly report")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: Key(
-            week: weekStart ?? currentWeek, generation: environment.dataGeneration, unit: environment.energyUnit,
-            synced: environment.healthSync?.lastSyncedAt,
+            week: weekStart ?? currentWeek, today: environment.today, generation: environment.dataGeneration,
+            unit: environment.energyUnit, synced: environment.healthSync?.lastSyncedAt,
         )) { load() }
         .alert("Weekly report", isPresented: Binding(get: { errorMessage != nil }, set: {
             if !$0 {
@@ -79,6 +81,7 @@ struct WeeklyReportView: View {
 
     private struct Key: Hashable {
         var week: LocalDay
+        var today: LocalDay
         var generation: Int
         var unit: EnergyUnit
         var synced: Date?
@@ -202,7 +205,7 @@ struct WeeklyReportCard: View {
                         row("Steps", "\(steps.formatted(.number.precision(.fractionLength(0))))", detail: "per day")
                     }
                     if let sleep = report.averageSleepMin {
-                        row("Sleep", DashboardFormat.duration(Int(sleep.rounded())), detail: "per night")
+                        row("Sleep", DashboardFormat.duration(DisplayRounding.whole(sleep)), detail: "per night")
                     }
                     if let water = report.averageWaterMl {
                         row("Water", DashboardFormat.ml(water), detail: "per day")
@@ -254,7 +257,7 @@ struct WeeklyReportCard: View {
     }
 
     private func grams(_ value: Double) -> String {
-        "\(Int(value.rounded())) g"
+        "\(DisplayRounding.whole(value)) g"
     }
 
     private func dayName(_ day: LocalDay) -> String {

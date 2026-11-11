@@ -134,8 +134,9 @@ final class SmartLogModel {
             self.origin = origin
         }
 
+        /// The typed amount; nil unless it is a number above zero and at most `EntryLimits.maxAmount`.
         var grams: Double? {
-            Format.number(amountText).flatMap { $0 > 0 ? $0 : nil }
+            Format.number(amountText).flatMap { $0 > 0 && $0.isFinite && $0 <= EntryLimits.maxAmount ? $0 : nil }
         }
 
         var nutrients: Nutrients {

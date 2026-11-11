@@ -110,7 +110,8 @@ struct MetricChartView: View {
         var parts: [String] = []
         if metric == .macros {
             if let protein = point.proteinG, let carbs = point.carbsG, let fat = point.fatG {
-                parts.append("P \(Int(protein.rounded())) g · C \(Int(carbs.rounded())) g · F \(Int(fat.rounded())) g")
+                let grams = [protein, carbs, fat].map(DisplayRounding.whole)
+                parts.append("P \(grams[0]) g · C \(grams[1]) g · F \(grams[2]) g")
             } else {
                 parts.append("Not logged")
             }
@@ -254,8 +255,8 @@ struct MetricChartView: View {
         guard let goal else { return tint }
         switch metric {
         case .water: return GoalColor.water(value, goalMl: goal)
-        case .sleep: return GoalColor.sleep(minutes: value * 60, goal: Int((goal * 60).rounded()))
-        default: return GoalColor.steps(value, goal: Int(goal))
+        case .sleep: return GoalColor.sleep(minutes: value * 60, goal: DisplayRounding.whole(goal * 60))
+        default: return GoalColor.steps(value, goal: DisplayRounding.whole(goal))
         }
     }
 

@@ -47,6 +47,12 @@ public struct LocalBackups: Sendable {
     /// Writes a backup now and removes all but the newest `keep`.
     @discardableResult
     public func backupNow() throws -> Backup {
+        try backupNow(protecting: nil)
+    }
+
+    /// Writes a backup now and removes all but the newest `keep` — except `protected`, which stays even when it is
+    /// older (the folder then holds one extra file until the next backup prunes it).
+    private func backupNow(protecting protected: URL?) throws -> Backup {
         let now = clock.now()
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let url = directory.appendingPathComponent(Self.fileName(for: now))
@@ -57,7 +63,7 @@ public struct LocalBackups: Sendable {
                 [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication], ofItemAtPath: url.path,
             )
         #endif
-        for old in try list().dropFirst(Self.keep) {
+        for old in try list().dropFirst(Self.keep) where old.url.lastPathComponent != protected?.lastPathComponent {
             try? FileManager.default.removeItem(at: old.url)
         }
         return Backup(url: url, createdAt: Self.date(fromFileName: url.lastPathComponent) ?? now, sizeBytes: data.count)
@@ -73,10 +79,21 @@ public struct LocalBackups: Sendable {
         return try backupNow()
     }
 
-    /// Replaces all data with the backup's (like Import → Replace).
+    /// Replaces all data with the backup's (like Import → Replace). No safety backup; see `restoreKeepingCurrent(_:)`.
     @discardableResult
     public func restore(_ backup: Backup) throws -> DataPortability.ImportSummary {
         try portability.importJSON(Data(contentsOf: backup.url), mode: .replace)
+    }
+
+    /// Backs up the current data, then replaces it with `backup`'s, so the restore can be undone by restoring the
+    /// returned safety backup. The chosen backup is read before anything is written and is never pruned by the safety
+    /// backup, even when it is the oldest of `keep` (the folder then holds `keep + 1` until the next backup). Nothing
+    /// is restored when the safety backup can't be written.
+    @discardableResult
+    public func restoreKeepingCurrent(_ backup: Backup) throws -> (summary: DataPortability.ImportSummary, safetyBackup: Backup) {
+        let data = try Data(contentsOf: backup.url)
+        let safety = try backupNow(protecting: backup.url)
+        return try (portability.importJSON(data, mode: .replace), safety)
     }
 
     public func delete(_ backup: Backup) throws {

@@ -72,4 +72,54 @@ struct LocalDayTests {
         let now = Date(timeIntervalSince1970: 0)
         #expect(LocalDay.today(calendar: utc, now: now).isoString == "1970-01-01")
     }
+
+    func calendar(_ identifier: Calendar.Identifier, _ tz: String = "Asia/Bangkok") -> Calendar {
+        var c = Calendar(identifier: identifier)
+        c.timeZone = TimeZone(identifier: tz)!
+        return c
+    }
+
+    /// 12:00 on the Gregorian `iso` day in `tz`.
+    func noon(_ iso: String, _ tz: String = "Asia/Bangkok") throws -> Date {
+        try #require(LocalDay(iso)).date(atHour: 12, calendar: calendar(tz))
+    }
+
+    @Test(arguments: [Calendar.Identifier.buddhist, .hebrew, .persian, .japanese, .islamicUmmAlQura, .gregorian])
+    func `non-Gregorian device calendars still give the Gregorian day`(identifier: Calendar.Identifier) throws {
+        let cal = calendar(identifier)
+        // Buddhist 29 Feb 2571 was unparseable; Persian months 2/4/6 have 31 days; 2026-09-01 is Hebrew month 13.
+        for iso in ["2028-02-29", "2026-11-11", "2026-05-21", "2026-07-22", "2026-09-22", "2026-09-01", "2024-12-31"] {
+            let date = try noon(iso)
+            let day = LocalDay(date, calendar: cal)
+            #expect(day.isoString == iso)
+            #expect(LocalDay(day.isoString) == day) // round-trips through the stored string
+            #expect(LocalDay.today(calendar: cal, now: date) == day)
+            // Midnight in Bangkok, whatever the calendar system.
+            let start = day.startDate(calendar: cal)
+            #expect(start == date.addingTimeInterval(-12 * 3600))
+            #expect(day.dateInterval(calendar: cal).duration == 86400)
+            #expect(day.date(atHour: 12, calendar: cal) == date)
+            #expect(day.adding(days: -2) < day)
+            let range = day.adding(days: -2) ... day // built like the app does: traps if inverted
+            #expect(range.lowerBound.days(until: range.upperBound) == 2)
+            #expect(day.weekday == calendar("UTC").component(.weekday, from: try noon(iso, "UTC")))
+        }
+    }
+
+    @Test func `Hebrew month 13 and Buddhist years no longer leak into the day`() throws {
+        // 2026-09-01 is 19 Elul 5786, which Foundation numbers month 13; 2026 is Buddhist year 2569.
+        let date = try noon("2026-09-01")
+        let hebrew = LocalDay(date, calendar: calendar(.hebrew))
+        #expect(hebrew.isoString == "2026-09-01")
+        #expect(hebrew.adding(days: -2).isoString == "2026-08-30")
+        #expect(LocalDay(date, calendar: calendar(.buddhist)).year == 2026)
+        #expect(LocalDay(date, calendar: calendar(.japanese)).year == 2026)
+    }
+
+    @Test func `time zone of a non-Gregorian calendar is honoured`() {
+        // 2026-11-09T23:30Z is already the 10th in Zagreb.
+        let date = Date(timeIntervalSince1970: 1_794_267_000)
+        #expect(LocalDay(date, calendar: calendar(.buddhist, "UTC")).isoString == "2026-11-09")
+        #expect(LocalDay(date, calendar: calendar(.buddhist, "Europe/Zagreb")).isoString == "2026-11-10")
+    }
 }

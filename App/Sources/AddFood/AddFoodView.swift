@@ -35,6 +35,8 @@ struct AddFoodView: View {
     @State private var renamingMeal: MealTemplateDetail?
     @State private var editingMeal: MealSelection?
     @State private var mealName = ""
+    /// Undo for a deleted saved meal, like in the Foods tab.
+    @State private var undo = UndoCenter()
 
     /// Where a typed search looks: this iPhone (own foods + bundled index) or online (OFF + USDA, backlog #22).
     enum SearchScope: String, CaseIterable, Identifiable {
@@ -160,7 +162,7 @@ struct AddFoodView: View {
                 MealLogSheet(meal: meal, target: target) { dismiss() }
             }
             .sheet(item: $editingMeal, onDismiss: reloadLists) { selection in
-                MealEditorView(mealID: selection.id)
+                MealEditorView(mealID: selection.id, onDeleted: { mealWasDeleted($0) })
             }
             .alert("Rename meal", isPresented: Binding(get: { renamingMeal != nil }, set: {
                 if !$0 {
@@ -193,7 +195,9 @@ struct AddFoodView: View {
             })) {
                 Button("OK", role: .cancel) {}
             } message: { Text(errorMessage ?? "") }
+            .undoToast(undo)
         }
+        .onChange(of: environment.dataGeneration) { undo.dismiss() }
     }
 
     private var slotName: String {
@@ -232,9 +236,26 @@ struct AddFoodView: View {
     private func deleteMeal(_ meal: MealTemplateDetail) {
         do {
             try environment.meals?.softDelete(id: meal.id)
-            reloadLists()
+            mealWasDeleted(meal)
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Reloads and offers undo for a meal that was just deleted (here or in the meal editor).
+    private func mealWasDeleted(_ meal: MealTemplateDetail) {
+        reloadLists()
+        let env = environment
+        let generation = env.dataGeneration
+        undo.offer("Deleted \(meal.template.name)") {
+            // Skipped when the data was replaced since (JSON import).
+            guard env.dataGeneration == generation else { return }
+            do {
+                try env.meals?.restore(id: meal.id)
+                reloadLists()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         }
     }
 

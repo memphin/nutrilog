@@ -73,7 +73,8 @@ struct ServingWeightPrompt: View {
         do {
             // Quality follows the stored copy (it may predate this search result), not the tapped draft.
             let updated = try detail.convertingPerServingPlaceholder(servingWeight: grams)
-            try onDone(foods.save(updated))
+            // Also rescales what was logged, planned or saved with the placeholder, so it stays "1 serving".
+            try onDone(foods.saveConvertedPlaceholder(updated))
         } catch {
             errorMessage = error.localizedDescription
         }

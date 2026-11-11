@@ -213,8 +213,8 @@ struct EstimateDaysView: View {
                 ForEach(estimate.days.reversed(), id: \.day) { day in
                     VStack(alignment: .leading, spacing: NL.Spacing.xxs) {
                         LabeledContent(day.day.startDate().formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated))) {
-                            Text(day.isLogged ? unit.format(day.kcalIn) : "not used").monospacedDigit()
-                                .foregroundStyle(day.isLogged ? .primary : .tertiary)
+                            Text(value(day)).monospacedDigit()
+                                .foregroundStyle(estimate.isUsed(day) ? .primary : .tertiary)
                         }
                         Text(detail(day)).font(.caption).foregroundStyle(.secondary)
                     }
@@ -225,7 +225,8 @@ struct EstimateDaysView: View {
             } footer: {
                 Text(
                     "Days with fewer than \(AdaptiveTDEE.minimumEntries) entries are left out unless you mark them as fully "
-                        + "logged in the diary.",
+                        + "logged in the diary, and so are partly logged days: under half of your usual day and not marked "
+                        + "as fully logged.",
                 )
             }
         }
@@ -236,8 +237,19 @@ struct EstimateDaysView: View {
         }
     }
 
+    /// The day's energy when it went into the mean, else why not.
+    private func value(_ day: TDEEDay) -> String {
+        if estimate.isPartial(day.day) {
+            return "\(unit.format(day.kcalIn)) · left out"
+        }
+        return day.isLogged ? unit.format(day.kcalIn) : "not used"
+    }
+
     private func detail(_ day: TDEEDay) -> String {
         var parts: [String] = []
+        if estimate.isPartial(day.day) {
+            parts.append("partly logged")
+        }
         if day.isComplete {
             parts.append("marked fully logged")
         } else {

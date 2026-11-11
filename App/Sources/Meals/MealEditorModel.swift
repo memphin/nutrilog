@@ -23,8 +23,17 @@ final class MealEditorModel {
             saved = isSaved ? (amount, servingID) : nil
         }
 
+        /// The typed amount; nil unless it is a number above zero and at most `EntryLimits.maxAmount`.
         var amount: Double? {
-            Format.number(amountText).flatMap { $0 > 0 && $0.isFinite ? $0 : nil }
+            Format.number(amountText).flatMap { $0 > 0 && $0.isFinite && $0 <= EntryLimits.maxAmount ? $0 : nil }
+        }
+
+        /// True when the typed amount is a number above `EntryLimits.maxAmount` (it needs a different message than an
+        /// empty or zero amount). Parsed without `Format.number`'s cap, so "5000000" or "1e30" counts as too large too.
+        var isTooLarge: Bool {
+            let cleaned = amountText.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: ".")
+            guard let value = Double(cleaned), !value.isNaN else { return false }
+            return value > EntryLimits.maxAmount
         }
 
         /// Nutrients of the amount at the food's current values; zero while the amount is invalid.
@@ -111,10 +120,22 @@ final class MealEditorModel {
         }
         if rows.isEmpty {
             errors.append("Add at least one food.")
-        } else if items == nil {
-            errors.append("Every food needs an amount greater than zero.")
+        } else if let message = amountError {
+            errors.append(message)
         }
         return errors
+    }
+
+    static let missingAmountMessage = "Every food needs an amount greater than zero."
+    static var tooLargeAmountMessage: String {
+        "An amount can't be more than \(EntryLimits.maxAmount.formatted(.number.precision(.fractionLength(0))))."
+    }
+
+    /// Why the rows can't be saved; nil when every amount is valid. A missing or zero amount comes first: it is
+    /// the more basic problem, and its message covers every row.
+    private var amountError: String? {
+        guard items == nil else { return nil }
+        return rows.contains { $0.amount == nil && !$0.isTooLarge } ? Self.missingAmountMessage : Self.tooLargeAmountMessage
     }
 
     /// Whether saving would change anything.
@@ -125,7 +146,7 @@ final class MealEditorModel {
     /// Saves (creates the meal, or renames it and replaces its foods); returns the stored meal.
     @discardableResult
     func save(to meals: MealTemplateRepository) throws -> MealTemplateDetail {
-        guard let items, !items.isEmpty else { throw PersistenceError.validation("Every food needs an amount greater than zero.") }
+        guard let items, !items.isEmpty else { throw PersistenceError.validation(amountError ?? Self.missingAmountMessage) }
         let id: String
         if let mealID {
             try meals.rename(id: mealID, to: name)

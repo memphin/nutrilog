@@ -52,6 +52,7 @@ struct ProfileTargetsView: View {
             try model.load(
                 profile: profiles.profile(), target: profiles.target(on: today), latestWeightKg: latest?.kg, weightDay: latest?.day,
                 measured: Expenditure.measured(environment: environment),
+                macrosInGrams: try? profiles.setting(TargetsModel.macrosInGramsKey, as: Bool.self),
             )
             self.model = model
         } catch {
@@ -149,15 +150,11 @@ private struct TargetsForm: View {
                         }
                     }
                     .accessibilityElement(children: .combine)
-                    if let target = model.formulaKcal {
-                        LabeledContent("Suggested target", value: unit.format(target)).bold()
-                    }
+                    suggestedTarget
                 } else if let bmr = model.bmr, let tdee = model.tdee {
                     LabeledContent("BMR (Mifflin-St Jeor)", value: unit.format(bmr))
                     LabeledContent("Maintenance (× \(model.activity.factor.formatted()))", value: unit.format(tdee))
-                    if let target = model.formulaKcal {
-                        LabeledContent("Suggested target", value: unit.format(target)).bold()
-                    }
+                    suggestedTarget
                 } else {
                     Text(model.weightKg == nil
                         ? "Add a weight on Today and fill in height, birth date and sex to calculate a target."
@@ -190,7 +187,7 @@ private struct TargetsForm: View {
                     LabeledContent("Protein") { trailingField($model.proteinPct, "%") }
                     LabeledContent("Carbs") { trailingField($model.carbsPct, "%") }
                     LabeledContent("Fat") { trailingField($model.fatPct, "%") }
-                    LabeledContent("Total", value: "\(Int(model.percentSum.rounded())) %")
+                    LabeledContent("Total", value: "\(DisplayRounding.whole(model.percentSum)) %")
                         .foregroundStyle(abs(model.percentSum - 100) <= 0.5 ? Color.secondary : Color.red)
                     if let macros = model.macros {
                         MacroLine(protein: macros.proteinG, carbs: macros.carbsG, fat: macros.fatG)
@@ -201,7 +198,8 @@ private struct TargetsForm: View {
                     LabeledContent("Fat") { trailingField($model.fatG, "g") }
                     if let diff = model.gramsEnergyMismatch, abs(diff) > 50 {
                         Text(
-                            "These macros add up to \(diff > 0 ? "\(Int(diff)) kcal more" : "\(Int(-diff)) kcal less") than the calorie target.",
+                            "These macros add up to \(DisplayRounding.whole(abs(diff))) kcal \(diff > 0 ? "more" : "less") "
+                                + "than the calorie target.",
                         )
                         .font(.footnote)
                         .foregroundStyle(.orange)
@@ -216,6 +214,21 @@ private struct TargetsForm: View {
                 Section {
                     ForEach(model.validationErrors, id: \.self) { Text($0).foregroundStyle(.red) }
                 }
+            }
+        }
+    }
+
+    /// The suggested target, with a note when the minimum target is what sets it (so it isn't silently different
+    /// from maintenance ± the goal).
+    @ViewBuilder private var suggestedTarget: some View {
+        if let target = model.suggestedKcal {
+            LabeledContent("Suggested target", value: unit.format(target)).bold()
+            if model.suggestionRaisedToFloor, let formula = model.formulaKcal {
+                Text("\(model.dailyDelta < 0 ? "Maintenance minus your daily deficit" : "Maintenance") comes to "
+                    + "\(unit.format(formula)), below \(unit.format(AdaptiveTDEE.minimumTargetKcal)), the lowest target "
+                    + "the app suggests.")
+                    .font(.footnote)
+                    .foregroundStyle(.orange)
             }
         }
     }

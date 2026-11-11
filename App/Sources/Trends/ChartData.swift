@@ -183,7 +183,8 @@ enum ChartBuilder {
     ///   - stats: the days of the range, oldest first.
     ///   - today: when given, today's intake is drawn but left out of the average of the intake charts unless the
     ///     day is marked as fully logged — a half-logged day would pull the average down (the weekly report does
-    ///     the same, see `IntakeStats.finished`).
+    ///     the same, see `IntakeStats.finished`). Today's steps, water and total energy are drawn but never averaged:
+    ///     they keep growing until the day is over (as in `WeeklyReport`).
     static func series(
         _ metric: ChartMetric,
         range: ChartRange,
@@ -214,7 +215,13 @@ enum ChartBuilder {
             }
             return point
         }
-        let counted = metric == .energy || metric == .macros ? IntakeStats.finished(stats, today: today) : stats
+        let counted: [DayStats] = switch metric {
+        case .energy, .macros: IntakeStats.finished(stats, today: today)
+        // Totals that keep growing through the day: today is always unfinished (the weekly report does the same).
+        case .steps, .water, .totalEnergy: stats.filter { $0.day != today }
+        // Measurements stand on their own, and last night's sleep is over by morning.
+        case .weight, .bodyFat, .sleep, .restingHeartRate, .hrv: stats
+        }
         let values = counted.compactMap { value(metric, $0, unit: unit) }
         let groupsByWeek = metric.isBar && range.days > 31
         return ChartSeries(

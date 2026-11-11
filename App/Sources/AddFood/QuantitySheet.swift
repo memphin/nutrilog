@@ -38,13 +38,20 @@ struct QuantitySheet: View {
     }
 
     /// The amount typed in `unitChoice` ("base" or a serving id) as a quantity; nil for invalid input, or for
-    /// grams on a per-serving placeholder (its weight is a stand-in).
+    /// grams on a per-serving placeholder (its weight is a stand-in), and for more than `EntryLimits.maxAmount` g/ml in
+    /// all (servings × serving weight included), so the button is disabled instead of the save failing.
     static func quantity(amountText: String, unitChoice: String, detail: FoodDetail) -> Quantity? {
         guard let amount = Format.number(amountText), amount >= 0 else { return nil }
+        let quantity: Quantity
         if let serving = detail.servings.first(where: { $0.id == unitChoice }) {
-            return .servings(count: amount, serving: serving.size)
+            quantity = .servings(count: amount, serving: serving.size)
+        } else if offersBaseUnit(detail) {
+            quantity = .base(amount)
+        } else {
+            return nil
         }
-        return offersBaseUnit(detail) ? .base(amount) : nil
+        let total = quantity.baseAmount
+        return total.isFinite && total <= EntryLimits.maxAmount ? quantity : nil
     }
 
     /// Whether grams/ml can be entered. Not for a per-serving placeholder: log it by servings only.

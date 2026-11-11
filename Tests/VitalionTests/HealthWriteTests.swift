@@ -229,6 +229,58 @@ struct HealthWriteServiceTests {
         #expect(writer.snapshot.samples(for: unwritten.id).isEmpty) // no backfill of changes made while off
     }
 
+    @Test func `a restore re-reads the toggle before the restored rows are drained`() async throws {
+        let portability = try #require(env.portability)
+        // A backup made while writing was off, restored on a phone where it is on.
+        try service.setEnabled(false)
+        _ = try logQuickAdd()
+        let offBackup = try portability.exportJSON()
+        try service.setEnabled(true)
+
+        try portability.importJSON(offBackup, mode: .replace)
+        #expect(try !links.pending().isEmpty) // the import queued its rows
+        try env.dataDidChangeExternally()
+        #expect(!service.isEnabled)
+        #expect(!service.writeToHealth) // what the Settings toggle shows
+        #expect(try links.pending().isEmpty)
+        await service.drain()
+        #expect(writer.snapshot.saveCalls.isEmpty)
+
+        // The reverse: a backup made while writing was on, restored while it is off, is written.
+        try service.setEnabled(true)
+        let entry = try logQuickAdd()
+        let onBackup = try portability.exportJSON()
+        try service.setEnabled(false)
+        try portability.importJSON(onBackup, mode: .replace)
+        try env.dataDidChangeExternally()
+        #expect(service.isEnabled)
+        await service.drain()
+        #expect(values(entry.id)[.dietaryEnergyConsumed] == 420)
+    }
+
+    @Test func `connecting Health doesn't wait for the backlog to be written`() async throws {
+        writer.update { state in
+            for type in HealthWriteType.allCases {
+                state.authorization[type] = .notDetermined
+            }
+        }
+        let early = try logQuickAdd()
+        await service.drain()
+        #expect(writer.snapshot.saveCalls.isEmpty)
+
+        let gate = SaveGate()
+        writer.update { state in
+            state.authorization = [:]
+            state.beforeSave = { await gate.pass() }
+        }
+        try await env.connectHealth() // returns while the write is held
+        #expect(values(early.id).isEmpty)
+        gate.open()
+        await env.healthWriteCatchUp?.value
+        #expect(values(early.id).count == 7)
+        #expect(try links.pending().isEmpty)
+    }
+
     // MARK: Failures and permissions
 
     @Test func `a failed write keeps the entry and is retried with a higher sync version`() async throws {
@@ -297,6 +349,7 @@ struct HealthWriteServiceTests {
         // Onboarding → permission sheet → allowed.
         writer.update { $0.authorization = [:] }
         try await env.connectHealth()
+        await env.healthWriteCatchUp?.value // connecting doesn't wait for the backlog
         #expect(values(early.id).count == 7)
         #expect(values(glass.id) == [.dietaryWater: 250])
         #expect(try links.pending().isEmpty)
@@ -385,8 +438,46 @@ struct HealthWriteServiceTests {
     @Test func `nothing is written on a device without Health`() async throws {
         let env = AppEnvironment.preview(clock: clock.appClock, healthWriter: FakeHealthWriter(isAvailable: false))
         let entry = try #require(env.diary).logQuickAdd(name: nil, nutrients: full, slotID: "lunch", day: today)
+        let repository = try HealthKitLinkRepository(#require(env.db))
+        #expect(try repository.pending().map(\.ownerID) == [entry.id]) // queued in the diary's transaction…
         await env.healthWrites?.drain()
-        #expect(try HealthKitLinkRepository(#require(env.db)).pending().map(\.ownerID) == [entry.id]) // kept, harmless
+        #expect(try repository.pending().isEmpty) // …and discarded: it could never be written
+        #expect(env.healthWrites?.queuedCount == 0)
+        _ = try #require(env.water).add(ml: 250, day: today)
+        await env.healthWrites?.drain()
+        #expect(try repository.pending().isEmpty) // the queue never grows
+    }
+
+    @Test func `rows waiting for a permission answer are kept for 7 days, then dropped`() async throws {
+        writer.update { state in
+            for type in HealthWriteType.allCases {
+                state.authorization[type] = .notDetermined
+            }
+        }
+        let old = try logQuickAdd()
+        clock.advance(hours: 3 * 24)
+        let recent = try logQuickAdd()
+        await service.drain()
+        #expect(try Set(links.pending().map(\.ownerID)) == [old.id, recent.id])
+        #expect(service.queuedCount == 2)
+
+        // Eight days after the first entry: it is dropped, the five-day-old one still waits.
+        clock.advance(hours: 5 * 24)
+        let glass = try #require(env.water).add(ml: 250, day: today)
+        await service.drain()
+        #expect(try Set(links.pending().map(\.ownerID)) == [recent.id, glass.id])
+        #expect(service.queuedCount == 2)
+        #expect(service.failedCount == 0)
+        #expect(writer.snapshot.saveCalls.isEmpty)
+
+        // A late grant still writes the last 7 days (and nothing older).
+        writer.update { $0.authorization = [:] }
+        await service.writeAccessDidChange()
+        #expect(values(recent.id).count == 7)
+        #expect(values(glass.id) == [.dietaryWater: 250])
+        #expect(values(old.id).isEmpty)
+        #expect(try links.pending().isEmpty)
+        #expect(service.queuedCount == 0)
     }
 
     // MARK: Orphan cleanup

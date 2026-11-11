@@ -119,7 +119,10 @@ public struct WeeklyReport: Hashable, Sendable {
     ///   - days: the seven days of the week, oldest first (other lengths work too).
     ///   - trendBefore: the weight trend on the day before the first day, if known.
     ///   - expenditureKcal: the adaptive estimate (or formula baseline) for the week.
-    public init(days: [DayStats], trendBefore: Double? = nil, expenditureKcal: Double? = nil) {
+    ///   - today: the current day. Health totals that accumulate through the day (steps, water) are still growing
+    ///     on it, so it is left out of their averages — as the caller leaves today's unfinished intake out
+    ///     (`IntakeStats.finished`). Sleep is unaffected: the night ending today is over by morning.
+    public init(days: [DayStats], trendBefore: Double? = nil, expenditureKcal: Double? = nil, today: LocalDay? = nil) {
         precondition(!days.isEmpty, "a report needs at least one day")
         self.days = days
         start = days[0].day
@@ -132,9 +135,10 @@ public struct WeeklyReport: Hashable, Sendable {
             averageIntake = Nutrients.sum(logged.compactMap(\.intake)).scaled(by: 1 / Double(logged.count))
         }
         averageTargetKcal = Stats.mean(logged.map(\.targetKcal))
-        averageSteps = Stats.mean(days.map { $0.steps.map(Double.init) })
+        let finishedDays = days.filter { $0.day != today }
+        averageSteps = Stats.mean(finishedDays.map { $0.steps.map(Double.init) })
         averageSleepMin = Stats.mean(days.map { $0.sleepMin.map(Double.init) })
-        averageWaterMl = Stats.mean(days.map(\.waterMl))
+        averageWaterMl = Stats.mean(finishedDays.map(\.waterMl))
         let ranked = logged.compactMap { day -> RankedDay? in
             guard let kcal = day.kcal, let target = day.targetKcal, target > 0 else { return nil }
             return RankedDay(day: day.day, kcal: kcal, targetKcal: target)

@@ -53,6 +53,9 @@ public struct Food: Codable, Hashable, Identifiable, Sendable, SyncedRecord {
     /// The per-100 values are really the values of one serving whose weight is unknown (a copy of a per-serving-only
     /// online food); the default serving is a stand-in of 100 g/ml. See ``FoodDetail/isPerServingPlaceholder``.
     public var perServingOnly: Bool
+    /// Set on a food merged away into another (Settings → Duplicate foods): the id of the food it was merged into,
+    /// which may itself have been merged later (see `FoodRepository.mergeKeeper`). nil for every other food.
+    public var mergedIntoID: String?
     public var createdAt: Date
     public var updatedAt: Date
     public var deletedAt: Date?
@@ -84,6 +87,7 @@ public struct Food: Codable, Hashable, Identifiable, Sendable, SyncedRecord {
         case lastServingID = "last_serving_id"
         case lastAmount = "last_amount"
         case perServingOnly = "per_serving_only"
+        case mergedIntoID = "merged_into_id"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case deletedAt = "deleted_at"

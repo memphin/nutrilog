@@ -177,6 +177,23 @@ struct WaterQuickAddTests {
         #expect(WaterQuickAdd.nextSize(after: [250, 500, 750, 1000]) == nil) // full
     }
 
+    @Test func `stepping skips over other sizes instead of merging`() {
+        #expect(WaterQuickAdd.stepped(250, by: 50, among: [500]) == 300)
+        #expect(WaterQuickAdd.stepped(450, by: 50, among: [500]) == 550) // skips the neighbour
+        #expect(WaterQuickAdd.stepped(550, by: -50, among: [500]) == 450)
+        #expect(WaterQuickAdd.stepped(450, by: 50, among: [500, 550, 600]) == 650) // skips a run of sizes
+        #expect(WaterQuickAdd.stepped(300, by: -50, among: [250]) == 200)
+    }
+
+    @Test func `stepping stays put at the range ends`() {
+        #expect(WaterQuickAdd.stepped(2000, by: 50, among: [250]) == 2000)
+        #expect(WaterQuickAdd.stepped(50, by: -50, among: [250]) == 50)
+        #expect(WaterQuickAdd.stepped(1950, by: 50, among: [2000]) == 1950) // the only step up is taken
+        #expect(WaterQuickAdd.stepped(100, by: -50, among: [50]) == 100)
+        #expect(WaterQuickAdd.stepped(500, by: 0, among: []) == 500)
+        #expect(WaterQuickAdd.stepped(Int.max, by: 50, among: []) == Int.max) // outside the range: no overflow
+    }
+
     @Test func `goal progress includes other apps' water`() {
         let half = WaterProgress(loggedMl: 500, otherAppsMl: 750, goalMl: 2500)
         #expect(half.totalMl == 1250)
@@ -365,6 +382,31 @@ struct DashboardModelTests {
         model.deleteWeight(entry)
         #expect(await waitUntil { model.snapshot.weight?.latestKg == 80.1 })
         #expect(model.snapshot.weight?.latest.isManual == false)
+    }
+
+    @Test func `weigh-ins older than the history window can still be listed, edited, deleted and restored`() async throws {
+        let model = DashboardModel(environment: env)
+        let observing = Task { await model.observe() }
+        defer { observing.cancel() }
+        let now = clock.appClock.now()
+        #expect(model.saveWeight(kg: 84, bodyFatPct: nil, measuredAt: now.addingTimeInterval(-86400 * 90)))
+        #expect(model.saveWeight(kg: 80, bodyFatPct: nil, measuredAt: now.addingTimeInterval(-3600)))
+        #expect(await waitUntil { model.data.manualWeights.map(\.kg) == [80] }) // the window leaves the old one out
+        #expect(model.allManualWeights == nil) // not loaded until the list is opened
+
+        let listing = Task { await model.observeAllWeights() }
+        defer { listing.cancel() }
+        #expect(await waitUntil { model.allManualWeights?.map(\.kg) == [80, 84] }) // newest first
+        let old = try #require(model.allManualWeights?.last)
+
+        #expect(model.saveWeight(kg: 83.5, bodyFatPct: nil, measuredAt: old.measuredAt, editing: old))
+        #expect(await waitUntil { model.allManualWeights?.map(\.kg) == [80, 83.5] })
+        let edited = try #require(try env.weights?.entry(id: old.id))
+        model.deleteWeight(edited)
+        #expect(await waitUntil { model.allManualWeights?.map(\.kg) == [80] })
+        model.undo.performUndo()
+        #expect(await waitUntil { model.allManualWeights?.map(\.kg) == [80, 83.5] })
+        #expect(model.data.manualWeights.map(\.kg) == [80])
     }
 
     @Test func `detail lists the last 14 days, newest first`() async throws {

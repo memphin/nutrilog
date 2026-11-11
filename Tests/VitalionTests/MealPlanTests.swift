@@ -65,3 +65,91 @@ struct MealPlanTests {
         #expect(try env.mealPlan?.pending(for: model.day).count == 1)
     }
 }
+
+@MainActor
+struct MealPlanFixTests {
+    func environment() throws -> (AppEnvironment, Food) {
+        let env = AppEnvironment.preview()
+        let food = try #require(try env.foods?.save(FoodDetail(food: Food(
+            name: "Oats",
+            per100: Nutrients(kcal: 380, proteinG: 13, carbsG: 68, fatG: 7),
+        ))).food)
+        return (env, food)
+    }
+
+    @Test func `plan calories on a future day plans instead of logging`() throws {
+        let (env, _) = try environment()
+        let tomorrow = env.today.next
+        let target = AddTarget(slotID: "lunch", day: tomorrow, planned: true)
+        try QuickAddView.save(
+            mode: target.quickAddMode, name: "Leftovers", nutrients: Nutrients(kcal: 500, proteinG: 0, carbsG: 0, fatG: 0),
+            slotID: target.slotID, environment: env,
+        )
+        #expect(try env.diary?.diary(for: tomorrow).entryCount == 0)
+        let pending = try #require(try env.mealPlan?.pending(for: tomorrow))
+        #expect(pending.count == 1)
+        #expect(pending.first?.isQuickAdd == true)
+        #expect(pending.first?.kcal == 500)
+
+        let logTarget = AddTarget(slotID: "lunch", day: env.today)
+        try QuickAddView.save(
+            mode: logTarget.quickAddMode, name: "", nutrients: Nutrients(kcal: 200, proteinG: 0, carbsG: 0, fatG: 0),
+            slotID: logTarget.slotID, environment: env,
+        )
+        #expect(try env.diary?.diary(for: env.today).entryCount == 1)
+    }
+
+    @Test func `prep list starting tomorrow stays inside the loaded plan`() throws {
+        let today = try #require(LocalDay("2026-11-09"))
+        let window = MealPlanView.planWindow(today: today)
+        for fromTomorrow in [false, true] {
+            for days in 1 ... MealPlanView.horizon {
+                let range = MealPlanView.prepRange(today: today, fromTomorrow: fromTomorrow, days: days)
+                #expect(window.contains(range.lowerBound) && window.contains(range.upperBound))
+                #expect(today.days(until: range.upperBound) - today.days(until: range.lowerBound) == days - 1)
+            }
+        }
+        let lastDay = MealPlanView.prepRange(today: today, fromTomorrow: true, days: MealPlanView.horizon).upperBound
+        #expect(lastDay == today.adding(days: MealPlanView.horizon))
+        #expect(window.lowerBound == today)
+    }
+
+    @Test func `planned food in a switched off slot keeps its section`() async throws {
+        let (env, food) = try environment()
+        let model = DiaryModel(environment: env, day: env.today.next)
+        try env.mealPlan?.plan(food: food, quantity: .base(60), slotID: "snacks", day: model.day)
+        let slots = try #require(try env.diary?.mealSlots(includeInactive: true)).map { slot in
+            var copy = slot
+            copy.isActive = slot.id != "snacks"
+            return copy
+        }
+        try env.profiles?.saveMealSlots(slots)
+
+        let diary = Task { await model.observeDiary() }
+        let plan = Task { await model.observePlan() }
+        defer {
+            diary.cancel()
+            plan.cancel()
+        }
+        #expect(await waitUntil { model.diary != nil && model.planned.count == 1 })
+        #expect(model.diary?.sections.contains { $0.slot.id == "snacks" } == false)
+        #expect(model.sections.map(\.id) == ["breakfast", "lunch", "dinner", "snacks"])
+        #expect(model.planned(in: "snacks").count == 1)
+        #expect(model.moveTargets(for: model.planned[0]).map(\.id) == ["breakfast", "lunch", "dinner", "snacks"])
+    }
+
+    @Test func `a logged entry can't move to a future day`() throws {
+        let (env, food) = try environment()
+        let model = DiaryModel(environment: env)
+        let entry = try #require(try env.diary?.log(food: food, quantity: .base(50), slotID: "lunch", day: model.today))
+        model.move(entry, toSlot: "dinner", day: model.today.next)
+        #expect(model.errorMessage != nil)
+        #expect(try env.diary?.diary(for: model.today.next).entryCount == 0)
+        #expect(try env.diary?.diary(for: model.today).entryCount == 1)
+
+        model.errorMessage = nil
+        model.move(entry, toSlot: "dinner", day: model.today.previous)
+        #expect(model.errorMessage == nil)
+        #expect(try env.diary?.diary(for: model.today.previous).entryCount == 1)
+    }
+}

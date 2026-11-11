@@ -68,6 +68,22 @@ public struct HealthKitOutboxItem: Codable, Hashable, Sendable, TimestampedRecor
     public typealias Columns = CodingKeys
 }
 
+/// The size of the `healthkit_outbox` queue (`HealthKitLinkRepository.pendingSummary()`).
+public struct HealthKitOutboxSummary: Hashable, Sendable {
+    /// Rows waiting to be written (pending, failed, or waiting for permission).
+    public var queuedCount: Int
+    /// Rows whose last attempt failed.
+    public var failedCount: Int
+    /// The error of the most recently queued failed row.
+    public var lastError: String?
+
+    public init(queuedCount: Int = 0, failedCount: Int = 0, lastError: String? = nil) {
+        self.queuedCount = queuedCount
+        self.failedCount = failedCount
+        self.lastError = lastError
+    }
+}
+
 /// A Vitalion row with Health samples whose row is soft-deleted or missing (orphan cleanup).
 public struct HealthKitOrphan: Hashable, Sendable {
     public var ownerTable: HealthKitOwner
@@ -162,6 +178,22 @@ public struct HealthKitLinkRepository: Sendable {
     public func pending() throws -> [HealthKitOutboxItem] {
         try database.reader.read { db in
             try HealthKitOutboxItem.order(HealthKitOutboxItem.Columns.generation).fetchAll(db)
+        }
+    }
+
+    /// How many rows are queued, how many of them failed, and the newest failure's error — the Settings counters,
+    /// without loading the queue.
+    public func pendingSummary() throws -> HealthKitOutboxSummary {
+        try database.reader.read { db in
+            let counts = try Row.fetchOne(db, sql: """
+            SELECT COUNT(*) AS queued, COUNT(last_error) AS failed FROM healthkit_outbox
+            """)
+            let lastError = try String.fetchOne(db, sql: """
+            SELECT last_error FROM healthkit_outbox WHERE last_error IS NOT NULL ORDER BY generation DESC LIMIT 1
+            """)
+            return HealthKitOutboxSummary(
+                queuedCount: counts?["queued"] ?? 0, failedCount: counts?["failed"] ?? 0, lastError: lastError,
+            )
         }
     }
 

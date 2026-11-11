@@ -51,8 +51,8 @@ struct ScanView: View {
     }
 
     private func scanner(_ model: ScanFlowModel) -> some View {
-        // Pause the camera (and its haptics and torch) while a lookup runs or a sheet covers it.
-        BarcodeScannerView(isPaused: model.showsResult || model.isResolving) { barcode in
+        // Pause the camera (and its haptics and torch) while a lookup runs or any sheet covers it (result, session log).
+        BarcodeScannerView(isPaused: model.pausesCamera(showingSessionLog: showSessionLog)) { barcode in
             Task { await model.handle(barcode.candidates) }
         }
         .overlay(alignment: .top) { statusOverlay(model) }
@@ -97,6 +97,8 @@ struct ScanView: View {
                         .monospacedDigit()
                 }
                 .buttonStyle(.glass)
+                // Not during a lookup: its result sheet couldn't present over the session log.
+                .disabled(model.isResolving)
                 .accessibilityHint("Shows the foods logged in this scanning session.")
             }
         }
@@ -168,6 +170,18 @@ struct ScanResultView: View {
                         loggedFood(detail)
                     }
                 }
+                // The food was created but its label photo couldn't be stored: say so, and offer to try again (the
+                // photo is kept until this is dismissed).
+                .alert(
+                    "Label photo not saved",
+                    isPresented: Binding(get: { model.labelPhotoFailure != nil }, set: { _ in }),
+                    presenting: model.labelPhotoFailure,
+                ) { _ in
+                    Button("Try Again") { retryLabelPhoto() }
+                    Button("Discard Photo", role: .cancel) { model.discardLabelPhoto() }
+                } message: { failure in
+                    Text(failure.message)
+                }
         }
         .task(id: model.product.flatMap { $0.isSaved ? $0.food.id : nil }) {
             await loadLabelPhoto()
@@ -231,6 +245,12 @@ struct ScanResultView: View {
         let store = environment.labelPhotos
         let data = await Task.detached(priority: .utility) { store.load(foodID: id) }.value
         labelPhoto = data.map { (id, $0) }
+    }
+
+    private func retryLabelPhoto() {
+        // Still failing: the model keeps the error, so the alert comes back.
+        guard model.retryLabelPhoto() else { return }
+        Task { await loadLabelPhoto() }
     }
 
     private func log() {

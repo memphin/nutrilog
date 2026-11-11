@@ -36,11 +36,16 @@ enum Format {
         }
     }
 
-    /// Parses user input with either "," or "." as decimal separator. Empty → nil.
+    /// The largest magnitude `number(_:)` accepts. Every field it parses (amounts, energy, grams, body weight,
+    /// percentages) stays far below it; the screens apply their own, tighter limits on top.
+    static let maxNumber: Double = 1_000_000
+
+    /// Parses user input with either "," or "." as decimal separator. Empty, not finite ("inf", "nan") or beyond
+    /// ±`maxNumber` ("1e30", 20 digits) → nil, so nonsense never reaches a calculation or an `Int` conversion.
     static func number(_ text: String) -> Double? {
         let cleaned = text.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: ".")
-        guard !cleaned.isEmpty else { return nil }
-        return Double(cleaned)
+        guard !cleaned.isEmpty, let value = Double(cleaned), value.isFinite, abs(value) <= maxNumber else { return nil }
+        return value
     }
 
     /// Value → text for editable fields ("12.5", "" for nil); uses the user's decimal separator.

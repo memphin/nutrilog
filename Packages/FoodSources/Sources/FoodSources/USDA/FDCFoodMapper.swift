@@ -92,10 +92,14 @@ public enum FDCFoodMapper {
         )
     }
 
-    /// Branded serving in g or ml; `nil` for other data types, unknown units and non-positive amounts.
+    /// Branded serving in g or ml; `nil` for other data types, unknown units and amounts that aren't above 0 and at
+    /// most ``OFFFoodMapper/maximumServing`` (after conversion).
     static func serving(_ food: FDCFood) -> (amount: Double, unit: BaseUnit)? {
-        guard let size = food.servingSize, size > 0, size.isFinite, let unit = food.servingSizeUnit else { return nil }
-        return MeasureParser.convert(size, unit: normalizedUnit(unit))
+        guard let size = food.servingSize, size > 0, size.isFinite, let unit = food.servingSizeUnit,
+              let serving = MeasureParser.convert(size, unit: normalizedUnit(unit)),
+              let amount = OFFFoodMapper.usableServing(serving.amount)
+        else { return nil }
+        return (amount, serving.unit)
     }
 
     /// Whether Branded values are per 100 g or per 100 ml, from `servingSizeUnit`; `nil` when unknown.

@@ -69,14 +69,14 @@ public extension FoodDetail {
         var serving: Serving?
         switch draft.basis {
         case .per100:
-            if let size = draft.serving, size.amount > 0, size.amount.isFinite {
+            if let size = draft.serving, size.amount > 0, size.amount <= Self.servingWeightRange.upperBound {
                 serving = Serving(label: size.label, grams: size.amount)
             }
         case .perServing:
             let label = draft.servingDescription ?? draft.serving?.label ?? Self.perServingFallbackLabel
             serving = Serving(label: label, grams: 100)
             food.perServingOnly = true
-            if let size = draft.serving, size.amount > 0, size.amount.isFinite {
+            if let size = draft.serving, size.amount > 0, size.amount <= Self.servingWeightRange.upperBound {
                 food.notes = Self.perServingUnusableWeightNote(size, isLiquid: draft.isLiquid)
             } else {
                 food.notes = Self.perServingUnknownWeightNote
@@ -105,6 +105,8 @@ public extension FoodRepository {
 public enum ServingWeightError: LocalizedError, Hashable, Sendable {
     /// Not a positive, finite amount.
     case notPositive
+    /// Positive but outside ``FoodDetail/servingWeightRange`` (e.g. 0.00001 g or 1 000 000 g).
+    case outOfRange
     /// The weight would give more energy per 100 than pure fat.
     case implausibleEnergy(kcalPer100: Double)
     /// The weight would give more than ~100 g of protein + carbs + fat per 100 g.
@@ -114,11 +116,21 @@ public enum ServingWeightError: LocalizedError, Hashable, Sendable {
         switch self {
         case .notPositive:
             "Enter a weight above 0."
+        case .outOfRange:
+            "Enter a weight between \(Self.number(FoodDetail.servingWeightRange.lowerBound, fractionDigits: 1)) "
+                + "and \(Self.number(FoodDetail.servingWeightRange.upperBound))."
         case let .implausibleEnergy(kcal):
-            "That weight would mean \(Int(kcal.rounded())) kcal per 100 — more than pure fat. Check the weight."
+            "That weight would mean \(Self.number(kcal)) kcal per 100 — more than pure fat. Check the weight."
         case let .implausibleMacros(grams):
-            "That weight would mean \(Int(grams.rounded())) g of protein, carbs and fat per 100. Check the weight."
+            "That weight would mean \(Self.number(grams)) g of protein, carbs and fat per 100. Check the weight."
         }
+    }
+
+    /// `value` for display without an `Int` conversion, so huge or non-finite values (a weight of 1e-17 g gives
+    /// ~1e19 kcal per 100) can't trap.
+    static func number(_ value: Double, fractionDigits: Int = 0) -> String {
+        guard value.isFinite else { return value.isNaN ? "?" : (value < 0 ? "-∞" : "∞") }
+        return value.formatted(.number.precision(.fractionLength(0 ... fractionDigits)))
     }
 }
 
@@ -127,6 +139,8 @@ public extension FoodDetail {
     static let maximumKcalPer100 = 900.0
     /// Highest believable protein + carbs + fat per 100 g (a little over 100 for label rounding).
     static let maximumMacroGramsPer100 = 105.0
+    /// Serving weights (g/ml) accepted by ``convertingPerServingPlaceholder(servingWeight:missing:)``.
+    static let servingWeightRange = 0.1 ... 100_000.0
 
     /// Whether `note` is one of the notes ``init(draft:)`` stores on a per-serving placeholder (and nothing the user
     /// wrote).
@@ -147,13 +161,14 @@ public extension FoodDetail {
     /// - Quality comes from the stored food: complete when no mandatory value is missing, otherwise the stored
     ///   quality is kept. `missing` is what the source lacks when known; `nil` infers it from the stored food
     ///   (a mandatory value of 0 counts as missing — a real 0 just keeps the food partial).
-    /// - Throws ``ServingWeightError`` for a non-positive weight or one that gives implausible values per 100
+    /// - Throws ``ServingWeightError`` for a non-positive weight, one outside ``servingWeightRange``, or one that gives implausible values per 100
     ///   (energy above ``maximumKcalPer100``, protein + carbs + fat above ``maximumMacroGramsPer100``).
     func convertingPerServingPlaceholder(
         servingWeight: Double,
         missing: Set<FoodDraft.MandatoryNutrient>? = nil,
     ) throws -> FoodDetail {
         guard servingWeight > 0, servingWeight.isFinite else { throw ServingWeightError.notPositive }
+        guard Self.servingWeightRange.contains(servingWeight) else { throw ServingWeightError.outOfRange }
         let per100 = Nutrients.per100(fromServing: food.per100, servingGrams: servingWeight)
         guard per100.kcal <= Self.maximumKcalPer100 else {
             throw ServingWeightError.implausibleEnergy(kcalPer100: per100.kcal)

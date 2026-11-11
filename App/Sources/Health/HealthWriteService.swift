@@ -20,8 +20,9 @@ import Persistence
 ///   foreground, pull-to-refresh, or the next change. The diary entry itself is never affected.
 /// - Permissions: only types the user allowed are written or deleted, and only their links change (links of other
 ///   types keep describing what is still in Health). A row none of whose types is allowed yet, with some still
-///   undecided, stays queued until the user answers; `writeAccessDidChange()` then drains it and also queues the
-///   last 7 days' entries that were never written.
+///   undecided, stays queued until the user answers — for at most `lateGrantDays` days, then it is dropped so the
+///   queue stays bounded; `writeAccessDidChange()` then drains it and also queues the last 7 days' entries that were
+///   never written. On a device without Health the queue is discarded at every drain.
 /// - Orphan cleanup (launch, foreground): links whose row is deleted or missing → delete the samples, then the links.
 /// - Writing off (Settings): the queue is discarded and nothing is written or deleted — a pass in progress stops
 ///   after the row it is writing — so samples already in Health stay as they are. Turning it back on resumes orphan
@@ -112,6 +113,25 @@ final class HealthWriteService {
         }
     }
 
+    /// Re-reads "Write to Apple Health" after an import or restore replaced the `setting` table. Call before the
+    /// queue is drained again (the import queued its rows). Off now: the queue is discarded, as when the user turns it
+    /// off; a pass in progress stops after its current row.
+    func reloadStoredSetting() {
+        let stored: Bool
+        do {
+            stored = try settings.setting(SettingKey.healthWriteEnabled, as: Bool.self) ?? true // missing means on
+        } catch {
+            return // unreadable: keep the current state rather than guess
+        }
+        settingError = nil
+        guard stored != isEnabled else { return }
+        isEnabled = stored
+        if !stored {
+            try? links.discardPending()
+            updateCounts()
+        }
+    }
+
     /// Drains the queue whenever a row is queued. Call once at launch.
     func start() {
         guard observation == nil else { return }
@@ -194,17 +214,26 @@ final class HealthWriteService {
             try? links.discardPending()
             return
         }
-        guard writer.isAvailable, let items = try? links.pending(), !items.isEmpty else { return }
+        guard writer.isAvailable else {
+            // No Health on this device: nothing will ever be written, so nothing is kept for later.
+            try? links.discardPending()
+            return
+        }
+        guard let items = try? links.pending(), !items.isEmpty else { return }
         let statuses = await authorizationStatuses()
+        let waitingSince = waitingWindowStart()
         for item in items {
             guard isEnabled else { return } // turned off during the pass: leave everything else alone
             let ownerTypes = Self.types(for: item.ownerTable)
             let allowed = ownerTypes.filter { statuses[$0] == .authorized }
             if allowed.isEmpty {
-                // Not asked yet: keep the row until the user answers (`writeAccessDidChange`). All denied: done.
-                // Only the owner's main types count (a weight waits for body mass, not for body fat, which an update
-                // added and which may stay unanswered for a long time).
-                if !Self.holdingTypes(for: item.ownerTable).contains(where: { statuses[$0] == .notDetermined }) {
+                // Not asked yet: keep the row until the user answers (`writeAccessDidChange`), but only for the last
+                // `lateGrantDays` days — the late grant re-queues that window's unwritten entries anyway, so older
+                // rows are dropped and the queue stays bounded. All denied: done. Only the owner's main types count
+                // (a weight waits for body mass, not for body fat, which an update added and which may stay
+                // unanswered for a long time).
+                let waiting = Self.holdingTypes(for: item.ownerTable).contains { statuses[$0] == .notDetermined }
+                if !waiting || item.queuedAt < waitingSince {
                     try? links.complete(item)
                 }
                 continue
@@ -307,11 +336,19 @@ final class HealthWriteService {
         owner == .weightEntry ? [.bodyMass] : types(for: owner)
     }
 
+    /// Midnight starting the `lateGrantDays`-day window `writeAccessDidChange()` re-queues: rows queued before it are
+    /// not kept while permission is still undecided.
+    private func waitingWindowStart() -> Date {
+        let calendar = calendarProvider()
+        let today = LocalDay.today(calendar: calendar, now: clock.now())
+        return today.adding(days: -(Self.lateGrantDays - 1)).startDate(calendar: calendar)
+    }
+
+    /// Counts only (no rows loaded), so a drain reads the queue once.
     private func updateCounts() {
-        let items = (try? links.pending()) ?? []
-        queuedCount = items.count
-        let failed = items.filter { $0.lastError != nil }
-        failedCount = failed.count
-        lastError = failed.last?.lastError
+        let summary = (try? links.pendingSummary()) ?? HealthKitOutboxSummary()
+        queuedCount = summary.queuedCount
+        failedCount = summary.failedCount
+        lastError = summary.lastError
     }
 }

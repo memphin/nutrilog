@@ -42,6 +42,13 @@ private struct MetricDetailView: View {
                     Button("Add weight", systemImage: "plus") { weightSheet = .new }
                 }
                 manualWeights
+                Section {
+                    // Loaded on demand: the dashboard only reads its history window, so older weigh-ins are
+                    // edited and deleted from this list.
+                    NavigationLink("All weigh-ins") { AllWeighInsView(model: model) }
+                } footer: {
+                    Text("Every weight entered in Vitalion, however old.")
+                }
             case .water:
                 Section {
                     WaterTileContent(water: model.snapshot.water, sizes: model.waterSizes) { model.addWater(ml: $0) }
@@ -78,6 +85,8 @@ private struct MetricDetailView: View {
             }
         }
         .navigationTitle(tile.title)
+        // Popping back from "Quick-add sizes" doesn't fire the dashboard root's onAppear; re-read the sizes here.
+        .onAppear { model.reloadSettings() }
         .refreshable { await model.refresh() }
         .task(id: model.data) { rows = model.history(for: tile) }
         .sheet(item: $weightSheet) { target in
@@ -91,21 +100,7 @@ private struct MetricDetailView: View {
         if !entries.isEmpty {
             Section("Entered in Vitalion") {
                 ForEach(Array(entries)) { entry in
-                    Button {
-                        weightSheet = .edit(entry)
-                    } label: {
-                        LabeledContent {
-                            Text([DashboardFormat.kg(entry.kg), entry.bodyFatPct.map(DashboardFormat.percent)]
-                                .compactMap(\.self).joined(separator: " · "))
-                                .monospacedDigit()
-                        } label: {
-                            Text(entry.measuredAt.formatted(date: .abbreviated, time: .shortened))
-                        }
-                    }
-                    .tint(.primary)
-                    .swipeActions {
-                        Button("Delete", role: .destructive) { model.deleteWeight(entry) }
-                    }
+                    ManualWeightRow(entry: entry, model: model) { weightSheet = .edit(entry) }
                 }
             }
         }
@@ -123,5 +118,59 @@ private struct MetricDetailView: View {
                 }
             }
         }
+    }
+}
+
+/// A weigh-in entered in Vitalion: tap to edit, swipe to delete (with undo).
+private struct ManualWeightRow: View {
+    let entry: WeightEntry
+    let model: DashboardModel
+    let edit: () -> Void
+
+    var body: some View {
+        Button(action: edit) {
+            LabeledContent {
+                Text([DashboardFormat.kg(entry.kg), entry.bodyFatPct.map(DashboardFormat.percent)]
+                    .compactMap(\.self).joined(separator: " · "))
+                    .monospacedDigit()
+            } label: {
+                Text(entry.measuredAt.formatted(date: .abbreviated, time: .shortened))
+            }
+        }
+        .tint(.primary)
+        .swipeActions {
+            Button("Delete", role: .destructive) { model.deleteWeight(entry) }
+        }
+    }
+}
+
+/// Every manual weigh-in, newest first — also those older than the dashboard's history window, which the weight
+/// detail doesn't list inline. Observed only while this screen is open.
+private struct AllWeighInsView: View {
+    @Bindable var model: DashboardModel
+    @State private var weightSheet: WeightSheetTarget?
+
+    var body: some View {
+        List {
+            if let entries = model.allManualWeights {
+                if entries.isEmpty {
+                    ContentUnavailableView(
+                        "No weigh-ins", systemImage: "scalemass", description: Text("Weights you enter in Vitalion appear here."),
+                    )
+                } else {
+                    ForEach(entries) { entry in
+                        ManualWeightRow(entry: entry, model: model) { weightSheet = .edit(entry) }
+                    }
+                }
+            } else {
+                ProgressView()
+            }
+        }
+        .navigationTitle("All weigh-ins")
+        .task { await model.observeAllWeights() }
+        .sheet(item: $weightSheet) { target in
+            WeightEntrySheet(model: model, editing: target.entry)
+        }
+        .undoToast(model.undo)
     }
 }

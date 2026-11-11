@@ -135,7 +135,7 @@ public final class FakeHealthWriter: HealthWriting {
     }
 
     private func mirrored(_ draft: HealthSampleDraft) -> HealthQuantitySample {
-        HealthQuantitySample(start: draft.date, value: draft.value, source: source)
+        HealthQuantitySample(start: draft.date, value: draft.value, source: source, externalID: draft.externalID)
     }
 }
 

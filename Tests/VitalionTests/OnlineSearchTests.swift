@@ -283,6 +283,16 @@ struct OnlineSearchModelTests {
         }
     }
 
+    @Test func `a result without energy shows a dash, not 0 kcal`() {
+        let missing = FoodDraft(
+            origin: .off, sourceID: "1", name: "Mystery bar", nutrients: Nutrients(kcal: 0, proteinG: 5, carbsG: 50, fatG: 10),
+            missingNutrients: [.energy],
+        )
+        #expect(OnlineFoodRow.energyText(missing, unit: .kcal) == nil)
+        let known = FoodDraft(origin: .off, sourceID: "2", name: "Water", nutrients: Nutrients(kcal: 0, proteinG: 0, carbsG: 0, fatG: 0))
+        #expect(OnlineFoodRow.energyText(known, unit: .kcal) == EnergyUnit.kcal.format(0)) // a real 0 stays 0
+    }
+
     @Test func `short queries don't go online`() async {
         let off = StubOFFSearch()
         let usda = StubUSDA()

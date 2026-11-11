@@ -69,6 +69,9 @@ final class AppEnvironment {
     /// Folder of the automatic local backups (FR-62); nil turns them off (tests, previews).
     let backupsDirectory: URL?
 
+    /// Writing the entries that waited for Health write permission, started by `connectHealth()` (tests await it).
+    @ObservationIgnored private(set) var healthWriteCatchUp: Task<Void, Never>?
+
     /// Bumped when the database contents change outside the normal flows (JSON import), so screens drop
     /// state that may no longer match the data, such as a pending undo.
     private(set) var dataGeneration = 0
@@ -179,9 +182,11 @@ final class AppEnvironment {
     // MARK: Health background work (backlog #26, #27)
 
     /// At launch (also a background launch for Health delivery): register the observer queries once the user has been
-    /// asked for access, start writing queued entries, clean up orphaned samples.
+    /// asked for access, start writing queued entries, clean up orphaned samples. Also brings the check-in reminder in
+    /// line with its stored setting (e.g. after a reinstall from a backup).
     func startHealthBackgroundWork() {
         healthWrites?.start()
+        reconcileCheckInReminder()
         Task {
             await healthSync?.startObserving()
             await healthWrites?.runMaintenance()
@@ -193,13 +198,17 @@ final class AppEnvironment {
         await healthWrites?.runMaintenance()
     }
 
-    /// Onboarding "Connect": shows the permission sheet, starts the backfill and the observers, then writes the
-    /// entries that were waiting for write permission (plus the last 7 days' unwritten ones). Throws when the sheet
-    /// could not be shown.
+    /// Onboarding "Connect": shows the permission sheet, starts the backfill and the observers, then starts writing the
+    /// entries that were waiting for write permission (plus the last 7 days' unwritten ones). Doesn't wait for those
+    /// writes — a long backlog must not hold the sheet; `healthWriteCatchUp` is that work. Throws when the sheet could
+    /// not be shown.
     func connectHealth() async throws {
         guard let healthSync else { return }
         try await healthSync.connect()
-        await healthWrites?.writeAccessDidChange()
+        if let healthWrites {
+            // Drains are serialised inside the service (one pass at a time, a request during a pass adds one more).
+            healthWriteCatchUp = Task { await healthWrites.writeAccessDidChange() }
+        }
     }
 
     /// Pull-to-refresh (dashboard): retry pending Health writes, then re-read Health. Returns when done.
@@ -248,6 +257,7 @@ final class AppEnvironment {
         guard unit != energyUnit else { return }
         try profiles?.setSetting(SettingKey.energyUnit, unit.rawValue)
         energyUnit = unit
+        widgetDataDidChange() // the widgets show energy in this unit
     }
 
     /// Reloads the settings cached here from the database.
@@ -306,10 +316,40 @@ final class AppEnvironment {
         return (resolved.key, resolved.source, unreadable)
     }
 
-    /// Call after an import replaced or merged data: invalidates pending undo actions and reloads cached settings.
+    /// Call after an import replaced or merged data (synchronously, before the Health queue gets a chance to drain):
+    /// invalidates pending undo actions, reloads cached settings — the energy unit and "Write to Apple Health", so the
+    /// rows the import queued are written or discarded by the stored choice — reconciles the check-in reminder with the
+    /// stored toggle and refreshes the widgets.
     func dataDidChangeExternally() throws {
         dataGeneration += 1
+        healthWrites?.reloadStoredSetting()
+        reconcileCheckInReminder()
+        defer { widgetDataDidChange() }
         try reloadSettings()
+    }
+
+    /// Schedules or cancels the weekly check-in notification to match the stored toggle and weekday (they arrive with
+    /// an import or restore, which doesn't touch the notification itself). Never asks for notification permission:
+    /// without it, nothing is scheduled. Returns the work, for tests; nil when the settings can't be read.
+    @discardableResult
+    func reconcileCheckInReminder() -> Task<Void, Never>? {
+        guard let profiles else { return nil }
+        let wanted: Bool
+        do {
+            wanted = try profiles.setting(SettingKey.checkInReminderEnabled, as: Bool.self) ?? false // missing means off
+        } catch {
+            return nil // unreadable: leave the notification as it is
+        }
+        let weekday = (try? profiles.profile().checkinWeekday) ?? 2
+        let reminder = checkInReminder
+        return Task {
+            guard wanted else {
+                await reminder.cancel()
+                return
+            }
+            guard await reminder.isAuthorized() else { return }
+            try? await reminder.schedule(weekday: weekday, hour: LocalNotificationCheckInReminder.defaultHour)
+        }
     }
 
     /// Production environment: on-disk database in Application Support + bundled food index.

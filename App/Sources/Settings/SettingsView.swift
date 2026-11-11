@@ -188,6 +188,7 @@ struct SettingsView: View {
             guard profile.waterGoalMl != waterGoal else { return }
             profile.waterGoalMl = waterGoal
             try profiles.save(profile)
+            environment.widgetDataDidChange() // the water widget shows the goal
         } catch {
             errorMessage = "Couldn't save the water goal: \(error.localizedDescription)"
         }
@@ -199,7 +200,13 @@ struct SettingsView: View {
 struct MealSlotsEditor: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var slots: [MealSlot] = []
+    @State private var loaded = false
     @State private var errorMessage: String?
+
+    /// Every slot has a name and at least one is active; otherwise nothing is saved.
+    private var isValid: Bool {
+        !slots.contains { $0.name.trimmingCharacters(in: .whitespaces).isEmpty } && slots.contains(where: \.isActive)
+    }
 
     var body: some View {
         List {
@@ -225,10 +232,21 @@ struct MealSlotsEditor: View {
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save") { save() }
-                    .disabled(slots.contains { $0.name.trimmingCharacters(in: .whitespaces).isEmpty } || !slots.contains(where: \.isActive))
+                    .disabled(!isValid)
             }
         }
-        .task { slots = (try? environment.diary?.mealSlots(includeInactive: true)) ?? [] }
+        // Once: coming back to the screen (another tab and back) must not overwrite edits with the stored slots.
+        .task {
+            guard !loaded else { return }
+            slots = (try? environment.diary?.mealSlots(includeInactive: true)) ?? []
+            loaded = true
+        }
+        // Like every other settings screen, leaving keeps the changes — when they can be saved.
+        .onDisappear {
+            if loaded, isValid {
+                save()
+            }
+        }
         .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: {
             if !$0 {
                 errorMessage = nil
@@ -245,6 +263,7 @@ struct MealSlotsEditor: View {
                 copy.name = slot.name.trimmingCharacters(in: .whitespaces)
                 return copy
             }
+            // The array order becomes `sortOrder`, so reordering is saved too.
             try environment.profiles?.saveMealSlots(trimmed)
             slots = try (environment.diary?.mealSlots(includeInactive: true)) ?? trimmed
         } catch {
@@ -351,9 +370,24 @@ struct DataSettingsView: View {
     private func runImport(_ data: Data, mode: DataPortability.ImportMode) {
         pendingImport = nil
         guard let portability = environment.portability else { return }
+        // Keep the current data recoverable (Settings → Backups). A replace doesn't go ahead without that backup; a
+        // merge only adds or updates records, so it does, and says so.
+        var backupFailure: String?
+        do {
+            try environment.backups?.backupNow()
+        } catch {
+            guard mode == .merge else {
+                message = "Nothing was imported: the backup of your current data couldn't be written. \(error.localizedDescription)"
+                return
+            }
+            backupFailure = error.localizedDescription
+        }
         do {
             let summary = try portability.importJSON(data, mode: mode)
             message = "Imported: \(summary.inserted) new, \(summary.updated) updated, \(summary.skipped) unchanged."
+            if let backupFailure {
+                message = (message ?? "") + " No backup of the previous data was made: \(backupFailure)"
+            }
             do {
                 // Settings cached in memory and pending undo actions may not match the imported data.
                 try environment.dataDidChangeExternally()

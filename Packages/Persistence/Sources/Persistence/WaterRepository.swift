@@ -42,6 +42,7 @@ public struct WaterRepository: Sendable {
     @discardableResult
     public func add(ml: Double, day: LocalDay, loggedAt: Date? = nil) throws -> WaterEntry {
         guard ml > 0, ml.isFinite else { throw PersistenceError.validation("amount must be greater than zero") }
+        try EntryLimits.validate(amount: ml)
         let now = clock.now()
         return try database.writer.write { db in
             let entry = WaterEntry(

@@ -33,6 +33,11 @@ struct AddTarget: Identifiable {
     var id: String {
         "\(day)-\(slotID)\(planned ? "-plan" : "")"
     }
+
+    /// The quick-add form for this target: plans the calories when `planned`, logs them otherwise.
+    var quickAddMode: QuickAddView.Mode {
+        .create(slotID: slotID, day: day, planned: planned)
+    }
 }
 
 private struct DiaryContent: View {
@@ -85,7 +90,8 @@ private struct DiaryContent: View {
             }
 
             if let diary = model.diary {
-                ForEach(diary.sections) { section in
+                // Includes switched-off slots that only hold planned food, so that plan stays visible and editable.
+                ForEach(model.sections) { section in
                     Section {
                         ForEach(section.entries) { entry in
                             EntryRow(
@@ -200,7 +206,7 @@ private struct DiaryContent: View {
             AddFoodView(target: target)
         }
         .sheet(item: $quickAddTarget) { target in
-            QuickAddView(mode: .create(slotID: target.slotID, day: target.day))
+            QuickAddView(mode: target.quickAddMode)
         }
         .sheet(item: $editing) { entry in
             EditEntryView(entry: entry)
@@ -234,7 +240,7 @@ private struct DiaryContent: View {
         }
         .sheet(item: $movingPlanned) { planned in
             MoveToDateSheet(
-                title: "Move \(planned.displayName)", day: planned.day, slotID: planned.mealSlotID, slots: model.slots,
+                title: "Move \(planned.displayName)", day: planned.day, slotID: planned.mealSlotID, slots: model.moveTargets(for: planned),
             ) { slotID, day in
                 model.movePlanned(planned, toSlot: slotID, day: day)
             }
@@ -270,7 +276,7 @@ private struct DiaryContent: View {
 
     // MARK: Pieces
 
-    private func sectionHeader(_ section: DayDiary.Section) -> some View {
+    private func sectionHeader(_ section: DiaryModel.MealSection) -> some View {
         HStack {
             Text(section.slot.name)
             Spacer()

@@ -332,6 +332,34 @@ struct LenientParsingTests {
         #expect(parsed.unit == .grams)
     }
 
+    private static let multipackAndFractionCases: [(String, Double, BaseUnit)] = [
+        ("1/2 oz", 14.175, .grams),
+        ("1/2 l", 500, .milliliters),
+        ("1 1/2 oz", 42.524, .grams),
+        ("3/4 cup (180 ml)", 180, .milliliters),
+        ("2 x 125 ml", 250, .milliliters),
+        ("2x125ml", 250, .milliliters),
+        ("4 × 25 g", 100, .grams),
+        ("1 portion (2 x 12,5 g)", 25, .grams),
+        ("0,125 l", 125, .milliliters),
+        ("12,5 g", 12.5, .grams),
+        ("30g", 30, .grams),
+        ("1 portion (30 g)", 30, .grams),
+    ]
+
+    @Test func `multipacks multiply and fractions divide`() throws {
+        for (text, amount, unit) in Self.multipackAndFractionCases {
+            let parsed = try #require(MeasureParser.parse(text), "\(text)")
+            #expect(isClose(parsed.amount, amount, tolerance: 0.001), "\(text): \(parsed.amount)")
+            #expect(parsed.unit == unit, "\(text)")
+        }
+    }
+
+    @Test(arguments: ["1.000 g", "1,000 g", "1.500 kg", "2 x 1.000 g", "1/0 l", "0/2 l", "1.5/2 l"])
+    func `ambiguous or unusable amounts have no measure`(text: String) {
+        #expect(MeasureParser.parse(text) == nil)
+    }
+
     @Test(arguments: ["1 shot", "1 large egg", "2 glasses", "", "30"])
     func `text without a unit has no measure`(text: String) {
         #expect(MeasureParser.parse(text) == nil)

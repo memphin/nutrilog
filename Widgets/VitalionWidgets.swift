@@ -10,10 +10,14 @@ struct SnapshotEntry: TimelineEntry {
     let snapshot: WidgetSnapshot?
 
     /// The snapshot as it should be shown on `date`: a snapshot of an earlier day becomes an empty day that keeps
-    /// the targets (nothing is logged yet today), instead of yesterday's numbers.
+    /// the targets (nothing is logged yet today), instead of yesterday's numbers. The app stores Gregorian days, so
+    /// the day is built with a Gregorian calendar in `calendar`'s time zone (a Buddhist-calendar device would
+    /// otherwise yield year 2569 and never match).
     static func current(_ snapshot: WidgetSnapshot?, on date: Date, calendar: Calendar = .current) -> WidgetSnapshot? {
         guard var snapshot else { return nil }
-        let parts = calendar.dateComponents([.year, .month, .day], from: date)
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.timeZone = calendar.timeZone
+        let parts = gregorian.dateComponents([.year, .month, .day], from: date)
         let today = String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
         guard snapshot.day != today else { return snapshot }
         snapshot.day = today
@@ -57,6 +61,21 @@ struct SnapshotProvider: TimelineProvider {
 }
 
 // MARK: - Formatting
+
+/// `value` rounded to a whole number for display, without trapping: non-finite → 0, beyond `Int` → clamped. The
+/// widget extension doesn't link Core, so this mirrors `DisplayRounding.whole`.
+private func wholeNumber(_ value: Double) -> Int {
+    guard value.isFinite else { return 0 }
+    let rounded = value.rounded()
+    // Double(Int.max) rounds up to 2^63, which doesn't fit in Int, so compare with >= / <=.
+    if rounded >= Double(Int.max) {
+        return Int.max
+    }
+    if rounded <= Double(Int.min) {
+        return Int.min
+    }
+    return Int(rounded)
+}
 
 extension WidgetSnapshot {
     static let kJPerKcal = 4.184
@@ -173,7 +192,7 @@ struct MacroBarView: View {
             HStack {
                 Text(title).font(.caption)
                 Spacer()
-                Text(target.map { "\(Int(value.rounded())) / \(Int($0.rounded())) g" } ?? "\(Int(value.rounded())) g")
+                Text(target.map { "\(wholeNumber(value)) / \(wholeNumber($0)) g" } ?? "\(wholeNumber(value)) g")
                     .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
             }
             GeometryReader { proxy in
@@ -186,7 +205,7 @@ struct MacroBarView: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(title)
-        .accessibilityValue(target.map { "\(Int(value.rounded())) of \(Int($0.rounded())) grams" } ?? "\(Int(value.rounded())) grams")
+        .accessibilityValue(target.map { "\(wholeNumber(value)) of \(wholeNumber($0)) grams" } ?? "\(wholeNumber(value)) grams")
     }
 
     private var fraction: Double {
@@ -240,7 +259,7 @@ struct MetricsWidgetView: View {
                         snapshot.steps.map { "\($0.formatted()) steps" },
                         snapshot.weightKg.map { "\($0.formatted(.number.precision(.fractionLength(1)))) kg" },
                     ].compactMap(\.self).joined(separator: " · "))
-                    Text("Water \(Int(snapshot.waterMl.rounded())) / \(Int(snapshot.waterGoalMl.rounded())) ml")
+                    Text("Water \(wholeNumber(snapshot.waterMl)) / \(wholeNumber(snapshot.waterGoalMl)) ml")
                 }
                 .font(.caption)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -255,7 +274,7 @@ struct MetricsWidgetView: View {
                         metric("scalemass", "Weight", snapshot.weightKg.map { "\($0.formatted(.number.precision(.fractionLength(1)))) kg" } ?? "—")
                     }
                     GridRow {
-                        metric("drop", "Water", "\(Int(snapshot.waterMl.rounded())) / \(Int(snapshot.waterGoalMl.rounded())) ml")
+                        metric("drop", "Water", "\(wholeNumber(snapshot.waterMl)) / \(wholeNumber(snapshot.waterGoalMl)) ml")
                             .gridCellColumns(2)
                     }
                 }

@@ -107,6 +107,8 @@ public final class FakeHealthDataSource: HealthDataSource {
             statistics: state.cumulativeSamples.mapValues { Self.dailyStatistics($0.filter(inDays), plan: plan) },
             samples: state.samples.mapValues { $0.filter(inDays) },
             sleep: state.sleep.filter { $0.end >= sleepQuery.start && $0.end < sleepQuery.end },
+            // Every water sample (the live source reads only its own; Core looks only at the own ones).
+            waterSamples: (state.cumulativeSamples[.dietaryWater] ?? []).filter(inDays),
         )
     }
 

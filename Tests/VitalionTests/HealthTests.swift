@@ -267,6 +267,65 @@ struct HealthSyncServiceTests {
         #expect(try env.dailyMetrics?.metrics(on: boundary)?.sleepAsleepMin == 60)
         #expect(try env.dailyMetrics?.metrics(on: boundary.next)?.sleepAsleepMin == nil)
     }
+
+    @Test func `after a reinstall, own samples with no local row are read like any other source`() async throws {
+        // 2026-11-10 10:00 in Zagreb.
+        let instant = Date(timeIntervalSince1970: 1_794_301_200)
+        let box = CalendarBox(timeZone: "Europe/Zagreb")
+        let calendar = box.calendar
+        let today = LocalDay.today(calendar: calendar, now: instant)
+        let at = { (day: LocalDay, hour: Int) in day.date(atHour: hour, calendar: calendar) }
+        let db = try AppDatabase.inMemory()
+        let appClock = AppClock { instant }
+        let weights = WeightRepository(db, clock: appClock)
+        let water = WaterRepository(db, clock: appClock)
+        // Local rows: a weigh-in and a glass written to Health moments ago, and a weight deleted locally whose sample
+        // Health still holds (its deletion is queued).
+        let localWeight = try weights.add(kg: 80.0, bodyFatPct: 20, measuredAt: at(today, 7))
+        let deletedWeight = try weights.add(kg: 82.0, measuredAt: at(today.adding(days: -2), 7))
+        try weights.softDelete(ids: [deletedWeight.id])
+        let localGlass = try water.add(ml: 300, day: today, loggedAt: at(today, 9))
+
+        let own = HealthSource(name: "Vitalion", bundleIdentifier: "test.vitalion", productType: "iPhone17,1")
+        let other = FakeHealthDataSource.demoWatch
+        let fake = FakeHealthDataSource()
+        fake.update {
+            $0.authorizationRequested = true
+            $0.samples[.bodyMass] = [
+                HealthQuantitySample(start: at(today, 7), value: 80.0, source: own, externalID: localWeight.id),
+                HealthQuantitySample(start: at(today.adding(days: -2), 7), value: 82.0, source: own, externalID: deletedWeight.id),
+                // Written by the previous install: no local row.
+                HealthQuantitySample(start: at(today.adding(days: -1), 7), value: 81.0, source: own, externalID: "old-install-weight"),
+            ]
+            $0.samples[.bodyFatPercentage] = [
+                HealthQuantitySample(start: at(today, 7), value: 20, source: own, externalID: localWeight.id),
+                HealthQuantitySample(start: at(today.adding(days: -1), 7), value: 21, source: own, externalID: "old-install-weight"),
+            ]
+            $0.cumulativeSamples[.dietaryWater] = [
+                HealthQuantitySample(start: at(today, 9), value: 300, source: own, externalID: localGlass.id),
+                HealthQuantitySample(start: at(today, 11), value: 200, source: other),
+                HealthQuantitySample(start: at(today.adding(days: -1), 9), value: 500, source: own, externalID: "old-install-glass"),
+            ]
+        }
+        let metrics = DailyMetricsRepository(db)
+        let sync = HealthSyncService(
+            source: fake, ownBundleIdentifier: own.bundleIdentifier, metrics: metrics, settings: ProfileRepository(db),
+            clock: appClock, calendar: { box.calendar },
+        )
+        await sync.refresh(force: true)
+
+        let yesterday = try #require(try metrics.metrics(on: today.adding(days: -1)))
+        #expect(yesterday.weightKg == 81.0)
+        #expect(yesterday.bodyFatPct == 21)
+        #expect(yesterday.waterMl == 500) // no local water that day: the orphaned glass counts, once
+        // Local rows are never read back: today's water from Health is the other source's 200 ml only
+        // (the 300 ml glass comes from water_entry), and the weights stay with weight_entry.
+        let todayRow = try #require(try metrics.metrics(on: today))
+        #expect(todayRow.weightKg == nil)
+        #expect(todayRow.bodyFatPct == nil)
+        #expect(todayRow.waterMl == 200)
+        #expect(try metrics.metrics(on: today.adding(days: -2))?.weightKg == nil) // deleted locally: not foreign data
+    }
 }
 
 /// A calendar the test can change between syncs (the device moving to another time zone).

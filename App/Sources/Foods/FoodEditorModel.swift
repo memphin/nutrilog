@@ -190,6 +190,9 @@ final class FoodEditorModel {
         if per100 == nil {
             errors.append("Enter energy, protein, carbs and fat (numbers ≥ 0).")
         }
+        if let placeholderServingError {
+            errors.append(placeholderServingError)
+        }
         for serving in servings where !serving.label.isEmpty || !serving.amount.isEmpty {
             if serving.label.trimmingCharacters(in: .whitespaces).isEmpty || (Self.value(serving.amount) ?? 0) <= 0 {
                 errors.append("Each serving needs a name and an amount.")
@@ -207,7 +210,7 @@ final class FoodEditorModel {
         guard let n = per100 else { return [] }
         var result: [String] = []
         if n.hasImplausibleEnergy() {
-            let estimate = Int(n.kcalFromMacros.rounded())
+            let estimate = DisplayRounding.whole(n.kcalFromMacros) // never traps, however many digits were typed
             result.append("Energy differs from protein/carbs/fat (≈ \(estimate) kcal per 100). Double-check the label.")
         }
         if n.proteinG + n.carbsG + n.fatG > 100.5 {
@@ -430,9 +433,15 @@ final class FoodEditorModel {
     /// Saves the food. `movingBarcodes` are codes the user agreed to take from other foods (code → that food's id,
     /// see `barcodeConflicts(in:)`); any other conflict, or a code that changed owner meanwhile, fails with
     /// `PersistenceError.barcodeInUse`.
+    ///
+    /// Giving a per-serving placeholder's stand-in serving its real weight converts the food like the serving-weight
+    /// prompt does (``placeholderConversion(of:)``), so one serving keeps logging the label values.
     @discardableResult
     func save(to foods: FoodRepository, movingBarcodes: [String: String] = [:]) throws -> FoodDetail? {
         guard let detail = makeDetail() else { return nil }
+        if let converted = try placeholderConversion(of: detail) {
+            return try foods.saveConvertedPlaceholder(converted, movingBarcodes: movingBarcodes)
+        }
         return try foods.save(detail, movingBarcodes: movingBarcodes)
     }
 
@@ -507,5 +516,96 @@ final class FoodEditorModel {
     private static func optional(_ text: String) -> String? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
+    }
+}
+
+// MARK: - Per-serving placeholders
+
+extension FoodEditorModel {
+    /// Editing a per-serving placeholder: its values are one serving's, and its stand-in serving counts as 100 g/ml
+    /// until the real weight is entered (``placeholderServingWeight``).
+    var isEditingPlaceholder: Bool {
+        original?.isPerServingPlaceholder == true
+    }
+
+    /// The real serving weight typed for a per-serving placeholder (``FoodDetail/isPerServingPlaceholder``), or nil
+    /// (editing other fields of a placeholder keeps it a placeholder):
+    /// - the amount of its stand-in default serving when the user changed it;
+    /// - otherwise, with the nutrition entered "Per serving", that serving size when it differs from the stand-in's:
+    ///   the values are then one serving of that weight, so it is the real serving weight.
+    ///
+    /// When both were edited and disagree, the explicit serving row wins: it is what "1 serving" logs, while the
+    /// per-serving size only says which amount the typed values are for (``placeholderConversion(of:)`` keeps the
+    /// per-100 values that follow from them).
+    ///
+    /// When the stand-in serving row was removed (or its name cleared), a "Per serving" size is the weight whatever its
+    /// value: the values are one serving of it, and the conversion keeps a default serving of that weight. Without one
+    /// the save is blocked (``placeholderServingError``) instead of leaving a placeholder with no serving.
+    var placeholderServingWeight: Double? {
+        guard let original, original.isPerServingPlaceholder, let standInID = original.food.defaultServingID,
+              let standIn = original.servings.first(where: { $0.id == standInID })
+        else { return nil }
+        guard let draft = servings.first(where: { $0.id == standInID }),
+              !draft.label.trimmingCharacters(in: .whitespaces).isEmpty
+        else {
+            guard basis == .perServing, let weight = Self.value(basisServingAmount), weight > 0 else { return nil }
+            return weight
+        }
+        if draft.amount != Format.field(standIn.grams) {
+            guard let weight = Self.value(draft.amount), weight > 0 else { return nil }
+            return weight
+        }
+        if basis == .perServing, let weight = Self.value(basisServingAmount), weight > 0,
+           Format.field(weight) != Format.field(standIn.grams)
+        {
+            return weight
+        }
+        return nil
+    }
+
+    /// Blocks saving a per-serving placeholder whose stand-in serving row was removed (or its name cleared) while
+    /// no serving weight is given to convert it with: its values are one serving's, so it can't go without a serving.
+    var placeholderServingError: String? {
+        guard let original, original.isPerServingPlaceholder, let standInID = original.food.defaultServingID,
+              !servings.contains(where: { $0.id == standInID && !$0.label.trimmingCharacters(in: .whitespaces).isEmpty }),
+              basis == .per100
+        else { return nil } // "Per serving" without a valid size is reported as "Enter the serving size."
+        return "These values are for one serving. Keep its serving, or choose \"Per serving\" and enter the serving size."
+    }
+
+    /// `detail` (from ``makeDetail()``) converted to real per-100 values when the user gave a placeholder's stand-in
+    /// serving its weight (``placeholderServingWeight``), with `FoodDetail.convertingPerServingPlaceholder`; nil when
+    /// there is nothing to convert. Throws `ServingWeightError` for a weight that is out of range or gives implausible
+    /// values per 100.
+    func placeholderConversion(of detail: FoodDetail) throws -> FoodDetail? {
+        guard let weight = placeholderServingWeight, let original, let standInID = original.food.defaultServingID,
+              let standIn = original.servings.first(where: { $0.id == standInID })
+        else { return nil }
+        // Back to the placeholder as stored: values of one serving with the stand-in weight, then convert that.
+        var placeholder = detail
+        placeholder.food.perServingOnly = true
+        placeholder.food.defaultServingID = standInID
+        if basis == .perServing {
+            // The fields were entered per serving of `basisServingAmount`, so `detail` already has real per-100 values:
+            // one serving of `weight` holds these. (When `weight` is that serving size, they are the typed values.)
+            placeholder.food.per100 = detail.food.per100.scaled(toGrams: weight)
+        } // else the "per 100" fields of a placeholder hold the values of one serving
+        placeholder.servings = detail.servings.map { serving in
+            guard serving.id == standInID else { return serving }
+            var standInServing = serving
+            standInServing.grams = standIn.grams
+            return standInServing
+        }
+        // The stand-in row was removed in the form: the label values are "per serving", so the converted food keeps
+        // it (same row, so entries logged with it stay linked) as its default serving with the real weight.
+        let restoresStandIn = !detail.servings.contains { $0.id == standInID }
+        if restoresStandIn {
+            placeholder.servings.insert(standIn, at: 0)
+        }
+        // Completing the nutrition validated all four required values; otherwise zeros count as missing.
+        let missing: Set<FoodDraft.MandatoryNutrient>? = completing != nil ? [] : nil
+        var converted = try placeholder.convertingPerServingPlaceholder(servingWeight: weight, missing: missing)
+        converted.food.defaultServingID = restoresStandIn ? standInID : detail.food.defaultServingID
+        return converted
     }
 }
