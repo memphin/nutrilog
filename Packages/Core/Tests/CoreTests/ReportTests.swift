@@ -94,7 +94,8 @@ struct WeeklyReportTests {
         #expect(report.averageSleepMin == Stats.mean(days.map { $0.sleepMin.map(Double.init) })) // last night is over
         // Without `today` (a past week) every day counts, as before.
         let past = WeeklyReport(days: days)
-        #expect(past.averageSteps == (6 * 9000 + 1500) / 7.0)
+        let everyDay: Double = (6 * 9000 + 1500) / 7 // typed here: inline in #expect it times out the type-checker on CI
+        #expect(past.averageSteps == everyDay)
         #expect(WeeklyReport(days: days, today: today.next).averageSteps == past.averageSteps)
         // Only today in the range: no average yet rather than a misleading one.
         let onlyToday = WeeklyReport(days: [days[6]], today: today)
