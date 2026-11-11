@@ -16,7 +16,8 @@ extension DashboardSnapshot {
             return ([tile.title] + caffeineStatus(now: now, calendar: calendar).accessibilityParts()).joined(separator: ", ")
         }
         let parts = accessibilityParts(of: tile, energyUnit: energyUnit)
-        return ([tile.title] + (parts.isEmpty ? ["no data"] : parts)).joined(separator: ", ")
+        let spokenStreak = streak(for: tile).flatMap(StreakBadge.spoken)
+        return ([tile.title] + (parts.isEmpty ? ["no data"] : parts) + [spokenStreak].compactMap(\.self)).joined(separator: ", ")
     }
 
     private func accessibilityParts(of tile: DashboardTile, energyUnit: EnergyUnit) -> [String] {

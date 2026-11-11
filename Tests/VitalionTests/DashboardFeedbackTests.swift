@@ -34,7 +34,7 @@ struct DashboardFeedbackTests {
         #expect(row?.detail?.contains("Deep") == true)
         // Only time in bed known: that is what the tile says.
         let inBedOnly = self.snapshot(DailyHealthMetrics(day: today, sleepInBedMin: 480))
-        #expect(inBedOnly.accessibilityLabel(of: .sleep, state: .ready) == "Sleep, 8 hours in bed, goal of 8 hours reached")
+        #expect(inBedOnly.accessibilityLabel(of: .sleep, state: .ready) == "Sleep, 8 hours in bed, goal of 8 hours reached, 1-day streak")
         #expect(!DashboardTile.sleep.isWide)
     }
 
@@ -76,7 +76,7 @@ struct DashboardFeedbackTests {
         #expect(snapshot.goalColor(of: .weight, value: 80) == nil)
         #expect(snapshot.accessibilityLabel(of: .steps, state: .ready) == "Steps, 8,500 steps, close to the goal of 10,000")
         let reached = self.snapshot(DailyHealthMetrics(day: today, steps: 8500), stepGoal: 8000)
-        #expect(reached.accessibilityLabel(of: .steps, state: .ready) == "Steps, 8,500 steps, goal of 8,000 reached")
+        #expect(reached.accessibilityLabel(of: .steps, state: .ready) == "Steps, 8,500 steps, goal of 8,000 reached, 1-day streak")
     }
 
     // MARK: Water (#64)
@@ -93,7 +93,7 @@ struct DashboardFeedbackTests {
         let snapshot = DashboardSnapshot(data)
         #expect(snapshot.goalColor(of: .water, value: 1500) == GoalColor.missed)
         #expect(snapshot.goalColor(of: .water, value: 2000) == GoalColor.reached)
-        #expect(snapshot.accessibilityLabel(of: .water, state: .ready) == "Water, 2,100 of 2,000 millilitres, goal reached")
+        #expect(snapshot.accessibilityLabel(of: .water, state: .ready) == "Water, 2,100 of 2,000 millilitres, goal reached, 1-day streak")
     }
 
     // MARK: Total energy (#66)
@@ -168,7 +168,7 @@ struct DashboardFeedbackTests {
         #expect(snapshot.goalColor(of: .sleep, value: 400) == GoalColor.near)
         #expect(snapshot.goalColor(of: .sleep, value: 380) == GoalColor.missed)
         let label = snapshot.accessibilityLabel(of: .sleep, state: .ready)
-        #expect(label == "Sleep, 7 hours 40 minutes asleep, goal of 7 hours 30 minutes reached")
+        #expect(label == "Sleep, 7 hours 40 minutes asleep, goal of 7 hours 30 minutes reached, 1-day streak")
     }
 
     @Test func `the weight tile says the weight only`() {
