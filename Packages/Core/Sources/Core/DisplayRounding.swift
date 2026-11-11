@@ -6,8 +6,26 @@ import Foundation
 /// - Macros, fiber, sugar, sat fat: whole grams from 10 g, otherwise one decimal (0.4 g stays visible).
 /// - Sodium: whole mg.
 public enum DisplayRounding {
+    /// 2^63 — the first magnitude `Int` cannot hold. `Double(Int.max)` rounds up to exactly this value, so comparing
+    /// against `Double(Int.max)` would let 2^63 through and trap.
+    static let intBound = 9_223_372_036_854_775_808.0
+
+    /// `value` rounded to the nearest whole number (halves away from zero) as an `Int`, without ever trapping:
+    /// NaN and ±infinity give 0, magnitudes beyond `Int`'s range clamp to `Int.min` / `Int.max`.
+    public static func whole(_ value: Double) -> Int {
+        guard value.isFinite else { return 0 }
+        let rounded = value.rounded()
+        if rounded >= intBound {
+            return Int.max
+        }
+        if rounded < -intBound {
+            return Int.min
+        }
+        return Int(rounded) // -2^63 itself is exactly Int.min
+    }
+
     public static func kcal(_ value: Double) -> Int {
-        Int(value.rounded())
+        whole(value)
     }
 
     public static func grams(_ value: Double) -> Double {
@@ -18,7 +36,7 @@ public enum DisplayRounding {
     }
 
     public static func milligrams(_ value: Double) -> Int {
-        Int(value.rounded())
+        whole(value)
     }
 
     /// "12", "4.5", "0" — trailing ".0" dropped.

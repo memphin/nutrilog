@@ -27,9 +27,71 @@ public struct FoodRepository: Sendable {
     @discardableResult
     public func save(_ detail: FoodDetail, movingBarcodes: [String: String] = [:]) throws -> FoodDetail {
         let now = clock.now()
+        // The food editor's values: per-100 nutrients and serving weights (copies of online foods aren't checked).
+        try EntryLimits.validate(detail.food.per100)
+        for serving in detail.servings {
+            try EntryLimits.validate(amount: serving.grams)
+        }
         let barcodes = try normalizedBarcodes(detail.barcodes)
         return try database.writer.write { db in
             try Self.save(db, detail: detail, barcodes: barcodes, now: now, movingBarcodes: movingBarcodes)
+        }
+    }
+
+    /// Saves `converted`, a per-serving placeholder (`Food.perServingOnly`: values of one serving stored as per 100,
+    /// with a stand-in default serving of 100 g/ml) converted to real per-100 values once its serving weight is known
+    /// (FoodLookup's `convertingPerServingPlaceholder(servingWeight:missing:)`), like ``save(_:movingBarcodes:)``.
+    ///
+    /// While the food was a placeholder, every amount stored for it meant servings × the stand-in weight, not real
+    /// g/ml. In the same transaction, when the *stored* food is still a placeholder and `converted` no longer is, those
+    /// amounts are rescaled by `new default serving weight / stand-in weight`, so "1 serving" stays one serving:
+    /// `grams` of its diary entries, planned entries and saved-meal items (soft-deleted ones too, so an undo can't bring
+    /// back a stale amount; each gets a new `updated_at` / `revision`) and its last quantity when that is a base amount.
+    /// Nutrient snapshots are unchanged and no Apple Health write is queued. When the stored food is no longer a
+    /// placeholder (already converted), nothing is rescaled: this is a plain save.
+    @discardableResult
+    public func saveConvertedPlaceholder(_ converted: FoodDetail, movingBarcodes: [String: String] = [:]) throws -> FoodDetail {
+        let now = clock.now()
+        try EntryLimits.validate(converted.food.per100)
+        for serving in converted.servings {
+            try EntryLimits.validate(amount: serving.grams)
+        }
+        let barcodes = try normalizedBarcodes(converted.barcodes)
+        return try database.writer.write { db in
+            var detail = converted
+            if let stored = try Food.fetchOne(db, key: converted.food.id), stored.perServingOnly, !converted.food.perServingOnly,
+               let factor = try Self.placeholderRescaleFactor(db, stored: stored, converted: converted)
+            {
+                try Self.rescaleAmounts(db, foodID: stored.id, by: factor, now: now)
+                // The remembered quantity is the stored one (logging updates it), rescaled when it is a base amount.
+                detail.food.lastServingID = stored.lastServingID
+                detail.food.lastAmount = stored.lastServingID == nil ? stored.lastAmount.map { $0 * factor } : stored.lastAmount
+            }
+            return try Self.save(db, detail: detail, barcodes: barcodes, now: now, movingBarcodes: movingBarcodes)
+        }
+    }
+
+    /// `new default serving weight / stand-in weight` for converting `stored` (a placeholder) into `converted`, or nil
+    /// when either weight is unknown or the factor is 1.
+    private static func placeholderRescaleFactor(_ db: Database, stored: Food, converted: FoodDetail) throws -> Double? {
+        guard let defaultID = stored.defaultServingID,
+              let standIn = try Serving.fetchOne(db, key: defaultID), standIn.grams > 0,
+              let newServing = converted.servings.first(where: { $0.id == defaultID }), newServing.grams > 0
+        else { return nil }
+        let factor = newServing.grams / standIn.grams
+        return factor.isFinite && factor > 0 && factor != 1 ? factor : nil
+    }
+
+    /// Multiplies the amounts stored for `foodID` (diary entries, planned entries, saved-meal items, active or not)
+    /// by `factor`; nutrient snapshots stay as they are. Deliberately not capped at ``EntryLimits/maxAmount``: grams
+    /// must stay consistent with the nutrient snapshot, and later edits validate only the new amount.
+    private static func rescaleAmounts(_ db: Database, foodID: String, by factor: Double, now: Date) throws {
+        let stamp = Timestamp.string(now)
+        for table in ["diary_entry", "planned_entry", "meal_template_item"] {
+            try db.execute(
+                sql: "UPDATE \(table) SET grams = grams * ?, updated_at = ?, revision = revision + 1 WHERE food_id = ? AND grams > 0",
+                arguments: [factor, stamp, foodID],
+            )
         }
     }
 
@@ -233,17 +295,30 @@ public struct FoodRepository: Sendable {
     // MARK: Bundled foods
 
     /// Returns the local copy of a bundled food, creating it on first use (backlog #5).
-    /// The copy keeps `source_id` = FDC id so it is never duplicated.
+    /// The copy keeps `source_id` = FDC id so it is never duplicated. An active food saved from online USDA search
+    /// with the same FDC id is the same food and is reused instead. When the copy (bundled or USDA) was merged into
+    /// another food that is still active, that kept food is returned; a deleted copy is revived otherwise.
     public func localCopy(of bundled: BundledFood) throws -> Food {
         let now = clock.now()
         return try database.writer.write { db in
-            if let existing = try Food
+            let existing = try Food
                 .filter(Food.Columns.source == FoodSource.bundled && Food.Columns.sourceID == bundled.sourceID)
+                .order(Food.Columns.deletedAt != nil, Food.Columns.createdAt)
                 .fetchOne(db)
-            {
+            if existing == nil || existing?.deletedAt != nil {
+                if let usda = try Self.activeFood(db, source: .usda, sourceID: bundled.sourceID) {
+                    return usda // no active bundled copy, but the USDA one is the same food
+                }
+                // A copy merged into another food (Duplicate foods) stays merged: the kept food is this food now.
+                if let keeper = try Self.mergeKeeper(db, sources: [.bundled, .usda], sourceID: bundled.sourceID) {
+                    return keeper
+                }
+            }
+            if let existing {
                 if existing.deletedAt != nil {
                     var revived = existing
                     revived.deletedAt = nil
+                    revived.mergedIntoID = nil // the food it was merged into is gone too
                     revived.stampUpdated(now)
                     try revived.update(db)
                     return revived
@@ -282,10 +357,7 @@ public struct FoodRepository: Sendable {
                 return owner
             }
             if let sourceID = detail.food.sourceID, detail.food.source != .custom,
-               let existing = try Food
-                   .filter(Food.Columns.source == detail.food.source && Food.Columns.sourceID == sourceID)
-                   .order(Food.Columns.deletedAt != nil, Food.Columns.createdAt)
-                   .fetchOne(db),
+               let existing = try Self.existingCopy(db, source: detail.food.source, sourceID: sourceID),
                let existingDetail = try Self.detail(db, id: existing.id)
             {
                 if existing.deletedAt == nil {
@@ -306,6 +378,7 @@ public struct FoodRepository: Sendable {
                 revived.food.id = existing.id
                 revived.food.isFavorite = existing.isFavorite
                 revived.food.deletedAt = nil
+                revived.food.mergedIntoID = nil
                 revived.servings = Self.reusingServingIDs(detail.servings, from: existingDetail.servings)
                 // Keep the remembered quantity only while it still means something: a base amount, or a serving
                 // that the revived food still has.
@@ -322,6 +395,36 @@ public struct FoodRepository: Sendable {
             }
             return try Self.save(db, detail: detail, barcodes: barcodes, now: now)
         }
+    }
+
+    /// The stored copy `saveCopy` reuses for `source` + `sourceID`: an active one of the same source; else, for a USDA
+    /// food, an active local copy of the bundled index (built from the same FDC ids), so the food isn't stored twice;
+    /// else the active food a copy was merged into (``merge(keep:remove:)``); else a deleted one of the same source
+    /// (revived, with its stale `merged_into_id` cleared).
+    private static func existingCopy(_ db: Database, source: FoodSource, sourceID: String) throws -> Food? {
+        let sameSource = try Food
+            .filter(Food.Columns.source == source && Food.Columns.sourceID == sourceID)
+            .order(Food.Columns.deletedAt != nil, Food.Columns.createdAt)
+            .fetchOne(db)
+        if let sameSource, sameSource.deletedAt == nil {
+            return sameSource
+        }
+        if source == .usda, let bundled = try activeFood(db, source: .bundled, sourceID: sourceID) {
+            return bundled
+        }
+        // A copy merged into another food (Duplicate foods) resolves to the kept food instead of coming back.
+        if let keeper = try mergeKeeper(db, sources: source == .usda ? [.usda, .bundled] : [source], sourceID: sourceID) {
+            return keeper
+        }
+        return sameSource
+    }
+
+    /// The oldest active food with `source` + `sourceID`.
+    static func activeFood(_ db: Database, source: FoodSource, sourceID: String) throws -> Food? {
+        try Food
+            .filter(Food.Columns.source == source && Food.Columns.sourceID == sourceID && Food.Columns.deletedAt == nil)
+            .order(Food.Columns.createdAt)
+            .fetchOne(db)
     }
 
     /// `servings` with the IDs of same-label servings in `existing`, so a revived food keeps its serving rows.

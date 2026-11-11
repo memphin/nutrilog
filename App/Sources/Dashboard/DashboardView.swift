@@ -392,7 +392,7 @@ struct WaterTileContent: View {
             ProgressView(value: water.fraction)
                 .tint(goalColor)
                 .accessibilityLabel("Water")
-                .accessibilityValue("\(Int(water.totalMl)) of \(Int(water.goalMl)) millilitres")
+                .accessibilityValue("\(DisplayRounding.whole(water.totalMl)) of \(DisplayRounding.whole(water.goalMl)) millilitres")
             if water.otherAppsMl > 0 {
                 Text("Includes \(DashboardFormat.ml(water.otherAppsMl)) from other apps")
                     .font(.caption).foregroundStyle(.secondary)

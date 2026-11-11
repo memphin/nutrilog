@@ -58,9 +58,7 @@ struct ProductCardView: View {
                 nutrientSection("Per 100 \(unit)", per100)
             }
             if let serving = product.serving {
-                let title = serving.amount.map { "Per \(serving.label) (\(NutrientRow.format($0, unit: unit)) \(unit))" }
-                    ?? "Per \(serving.label)"
-                nutrientSection(title, serving.nutrients)
+                nutrientSection(Self.servingTitle(label: serving.label, amount: serving.amount, unit: unit), serving.nutrients)
             }
 
             if let labelPhoto, let image = UIImage(data: labelPhoto) {
@@ -90,6 +88,44 @@ struct ProductCardView: View {
             .padding(.horizontal, NL.Spacing.l)
             .padding(.bottom, NL.Spacing.s)
         }
+    }
+
+    /// "Per 1 portion (30 g)": the serving label, with its weight appended unless the label already states it
+    /// ("30 g", "1 portion (30g)", "2 biscuits 25,5 g"), so it doesn't read "Per 30 g (30 g)". When the label's
+    /// amount can't be matched, the weight is appended: a repeat is better than hiding the only weight.
+    static func servingTitle(label: String, amount: Double?, unit: String) -> String {
+        guard let amount else { return "Per \(label)" }
+        if labelStates(amount, unit: unit, in: label) {
+            return "Per \(label)"
+        }
+        return "Per \(label) (\(NutrientRow.format(amount, unit: unit)) \(unit))"
+    }
+
+    /// Amounts with a unit written in serving labels, e.g. "30 g", "30g", "25,5 ml", "33 cl".
+    private static let labelAmountPattern = try? NSRegularExpression(
+        pattern: #"(?<![\d.,])(\d+(?:[.,]\d+)?)\s*(grams|gram|gr|g|kg|ml|cl|l)(?![a-z])"#,
+        options: [.caseInsensitive],
+    )
+
+    /// Whether `label` contains `amount` in `unit` ("g" or "ml"), allowing for label rounding.
+    static func labelStates(_ amount: Double, unit: String, in label: String) -> Bool {
+        guard let pattern = labelAmountPattern, amount > 0, amount.isFinite else { return false }
+        let text = label as NSString
+        for match in pattern.matches(in: label, range: NSRange(location: 0, length: text.length)) where match.numberOfRanges == 3 {
+            let number = text.substring(with: match.range(at: 1)).replacingOccurrences(of: ",", with: ".")
+            guard let value = Double(number) else { continue }
+            let factor: Double? = switch (text.substring(with: match.range(at: 2)).lowercased(), unit) {
+            case ("g", "g"), ("gr", "g"), ("gram", "g"), ("grams", "g"), ("ml", "ml"): 1
+            case ("kg", "g"), ("l", "ml"): 1000
+            case ("cl", "ml"): 10
+            default: nil
+            }
+            guard let factor else { continue }
+            if abs(value * factor - amount) <= max(0.01, amount * 0.005) {
+                return true
+            }
+        }
+        return false
     }
 
     private var header: some View {

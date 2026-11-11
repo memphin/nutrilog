@@ -167,9 +167,14 @@ private struct FoodEditorForm: View {
             } header: {
                 Text("Nutrition")
             } footer: {
-                Text(model.basis == .per100
-                    ? "Copy the values from the label's per 100 \(model.unitSymbol) column."
-                    : "Values are converted to per 100 \(model.unitSymbol) when saved.")
+                if model.basis == .per100 {
+                    Text("Copy the values from the label's per 100 \(model.unitSymbol) column.")
+                } else if model.isEditingPlaceholder {
+                    Text("Values are converted to per 100 \(model.unitSymbol) when saved, and the serving size becomes "
+                        + "the weight of one serving.")
+                } else {
+                    Text("Values are converted to per 100 \(model.unitSymbol) when saved.")
+                }
             }
 
             if !model.warnings.isEmpty {
@@ -202,7 +207,12 @@ private struct FoodEditorForm: View {
             } header: {
                 Text("Servings")
             } footer: {
-                Text("Named portions like \"1 slice = 25 g\" make logging faster.")
+                if model.isEditingPlaceholder {
+                    Text("The values above are for one serving, whose weight is unknown (it counts as 100 \(model.unitSymbol)). "
+                        + "Enter the serving's real weight to convert them to per 100 \(model.unitSymbol).")
+                } else {
+                    Text("Named portions like \"1 slice = 25 g\" make logging faster.")
+                }
             }
 
             Section {

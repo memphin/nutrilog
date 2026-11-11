@@ -154,5 +154,45 @@ struct QuantityTests {
         #expect(NumberFormatting.compact(0.25) == "0.25")
         #expect(NumberFormatting.compact(2.999) == "3")
         #expect(NumberFormatting.compact(0.1 + 0.2) == "0.3")
+        #expect(NumberFormatting.compact(-2.5) == "-2.5")
+        #expect(NumberFormatting.compact(0) == "0")
+    }
+
+    @Test func `compact never traps on huge or non-finite values`() {
+        #expect(NumberFormatting.compact(.nan) == "NaN")
+        #expect(NumberFormatting.compact(.infinity) == "∞")
+        #expect(NumberFormatting.compact(-.infinity) == "-∞")
+        // 20 typed digits, 2^63 and beyond: plain digits, no scientific notation.
+        #expect(NumberFormatting.compact(99_999_999_999_999_999_999) == "100000000000000000000")
+        #expect(NumberFormatting.compact(9_223_372_036_854_775_808) == "9223372036854775808")
+        #expect(NumberFormatting.compact(-9_223_372_036_854_775_808) == "-9223372036854775808")
+        #expect(NumberFormatting.compact(1e17) == "100000000000000000")
+        let max = NumberFormatting.compact(.greatestFiniteMagnitude) // `value * 100` overflows
+        #expect(max.count == 309 && max.allSatisfy(\.isNumber))
+        #expect(Quantity.servings(count: 1e20, serving: slice).servingLabel == "100000000000000000000 × slice")
+    }
+}
+
+struct WholeRoundingTests {
+    @Test func `rounds to nearest like before`() {
+        #expect(DisplayRounding.whole(2.5) == 3)
+        #expect(DisplayRounding.whole(-2.5) == -3)
+        #expect(DisplayRounding.whole(-0.4) == 0)
+        #expect(DisplayRounding.whole(1234.49) == 1234)
+    }
+
+    @Test func `never traps`() {
+        #expect(DisplayRounding.whole(.nan) == 0)
+        #expect(DisplayRounding.whole(.infinity) == 0)
+        #expect(DisplayRounding.whole(-.infinity) == 0)
+        #expect(DisplayRounding.whole(Double(Int.max)) == Int.max) // rounds up to 2^63
+        #expect(DisplayRounding.whole(1e30) == Int.max)
+        #expect(DisplayRounding.whole(-9_223_372_036_854_775_808) == Int.min)
+        #expect(DisplayRounding.whole(-1e30) == Int.min)
+        #expect(DisplayRounding.whole(9_223_372_036_854_774_784) == 9_223_372_036_854_774_784) // largest Double < 2^63
+        #expect(DisplayRounding.kcal(.nan) == 0)
+        #expect(DisplayRounding.kcal(1e300) == Int.max)
+        #expect(DisplayRounding.milligrams(-.infinity) == 0)
+        #expect(Nutrients(kcal: .infinity, proteinG: 0, carbsG: 0, fatG: 0, sodiumMg: 1e40).displayRounded.kcal == 0)
     }
 }

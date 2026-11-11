@@ -252,6 +252,21 @@ enum WaterQuickAdd {
         return stride(from: validRange.lowerBound, through: validRange.upperBound, by: 50).first { !sizes.contains($0) }
     }
 
+    /// One stepper tap on a size: `value + delta`, skipping over sizes in `others` to the next free step in the same
+    /// direction, so two buttons never merge; `value` itself when no free step is left inside `validRange` (or
+    /// `value` is outside it, which saved sizes never are).
+    static func stepped(_ value: Int, by delta: Int, among others: [Int]) -> Int {
+        guard delta != 0, validRange.contains(value), delta.magnitude <= validRange.count.magnitude else { return value }
+        var candidate = value + delta
+        while validRange.contains(candidate) {
+            if !others.contains(candidate) {
+                return candidate
+            }
+            candidate += delta
+        }
+        return value
+    }
+
     static func sizes(from settings: ProfileRepository) -> [Int] {
         normalized((try? settings.setting(SettingKey.waterQuickAddSizes, as: [Int].self)) ?? defaultSizes)
     }

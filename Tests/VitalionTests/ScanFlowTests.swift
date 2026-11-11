@@ -198,6 +198,56 @@ struct ScanFlowTests {
         #expect(!h.env.labelPhotos.hasPhoto(foodID: saved.food.id))
     }
 
+    @Test func `a label photo that can't be stored is reported and kept until retried or discarded`() async throws {
+        let h = harness()
+        // A file where the photo folder should be: creating the folder fails.
+        let blocked = FileManager.default.temporaryDirectory.appendingPathComponent("LabelPhotos-\(UUID().uuidString)")
+        try Data().write(to: blocked)
+        defer { try? FileManager.default.removeItem(at: blocked) }
+        let model = ScanFlowModel(lookup: h.env.barcodeLookup, foods: h.env.foods, labelPhotos: LabelPhotoStore(directory: blocked))
+        await model.handle([Self.unknownCode])
+        let photo = Data([0xFF, 0xD8, 0xFF, 0xD9])
+        model.pendingLabelPhoto = photo
+        let saved = try h.foods.save(FoodDetail(
+            food: Food(name: "Pita", per100: Nutrients(kcal: 250, proteinG: 8, carbsG: 30, fatG: 10)),
+            barcodes: [Self.unknownCode],
+        ))
+        model.foodCreated(saved)
+        let failure = try #require(model.labelPhotoFailure)
+        #expect(failure.message.hasPrefix("The label photo couldn't be saved"))
+        #expect(model.pendingLabelPhoto == photo)
+        #expect(model.product?.food.id == saved.food.id)
+
+        // Failing again is a new failure (the alert comes back).
+        #expect(!model.retryLabelPhoto())
+        #expect(model.labelPhotoFailure?.id != failure.id)
+        #expect(model.pendingLabelPhoto == photo)
+
+        // Once the folder can be created, "Try Again" stores it under the food.
+        try FileManager.default.removeItem(at: blocked)
+        #expect(model.retryLabelPhoto())
+        #expect(model.labelPhotoFailure == nil)
+        #expect(model.pendingLabelPhoto == nil)
+        #expect(model.labelPhotos.load(foodID: saved.food.id) == photo)
+        try model.labelPhotos.delete(foodID: saved.food.id)
+
+        // Discarding drops the photo and the message.
+        // (The successful retry made `blocked` a real folder, so block a fresh path.)
+        let blockedAgain = FileManager.default.temporaryDirectory.appendingPathComponent("LabelPhotos-\(UUID().uuidString)")
+        try Data().write(to: blockedAgain)
+        defer { try? FileManager.default.removeItem(at: blockedAgain) }
+        let discarding = ScanFlowModel(
+            lookup: h.env.barcodeLookup, foods: h.env.foods, labelPhotos: LabelPhotoStore(directory: blockedAgain),
+        )
+        await discarding.handle([Self.unknownCode])
+        discarding.pendingLabelPhoto = photo
+        discarding.foodCreated(saved)
+        #expect(discarding.labelPhotoFailure != nil)
+        discarding.discardLabelPhoto()
+        #expect(discarding.labelPhotoFailure == nil)
+        #expect(discarding.pendingLabelPhoto == nil)
+    }
+
     @Test func `offline shows retry and manual creation`() async throws {
         let h = harness(failure: .offline)
         await h.model.handle([Self.nutella])
@@ -296,12 +346,45 @@ struct ScanFlowTests {
         #expect(h.model.loggedCount == 3)
     }
 
+    @Test func `the serving title states the weight once`() {
+        #expect(ProductCardView.servingTitle(label: "30 g", amount: 30, unit: "g") == "Per 30 g")
+        #expect(ProductCardView.servingTitle(label: "1 portion (30 g)", amount: 30, unit: "g") == "Per 1 portion (30 g)")
+        #expect(ProductCardView.servingTitle(label: "1 portion (30g)", amount: 30, unit: "g") == "Per 1 portion (30g)")
+        #expect(ProductCardView.servingTitle(label: "2 biscuits 25,5 g", amount: 25.5, unit: "g") == "Per 2 biscuits 25,5 g")
+        #expect(ProductCardView.servingTitle(label: "1 can (33 cl)", amount: 330, unit: "ml") == "Per 1 can (33 cl)")
+        // The label doesn't state this weight: append it.
+        #expect(ProductCardView.servingTitle(label: "1 shot", amount: 60, unit: "ml") == "Per 1 shot (60 ml)")
+        #expect(ProductCardView.servingTitle(label: "2 biscuits (25 g)", amount: 50, unit: "g") == "Per 2 biscuits (25 g) (50 g)")
+        #expect(ProductCardView.servingTitle(label: "130 g", amount: 30, unit: "g") == "Per 130 g (30 g)")
+        #expect(ProductCardView.servingTitle(label: "1 bar", amount: nil, unit: "g") == "Per 1 bar")
+    }
+
     @Test func `scans are ignored while a card is open`() async throws {
         let h = harness()
         await h.model.handle([Self.nutella])
         await h.model.handle([Self.partialCode])
         #expect(try found(h.model).food.name == "Nutella")
         #expect(h.client.requests == [Self.nutella])
+    }
+
+    @Test func `the camera pauses for a lookup, the result sheet and the session log`() async {
+        let h = harness()
+        // On the camera: only the session log sheet pauses it.
+        #expect(!h.model.pausesCamera(showingSessionLog: false))
+        #expect(h.model.pausesCamera(showingSessionLog: true))
+
+        h.client.setDelay(.milliseconds(200))
+        let lookup = Task { await h.model.handle([Self.nutella]) }
+        #expect(await waitUntil { h.model.isResolving })
+        #expect(h.model.pausesCamera(showingSessionLog: false))
+        await lookup.value
+
+        #expect(h.model.showsResult)
+        #expect(h.model.pausesCamera(showingSessionLog: false))
+
+        h.model.resumeScanning() // "Scan another"
+        #expect(!h.model.pausesCamera(showingSessionLog: false))
+        #expect(h.model.pausesCamera(showingSessionLog: true))
     }
 
     @Test func `per-serving placeholder asks for the serving weight and converts`() async throws {
@@ -334,6 +417,28 @@ struct ScanFlowTests {
         #expect(updated.per100?.kcal == saved.food.kcal100)
         // One serving still gives the label's values.
         #expect(abs(Quantity.servings(count: 1, serving: serving.size).nutrients(per100: stored.food.per100).kcal - 12) < 1e-9)
+    }
+
+    @Test func `setting the serving weight later keeps a logged serving at one serving`() async throws {
+        let h = harness()
+        await h.model.handle([Self.perServingCode])
+        let placeholder = try h.model.foodForLogging() // "Skip": logged by servings only
+        let standIn = try #require(placeholder.servings.first { $0.id == placeholder.food.defaultServingID })
+        let entry = try #require(h.env.diary).log(
+            food: placeholder.food, quantity: .servings(count: 1, serving: standIn.size), servingID: standIn.id,
+            slotID: "breakfast", day: h.env.today,
+        )
+        #expect(entry.grams == 100)
+
+        let rescan = h.newSession()
+        await rescan.handle([Self.perServingCode])
+        try rescan.setServingWeight(60)
+        let diary = try #require(h.env.diary)
+        let stored = try #require(try diary.entry(id: entry.id))
+        #expect(abs(stored.grams - 60) < 1e-9)
+        #expect(stored.kcal == 12)
+        let food = try #require(try h.foods.food(id: placeholder.food.id))
+        #expect(abs(food.per100.scaled(toGrams: stored.grams).kcal - 12) < 1e-9)
     }
 
     @Test func `placeholder conversion keeps partial quality when macros are missing`() throws {

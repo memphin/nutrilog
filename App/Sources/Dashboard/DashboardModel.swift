@@ -206,6 +206,7 @@ final class DashboardModel {
                 try weights.add(kg: kg, bodyFatPct: bodyFatPct, measuredAt: measuredAt)
             }
             environment.refreshStoredWeightTrend()
+            environment.widgetDataDidChange()
             return true
         } catch {
             errorMessage = "Couldn't save the weight: \(error.localizedDescription)"
@@ -218,13 +219,28 @@ final class DashboardModel {
         do {
             try weights.softDelete(ids: [entry.id])
             environment.refreshStoredWeightTrend()
+            environment.widgetDataDidChange()
             offerUndo("Deleted \(DashboardFormat.kg(entry.kg))") { [environment] in
                 try weights.restore(ids: [entry.id])
                 environment.refreshStoredWeightTrend()
+                environment.widgetDataDidChange()
             }
         } catch {
             errorMessage = "Couldn't delete the weight: \(error.localizedDescription)"
         }
+    }
+
+    /// Every manual weigh-in, newest first, while the weight detail's "All weigh-ins" list is open (nil before the
+    /// first value). The dashboard only reads its history window; entries older than that can be corrected here.
+    private(set) var allManualWeights: [WeightEntry]?
+
+    /// Streams `allManualWeights` until cancelled (the list's `.task`), so edits, deletes and undo show up at once.
+    func observeAllWeights() async {
+        guard let repo = environment.weights else {
+            allManualWeights = []
+            return
+        }
+        await DiaryModel.resubscribing { repo.observeAllEntries() } onValue: { allManualWeights = $0 } onError: { report($0) }
     }
 
     // MARK: Detail data

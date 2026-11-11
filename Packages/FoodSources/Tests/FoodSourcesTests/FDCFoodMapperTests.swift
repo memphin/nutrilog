@@ -149,6 +149,32 @@ struct FDCFoodMapperTests {
         #expect(food.dataQuality == .partialMacros)
     }
 
+    @Test(arguments: ["1e19", "100000.5", "2000", "-40", "0"])
+    func `absurd branded serving sizes count as no serving`(size: String) throws {
+        // 2000 KG is 2 000 000 g after conversion.
+        let unit = size == "2000" ? "KG" : "GRM"
+        let json = #"""
+        {"totalHits": 1, "foods": [{"fdcId": 9100001, "description": "BAD SERVING", "dataType": "Branded",
+         "servingSizeUnit": "\#(unit)", "servingSize": \#(size), "householdServingFullText": "1 bar",
+         "foodNutrients": [{"nutrientId": 1008, "unitName": "KCAL", "value": 400}]}]}
+        """#
+        let response = try #require(FDCSearchResponse.parse(Data(json.utf8)))
+        let food = try #require(response.foods.compactMap(FDCFoodMapper.map).first)
+        #expect(food.serving == nil)
+        #expect(food.nutrients.kcal == 400)
+    }
+
+    @Test func `the largest usable branded serving is kept`() throws {
+        let json = #"""
+        {"totalHits": 1, "foods": [{"fdcId": 9100002, "description": "BULK", "dataType": "Branded",
+         "servingSizeUnit": "KG", "servingSize": 100,
+         "foodNutrients": [{"nutrientId": 1008, "unitName": "KCAL", "value": 400}]}]}
+        """#
+        let response = try #require(FDCSearchResponse.parse(Data(json.utf8)))
+        let food = try #require(response.foods.compactMap(FDCFoodMapper.map).first)
+        #expect(food.serving?.amount == 100_000)
+    }
+
     @Test func `foods without an fdcId and non-object entries are dropped`() throws {
         let response = try #require(FDCSearchResponse.parse(Fixture.data("search_edge_cases", in: "USDA")))
         #expect(response.foods.count == 7)

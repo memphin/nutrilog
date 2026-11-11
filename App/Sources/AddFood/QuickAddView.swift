@@ -24,13 +24,46 @@ struct QuickAddView: View {
     @State private var slotID = ""
     @State private var errorMessage: String?
 
-    private var energyValue: Double? {
-        Format.number(energy).flatMap { $0 >= 0 ? environment.energyUnit.fromDisplay($0) : nil }
+    private var nutrients: Nutrients? {
+        Self.nutrients(energy: energy, protein: protein, carbs: carbs, fat: fat, unit: environment.energyUnit)
     }
 
     private var isValid: Bool {
-        guard energyValue != nil else { return false }
-        return [protein, carbs, fat].allSatisfy { $0.isEmpty || (Format.number($0) ?? -1) >= 0 }
+        nutrients != nil
+    }
+
+    /// The typed values as nutrients; nil when the energy is missing, or any value is negative, not a number or above
+    /// `EntryLimits` (the energy after converting from `unit` to kcal). Empty macros count as 0 g.
+    static func nutrients(energy: String, protein: String, carbs: String, fat: String, unit: EnergyUnit) -> Nutrients? {
+        guard let display = Format.number(energy), display >= 0 else { return nil }
+        let kcal = unit.fromDisplay(display)
+        guard kcal.isFinite, kcal <= EntryLimits.maxKcal else { return nil }
+        var macros: [Double] = []
+        for text in [protein, carbs, fat] {
+            guard !text.isEmpty else {
+                macros.append(0)
+                continue
+            }
+            guard let grams = Format.number(text), grams >= 0, grams.isFinite, grams <= EntryLimits.maxMacroGrams else { return nil }
+            macros.append(grams)
+        }
+        return Nutrients(kcal: kcal, proteinG: macros[0], carbsG: macros[1], fatG: macros[2])
+    }
+
+    /// Logs, plans or updates the quick add described by `mode`.
+    static func save(mode: Mode, name: String, nutrients: Nutrients, slotID: String, environment: AppEnvironment) throws {
+        guard let diary = environment.diary else { return }
+        switch mode {
+        case let .create(_, day, planned):
+            if planned {
+                guard let plan = environment.mealPlan else { return }
+                try plan.planQuickAdd(name: name, nutrients: nutrients, slotID: slotID, day: day)
+            } else {
+                try diary.logQuickAdd(name: name, nutrients: nutrients, slotID: slotID, day: day)
+            }
+        case let .edit(entry):
+            try diary.updateQuickAdd(entryID: entry.id, name: name, nutrients: nutrients)
+        }
     }
 
     var body: some View {
@@ -117,25 +150,9 @@ struct QuickAddView: View {
     }
 
     private func save() {
-        guard let kcal = energyValue, let diary = environment.diary else { return }
-        let nutrients = Nutrients(
-            kcal: kcal,
-            proteinG: Format.number(protein) ?? 0,
-            carbsG: Format.number(carbs) ?? 0,
-            fatG: Format.number(fat) ?? 0,
-        )
+        guard let nutrients else { return }
         do {
-            switch mode {
-            case let .create(_, day, planned):
-                if planned {
-                    guard let plan = environment.mealPlan else { return }
-                    try plan.planQuickAdd(name: name, nutrients: nutrients, slotID: slotID, day: day)
-                } else {
-                    try diary.logQuickAdd(name: name, nutrients: nutrients, slotID: slotID, day: day)
-                }
-            case let .edit(entry):
-                try diary.updateQuickAdd(entryID: entry.id, name: name, nutrients: nutrients)
-            }
+            try Self.save(mode: mode, name: name, nutrients: nutrients, slotID: slotID, environment: environment)
             dismiss()
             onSaved()
         } catch {

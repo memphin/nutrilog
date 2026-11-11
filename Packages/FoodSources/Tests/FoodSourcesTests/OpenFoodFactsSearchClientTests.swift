@@ -204,6 +204,53 @@ struct OpenFoodFactsSearchThrottleTests {
         #expect(transport.requests.count == 3)
     }
 
+    @Test func `searches cancelled while waiting give their slot back`() async throws {
+        let clock = TestClock()
+        let throttle = OFFSearchThrottle()
+        let transport = try StubTransport([.http(200, Fixture.data("search_nutella"))])
+        let sleeper = SleepRecorder()
+        let client = OpenFoodFactsSearchHTTPClient(
+            contact: "x", transport: transport, throttle: throttle, now: clock.closure, sleep: sleeper.sleep,
+        )
+        // Every keystroke cancels the previous search while it waits for its slot.
+        let cancelledSleeps = SleepRecorder()
+        let cancelling = OpenFoodFactsSearchHTTPClient(
+            contact: "x", transport: transport, throttle: throttle, now: clock.closure,
+            sleep: { delay in
+                try await cancelledSleeps.sleep(delay)
+                throw CancellationError()
+            },
+        )
+
+        _ = try await client.search(query: "n")
+        for query in ["nu", "nut", "nute", "nutel", "nutell", "nutella "] {
+            clock.advance(by: 0.1)
+            await #expect(throws: CancellationError.self) { try await cancelling.search(query: query) }
+        }
+        #expect(transport.requests.count == 1)
+        clock.advance(by: 0.1) // 0.7 s after the only request sent
+        _ = try await client.search(query: "nutella")
+        #expect(sleeper.delays == [.milliseconds(800)])
+        #expect(transport.requests.count == 2)
+        // Each abandoned search waited for the same free slot, 1.5 s after the request sent.
+        #expect(cancelledSleeps.delays == [1400, 1300, 1200, 1100, 1000, 900].map { .milliseconds($0) })
+    }
+
+    @Test func `two waiters for the same slot are still spaced apart`() {
+        let start = Date(timeIntervalSince1970: 1_800_000_000)
+        let throttle = OFFSearchThrottle()
+        #expect(throttle.claim(throttle.nextSlot(now: start), now: start) == nil)
+        let later = start.addingTimeInterval(0.2)
+        let first = throttle.nextSlot(now: later)
+        let second = throttle.nextSlot(now: later)
+        #expect(first == start.addingTimeInterval(1.5))
+        #expect(second == first)
+        #expect(throttle.claim(first, now: first) == nil)
+        // The second waiter lost the race: it must wait one more interval.
+        #expect(throttle.claim(second, now: second) == start.addingTimeInterval(3))
+        #expect(throttle.claim(start.addingTimeInterval(3), now: start.addingTimeInterval(3)) == nil)
+    }
+
     @Test func `copies of a client share the throttle`() async throws {
         let clock = TestClock()
         let throttle = OFFSearchThrottle()

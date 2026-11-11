@@ -101,14 +101,12 @@ struct BackupsView: View {
         guard let backup = restoring, let store = environment.backups else { return }
         restoring = nil
         do {
-            // The data being replaced stays recoverable — unless that would push the chosen backup out of the list.
-            if backups.firstIndex(of: backup).map({ $0 < LocalBackups.keep - 1 }) ?? false {
-                try store.backupNow()
-            }
-            let summary = try store.restore(backup)
+            // The data being replaced is backed up first (never pruning the chosen backup); nothing is restored when
+            // that backup fails.
+            let summary = try store.restoreKeepingCurrent(backup).summary
             try environment.dataDidChangeExternally()
             environment.refreshStoredWeightTrend()
-            message = "Restored \(summary.inserted) records."
+            message = "Restored \(summary.inserted) records. The data it replaced is the newest backup in the list."
         } catch DataPortability.ImportError.newerSchema {
             message = "This backup was made by a newer version of Vitalion. Update the app first."
         } catch {

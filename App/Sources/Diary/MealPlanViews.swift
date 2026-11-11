@@ -85,7 +85,7 @@ struct PlannedSummaryRow: View {
             text += " of \(unit.format(target.kcal))"
         }
         let macros = [("P", planned.proteinG), ("C", planned.carbsG), ("F", planned.fatG)]
-            .map { "\($0.0) \(Int($0.1.rounded())) g" }
+            .map { "\($0.0) \(DisplayRounding.whole($0.1)) g" }
         return ([text] + macros).joined(separator: " · ")
     }
 }
@@ -275,7 +275,7 @@ struct MealPlanView: View {
             Spacer()
             let total = entries.reduce(0) { $0 + $1.kcal } + (eaten[day] ?? 0)
             if total > 0 {
-                Text(targets[day].map { "\(Int(unit.display(total).rounded())) / \(unit.format($0))" } ?? unit.format(total))
+                Text(targets[day].map { "\(DisplayRounding.whole(unit.display(total))) / \(unit.format($0))" } ?? unit.format(total))
                     .monospacedDigit()
             }
         }
@@ -289,8 +289,19 @@ struct MealPlanView: View {
     // MARK: Prep list
 
     private var prepRange: ClosedRange<LocalDay> {
-        let start = prepFromTomorrow ? today.next : today
-        return start ... start.adding(days: prepDays - 1)
+        Self.prepRange(today: today, fromTomorrow: prepFromTomorrow, days: prepDays)
+    }
+
+    /// The days the prep list sums up: `days` days from today, or from tomorrow (then up to `today + horizon`).
+    static func prepRange(today: LocalDay, fromTomorrow: Bool, days: Int) -> ClosedRange<LocalDay> {
+        let start = fromTomorrow ? today.next : today
+        return start ... start.adding(days: max(days, 1) - 1)
+    }
+
+    /// The plan loaded for the sheet: the week (`today` to `today + horizon - 1`) plus the day after it, which the prep
+    /// list reaches when it starts tomorrow. The week view shows only its own days.
+    static func planWindow(today: LocalDay) -> ClosedRange<LocalDay> {
+        today ... today.adding(days: horizon)
     }
 
     private var prepItems: [PrepItem] {
@@ -382,7 +393,7 @@ struct MealPlanView: View {
 
     private func observePlan() async {
         guard let repo = environment.mealPlan else { return }
-        let range = today ... today.adding(days: Self.horizon - 1)
+        let range = Self.planWindow(today: today)
         await DiaryModel.resubscribing {
             repo.observePending(in: range)
         } onValue: { value in

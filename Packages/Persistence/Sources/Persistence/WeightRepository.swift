@@ -70,6 +70,20 @@ public struct WeightRepository: Sendable {
             .values(in: database.reader)
     }
 
+    /// Every active entry, newest first (`measuredAt`, then `id` descending) — not limited to a window. For the
+    /// weight detail's "All weigh-ins" list, which is the only place an entry older than the dashboard's window can
+    /// be edited or deleted. Read on demand: the dashboard itself never loads it.
+    public func allEntries() throws -> [WeightEntry] {
+        try database.reader.read { db in try Self.allRequest.fetchAll(db) }
+    }
+
+    /// `allEntries()` as an observation (edits, deletes and undo show up while the list is open).
+    public func observeAllEntries() -> AsyncValueObservation<[WeightEntry]> {
+        ValueObservation.tracking { db in try Self.allRequest.fetchAll(db) }
+            .removeDuplicates()
+            .values(in: database.reader)
+    }
+
     public func latest() throws -> WeightEntry? {
         try database.reader.read { db in
             try WeightEntry.filter(WeightEntry.Columns.deletedAt == nil).order(WeightEntry.Columns.measuredAt.desc).fetchOne(db)
@@ -121,5 +135,11 @@ public struct WeightRepository: Sendable {
             .filter(WeightEntry.Columns.measuredAt >= Timestamp.string(interval.start))
             .filter(WeightEntry.Columns.measuredAt < Timestamp.string(interval.end))
             .order(WeightEntry.Columns.measuredAt, WeightEntry.Columns.id)
+    }
+
+    private static var allRequest: QueryInterfaceRequest<WeightEntry> {
+        WeightEntry
+            .filter(WeightEntry.Columns.deletedAt == nil)
+            .order(WeightEntry.Columns.measuredAt.desc, WeightEntry.Columns.id.desc)
     }
 }

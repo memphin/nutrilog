@@ -99,7 +99,8 @@ struct HistoryCalendarView: View {
         .defaultScrollAnchor(.bottom) // open on the current month; older months are above
         .navigationTitle("History")
         .navigationBarTitleDisplayMode(.inline)
-        .task(id: environment.dataGeneration) { load() }
+        // Rebuilt when the day changes too, so a calendar left open overnight moves "today" along.
+        .task(id: CalendarKey(today: environment.today, generation: environment.dataGeneration)) { load() }
         .alert("History", isPresented: Binding(get: { errorMessage != nil }, set: {
             if !$0 {
                 errorMessage = nil
@@ -107,6 +108,11 @@ struct HistoryCalendarView: View {
         })) {
             Button("OK", role: .cancel) {}
         } message: { Text(errorMessage ?? "") }
+    }
+
+    private struct CalendarKey: Hashable {
+        var today: LocalDay
+        var generation: Int
     }
 
     private func monthView(_ month: HistoryMonth) -> some View {

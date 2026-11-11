@@ -12,8 +12,8 @@ public struct DailyHealthMetrics: Hashable, Sendable, Codable {
     public var sleepDeepMin: Int?
     public var sleepRemMin: Int?
     public var sleepAwakeMin: Int?
-    /// First weigh-in of the day from *other* sources: weights Vitalion wrote itself (manual entries) are excluded,
-    /// they live in `weight_entry` and `WeightReconciler` merges both.
+    /// First weigh-in of the day from *other* sources: weights Vitalion wrote itself (manual entries) are excluded
+    /// while their `weight_entry` row exists, and `WeightReconciler` merges both.
     public var weightKg: Double?
     /// Body fat in percent (18.5), from the same measurement as the weight when there is one.
     public var bodyFatPct: Double?
@@ -21,8 +21,9 @@ public struct DailyHealthMetrics: Hashable, Sendable, Codable {
     /// Average SDNN of the samples taken 00:00–09:00.
     public var hrvSDNNms: Double?
     /// Water logged in Health by *other* apps. Water Vitalion wrote itself is excluded (see
-    /// `DailyMetricsAggregator.aggregate(_:calendar:excludingOwnSamplesFrom:)`): it lives in `water_entry`, and the day's
-    /// total is `water_entry` + this value, so nothing is counted twice whether or not writing to Health is on.
+    /// `DailyMetricsAggregator.aggregate(_:calendar:excludingOwnSamplesFrom:localSampleIDs:)`): it lives in
+    /// `water_entry`, and the day's total is `water_entry` + this value, so nothing is counted twice whether or not
+    /// writing to Health is on. Own water whose row is gone (reinstall) is included here.
     public var waterMl: Double?
     /// Name of the source that provided each metric, e.g. [.steps: "Ivan's Apple Watch", .weight: "Withings"].
     public var sources: [HealthMetric: String]
@@ -97,7 +98,7 @@ public struct DailyHealthMetrics: Hashable, Sendable, Codable {
     }
 
     static func minutes(_ interval: TimeInterval) -> Int {
-        Int((interval / 60).rounded())
+        DisplayRounding.whole(interval / 60)
     }
 }
 
@@ -142,19 +143,28 @@ public extension DailyHealthMetrics {
 ///   itself), so water the app logged and wrote to Health is not counted twice (SPEC §3.4 write loops, FR-46).
 /// - Weight and body fat written by those sources (manual weights, FR-42) are ignored the same way: they live in
 ///   `weight_entry`, and `WeightReconciler` merges them with the values read here.
+/// - With `localSampleIDs`, only own samples whose row still exists locally are left out: after a reinstall (or a new
+///   phone without the backup) the app's earlier samples in Health have no local row and are read like other data.
 public enum DailyMetricsAggregator {
     /// HRV counts samples from midnight until this hour (overnight average).
     public static let hrvWindowEndHour = 9
     /// Body fat taken this close to the weight, by the same source, is treated as the same measurement.
     public static let sameMeasurementTolerance: TimeInterval = 5 * 60
 
-    /// - Parameter excludingOwnSamplesFrom: bundle identifiers whose `dietaryWater` contribution is subtracted and
-    ///   whose weight and body fat samples are ignored — Vitalion's own, so what the app logged (and wrote to Health)
-    ///   is not read back as data from other apps.
+    /// - Parameters:
+    ///   - excludingOwnSamplesFrom: bundle identifiers whose `dietaryWater` contribution is subtracted and whose
+    ///     weight and body fat samples are ignored — Vitalion's own, so what the app logged (and wrote to Health) is
+    ///     not read back as data from other apps.
+    ///   - localSampleIDs: the ids of the local rows those own samples may mirror (`HealthQuantitySample.externalID`).
+    ///     When given, an own sample is ignored only when its external id is in the set; own samples without an id or
+    ///     with an unknown one (written by an earlier install whose rows are gone) count like any other source's
+    ///     data. Own water is told apart with `HealthDataBatch.waterSamples`; without them all own water is excluded.
+    ///     Nil: every own sample is treated as local.
     public static func aggregate(
         _ batch: HealthDataBatch,
         calendar: Calendar = .current,
         excludingOwnSamplesFrom excludedSources: Set<String> = [],
+        localSampleIDs: Set<String>? = nil,
     ) -> [DailyHealthMetrics] {
         let plan = HealthFetchPlan(days: batch.days, calendar: calendar)
         var days: [LocalDay: DailyHealthMetrics] = [:]
@@ -162,15 +172,33 @@ public enum DailyMetricsAggregator {
             days[day] = DailyHealthMetrics(day: day)
         }
 
+        /// An own sample that mirrors a local row (and so must not be read back).
+        let isLocal = { (sample: HealthQuantitySample) -> Bool in
+            guard excludedSources.contains(sample.source.bundleIdentifier) else { return false }
+            guard let localSampleIDs else { return true }
+            return sample.externalID.map(localSampleIDs.contains) ?? false
+        }
+
+        // Own water without a local row, per day and source: it stays in the Health part of the day's water.
+        var orphanWater: [LocalDay: [String: Double]] = [:]
+        if localSampleIDs != nil, let waterSamples = batch.waterSamples {
+            for sample in waterSamples where excludedSources.contains(sample.source.bundleIdentifier) && !isLocal(sample) {
+                guard let day = plan.day(containing: sample.start) else { continue }
+                orphanWater[day, default: [:]][sample.source.bundleIdentifier, default: 0] += sample.value
+            }
+        }
+
         for (metric, statistics) in batch.statistics {
-            apply(metric, statistics: statistics, plan: plan, excluding: metric == .dietaryWater ? excludedSources : [], to: &days)
+            let isWater = metric == .dietaryWater
+            apply(
+                metric, statistics: statistics, plan: plan, excluding: isWater ? excludedSources : [],
+                keeping: isWater ? orphanWater : [:], to: &days,
+            )
         }
 
         let ownBody: Set<SampledMetric> = [.bodyMass, .bodyFatPercentage]
         let samplesByDay = batch.samples.reduce(into: [SampledMetric: [LocalDay?: [HealthQuantitySample]]]()) { result, entry in
-            let samples = ownBody.contains(entry.key)
-                ? entry.value.filter { !excludedSources.contains($0.source.bundleIdentifier) }
-                : entry.value
+            let samples = ownBody.contains(entry.key) ? entry.value.filter { !isLocal($0) } : entry.value
             result[entry.key] = Dictionary(grouping: samples) { plan.day(containing: $0.start) }
         }
         for day in plan.allDays {
@@ -196,6 +224,7 @@ public enum DailyMetricsAggregator {
         statistics: [CumulativeStatistic],
         plan: HealthFetchPlan,
         excluding excludedSources: Set<String>,
+        keeping orphans: [LocalDay: [String: Double]],
         to days: inout [LocalDay: DailyHealthMetrics],
     ) {
         // A statistic covers one local day; its midpoint is safely inside that day even if the bucket
@@ -208,17 +237,27 @@ public enum DailyMetricsAggregator {
             var total = stats.reduce(0) { $0 + $1.sum }
             var sources = stats.flatMap(\.sources)
             if !excludedSources.isEmpty {
-                let excluded = sources.filter { excludedSources.contains($0.source.bundleIdentifier) }
-                guard excluded.isEmpty || sources.count > excluded.count else { continue } // only our own samples
+                let isOwn = { (contribution: SourceContribution) in excludedSources.contains(contribution.source.bundleIdentifier) }
+                let excluded = sources.filter(isOwn)
+                sources.removeAll(where: isOwn)
+                // Own samples without a local row stay, under their source; only the rest is subtracted.
+                var local = 0.0
+                for contribution in excluded {
+                    let orphan = min(orphans[day]?[contribution.source.bundleIdentifier] ?? 0, contribution.sum)
+                    local += contribution.sum - orphan
+                    if orphan > 0 {
+                        sources.append(SourceContribution(source: contribution.source, sum: orphan))
+                    }
+                }
+                guard excluded.isEmpty || !sources.isEmpty else { continue } // only our own, local samples
                 // Per-source sums are taken before Health's de-duplication, so clamp at zero.
-                total = max(0, total - excluded.reduce(0) { $0 + $1.sum })
-                sources.removeAll { excludedSources.contains($0.source.bundleIdentifier) }
+                total = max(0, total - local)
             }
             let merged = CumulativeStatistic(start: stats[0].start, end: stats[0].end, sum: total, sources: sources)
             let source = merged.mainSource?.name
             switch metric {
             case .steps:
-                days[day]?.steps = Int(total.rounded())
+                days[day]?.steps = DisplayRounding.whole(total)
                 days[day]?.sources[.steps] = source
             case .activeEnergy:
                 days[day]?.activeKcal = total

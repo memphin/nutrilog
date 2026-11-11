@@ -165,6 +165,10 @@ public struct MealPlanRepository: Sendable {
         guard !items.isEmpty, items.allSatisfy({ $0.quantity.baseAmount > 0 }) else {
             throw PersistenceError.validation("amount must be greater than zero")
         }
+        for item in items {
+            try EntryLimits.validate(amount: item.quantity.baseAmount)
+            try EntryLimits.validateFinite(item.quantity.nutrients(per100: item.food.per100))
+        }
         let now = clock.now()
         return try database.writer.write { db in
             try items.map { item in
@@ -183,6 +187,7 @@ public struct MealPlanRepository: Sendable {
     /// Plans calories (and optional macros) without a food.
     @discardableResult
     public func planQuickAdd(name: String?, nutrients: Nutrients, slotID: String, day: LocalDay) throws -> PlannedEntry {
+        try EntryLimits.validate(nutrients)
         let now = clock.now()
         let title = name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return try database.writer.write { db in
@@ -199,6 +204,7 @@ public struct MealPlanRepository: Sendable {
     /// Changes the planned amount of a food; the estimate is scaled like a diary entry's snapshot.
     public func updateQuantity(plannedID: String, quantity: Quantity) throws {
         guard quantity.baseAmount > 0 else { throw PersistenceError.validation("amount must be greater than zero") }
+        try EntryLimits.validate(amount: quantity.baseAmount)
         let now = clock.now()
         try database.writer.write { db in
             guard var entry = try PlannedEntry.fetchOne(db, key: plannedID) else { throw PersistenceError.notFound(plannedID) }
@@ -206,7 +212,9 @@ public struct MealPlanRepository: Sendable {
             if entry.grams > 0 {
                 entry.nutrients = entry.nutrients.scaled(by: quantity.baseAmount / entry.grams)
             } else if let foodID = entry.foodID, let food = try Food.fetchOne(db, key: foodID) {
-                entry.nutrients = quantity.nutrients(per100: food.per100)
+                let nutrients = quantity.nutrients(per100: food.per100)
+                try EntryLimits.validateFinite(nutrients)
+                entry.nutrients = nutrients
             } else {
                 throw PersistenceError.validation("entry has no amount to scale")
             }
@@ -274,8 +282,11 @@ public struct MealPlanRepository: Sendable {
                 if !planned.isQuickAdd, let foodID = planned.foodID, var food = try Food.fetchOne(db, key: foodID),
                    food.deletedAt == nil
                 {
-                    displayName = food.name
-                    nutrients = food.per100.scaled(toGrams: planned.grams)
+                    // A 0 g plan (legacy or imported) has no amount to re-snapshot: it keeps its own estimate and name.
+                    if planned.grams > 0 {
+                        displayName = food.name
+                        nutrients = food.per100.scaled(toGrams: planned.grams)
+                    }
                     food.useCount += 1
                     food.lastUsedAt = now
                     food.stampUpdated(now)
@@ -322,7 +333,8 @@ public struct MealPlanRepository: Sendable {
                     let slot = targetSlotID ?? source.slotID
                     var name = source.name
                     var nutrients = source.nutrients
-                    if !source.isQuickAdd, let foodID = source.foodID,
+                    // A 0 g source (legacy or imported) keeps its own snapshot and name.
+                    if !source.isQuickAdd, source.grams > 0, let foodID = source.foodID,
                        let food = try Food.fetchOne(db, key: foodID), food.deletedAt == nil
                     {
                         name = food.name

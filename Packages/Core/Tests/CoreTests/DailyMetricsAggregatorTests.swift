@@ -271,3 +271,133 @@ struct DailyMetricsAggregatorTests {
         ])
     }
 }
+
+/// Vitalion's own samples in Health are left out only while their local row exists (reinstall, new phone).
+struct OwnSampleExclusionTests {
+    let zagreb = HealthFixtures.zagreb
+    let withings = HealthFixtures.withings
+    let other = HealthFixtures.healthApp
+    let vitalion = HealthSource(name: "Vitalion", bundleIdentifier: "hr.ivanjuric.nutrilog", productType: "iPhone17,1")
+
+    func aggregate(_ batch: HealthDataBatch, localIDs: Set<String>?) -> [LocalDay: DailyHealthMetrics] {
+        Dictionary(uniqueKeysWithValues: DailyMetricsAggregator.aggregate(
+            batch, calendar: zagreb, excludingOwnSamplesFrom: [vitalion.bundleIdentifier], localSampleIDs: localIDs,
+        ).map { ($0.day, $0) })
+    }
+
+    @Test func `own weights without a local row are read like any other source`() throws {
+        let batch = HealthDataBatch(days: day("2026-11-08") ... day("2026-11-10"), samples: [
+            .bodyMass: [
+                // Two weigh-ins on one day: the local one (07:00) is left out, the orphan (08:00) is the earliest left.
+                quantity(80.0, at: "2026-11-08 07:00", vitalion, id: "local-1"),
+                quantity(80.5, at: "2026-11-08 08:00", vitalion, id: "gone-1"),
+                quantity(81.0, at: "2026-11-08 09:00", withings),
+                // Two orphaned weigh-ins on one day: the earlier one.
+                quantity(79.0, at: "2026-11-09 20:00", vitalion, id: "gone-3"),
+                quantity(79.4, at: "2026-11-09 07:00", vitalion, id: "gone-2"),
+                // Written moments ago, local row exists: still left out.
+                quantity(78.0, at: "2026-11-10 07:00", vitalion, id: "local-2"),
+            ],
+        ])
+        let rows = aggregate(batch, localIDs: ["local-1", "local-2"])
+        #expect(rows[day("2026-11-08")]?.weightKg == 80.5)
+        #expect(rows[day("2026-11-08")]?.sources[.weight] == "Vitalion")
+        #expect(rows[day("2026-11-09")]?.weightKg == 79.4)
+        #expect(rows[day("2026-11-10")]?.weightKg == nil)
+        #expect(rows[day("2026-11-10")]?.sources[.weight] == nil)
+    }
+
+    @Test func `body fat written with a manual weight follows the weight's row`() throws {
+        let batch = HealthDataBatch(days: day("2026-11-09") ... day("2026-11-10"), samples: [
+            .bodyMass: [
+                quantity(80.0, at: "2026-11-09 07:00", vitalion, id: "local"),
+                quantity(80.6, at: "2026-11-10 07:00", vitalion, id: "gone"),
+            ],
+            .bodyFatPercentage: [
+                quantity(20.0, at: "2026-11-09 07:00", vitalion, id: "local"),
+                quantity(22.0, at: "2026-11-09 08:00", withings),
+                quantity(21.0, at: "2026-11-10 07:00", vitalion, id: "gone"),
+                quantity(23.0, at: "2026-11-10 06:00", withings), // earlier, but another measurement
+            ],
+        ])
+        let rows = aggregate(batch, localIDs: ["local"])
+        let local = try #require(rows[day("2026-11-09")])
+        #expect(local.weightKg == nil)
+        #expect(local.bodyFatPct == 22.0)
+        #expect(local.sources[.bodyFat] == "Withings")
+        let orphan = try #require(rows[day("2026-11-10")])
+        #expect(orphan.weightKg == 80.6)
+        #expect(orphan.bodyFatPct == 21.0) // same measurement as the orphaned weight
+        #expect(orphan.sources[.bodyFat] == "Vitalion")
+    }
+
+    @Test func `own samples without an id count only when local ids are known`() {
+        let batch = HealthDataBatch(days: day("2026-11-09") ... day("2026-11-09"), samples: [
+            .bodyMass: [quantity(80.0, at: "2026-11-09 07:00", vitalion)],
+        ])
+        #expect(aggregate(batch, localIDs: [])[day("2026-11-09")]?.weightKg == 80.0)
+        #expect(aggregate(batch, localIDs: nil)[day("2026-11-09")]?.weightKg == nil) // legacy: every own sample is local
+    }
+
+    @Test func `orphaned own water is counted once, local own water never`() {
+        let batch = HealthDataBatch(
+            days: day("2026-11-07") ... day("2026-11-10"),
+            statistics: [.dietaryWater: [
+                dailyStatistic("2026-11-07", 1250, sources: [
+                    SourceContribution(source: vitalion, sum: 750), SourceContribution(source: other, sum: 500),
+                ]),
+                dailyStatistic("2026-11-08", 600, sources: [SourceContribution(source: vitalion, sum: 600)]),
+                dailyStatistic("2026-11-09", 400, sources: [SourceContribution(source: vitalion, sum: 400)]),
+                dailyStatistic("2026-11-10", 330, sources: [SourceContribution(source: other, sum: 330)]),
+            ]],
+            waterSamples: [
+                quantity(500, at: "2026-11-07 09:00", vitalion, id: "local-1"),
+                quantity(250, at: "2026-11-07 12:00", vitalion, id: "gone-1"),
+                quantity(500, at: "2026-11-07 13:00", other), // another app's sample: never subtracted
+                quantity(350, at: "2026-11-08 09:00", vitalion, id: "gone-2"),
+                quantity(250, at: "2026-11-08 10:00", vitalion), // no id
+                quantity(400, at: "2026-11-09 09:00", vitalion, id: "local-2"),
+            ],
+        )
+        let rows = aggregate(batch, localIDs: ["local-1", "local-2"])
+        // Local water (500) comes from water_entry; Health adds the other app's 500 and the orphaned 250.
+        #expect(rows[day("2026-11-07")]?.waterMl == 750)
+        #expect(rows[day("2026-11-07")]?.sources[.water] == "Health")
+        // After a reinstall: only orphaned own water that day, all of it counts.
+        #expect(rows[day("2026-11-08")]?.waterMl == 600)
+        #expect(rows[day("2026-11-08")]?.sources[.water] == "Vitalion")
+        // Only local own water: nothing from Health.
+        #expect(rows[day("2026-11-09")]?.waterMl == nil)
+        #expect(rows[day("2026-11-10")]?.waterMl == 330)
+    }
+
+    @Test func `with every own sample local the result is unchanged`() {
+        let batch = HealthDataBatch(
+            days: day("2026-11-08") ... day("2026-11-09"),
+            statistics: [.dietaryWater: [
+                dailyStatistic("2026-11-08", 1250, sources: [
+                    SourceContribution(source: vitalion, sum: 750), SourceContribution(source: other, sum: 500),
+                ]),
+                dailyStatistic("2026-11-09", 600, sources: [SourceContribution(source: vitalion, sum: 600)]),
+            ]],
+            samples: [
+                .bodyMass: [quantity(80, at: "2026-11-08 07:00", vitalion, id: "w"), quantity(81, at: "2026-11-08 08:00", withings)],
+                .bodyFatPercentage: [quantity(20, at: "2026-11-08 07:00", vitalion, id: "w")],
+            ],
+            waterSamples: [
+                quantity(750, at: "2026-11-08 09:00", vitalion, id: "a"),
+                quantity(600, at: "2026-11-09 09:00", vitalion, id: "b"),
+            ],
+        )
+        let known = aggregate(batch, localIDs: ["w", "a", "b"])
+        #expect(known == aggregate(batch, localIDs: nil))
+        #expect(known[day("2026-11-08")]?.waterMl == 500)
+        #expect(known[day("2026-11-08")]?.weightKg == 81)
+        #expect(known[day("2026-11-08")]?.bodyFatPct == nil)
+        #expect(known[day("2026-11-09")]?.waterMl == nil)
+        // Without the water samples, own water is excluded as before even with local ids.
+        var noSamples = batch
+        noSamples.waterSamples = nil
+        #expect(aggregate(noSamples, localIDs: [])[day("2026-11-08")]?.waterMl == 500)
+    }
+}

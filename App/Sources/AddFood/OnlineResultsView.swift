@@ -127,11 +127,21 @@ struct OnlineFoodRow: View {
             }
             Spacer()
             VStack(alignment: .trailing, spacing: NL.Spacing.xxs) {
-                Text(unit.format(draft.nutrients.kcal)).monospacedDigit().foregroundStyle(.primary)
+                if let energy = Self.energyText(draft, unit: unit) {
+                    Text(energy).monospacedDigit().foregroundStyle(.primary)
+                } else {
+                    // The source has no energy value (stored as 0): "—" like the product card, never "0 kcal".
+                    Text("—").foregroundStyle(.secondary).accessibilityLabel("Energy unknown")
+                }
                 Text(basisLabel).font(.caption2).foregroundStyle(.secondary)
             }
         }
         .accessibilityElement(children: .combine)
+    }
+
+    /// "539 kcal", or nil when the source has no energy value (``FoodDraft/missingNutrients``).
+    static func energyText(_ draft: FoodDraft, unit: EnergyUnit) -> String? {
+        draft.missingNutrients.contains(.energy) ? nil : unit.format(draft.nutrients.kcal)
     }
 
     private var basisLabel: String {

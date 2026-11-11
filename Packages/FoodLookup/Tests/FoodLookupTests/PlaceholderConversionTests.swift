@@ -68,4 +68,31 @@ struct PlaceholderConversionTests {
             try gummy.convertingPerServingPlaceholder(servingWeight: 20)
         }
     }
+
+    @Test func `absurd weights are rejected before converting`() {
+        let detail = placeholder()
+        for weight in [0.000_000_000_000_000_01, 0.09, 100_000.5, 1e19, Double.greatestFiniteMagnitude] {
+            #expect(throws: ServingWeightError.outOfRange) { try detail.convertingPerServingPlaceholder(servingWeight: weight) }
+        }
+        #expect(throws: ServingWeightError.notPositive) { try detail.convertingPerServingPlaceholder(servingWeight: .nan) }
+        #expect(throws: ServingWeightError.notPositive) { try detail.convertingPerServingPlaceholder(servingWeight: .infinity) }
+        let message = ServingWeightError.outOfRange.errorDescription ?? ""
+        #expect(message.hasPrefix("Enter a weight between ")) // numbers follow the device locale
+        // Bounds are inclusive; 0.1 g of a 210 kcal bar is implausible, but for the energy, not the range.
+        #expect(throws: ServingWeightError.implausibleEnergy(kcalPer100: 210_000)) {
+            try detail.convertingPerServingPlaceholder(servingWeight: 0.1)
+        }
+        let water = placeholder(nutrients: Nutrients(kcal: 0, proteinG: 0, carbsG: 0, fatG: 0))
+        #expect((try? water.convertingPerServingPlaceholder(servingWeight: 100_000)) != nil)
+    }
+
+    @Test func `error messages never trap, whatever the value`() {
+        let values: [Double] = [2100, 1e19, -1e19, .greatestFiniteMagnitude, .infinity, -.infinity, .nan]
+        for value in values {
+            #expect(ServingWeightError.implausibleEnergy(kcalPer100: value).errorDescription?.isEmpty == false)
+            #expect(ServingWeightError.implausibleMacros(gramsPer100: value).errorDescription?.isEmpty == false)
+        }
+        #expect(ServingWeightError.implausibleEnergy(kcalPer100: 2100).errorDescription?.contains("kcal per 100") == true)
+        #expect(ServingWeightError.implausibleEnergy(kcalPer100: .infinity).errorDescription?.contains("∞ kcal") == true)
+    }
 }

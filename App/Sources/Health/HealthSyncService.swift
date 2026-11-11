@@ -15,8 +15,8 @@ import Persistence
 ///   hourly background delivery re-reads the recent days whenever Health changes (a morning weigh-in shows up within
 ///   the hour without opening the app). Every observer completion handler is called by `HealthObserverDispatcher`.
 /// The calendar (time zone) is read at the start of every sync, so day boundaries follow the device.
-/// Water and weights written by Vitalion itself are left out of `daily_metrics` (they live in `water_entry` and
-/// `weight_entry`).
+/// Water and weights written by Vitalion itself are left out of `daily_metrics` while their `water_entry` /
+/// `weight_entry` row exists (deleted rows included); those whose row is gone (reinstall) are read like other data.
 @MainActor
 @Observable
 final class HealthSyncService {
@@ -214,7 +214,12 @@ final class HealthSyncService {
         let calendar = calendar ?? calendarProvider()
         let batch = try await source.fetchDailyData(for: days, calendar: calendar)
         let own = ownBundleIdentifier.map { Set([$0]) } ?? []
-        let rows = DailyMetricsAggregator.aggregate(batch, calendar: calendar, excludingOwnSamplesFrom: own)
+        // Read after the fetch, so an own sample in the batch whose row was just created is known as local. Own
+        // samples with no local row (reinstall, new phone without the backup) are read like any other source's.
+        let localIDs: Set<String>? = try own.isEmpty ? nil : metrics.localHealthSampleIDs()
+        let rows = DailyMetricsAggregator.aggregate(
+            batch, calendar: calendar, excludingOwnSamplesFrom: own, localSampleIDs: localIDs,
+        )
         return try metrics.upsert(rows)
     }
 

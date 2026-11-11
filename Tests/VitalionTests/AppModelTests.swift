@@ -277,6 +277,129 @@ struct TargetsModelTests {
         #expect(m.makeTarget()?.fatG == 80)
     }
 
+    @Test func `absurd numbers disable Save instead of trapping`() throws {
+        let m = try model()
+        m.overrideKcal = true
+        m.manualKcal = "2000"
+        #expect(m.validationErrors.isEmpty)
+        // Text that doesn't parse at all (too long, not finite) and numbers that parse but are out of range.
+        for text in ["12345678901234567890", "inf", "1e30", "nan", "150", "-10"] {
+            m.proteinPct = text
+            _ = m.percentSum
+            #expect(m.validationErrors.contains { $0.contains("between 0 and 100") })
+            #expect(m.makeTarget() == nil)
+        }
+        m.proteinPct = "30"
+        #expect(m.makeTarget() != nil)
+        m.macroInput = .grams
+        m.proteinG = "150"
+        m.carbsG = "200"
+        for text in ["12345678901234567890", "inf", "1e30", "2500", "-1"] {
+            m.fatG = text
+            #expect(m.validationErrors.contains { $0.contains("2,000 g") })
+            #expect(m.gramsEnergyMismatch == nil)
+            #expect(m.makeTarget() == nil)
+        }
+        m.fatG = ""
+        #expect(m.validationErrors.contains { $0.contains("Enter protein, carbs and fat") })
+        m.fatG = "70"
+        #expect(m.makeTarget() != nil)
+        for text in ["99999999999999999999", "inf", "nan", "1e30", "-500", "499", "25000"] {
+            m.manualKcal = text
+            #expect(m.effectiveKcal == nil)
+            #expect(m.validationErrors.contains { $0.contains("between 500 and 20,000 kcal") })
+            #expect(m.makeTarget() == nil)
+        }
+        m.manualKcal = ""
+        #expect(m.validationErrors.contains("Enter a calorie target."))
+        m.manualKcal = "20000"
+        #expect(m.makeTarget()?.kcal == 20000)
+        m.fiberG = "1e30"
+        #expect(m.validationErrors.contains { $0.contains("Fiber") })
+        #expect(m.makeTarget() == nil)
+        m.fiberG = "30"
+        #expect(m.makeTarget()?.fiberG == 30)
+    }
+
+    @Test func `the suggested target never goes below the minimum`() throws {
+        let m = try model(weightKg: 55)
+        m.heightCm = "160"
+        m.sex = .female
+        m.hasBirthDate = true
+        m.birthDate = try #require(LocalDay("1961-11-09")).startDate() // 65 today
+        m.activity = .sedentary
+        m.goal = .lose
+        m.rateKgPerWeek = 1.0
+        #expect(m.formulaKcal == 180) // 1,064 × 1.2 − 1,100
+        #expect(m.suggestionRaisedToFloor)
+        #expect(m.suggestedKcal == AdaptiveTDEE.minimumTargetKcal)
+        let target = try #require(m.makeTarget())
+        #expect(target.kcal == AdaptiveTDEE.minimumTargetKcal)
+        #expect(target.macros.proteinG > 0 && target.macros.fatG > 0)
+
+        let lighter = try model(weightKg: 45)
+        lighter.heightCm = "150"
+        lighter.sex = .female
+        lighter.hasBirthDate = true
+        lighter.birthDate = try #require(LocalDay("1951-11-09")).startDate() // 75 today
+        lighter.activity = .sedentary
+        lighter.goal = .lose
+        lighter.rateKgPerWeek = 1.0
+        #expect(try #require(lighter.formulaKcal) < 0)
+        #expect(lighter.effectiveKcal == AdaptiveTDEE.minimumTargetKcal)
+
+        m.goal = .maintain
+        #expect(!m.suggestionRaisedToFloor)
+        #expect(m.effectiveKcal == 1280)
+    }
+
+    @Test func `macros entered in grams reopen in grams and survive a calorie change`() throws {
+        let today = try #require(LocalDay("2026-11-09"))
+        let env = AppEnvironment.preview()
+        let profiles = try #require(env.profiles)
+        let grams = MacroTargets(proteinG: 150, carbsG: 200, fatG: 60)
+
+        let first = TargetsModel(today: today)
+        try first.load(profile: profiles.profile(), target: nil, latestWeightKg: nil)
+        first.overrideKcal = true
+        first.manualKcal = "2000"
+        first.macroInput = .grams
+        first.proteinG = "150"
+        first.carbsG = "200"
+        first.fatG = "60"
+        #expect(try first.save(to: profiles))
+        #expect(try profiles.setting(TargetsModel.macrosInGramsKey, as: Bool.self) == true)
+
+        // Reopened with the saved mode, and without it (inferred from the stored grams).
+        for (saved, kcal) in [(true, 2100.0), (nil, 2200.0)] as [(Bool?, Double)] {
+            let stored = try #require(try profiles.target(on: today))
+            let second = TargetsModel(today: today)
+            try second.load(profile: profiles.profile(), target: stored, latestWeightKg: nil, macrosInGrams: saved)
+            #expect(second.macroInput == .grams)
+            second.manualKcal = Format.field(kcal) // only the calories change
+            #expect(try second.save(to: profiles))
+            let resaved = try #require(try profiles.target(on: today))
+            #expect(resaved.kcal == kcal)
+            #expect(resaved.macros == grams)
+        }
+
+        // Saved in percent: reopens in percent, with and without the saved mode.
+        let third = TargetsModel(today: today)
+        try third.load(profile: profiles.profile(), target: profiles.target(on: today), latestWeightKg: nil)
+        third.macroInput = .percent
+        third.proteinPct = "30"
+        third.carbsPct = "40"
+        third.fatPct = "30"
+        #expect(try third.save(to: profiles))
+        #expect(try profiles.setting(TargetsModel.macrosInGramsKey, as: Bool.self) == false)
+        for saved in [false, nil] as [Bool?] {
+            let fourth = TargetsModel(today: today)
+            try fourth.load(profile: profiles.profile(), target: profiles.target(on: today), latestWeightKg: nil, macrosInGrams: saved)
+            #expect(fourth.macroInput == .percent)
+            #expect(fourth.proteinPct == "30" && fourth.carbsPct == "40" && fourth.fatPct == "30")
+        }
+    }
+
     @Test func `without a weigh-in there is no formula target and the form says where to add one`() throws {
         let m = try model()
         m.heightCm = "180"
@@ -518,5 +641,61 @@ struct FormattingTests {
         #expect(!FoodSearchResult.food(bread).isLiquid)
         let bundled = try #require(try BundledFoodIndex.inBundle(.main)?.search("rice", limit: 1).first)
         #expect(!FoodSearchResult.bundled(bundled).isLiquid)
+    }
+}
+
+// MARK: - Numeric input limits
+
+@MainActor
+struct NumericInputLimitTests {
+    @Test func `number parsing rejects nonsense and huge values`() {
+        #expect(Format.number("1,5") == 1.5)
+        #expect(Format.number("1000000") == 1_000_000)
+        #expect(Format.number("-3") == -3)
+        for text in ["inf", "infinity", "-inf", "nan", "NaN", "1e30", "12345678901234567890", "1000000.5"] {
+            #expect(Format.number(text) == nil, "\(text)")
+        }
+    }
+
+    @Test func `quantity sheet rejects amounts beyond the entry limit`() {
+        let food = Food(name: "Rice", per100: Nutrients(kcal: 130, proteinG: 2.7, carbsG: 28, fatG: 0.3))
+        let serving = Serving(label: "bag", grams: 1000)
+        let detail = FoodDetail(food: food, servings: [serving])
+        #expect(QuantitySheet.quantity(amountText: "100000", unitChoice: "base", detail: detail) != nil)
+        #expect(QuantitySheet.quantity(amountText: "100001", unitChoice: "base", detail: detail) == nil)
+        #expect(QuantitySheet.quantity(amountText: "inf", unitChoice: "base", detail: detail) == nil)
+        #expect(QuantitySheet.quantity(amountText: "100", unitChoice: serving.id, detail: detail) != nil)
+        #expect(QuantitySheet.quantity(amountText: "101", unitChoice: serving.id, detail: detail) == nil) // 101 × 1000 g
+    }
+
+    @Test func `quick add rejects energy and macros beyond the limits`() {
+        let valid = QuickAddView.nutrients(energy: "500", protein: "", carbs: "60", fat: "", unit: .kcal)
+        #expect(valid == Nutrients(kcal: 500, proteinG: 0, carbsG: 60, fatG: 0))
+        #expect(QuickAddView.nutrients(energy: "", protein: "", carbs: "", fat: "", unit: .kcal) == nil)
+        #expect(QuickAddView.nutrients(energy: "12345678901234567890123", protein: "", carbs: "", fat: "", unit: .kcal) == nil)
+        #expect(QuickAddView.nutrients(energy: "100001", protein: "", carbs: "", fat: "", unit: .kcal) == nil)
+        // 400 000 kJ ≈ 95 602 kcal: within the limit once converted.
+        #expect(QuickAddView.nutrients(energy: "400000", protein: "", carbs: "", fat: "", unit: .kilojoules) != nil)
+        #expect(QuickAddView.nutrients(energy: "500000", protein: "", carbs: "", fat: "", unit: .kilojoules) == nil)
+        #expect(QuickAddView.nutrients(energy: "500", protein: "100001", carbs: "", fat: "", unit: .kcal) == nil)
+        #expect(QuickAddView.nutrients(energy: "500", protein: "nan", carbs: "", fat: "", unit: .kcal) == nil)
+        #expect(QuickAddView.nutrients(energy: "500", protein: "-1", carbs: "", fat: "", unit: .kcal) == nil)
+    }
+
+    @Test func `meal and smart log amounts respect the entry limit`() throws {
+        let food = Food(name: "Rice", per100: Nutrients(kcal: 130, proteinG: 2.7, carbsG: 28, fatG: 0.3))
+        var row = MealEditorModel.Row(food: food, amount: 100)
+        row.amountText = "100001"
+        #expect(row.amount == nil)
+        row.amountText = "100000"
+        #expect(row.amount == 100_000)
+
+        var line = SmartLogModel.Line(name: "Rice", grams: 100, per100: food.per100, origin: .estimate)
+        line.amountText = "1e30"
+        #expect(line.grams == nil)
+        line.amountText = "100001"
+        #expect(line.grams == nil)
+        line.amountText = "250"
+        #expect(line.grams == 250)
     }
 }

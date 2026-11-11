@@ -19,9 +19,22 @@ public struct LocalDay: Hashable, Comparable, Sendable, Codable, CustomStringCon
         self.day = day
     }
 
-    /// The day containing `date` in `calendar` (default: current calendar & time zone).
+    /// A Gregorian calendar in `calendar`'s time zone. `LocalDay` always holds Gregorian year-month-day numbers,
+    /// so every `Date` ⇄ `LocalDay` conversion goes through this, whatever the device calendar is (Buddhist,
+    /// Japanese, Hebrew, …). Only the time zone of the passed calendar is honoured; a Gregorian calendar is used as-is.
+    static func gregorian(_ calendar: Calendar) -> Calendar {
+        if calendar.identifier == .gregorian {
+            return calendar
+        }
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.timeZone = calendar.timeZone
+        return gregorian
+    }
+
+    /// The day containing `date` in `calendar`'s time zone (default: current time zone). The day is always the
+    /// Gregorian one, whatever calendar system `calendar` uses.
     public init(_ date: Date, calendar: Calendar = .current) {
-        let c = calendar.dateComponents([.year, .month, .day], from: date)
+        let c = Self.gregorian(calendar).dateComponents([.year, .month, .day], from: date)
         year = c.year!
         month = c.month!
         day = c.day!
@@ -51,7 +64,7 @@ public struct LocalDay: Hashable, Comparable, Sendable, Codable, CustomStringCon
 
     /// Start of this day (00:00) in `calendar`'s time zone. Handles DST days correctly.
     public func startDate(calendar: Calendar = .current) -> Date {
-        calendar.date(from: DateComponents(year: year, month: month, day: day))!
+        Self.gregorian(calendar).date(from: DateComponents(year: year, month: month, day: day))!
     }
 
     public func adding(days: Int) -> LocalDay {

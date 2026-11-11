@@ -114,6 +114,41 @@ struct OFFPlausibilityTests {
         #expect(isClose(draft.nutrients.kcal, 25))
     }
 
+    @Test(arguments: [1e19, 100_000.5, Double.infinity, Double.nan, -5, 0])
+    func `absurd serving_quantity counts as no serving`(quantity: Double) {
+        let draft = map(Self.tabletServing, servingQuantity: quantity)
+        #expect(draft.serving == nil)
+        #expect(draft.basis == .perServing)
+        #expect(draft.nutrients.kcal == 10) // not scaled by an absurd weight
+    }
+
+    @Test func `absurd serving_quantity falls back to a usable serving_size`() {
+        let draft = map(Self.tabletServing, servingSize: "1 bar (40 g)", servingQuantity: 1e19)
+        #expect(draft.serving == ServingSize(label: "1 bar (40 g)", amount: 40))
+    }
+
+    @Test func `absurd amounts after conversion or parsing count as no serving`() {
+        #expect(map(Self.tabletServing, servingQuantity: 200, servingQuantityUnit: "kg").serving == nil)
+        #expect(map(Self.tabletServing, servingSize: "1 pallet (500 kg)").serving == nil)
+        // The 100 000 g limit itself is still a serving.
+        #expect(map(Self.tabletServing, servingQuantity: 100_000).serving?.amount == 100_000)
+    }
+
+    @Test func `serving_quantity 1e19 in an OFF payload maps without crashing and without a serving`() throws {
+        let json = #"""
+        {"status": 1, "code": "3850000000005", "product": {"code": "3850000000005", "product_name": "Bad serving",
+         "serving_quantity": 1e19, "serving_quantity_unit": "g",
+         "nutriments": {"energy-kcal_serving": 120, "proteins_serving": 3, "carbohydrates_serving": 20, "fat_serving": 2}}}
+        """#
+        let response = try #require(OFFProductResponse.parse(Data(json.utf8)))
+        let product = try #require(response.product)
+        #expect(product.servingQuantity == 1e19)
+        let draft = OFFFoodMapper.map(product)
+        #expect(draft.serving == nil)
+        #expect(draft.basis == .perServing)
+        #expect(draft.nutrients.kcal == 120)
+    }
+
     // MARK: - Basis choice
 
     private static let energyPer100WithServingMacros: [String: Double] = [

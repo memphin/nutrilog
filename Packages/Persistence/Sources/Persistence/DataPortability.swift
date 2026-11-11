@@ -23,7 +23,8 @@ public struct DataPortability: Sendable {
     public enum ImportMode: Sendable {
         /// Wipes all user data first, then inserts the file's rows.
         case replace
-        /// Keeps local rows; for rows present in both, the newer `updated_at` wins (last-writer-wins).
+        /// Keeps local rows; for rows present in both, the newer `updated_at` wins (last-writer-wins), except that an
+        /// edited incoming profile / default meal slot always replaces a never-edited install seed.
         case merge
     }
 
@@ -43,10 +44,15 @@ public struct DataPortability: Sendable {
 
     let database: AppDatabase
     let clock: AppClock
+    /// The device calendar now, for repairing days a pre-fix backup stored in it (see `StoredDayMigration`).
+    let deviceCalendar: Calendar.Identifier
 
-    public init(_ database: AppDatabase, clock: AppClock = .system) {
+    public init(
+        _ database: AppDatabase, clock: AppClock = .system, deviceCalendar: Calendar.Identifier = Calendar.current.identifier,
+    ) {
         self.database = database
         self.clock = clock
+        self.deviceCalendar = deviceCalendar
     }
 
     public static var schemaVersion: Int {
@@ -62,10 +68,23 @@ public struct DataPortability: Sendable {
             for table in Self.tables {
                 let pk = try db.primaryKey(table).columns.joined(separator: ", ")
                 let rows = try Row.fetchAll(db, sql: "SELECT * FROM \(table) ORDER BY \(pk)")
+                let notNull = try Set(db.columns(in: table).filter(\.isNotNull).map(\.name))
                 result[table] = rows.map { row in
                     var object: [String: JSONValue] = [:]
                     for column in row.columnNames {
-                        object[column] = JSONValue(row[column] as DatabaseValue)
+                        var value = JSONValue(row[column] as DatabaseValue)
+                        // JSON has no infinity (JSONEncoder throws), and one bad row must not stop every backup:
+                        // a non-finite REAL (stored before amounts were validated) is written as null or, where the
+                        // column can't hold null, clamped to the entry limit (which also passes `CHECK (x > 0)`), so
+                        // the file still restores and the odd row stays visible to fix.
+                        if case let .double(number) = value, !number.isFinite {
+                            value = if notNull.contains(column), !number.isNaN {
+                                .double(number < 0 ? -EntryLimits.maxAmount : EntryLimits.maxAmount)
+                            } else {
+                                .null
+                            }
+                        }
+                        object[column] = value
                     }
                     return object
                 }
@@ -141,10 +160,10 @@ public struct DataPortability: Sendable {
                         } else {
                             summary.skipped += 1
                         }
-                    } else if hasUpdatedAt,
+                    } else if let existing, hasUpdatedAt,
                               let incoming = values["updated_at"]?.stringValue,
-                              let local: String = existing?["updated_at"],
-                              incoming > local
+                              let local: String = existing["updated_at"],
+                              incoming > local || Self.replacesSeed(table: table, local: existing, incoming: values)
                     {
                         // UPDATE (not INSERT OR REPLACE) so ON DELETE CASCADE children are kept.
                         let assignments = names.map { "\($0) = ?" }.joined(separator: ", ")
@@ -164,6 +183,9 @@ public struct DataPortability: Sendable {
                 sql: "UPDATE food SET source = ?, updated_at = ?, revision = revision + 1 WHERE source = ?",
                 arguments: [FoodSource.custom.rawValue, Timestamp.string(now), FoodSource.recipe.rawValue],
             )
+            // Exports made before `LocalDay` always used the Gregorian calendar may hold days in the device calendar
+            // (e.g. "2569-11-11" on a Buddhist iPhone): like migration 010, they move to their Gregorian day.
+            try StoredDayMigration.run(db, deviceCalendar: deviceCalendar, today: LocalDay(now), now: now)
             // Replace wipes every table, so a partial file must not leave the app without a profile or meal slots.
             // Checking the result (not the file's keys) keeps older, smaller-schema backups importable.
             if mode == .replace {
@@ -182,6 +204,31 @@ public struct DataPortability: Sendable {
             }
             return summary
         }
+    }
+
+    /// Rows migration 001 seeds on install (the profile and the default meal slots), keyed by table.
+    static let seededRows: [String: Set<String>] = [
+        "profile": ["1"],
+        "meal_slot": ["breakfast", "lunch", "dinner", "snacks"],
+    ]
+
+    /// Merge: whether `incoming` replaces `local` although it is older. Seeds are stamped with the install time, so
+    /// on a new phone they are always newer than the backup and plain last-writer-wins would drop the profile and
+    /// slot edits. A seed nobody edited still has `revision = 1` (every save bumps it), so an edited incoming row
+    /// (`revision > 1`) wins over it.
+    static func replacesSeed(table: String, local: Row, incoming: [String: JSONValue]) -> Bool {
+        guard let seeds = seededRows[table] else { return false }
+        let key: DatabaseValue = local["id"]
+        let id: String? = switch key.storage {
+        case let .int64(value): String(value)
+        case let .string(value): value
+        default: nil
+        }
+        guard let id, seeds.contains(id),
+              let localRevision: Int = local["revision"], localRevision <= 1,
+              case let .int(incomingRevision)? = incoming["revision"], incomingRevision > 1
+        else { return false }
+        return true
     }
 
     // MARK: CSV export
@@ -232,7 +279,9 @@ public struct DataPortability: Sendable {
         rows.map { fields in
             fields.map { raw in
                 let field = neutralizeFormula(raw)
-                guard field.contains(where: { $0 == "," || $0 == "\"" || $0 == "\n" || $0 == "\r" }) else { return field }
+                // Unicode scalars, not Characters: "\r\n" is a single Character equal to neither "\r" nor "\n".
+                guard field.unicodeScalars.contains(where: { $0 == "," || $0 == "\"" || $0 == "\n" || $0 == "\r" })
+                else { return field }
                 return "\"" + field.replacingOccurrences(of: "\"", with: "\"\"") + "\""
             }.joined(separator: ",")
         }.joined(separator: "\r\n") + "\r\n"

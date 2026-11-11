@@ -107,6 +107,59 @@ struct ExpenditureTests {
         #expect(try Expenditure.snapshot(environment: env)?.estimate.get().loggedDays == 14)
     }
 
+    @Test func `a breakfast-only day with three entries is left out of the mean intake`() throws {
+        try seedHistory(env)
+        let diary = try #require(env.diary)
+        let day = env.today.adding(days: -3)
+        try diary.softDelete(entryIDs: diary.diary(for: day).sections.flatMap(\.entries).map(\.id))
+        for (name, kcal) in [("Coffee", 20.0), ("Milk", 80.0), ("Toast", 250.0)] {
+            try diary.logQuickAdd(
+                name: name, nutrients: Nutrients(kcal: kcal, proteinG: 0, carbsG: 0, fatG: 0), slotID: "breakfast", day: day,
+            )
+        }
+        let estimate = try #require(try Expenditure.snapshot(environment: env)?.estimate.get())
+        #expect(estimate.partialDays == [day])
+        #expect(estimate.loggedDays == 13)
+        #expect(abs(estimate.meanIntakeKcal - 2000) < 1e-6)
+        #expect(abs(estimate.kcal - 2500) < 50)
+        #expect(CheckInModel.estimateExplanation(estimate, unit: .kcal).contains("1 partly logged day was left out"))
+
+        // Marked as fully logged, the same day counts.
+        try diary.setDayNote(day: day, text: "", isComplete: true)
+        let marked = try #require(try Expenditure.snapshot(environment: env)?.estimate.get())
+        #expect(marked.partialDaysLeftOut == 0 && marked.loggedDays == 14)
+    }
+
+    @Test func `the explanation says how the weight change was measured`() throws {
+        try seedHistory(env)
+        let estimate = try #require(try Expenditure.snapshot(environment: env)?.estimate.get())
+        #expect(estimate.weightMethod == .trend) // 45 days of daily weigh-ins: a mature trend
+        #expect(CheckInModel.estimateExplanation(estimate, unit: .kcal).contains(TDEEWeightMethod.trend.explanation))
+        #expect(CheckInModel.trendExplanation(estimate).hasPrefix("Your weight trend went"))
+
+        var young = estimate
+        young.weightMethod = .weighInLine
+        #expect(CheckInModel.estimateExplanation(young, unit: .kcal).contains(TDEEWeightMethod.weighInLine.explanation))
+        #expect(CheckInModel.trendExplanation(young).hasPrefix("A straight line through your weigh-ins"))
+
+        // The Trends card names the method too.
+        #expect(MaintenanceCard.summary(estimate).contains("logged · trend "))
+        #expect(MaintenanceCard.summary(young).contains("logged · weigh-ins "))
+        #expect(!MaintenanceCard.summary(young).contains("trend"))
+        #expect(MaintenanceCard.summary(young).hasSuffix(" / week"))
+        var stored = estimate
+        stored.weightMethod = nil // stored before the method was recorded
+        #expect(MaintenanceCard.summary(stored).contains("logged · trend "))
+    }
+
+    @Test func `a new user's first estimate uses the weigh-ins, not the lagging trend`() throws {
+        try seedHistory(env, days: 10)
+        let estimate = try #require(try Expenditure.snapshot(environment: env)?.estimate.get())
+        #expect(estimate.weightMethod == .weighInLine)
+        #expect(estimate.confidence != .high)
+        #expect(abs(estimate.rawKcal - 2500) < 1)
+    }
+
     @Test func `the weight trend is stored on the Health rows`() throws {
         try seedHistory(env, days: 10)
         let metrics = try #require(env.dailyMetrics)
@@ -180,6 +233,43 @@ struct CheckInModelTests {
         #expect(record.appliedTargetKcal == 2111)
         #expect(try env.checkIns?.history().count == 1) // same day: replaced
         #expect(try env.profiles?.target(on: env.today)?.origin == .adaptive)
+    }
+
+    @Test func `keeping the calories leaves the macros untouched`() throws {
+        let model = CheckInModel(environment: env)
+        #expect(model.applyEdited(kcal: 2300)) // the current target's energy
+        let target = try #require(try env.profiles?.target(on: env.today))
+        #expect(target.kcal == 2300)
+        #expect(target.macros == MacroTargets(proteinG: 172.5, carbsG: 230, fatG: 76.7))
+        #expect(target.fiberG == 30)
+
+        // Gram targets far from their own energy share are not rewritten either.
+        let proteinOnly = Target(
+            effectiveFrom: env.today, kcal: 2000, macros: MacroTargets(proteinG: 150, carbsG: 0, fatG: 0), origin: .manual,
+        )
+        #expect(CheckInModel.macros(forKcal: 2000, current: proteinOnly) == proteinOnly.macros)
+        let mixed = Target(
+            effectiveFrom: env.today, kcal: 2000, macros: MacroTargets(proteinG: 180, carbsG: 180, fatG: 60), origin: .manual,
+        )
+        #expect(CheckInModel.macros(forKcal: 2000, current: mixed) == mixed.macros)
+    }
+
+    @Test func `a changed calorie target scales the macros proportionally`() throws {
+        let current = Target(
+            effectiveFrom: env.today, kcal: 2000, macros: MacroTargets(proteinG: 180, carbsG: 180, fatG: 60), origin: .manual,
+        )
+        #expect(CheckInModel.macros(forKcal: 2200, current: current) == MacroTargets(proteinG: 198, carbsG: 198, fatG: 66))
+        let proteinOnly = Target(
+            effectiveFrom: env.today, kcal: 2000, macros: MacroTargets(proteinG: 150, carbsG: 0, fatG: 0), origin: .manual,
+        )
+        #expect(CheckInModel.macros(forKcal: 1800, current: proteinOnly) == MacroTargets(proteinG: 135, carbsG: 0, fatG: 0))
+        // Without a current target: 30 / 40 / 30.
+        #expect(CheckInModel.macros(forKcal: 2000, current: nil) == MacroSplit.balanced.grams(forKcal: 2000))
+
+        let model = CheckInModel(environment: env)
+        #expect(model.applyEdited(kcal: 2070)) // 0.9 × 2300
+        let target = try #require(try env.profiles?.target(on: env.today))
+        #expect(target.macros == MacroTargets(proteinG: 155, carbsG: 207, fatG: 69))
     }
 
     @Test func `the next estimate is blended with the last check-in's`() throws {
@@ -390,6 +480,16 @@ struct DiaryPhase3Tests {
         #expect(try meals.templates().isEmpty)
         model.rows[1].amountText = "0"
         #expect(model.validationErrors.count == 1)
+        // Too large: its own message (zero/empty keeps the one above, and wins when both occur).
+        model.rows[1].amountText = "100001"
+        #expect(model.validationErrors == ["An amount can't be more than \(EntryLimits.maxAmount.formatted(.number.precision(.fractionLength(0))))."])
+        #expect(model.validationErrors == [MealEditorModel.tooLargeAmountMessage])
+        model.rows[1].amountText = "1e30"
+        #expect(model.validationErrors == [MealEditorModel.tooLargeAmountMessage])
+        #expect(throws: PersistenceError.validation(MealEditorModel.tooLargeAmountMessage)) { try model.save(to: meals) }
+        model.rows[0].amountText = ""
+        #expect(model.validationErrors == ["Every food needs an amount greater than zero."])
+        model.rows[0].amountText = "50"
         model.rows[1].amountText = "200"
         model.move(fromOffsets: [1], toOffset: 0)
 
@@ -887,5 +987,73 @@ struct WidgetAndBackupTests {
         #expect(try backups.backupIfDue() == nil)
         #expect(try backups.list().count == 1)
         #expect(DuplicateFoodsView.facts(FoodDetail(food: Food(name: "X", per100: .zero), barcodes: ["1"])) == "Logged 0 times · 1 barcode")
+    }
+}
+
+/// A week that contains today: unfinished totals are drawn but not averaged, the same way in the charts and the report.
+@MainActor
+struct TrendsTodayTests {
+    /// Monday 2 Nov – Sunday 8 Nov 2026 with today on Friday at 8 am: four finished days, a morning's worth of
+    /// today and two days still to come.
+    private let today = LocalDay("2026-11-06")!
+
+    private func week() -> [DayStats] {
+        let monday = LocalDay("2026-11-02")!
+        let steps = [9000, 9200, 8800, 9000, 400]
+        let water: [Double] = [2000, 2400, 1600, 2000, 300]
+        let sleep = [480, 480, 420, 420, 300]
+        return (0 ..< 7).map { index in
+            let day = monday.adding(days: index)
+            guard index < 5 else { return DayStats(day: day, targetKcal: 2000) }
+            let isToday = index == 4
+            let weight: Double? = index == 0 ? 80 : isToday ? 79 : nil
+            return DayStats(
+                day: day,
+                intake: Nutrients(kcal: isToday ? 450 : 2000, proteinG: isToday ? 20 : 100, carbsG: 200, fatG: 70),
+                entryCount: isToday ? 1 : 3, targetKcal: 2000, steps: steps[index], sleepMin: sleep[index],
+                activeKcal: isToday ? 100 : 500, basalKcal: isToday ? 700 : 1700, waterMl: water[index],
+                weightKg: weight,
+            )
+        }
+    }
+
+    private func series(_ metric: ChartMetric, today: LocalDay?) -> ChartSeries {
+        ChartBuilder.series(metric, range: .week, stats: week(), unit: .kcal, today: today)
+    }
+
+    @Test func `today's growing totals are drawn but left out of the chart average`() {
+        for metric in [ChartMetric.steps, .water, .totalEnergy] {
+            let open = series(metric, today: today)
+            #expect(open.points.count == 7)
+            #expect(open.points[4].value != nil) // today's bar is still there
+            #expect(open.daysWithData == 4)
+        }
+        #expect(series(.steps, today: today).average == 9000)
+        #expect(series(.water, today: today).average == 2000)
+        #expect(series(.totalEnergy, today: today).average == 2200)
+        // Without a today (a past week), every day counts.
+        #expect(series(.steps, today: nil).average == 7280)
+        #expect(series(.steps, today: nil).daysWithData == 5)
+        // Measurements and last night's sleep count today.
+        #expect(series(.sleep, today: today).daysWithData == 5 && series(.sleep, today: today).average == 7)
+        #expect(series(.weight, today: today).daysWithData == 2 && series(.weight, today: today).average == 79.5)
+        // A half-logged day still counts once marked as fully logged; a growing Health total never does.
+        var marked = week()
+        marked[4].isComplete = true
+        let steps = ChartBuilder.series(.steps, range: .week, stats: marked, unit: .kcal, today: today)
+        #expect(steps.average == 9000)
+    }
+
+    @Test func `the report of the current week matches the charts to the unit`() throws {
+        let stats = week()
+        // As `WeeklyReportLoader.load` builds it.
+        let report = WeeklyReport(days: IntakeStats.finished(stats, today: today), today: today)
+        let intake = try #require(report.averageIntake)
+        #expect(series(.energy, today: today).average == intake.kcal)
+        #expect(intake.kcal == 2000 && report.loggedDays == 4)
+        #expect(series(.steps, today: today).average == report.averageSteps)
+        #expect(series(.water, today: today).average == report.averageWaterMl)
+        #expect(series(.sleep, today: today).average.map { $0 * 60 } == report.averageSleepMin)
+        #expect(report.averageSteps == 9000 && report.averageWaterMl == 2000 && report.averageSleepMin == 420)
     }
 }

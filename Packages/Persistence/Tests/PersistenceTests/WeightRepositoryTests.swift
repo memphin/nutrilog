@@ -70,6 +70,25 @@ struct WeightRepositoryTests {
         #expect(try Set(queued(f)) == [old.id, recent.id, fromProfile.id])
     }
 
+    @Test func `all entries are listed newest first, however old, without deleted ones`() async throws {
+        let f = try Fixture()
+        let repo = weights(f)
+        let now = f.clock.now
+        let years = try repo.add(kg: 90, measuredAt: now.addingTimeInterval(-86400 * 900))
+        let months = try repo.add(kg: 85, measuredAt: now.addingTimeInterval(-86400 * 90))
+        let recent = try repo.add(kg: 81, measuredAt: now.addingTimeInterval(-3600))
+        let deleted = try repo.add(kg: 83, measuredAt: now.addingTimeInterval(-86400 * 200))
+        try repo.softDelete(ids: [deleted.id])
+        #expect(try repo.allEntries().map(\.id) == [recent.id, months.id, years.id])
+
+        var iterator = repo.observeAllEntries().makeAsyncIterator()
+        #expect(try await iterator.next()?.map(\.id) == [recent.id, months.id, years.id])
+        try repo.update(id: years.id, kg: 89, bodyFatPct: nil, measuredAt: years.measuredAt)
+        #expect(try await iterator.next()?.last?.kg == 89)
+        try repo.restore(ids: [deleted.id])
+        #expect(try await iterator.next()?.map(\.id) == [recent.id, months.id, deleted.id, years.id])
+    }
+
     @Test func `observation follows changes`() async throws {
         let f = try Fixture()
         let window = DateInterval(start: f.clock.now.addingTimeInterval(-86400), end: f.clock.now.addingTimeInterval(86400))

@@ -23,7 +23,8 @@ public final class OFFSearchThrottle: Sendable {
     public let cooldown: Duration
 
     private struct State {
-        var nextAllowed: Date?
+        /// When the last request that was actually sent went out (its slot, or the clock if later).
+        var lastSent: Date?
         var blockedUntil: Date?
     }
 
@@ -47,13 +48,31 @@ public final class OFFSearchThrottle: Sendable {
         return until
     }
 
-    /// Reserves the next request slot: how long to wait before sending (zero when the interval has passed).
-    func reserveSlot(now: Date) -> Duration {
+    /// The earliest time a request may go out: `now`, or ``minimumInterval`` after the last request sent. Reserves
+    /// nothing, so a search cancelled while waiting for it costs no slot; ``claim(_:now:)`` takes it.
+    func nextSlot(now: Date) -> Date {
+        state.withLock { state in Self.slot(after: state.lastSent, now: now, interval: Self.seconds(minimumInterval)) }
+    }
+
+    /// Takes `slot` for a request about to be sent, when no other request was sent within ``minimumInterval``
+    /// before it. Returns `nil` on success, else the later slot to wait for (another waiter sent first).
+    func claim(_ slot: Date, now: Date) -> Date? {
         state.withLock { state in
-            let slot = max(now, state.nextAllowed ?? now)
-            state.nextAllowed = slot.addingTimeInterval(Self.seconds(minimumInterval))
-            return .milliseconds(Int((slot.timeIntervalSince(now) * 1000).rounded()))
+            let interval = Self.seconds(minimumInterval)
+            let earliest = Self.slot(after: state.lastSent, now: slot, interval: interval)
+            guard earliest <= slot else { return earliest }
+            state.lastSent = max(slot, now)
+            return nil
         }
+    }
+
+    /// How long to wait from `now` until `slot` (zero when it has passed), to the millisecond.
+    static func wait(until slot: Date, now: Date) -> Duration {
+        .milliseconds(Int((max(0, slot.timeIntervalSince(now)) * 1000).rounded()))
+    }
+
+    private static func slot(after lastSent: Date?, now: Date, interval: TimeInterval) -> Date {
+        max(now, lastSent.map { $0.addingTimeInterval(interval) } ?? now)
     }
 
     private static func seconds(_ duration: Duration) -> TimeInterval {
@@ -127,11 +146,18 @@ public struct OpenFoodFactsSearchHTTPClient: OpenFoodFactsSearchClient {
         if rateLimitedUntil != nil {
             throw OpenFoodFactsError.rateLimited
         }
-        let wait = throttle.reserveSlot(now: now())
-        if wait > .zero {
-            try await sleep(wait)
+        // Wait for a free slot, then take it; a search cancelled while waiting never takes one, so a fast typist's
+        // abandoned searches don't push later ones back. When another search took the slot first, wait for the next.
+        var slot = throttle.nextSlot(now: now())
+        while true {
+            let wait = OFFSearchThrottle.wait(until: slot, now: now())
+            if wait > .zero {
+                try await sleep(wait)
+            }
+            try Task.checkCancellation()
+            guard let later = throttle.claim(slot, now: now()) else { break }
+            slot = later
         }
-        try Task.checkCancellation()
         let data: Data
         let response: HTTPURLResponse
         do {

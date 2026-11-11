@@ -64,6 +64,13 @@ final class ScanFlowModel {
         case close
     }
 
+    /// A failed attempt to store the label photo. Each failure is a new value (new `id`), so the alert comes back
+    /// when "Try Again" fails again.
+    struct LabelPhotoFailure: Identifiable, Equatable {
+        let id = UUID()
+        let message: String
+    }
+
     private(set) var phase: Phase = .scanning
     /// "Try again" is looking the failed code up again. The failure screen stays up meanwhile (closing and reopening
     /// the sheet could race with its dismissal and leave no sheet at all).
@@ -77,8 +84,17 @@ final class ScanFlowModel {
 
     /// A label photo taken on the not-found screen, saved with the food once it is created (FR-13).
     var pendingLabelPhoto: Data?
-    /// Set when the label photo couldn't be stored.
-    private(set) var labelPhotoError: String?
+    /// Set when the label photo couldn't be stored; the photo stays in `pendingLabelPhoto` until the user retries
+    /// (``retryLabelPhoto()``) or dismisses the message (``discardLabelPhoto()``).
+    private(set) var labelPhotoFailure: LabelPhotoFailure?
+
+    /// The message of ``labelPhotoFailure``.
+    var labelPhotoError: String? {
+        labelPhotoFailure?.message
+    }
+
+    /// The food the pending label photo belongs to once that food was created.
+    private var labelPhotoFoodID: String?
 
     private let lookup: BarcodeLookup?
     private let foods: FoodRepository?
@@ -121,6 +137,13 @@ final class ScanFlowModel {
         return false
     }
 
+    /// Whether the camera (and its haptics and torch) must pause: a lookup runs, the result sheet is up, or another
+    /// sheet the scanner screen presents covers the camera (`showingSessionLog`). A code detected behind a sheet
+    /// would start a lookup whose result sheet can't present over it.
+    func pausesCamera(showingSessionLog: Bool) -> Bool {
+        showsResult || isResolving || showingSessionLog
+    }
+
     var product: ScannedProduct? {
         if case let .found(product) = phase {
             return product
@@ -153,7 +176,8 @@ final class ScanFlowModel {
         isRetrying = false
         phase = .scanning
         pendingLabelPhoto = nil
-        labelPhotoError = nil
+        labelPhotoFailure = nil
+        labelPhotoFoodID = nil
     }
 
     private func resolve(_ candidates: [String], retrying: Bool = false) async {
@@ -254,7 +278,8 @@ final class ScanFlowModel {
         guard product.detail.isPerServingPlaceholder else { return product.detail }
         let missing = product.missing.map { Set($0.compactMap { FoodDraft.MandatoryNutrient(rawValue: $0.rawValue) }) }
         let converted = try product.detail.convertingPerServingPlaceholder(servingWeight: amount, missing: missing)
-        let saved = try foods.save(converted)
+        // Also rescales what was logged, planned or saved with the placeholder, so it stays "1 serving".
+        let saved = try foods.saveConvertedPlaceholder(converted)
         product.detail = saved
         product.isSaved = true
         // No longer a placeholder: an unknown missing set now follows the normal rule for partial foods.
@@ -277,15 +302,41 @@ final class ScanFlowModel {
     /// Stores a pending label photo under the new food's ID (app container only, never the database).
     func foodCreated(_ saved: FoodDetail) {
         ScanLogging.recordCreated(barcode: barcodeForNewFood, saved: saved, in: scanLog)
-        if let photo = pendingLabelPhoto {
-            do {
-                try labelPhotos.save(photo, foodID: saved.food.id)
-                pendingLabelPhoto = nil
-            } catch {
-                labelPhotoError = "The label photo couldn't be saved: \(error.localizedDescription)"
-            }
+        if pendingLabelPhoto != nil {
+            labelPhotoFoodID = saved.food.id
+            storePendingLabelPhoto()
         }
         phase = .found(ScannedProduct(local: saved))
+    }
+
+    /// Tries again to store a label photo that couldn't be saved. Returns whether it is stored now.
+    @discardableResult
+    func retryLabelPhoto() -> Bool {
+        guard labelPhotoFailure != nil else { return false }
+        return storePendingLabelPhoto()
+    }
+
+    /// The user dismissed the "label photo couldn't be saved" message without retrying: drop the photo.
+    func discardLabelPhoto() {
+        pendingLabelPhoto = nil
+        labelPhotoFailure = nil
+        labelPhotoFoodID = nil
+    }
+
+    /// Stores `pendingLabelPhoto` under `labelPhotoFoodID`; on failure keeps the photo and sets `labelPhotoFailure`.
+    @discardableResult
+    private func storePendingLabelPhoto() -> Bool {
+        guard let photo = pendingLabelPhoto, let foodID = labelPhotoFoodID else { return false }
+        do {
+            try labelPhotos.save(photo, foodID: foodID)
+            pendingLabelPhoto = nil
+            labelPhotoFailure = nil
+            labelPhotoFoodID = nil
+            return true
+        } catch {
+            labelPhotoFailure = LabelPhotoFailure(message: "The label photo couldn't be saved: \(error.localizedDescription)")
+            return false
+        }
     }
 
     /// The code to prefill when creating the food by hand (not found, or offline).

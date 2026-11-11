@@ -67,27 +67,56 @@ struct MoveToDateSheet: View {
     let initialDay: LocalDay
     let initialSlotID: String
     let slots: [MealSlot]
+    /// A logged (eaten) entry can't move to a future day: there it would count as eaten ahead of time. Plans can.
+    let allowsFuture: Bool
     let onMove: (String, LocalDay) -> Void
+    @Environment(AppEnvironment.self) private var environment
     @Environment(\.dismiss) private var dismiss
     @State private var date = Date()
     @State private var slotID = ""
 
-    init(title: String, day: LocalDay, slotID: String, slots: [MealSlot], onMove: @escaping (String, LocalDay) -> Void) {
+    init(
+        title: String, day: LocalDay, slotID: String, slots: [MealSlot], allowsFuture: Bool = true,
+        onMove: @escaping (String, LocalDay) -> Void,
+    ) {
         self.title = title
         initialDay = day
         initialSlotID = slotID
         self.slots = slots
+        self.allowsFuture = allowsFuture
         self.onMove = onMove
     }
 
+    /// A logged entry: today or earlier only.
     init(entry: DiaryEntry, slots: [MealSlot], onMove: @escaping (String, LocalDay) -> Void) {
-        self.init(title: "Move \(entry.displayName)", day: entry.day, slotID: entry.mealSlotID, slots: slots, onMove: onMove)
+        self.init(
+            title: "Move \(entry.displayName)", day: entry.day, slotID: entry.mealSlotID, slots: slots, allowsFuture: false,
+            onMove: onMove,
+        )
+    }
+
+    /// The latest day the picker offers; nil when any day is fine.
+    private var latestDay: LocalDay? {
+        allowsFuture ? nil : environment.today
+    }
+
+    /// The picker's range: up to the last moment of `latestDay`.
+    private var dateRange: ClosedRange<Date> {
+        let upper = latestDay.map { $0.next.startDate().addingTimeInterval(-1) } ?? .distantFuture
+        return Date.distantPast ... upper
+    }
+
+    /// The chosen day, never after `latestDay` (the picker's range already keeps it there).
+    private var chosenDay: LocalDay {
+        let day = LocalDay(date)
+        guard let latestDay else { return day }
+        return min(day, latestDay)
     }
 
     var body: some View {
         NavigationStack {
             Form {
-                DatePicker("Day", selection: $date, displayedComponents: .date)
+                DatePicker("Day", selection: $date, in: dateRange, displayedComponents: .date)
                 Picker("Meal", selection: $slotID) {
                     ForEach(slots) { Text($0.name).tag($0.id) }
                 }
@@ -98,7 +127,7 @@ struct MoveToDateSheet: View {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Move") {
-                        onMove(slotID, LocalDay(date))
+                        onMove(slotID, chosenDay)
                         dismiss()
                     }
                 }

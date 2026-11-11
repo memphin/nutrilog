@@ -61,10 +61,25 @@ public enum Quantity: Hashable, Sendable, Codable {
 
 public enum NumberFormatting {
     /// "1", "1.5", "0.25" — no trailing zeros, up to 2 decimals, locale-independent.
+    /// Total for every `Double`: NaN reads "NaN", infinities "∞" / "-∞", and whole numbers beyond `Int`'s range
+    /// are written out as plain digits (never in scientific notation).
     public static func compact(_ value: Double) -> String {
+        if value.isNaN {
+            return "NaN"
+        }
+        if value.isInfinite {
+            return value < 0 ? "-∞" : "∞"
+        }
         let rounded = (value * 100).rounded() / 100
+        if !rounded.isFinite {
+            // `value * 100` overflowed: the value is huge, so it is whole already.
+            return String(format: "%.0f", value)
+        }
         if rounded == rounded.rounded() {
-            return String(Int(rounded))
+            if abs(rounded) < DisplayRounding.intBound {
+                return String(Int(rounded))
+            }
+            return String(format: "%.0f", rounded)
         }
         var text = String(format: "%.2f", rounded)
         while text.hasSuffix("0") {

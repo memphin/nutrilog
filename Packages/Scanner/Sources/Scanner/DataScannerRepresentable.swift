@@ -8,6 +8,8 @@
     struct DataScannerRepresentable: UIViewControllerRepresentable {
         var isScanning: Bool
         var onDetect: @MainActor (ScannedBarcode) -> Void
+        /// Called with the payload of a barcode the camera no longer sees.
+        var onRemove: @MainActor (String) -> Void
         /// Called when `startScanning()` throws (e.g. the camera is in use or became unavailable).
         var onStartFailure: @MainActor (Error) -> Void
 
@@ -27,6 +29,7 @@
 
         func updateUIViewController(_ scanner: DataScannerViewController, context: Context) {
             context.coordinator.onDetect = onDetect
+            context.coordinator.onRemove = onRemove
             if isScanning, !scanner.isScanning {
                 do {
                     try scanner.startScanning()
@@ -45,15 +48,20 @@
         }
 
         func makeCoordinator() -> Coordinator {
-            Coordinator(onDetect: onDetect)
+            Coordinator(onDetect: onDetect, onRemove: onRemove)
         }
 
         @MainActor
         final class Coordinator: NSObject, DataScannerViewControllerDelegate {
             var onDetect: @MainActor (ScannedBarcode) -> Void
+            var onRemove: @MainActor (String) -> Void
 
-            init(onDetect: @escaping @MainActor (ScannedBarcode) -> Void) {
+            init(
+                onDetect: @escaping @MainActor (ScannedBarcode) -> Void,
+                onRemove: @escaping @MainActor (String) -> Void,
+            ) {
                 self.onDetect = onDetect
+                self.onRemove = onRemove
             }
 
             /// `didAdd` fires as soon as a code is first recognized, which is the lowest-latency hook (FR-10, < 300 ms).
@@ -67,12 +75,25 @@
                     let symbology = barcode.observation.symbology
                     #if DEBUG
                         // Confirms on device which payload formats Vision delivers (e.g. UPC-A as 12 or 13 digits,
-                        // UPC-E as 6, 7 or 8 digits).
+                        // UPC-E as 6, 7 or 8 digits; all three UPC-E forms are handled, see
+                        // `Barcode.upcEForms`).
                         Self.logger.debug(
                             "Detected \(symbology.rawValue, privacy: .public) payload \(payload, privacy: .public)",
                         )
                     #endif
                     onDetect(ScannerSymbology.barcode(symbology: symbology, payload: payload))
+                }
+            }
+
+            /// Lets the debouncer know a code left the view, so the same product brought back is accepted again.
+            func dataScanner(
+                _: DataScannerViewController,
+                didRemove removedItems: [RecognizedItem],
+                allItems _: [RecognizedItem],
+            ) {
+                for item in removedItems {
+                    guard case let .barcode(barcode) = item, let payload = barcode.payloadStringValue else { continue }
+                    onRemove(payload)
                 }
             }
 

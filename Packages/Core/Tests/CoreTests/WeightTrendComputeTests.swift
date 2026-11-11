@@ -51,9 +51,34 @@ struct WeightTrendComputeTests {
             #expect(points[index].weightKg == nil)
             #expect(!points[index].isOutlier)
         }
-        // The first weigh-in after the gap is taken normally (no jump check after more than 3 days).
+        // The first weigh-in after the gap is taken normally (no jump check after more than 3 days), and it moves the
+        // trend as if the eight days since day 9 had been weighed at its value: 1 − 0.9⁸ ≈ 57 % of the difference.
         #expect(!points[17].isOutlier)
-        #expect(try abs(points[17].trendKg - (carried + 0.1 * (#require(points[17].weightKg) - carried))) < 1e-9)
+        let step: Double = 1 - pow(0.9, 8.0)
+        #expect(abs(WeightTrend.gapAlpha(0.1, gapDays: 8) - step) < 1e-12)
+        #expect(try abs(points[17].trendKg - (carried + step * (#require(points[17].weightKg) - carried))) < 1e-9)
+        // From then on daily weigh-ins move it by 10 % again.
+        #expect(try abs(points[18].trendKg - (points[17].trendKg + 0.1 * (#require(points[18].weightKg) - points[17].trendKg))) < 1e-9)
+    }
+
+    @Test func `gap-aware: consecutive days use alpha exactly, a long gap effectively restarts the trend`() throws {
+        #expect(WeightTrend.gapAlpha(0.1, gapDays: 1) == 0.1)
+        #expect(WeightTrend.gapAlpha(0.1, gapDays: 0) == 0.1)
+        #expect(abs(WeightTrend.gapAlpha(0.1, gapDays: 2) - 0.19) < 1e-12)
+        // One weigh-in of 90 kg, then 60 days later 86 kg every day: the trend is at the new level at once instead of
+        // spending weeks catching up (with a fixed 10 % it would still be 0.4 kg too high after 3 weeks).
+        let points = WeightTrend.compute(samples: samples(80) { $0 == 0 ? 90 : $0 >= 60 ? 86 : nil })
+        #expect(points[59].trendKg == 90)
+        #expect(abs(points[60].trendKg - 86) < 0.01) // 4 × 0.9⁶⁰ ≈ 0.007
+        #expect(points[60...].allSatisfy { abs($0.trendKg - 86) < 0.01 })
+    }
+
+    @Test func `a jump after a two-day gap is down-weighted on top of the gap step`() {
+        // Flat 80 kg weighed every other day; one weigh-in at 82.5 kg (+3.1 %) two days after the previous one.
+        let points = WeightTrend.compute(samples: samples(30) { $0.isMultiple(of: 2) ? ($0 == 20 ? 82.5 : 80) : nil })
+        #expect(points[20].isOutlier)
+        #expect(abs(points[20].trendKg - (80 + 0.19 * 0.25 * 2.5)) < 1e-9)
+        #expect(points.count(where: \.isOutlier) == 1)
     }
 
     @Test func `water-weight spike is down-weighted`() throws {

@@ -169,6 +169,32 @@ struct FakeHealthDataSourceTests {
         #expect(batch.sleep.count == 1)
     }
 
+    @Test func `after a reinstall, own samples with no local row are read like any other source`() async throws {
+        let own = HealthSource(name: "Vitalion", bundleIdentifier: "hr.ivanjuric.nutrilog", productType: "iPhone17,1")
+        var state = FakeHealthDataSource.State()
+        state.samples[.bodyMass] = [
+            HealthQuantitySample(start: at("2026-11-09", 7), value: 81.8, source: own, externalID: "gone"),
+            HealthQuantitySample(start: at("2026-11-10", 7), value: 81.5, source: own, externalID: "local-w"),
+        ]
+        state.cumulativeSamples[.dietaryWater] = [
+            HealthQuantitySample(start: at("2026-11-09", 9), value: 500, source: own, externalID: "gone-water"),
+            HealthQuantitySample(start: at("2026-11-10", 9), value: 300, source: own, externalID: "local-water"),
+            HealthQuantitySample(start: at("2026-11-10", 10), value: 200, source: phone),
+            HealthQuantitySample(start: at("2026-11-11", 9), value: 999, source: own, externalID: "x"), // outside
+        ]
+        let fake = FakeHealthDataSource(state: state)
+        let batch = try await fake.fetchDailyData(for: day("2026-11-09") ... day("2026-11-10"), calendar: zagreb)
+        #expect(batch.samples[.bodyMass]?.map(\.externalID) == ["gone", "local-w"])
+        #expect(batch.waterSamples?.count == 3)
+
+        let rows = DailyMetricsAggregator.aggregate(
+            batch, calendar: zagreb, excludingOwnSamplesFrom: [own.bundleIdentifier], localSampleIDs: ["local-w", "local-water"],
+        )
+        #expect(rows.map(\.weightKg) == [81.8, nil])
+        #expect(rows.map(\.waterMl) == [500, 200])
+        #expect(rows[0].sources[.weight] == "Vitalion")
+    }
+
     @Test func `denied reads look exactly like no data`() async throws {
         let fake = FakeHealthDataSource.demo(endingOn: day("2026-11-09"), days: 5, calendar: zagreb)
         fake.update { $0.readAllowed = false }

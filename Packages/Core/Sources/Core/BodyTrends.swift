@@ -114,7 +114,8 @@ public struct WeightTrendPoint: Hashable, Sendable {
 
 /// The weight trend: an exponential moving average of daily weights (SPEC §5.4.1 step 1, backlog #33).
 public enum WeightTrend {
-    /// Smoothing factor of the trend: each weigh-in moves it by 10 % of the difference (SPEC §5.4.1).
+    /// Smoothing factor of the trend: a weigh-in the day after the previous one moves it by 10 % of the difference; after
+    /// a gap of `g` days by `1 − 0.9^g` (SPEC §5.4.1).
     public static let defaultAlpha = 0.1
     /// A weigh-in more than 2.5 % away from the previous accepted one counts as a jump (water, a different scale).
     public static let outlierJump = 0.025
@@ -128,8 +129,17 @@ public enum WeightTrend {
         2 / Double(max(days, 1) + 1)
     }
 
-    /// The plain EMA for every day from the first weigh-in through `lastDay`. The first weigh-in starts the trend;
-    /// each later weigh-in moves it by `alpha` of the difference; days without one carry the previous value forward.
+    /// How far a weigh-in moves the trend when the previous weigh-in was `gapDays` days earlier:
+    /// `1 − (1 − alpha)^gapDays`. One day apart that is `alpha`; after a gap the trend has decayed for every missed day,
+    /// as if it had been updated daily, so a long gap effectively restarts it (SPEC §5.4.1 step 1).
+    public static func gapAlpha(_ alpha: Double, gapDays: Int) -> Double {
+        // Exactly `alpha` for consecutive days, so daily weigh-ins give bit-for-bit the classic EMA.
+        gapDays <= 1 ? alpha : 1 - pow(1 - alpha, Double(gapDays))
+    }
+
+    /// The plain (gap-aware) EMA for every day from the first weigh-in through `lastDay`. The first weigh-in starts the
+    /// trend; each later weigh-in moves it by ``gapAlpha(_:gapDays:)`` of the difference — `alpha` for consecutive
+    /// days; days without one carry the previous value forward.
     public static func ema(
         _ weights: [LocalDay: Double],
         through lastDay: LocalDay,
@@ -137,10 +147,13 @@ public enum WeightTrend {
     ) -> [LocalDay: Double] {
         guard var day = weights.keys.min(), day <= lastDay else { return [:] }
         var trend: Double?
+        var previous: LocalDay?
         var result: [LocalDay: Double] = [:]
         while day <= lastDay {
             if let weight = weights[day] {
-                trend = trend.map { $0 + alpha * (weight - $0) } ?? weight
+                let step = gapAlpha(alpha, gapDays: previous.map { $0.days(until: day) } ?? 1)
+                trend = trend.map { $0 + step * (weight - $0) } ?? weight
+                previous = day
             }
             result[day] = trend
             day = day.next
@@ -150,9 +163,10 @@ public enum WeightTrend {
 
     /// The trend for every day from the first weigh-in through `lastDay` (default: the last weigh-in), oldest first.
     ///
-    /// Like ``ema(_:through:alpha:)``, but a weigh-in that jumps more than ``outlierJump`` from the previous accepted
+    /// Like ``ema(_:through:alpha:)`` (gap-aware: a weigh-in `g` days after the previous one moves the trend by
+    /// `1 − (1 − alpha)^g`), but a weigh-in that jumps more than ``outlierJump`` from the previous accepted
     /// weigh-in (at most ``outlierMaxGapDays`` days earlier) is down-weighted: it moves the trend with
-    /// `alpha × outlierAlphaFactor`, so one salty dinner barely shows. When the next weigh-in confirms the new level
+    /// `gapAlpha × outlierAlphaFactor`, so one salty dinner barely shows. When the next weigh-in confirms the new level
     /// (within the threshold of the jump), it is accepted normally — a real change is followed, just a day late.
     public static func compute(
         samples: [LocalDay: Double],
@@ -163,10 +177,14 @@ public enum WeightTrend {
         var trend: Double?
         var accepted: (day: LocalDay, kg: Double)?
         var pendingJump: Double?
+        var previous: LocalDay?
         var result: [WeightTrendPoint] = []
         while day <= end {
             var isOutlier = false
             if let weight = samples[day] {
+                // Days since the previous weigh-in (accepted or not): the trend has decayed once per day of the gap.
+                let step = gapAlpha(alpha, gapDays: previous.map { $0.days(until: day) } ?? 1)
+                previous = day
                 if let current = trend {
                     if let reference = accepted, reference.kg > 0,
                        reference.day.days(until: day) <= outlierMaxGapDays,
@@ -175,11 +193,11 @@ public enum WeightTrend {
                     {
                         isOutlier = true
                         pendingJump = weight
-                        trend = current + alpha * outlierAlphaFactor * (weight - current)
+                        trend = current + step * outlierAlphaFactor * (weight - current)
                     } else {
                         pendingJump = nil
                         accepted = (day, weight)
-                        trend = current + alpha * (weight - current)
+                        trend = current + step * (weight - current)
                     }
                 } else {
                     trend = weight
@@ -258,8 +276,8 @@ public struct BaselineComparison: Hashable, Sendable {
 
     /// "12% below your 30-day average", "In line with your 30-day average" (within ±1%); nil without a baseline.
     public var deviationText: String? {
-        guard let deviation else { return nil }
-        let percent = Int((abs(deviation) * 100).rounded())
+        guard let deviation, deviation.isFinite else { return nil }
+        let percent = DisplayRounding.whole(abs(deviation) * 100)
         if percent < 1 {
             return "In line with your 30-day average"
         }

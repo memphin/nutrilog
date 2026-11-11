@@ -5,8 +5,10 @@
 
     /// Live barcode scanner (FR-10) with torch toggle, haptic on detection, a 2 s same-code debounce, camera-permission
     /// handling and a manual-entry fallback (FR-14). Calls `onScan` for every accepted code; scanning continues, so the
-    /// caller decides when to dismiss. Pass `isPaused` while something covers the camera (a result sheet, a lookup in
-    /// progress): the camera, haptics and torch stop until it is false again.
+    /// caller decides when to dismiss. Pass `isPaused` while something covers the camera (any sheet, a lookup in
+    /// progress): the camera, haptics and torch stop until it is false again. When scanning resumes, the code handled
+    /// last is ignored for 3 s or until it leaves the view (`ScanDebouncer.resume(at:)`), so a product still in front
+    /// of the camera doesn't reopen. A typed code is delivered once the manual-entry sheet has finished dismissing.
     public struct BarcodeScannerView: View {
         private let isPaused: Bool
         private let onScan: @MainActor (ScannedBarcode) -> Void
@@ -16,6 +18,8 @@
         @State private var detections = 0
         @State private var isTorchOn = false
         @State private var isShowingManualEntry = false
+        /// A typed code waiting for the manual-entry sheet to finish dismissing.
+        @State private var manualEntry = ManualEntryHandoff()
         @Environment(\.scenePhase) private var scenePhase
 
         public init(isPaused: Bool = false, onScan: @escaping @MainActor (ScannedBarcode) -> Void) {
@@ -23,13 +27,13 @@
             self.onScan = onScan
         }
 
-        /// The camera runs only while the scanner is shown and not paused, the manual-entry sheet is closed and the
-        /// app is active.
+        /// The camera runs only while the scanner is shown and not paused, the manual-entry sheet is closed (and its
+        /// typed code delivered) and the app is active.
         private var isScanning: Bool {
             ScannerActivity.isScanning(
                 availability: availability,
                 isPaused: isPaused,
-                isShowingManualEntry: isShowingManualEntry,
+                isShowingManualEntry: isShowingManualEntry || manualEntry.isPending,
                 isAppActive: scenePhase == .active,
             )
         }
@@ -44,18 +48,23 @@
                         Task { await refreshAvailability(requestIfNeeded: false) }
                     }
                 }
-                // Whenever scanning stops, the torch goes off so the button never shows a stale state.
+                // Whenever scanning stops, the torch goes off so the button never shows a stale state. From then until
+                // 3 s after it resumes, the code handled last (likely still in view) is suppressed.
                 .onChange(of: isScanning) { _, scanning in
-                    if !scanning {
+                    if scanning {
+                        debouncer.resume()
+                    } else {
+                        debouncer.pause()
                         turnTorchOff()
                     }
                 }
                 .onDisappear(perform: turnTorchOff)
-                .sheet(isPresented: $isShowingManualEntry) {
+                // The typed code goes out only after the sheet is gone, so the caller can present its own sheet.
+                .sheet(isPresented: $isShowingManualEntry, onDismiss: deliverManualEntry) {
                     NavigationStack {
                         ManualBarcodeEntryView { barcode in
+                            manualEntry.submit(barcode)
                             isShowingManualEntry = false
-                            onScan(barcode)
                         }
                         .toolbar {
                             ToolbarItem(placement: .cancellationAction) {
@@ -87,6 +96,7 @@
             DataScannerRepresentable(
                 isScanning: isScanning,
                 onDetect: handle,
+                onRemove: { payload in debouncer.codeLeftView(payload) },
                 onStartFailure: { _ in availability = .unavailable },
             )
             .ignoresSafeArea()
@@ -117,7 +127,14 @@
         }
 
         private func showManualEntry() {
+            manualEntry = ManualEntryHandoff() // nothing from an earlier sheet can still be waiting
             isShowingManualEntry = true
+        }
+
+        private func deliverManualEntry() {
+            guard let barcode = manualEntry.sheetDidDismiss() else { return }
+            debouncer.noteHandled(barcode.payload)
+            onScan(barcode)
         }
 
         private func turnTorchOff() {

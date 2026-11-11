@@ -29,8 +29,9 @@ struct WeightTrendTests {
         let trend = WeightTrend.ema(weights, through: day("2026-11-06"), alpha: 0.25)
         #expect(trend[day("2026-11-02")] == 80)
         #expect(trend[day("2026-11-03")] == 80)
-        #expect(trend[day("2026-11-04")] == 82)
-        #expect(trend[day("2026-11-06")] == 82)
+        // Three days after the previous weigh-in: moved by 1 − 0.75³ = 57.8 % of the difference, not 25 %.
+        #expect(close(trend[day("2026-11-04")], 80 + (1 - 0.421875) * 8))
+        #expect(close(trend[day("2026-11-06")], 84.625))
         #expect(trend[day("2026-10-31")] == nil)
     }
 
@@ -186,6 +187,14 @@ struct MetricBaselineTests {
         #expect(short.average30 == nil)
         #expect(short.deviation == nil)
         #expect(short.deviationText == nil)
+    }
+
+    @Test func `deviation text never traps on extreme values`() {
+        let today = day("2026-11-30")
+        let huge = BaselineComparison(day: today, value: 1e300, average7: 1e300, average30: 1e-300) // deviation = ∞
+        #expect(huge.deviationText == nil)
+        let large = BaselineComparison(day: today, value: 1e30, average7: 1e30, average30: 1)
+        #expect(large.deviationText?.hasPrefix("\(Int.max)% above") == true)
     }
 
     @Test func `uses the latest recent day and ignores stale or future values`() throws {

@@ -17,6 +17,14 @@ public enum OFFFoodMapper {
     /// Servings lighter than this (g/ml) are not scaled to 100 g: a rounded "10 kcal" on "1 tablet (500 mg)"
     /// would become 2000 kcal/100 g.
     public static let minimumScalableServing = 1.0
+    /// Servings heavier than this (g/ml) are garbage ("serving_quantity": 1e19) and count as no serving at all.
+    public static let maximumServing = 100_000.0
+
+    /// `amount` when it is a usable serving weight (finite, above 0, at most ``maximumServing``), else `nil`.
+    static func usableServing(_ amount: Double?) -> Double? {
+        guard let amount, amount > 0, amount <= maximumServing else { return nil }
+        return amount
+    }
 
     public static func map(_ product: OFFProduct) -> FoodDraft {
         let isLiquid = isLiquid(product)
@@ -86,16 +94,18 @@ public enum OFFFoodMapper {
     ///
     /// A serving in ml on a food measured in g (or the other way round) is used as is: like the rest of the app we
     /// accept a density of ≈ 1.
+    ///
+    /// Amounts that aren't finite, above 0 and at most ``maximumServing`` count as missing at each step.
     static func servingAmount(_ product: OFFProduct) -> Double? {
-        if let quantity = product.servingQuantity, quantity > 0, quantity.isFinite {
+        if let quantity = usableServing(product.servingQuantity) {
             guard let unit = product.servingQuantityUnit?.lowercased(), unit != "g", unit != "ml" else {
                 return quantity
             }
-            if let converted = MeasureParser.convert(quantity, unit: unit) {
-                return converted.amount
+            if let converted = usableServing(MeasureParser.convert(quantity, unit: unit)?.amount) {
+                return converted
             }
         }
-        return product.servingSize.flatMap(MeasureParser.parse)?.amount
+        return usableServing(product.servingSize.flatMap(MeasureParser.parse)?.amount)
     }
 
     static func isLiquid(_ product: OFFProduct) -> Bool {

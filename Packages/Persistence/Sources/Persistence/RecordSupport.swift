@@ -104,3 +104,24 @@ public enum PersistenceError: Error, Equatable, Sendable {
     case barcodeInUse(barcode: String, foodID: String)
     case validation(String)
 }
+
+/// Alerts show `localizedDescription`; without this they read "The operation couldn't be completed. (… error 3.)".
+extension PersistenceError: LocalizedError {
+    public var errorDescription: String? {
+        switch self {
+        case .notFound: "That item no longer exists."
+        case .invalidBarcode: "That barcode isn't valid."
+        case .barcodeInUse: "That barcode is already used by another food."
+        case let .validation(message): Self.sentence(message)
+        }
+    }
+
+    /// The authored message, capitalized and ending in a period ("amount must be greater than zero" reads
+    /// "Amount must be greater than zero.").
+    private static func sentence(_ message: String) -> String {
+        let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let first = trimmed.first else { return "That isn't valid." }
+        let capitalized = first.uppercased() + trimmed.dropFirst()
+        return capitalized.last.map { ".!?".contains($0) } == true ? capitalized : capitalized + "."
+    }
+}

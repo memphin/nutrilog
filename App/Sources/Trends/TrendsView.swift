@@ -93,7 +93,7 @@ struct TrendsView: View {
                 ProgressView()
             }
         } footer: {
-            Text("Estimated from what you logged and how your weight trend moved over the last \(AdaptiveTDEE.windowDays) days.")
+            Text("Estimated from what you logged and how your weight moved over the last \(AdaptiveTDEE.windowDays) days.")
         }
     }
 
@@ -115,15 +115,24 @@ struct MaintenanceCard: View {
                 Spacer()
                 ConfidenceBadge(confidence: estimate.confidence)
             }
-            Text(
-                "\(estimate.loggedDays) of \(estimate.windowDays) days logged · trend "
-                    + "\(DashboardFormat.kgChange(estimate.weeklyChangeKg)) / week",
-            )
-            .font(.footnote).foregroundStyle(.secondary)
+            Text(Self.summary(estimate))
+                .font(.footnote).foregroundStyle(.secondary)
         }
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityHint("Shows how this was computed")
+    }
+
+    /// "12 of 14 days logged · trend −0.3 kg / week"; the weight change is named after how it was measured
+    /// (`TDEEEstimate.resolvedWeightMethod`, explained in full by `TDEEWeightMethod.explanation` in the sheet):
+    /// "weigh-ins −0.3 kg / week" when it comes from a straight line through the weigh-ins.
+    static func summary(_ estimate: TDEEEstimate) -> String {
+        let source = switch estimate.resolvedWeightMethod {
+        case .trend: "trend"
+        case .weighInLine: "weigh-ins"
+        }
+        return "\(estimate.loggedDays) of \(estimate.windowDays) days logged · \(source) "
+            + "\(DashboardFormat.kgChange(estimate.weeklyChangeKg)) / week"
     }
 }
 

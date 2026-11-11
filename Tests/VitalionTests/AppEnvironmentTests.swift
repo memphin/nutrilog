@@ -1,5 +1,6 @@
 import Foundation
 import Persistence
+import Synchronization
 import Testing
 @testable import Vitalion
 
@@ -70,5 +71,82 @@ struct AppEnvironmentBehaviourTests {
         let diary = try #require(try env.diary?.diary(for: env.today))
         #expect(diary.entryCount == 3)
         #expect(try env.profiles?.target(on: env.today)?.kcal == 2200)
+    }
+}
+
+/// Records what is scheduled; "notifications allowed" is set by the test.
+final class RecordingCheckInReminder: CheckInReminderScheduling {
+    enum Call: Equatable {
+        case schedule(weekday: Int, hour: Int)
+        case cancel
+        case requestAuthorization
+    }
+
+    private let state: Mutex<(authorized: Bool, calls: [Call])>
+
+    init(authorized: Bool) {
+        state = Mutex((authorized, []))
+    }
+
+    var calls: [Call] {
+        state.withLock { $0.calls }
+    }
+
+    func requestAuthorization() async -> Bool {
+        state.withLock { state in
+            state.calls.append(.requestAuthorization)
+            return state.authorized
+        }
+    }
+
+    func isAuthorized() async -> Bool {
+        state.withLock { $0.authorized }
+    }
+
+    func schedule(weekday: Int, hour: Int) async throws {
+        state.withLock { $0.calls.append(.schedule(weekday: weekday, hour: hour)) }
+    }
+
+    func cancel() async {
+        state.withLock { $0.calls.append(.cancel) }
+    }
+}
+
+/// The check-in reminder follows the stored toggle after an import or restore, and at launch (backlog #35).
+@MainActor
+struct CheckInReminderReconcileTests {
+    @Test func `an import that turns the reminder on schedules it without asking for permission`() async throws {
+        let reminder = RecordingCheckInReminder(authorized: true)
+        let env = AppEnvironment.preview(checkInReminder: reminder)
+        let profiles = try #require(env.profiles)
+        var profile = try profiles.profile()
+        profile.checkinWeekday = 5
+        try profiles.save(profile)
+        try profiles.setSetting(SettingKey.checkInReminderEnabled, true)
+
+        try env.dataDidChangeExternally()
+        #expect(await waitUntil { !reminder.calls.isEmpty })
+        #expect(reminder.calls == [.schedule(weekday: 5, hour: LocalNotificationCheckInReminder.defaultHour)])
+    }
+
+    @Test func `without notification permission nothing is scheduled and nobody is asked`() async throws {
+        let reminder = RecordingCheckInReminder(authorized: false)
+        let env = AppEnvironment.preview(checkInReminder: reminder)
+        try #require(env.profiles).setSetting(SettingKey.checkInReminderEnabled, true)
+        await env.reconcileCheckInReminder()?.value
+        #expect(reminder.calls.isEmpty)
+    }
+
+    @Test func `an import that turns the reminder off cancels it`() async throws {
+        let reminder = RecordingCheckInReminder(authorized: true)
+        let env = AppEnvironment.preview(checkInReminder: reminder)
+        try #require(env.profiles).setSetting(SettingKey.checkInReminderEnabled, false)
+        await env.reconcileCheckInReminder()?.value
+        #expect(reminder.calls == [.cancel])
+
+        // Missing (a fresh install) means off too.
+        let fresh = RecordingCheckInReminder(authorized: true)
+        await AppEnvironment.preview(checkInReminder: fresh).reconcileCheckInReminder()?.value
+        #expect(fresh.calls == [.cancel])
     }
 }

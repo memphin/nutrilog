@@ -10,6 +10,9 @@ public enum ManualBarcodeValidation: Equatable, Sendable {
     case invalidLength
     /// Right length, wrong check digit.
     case invalidChecksum
+    /// A GTIN-14 with a valid check digit whose packaging indicator (first digit) is 1–9: the code of an outer
+    /// case or tray, not of the retail unit inside, so it isn't looked up.
+    case outerPackCode
 
     public static let acceptedLengths: Set<Int> = [8, 12, 13, 14]
 
@@ -28,7 +31,13 @@ public enum ManualBarcodeValidation: Equatable, Sendable {
             return
         }
         let barcode = ScannedBarcode(payload: digits, symbology: Self.symbology(forDigits: digits))
-        self = barcode.normalized == nil ? .invalidChecksum : .valid(barcode)
+        if barcode.normalized != nil {
+            self = .valid(barcode)
+        } else if digits.count == 14, digits.first != "0", Barcode.hasValidCheckDigit(digits) {
+            self = .outerPackCode
+        } else {
+            self = .invalidChecksum
+        }
     }
 
     public var barcode: ScannedBarcode? {
@@ -46,6 +55,7 @@ public enum ManualBarcodeValidation: Equatable, Sendable {
         case .invalidCharacters: "Use digits only."
         case .invalidLength: "A barcode has 8, 12, 13 or 14 digits."
         case .invalidChecksum: "The check digit doesn't match. Please re-check the number."
+        case .outerPackCode: "This is an outer-pack code. Type the 13 digits printed on the product itself."
         }
     }
 

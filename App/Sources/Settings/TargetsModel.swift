@@ -58,8 +58,11 @@ final class TargetsModel {
 
     // MARK: Loading
 
+    /// `macrosInGrams`: the input mode of the last save (`macrosInGramsKey`), nil when never saved; without it the mode
+    /// is inferred from the stored macros.
     func load(
         profile: Profile, target: Target?, latestWeightKg: Double?, weightDay: LocalDay? = nil, measured: MeasuredTDEE? = nil,
+        macrosInGrams: Bool? = nil,
     ) {
         self.measured = measured
         self.profile = profile
@@ -84,13 +87,36 @@ final class TargetsModel {
             fatG = Format.field(target.fatG)
             fiberG = Format.field(target.fiberG)
             let split = MacroSplit(from: target.macros)
-            proteinPct = Format.field(split.proteinPct.rounded())
-            carbsPct = Format.field(split.carbsPct.rounded())
-            fatPct = Format.field(100 - split.proteinPct.rounded() - split.carbsPct.rounded())
+            let shown = MacroSplit(
+                proteinPct: split.proteinPct.rounded(), carbsPct: split.carbsPct.rounded(),
+                fatPct: 100 - split.proteinPct.rounded() - split.carbsPct.rounded(),
+            )
+            proteinPct = Format.field(shown.proteinPct)
+            carbsPct = Format.field(shown.carbsPct)
+            fatPct = Format.field(shown.fatPct)
             loadedPercents = [proteinPct, carbsPct, fatPct]
             loadedGrams = [proteinG, carbsG, fatG]
             loadedFiber = fiberG
+            // Reopen in the mode the macros were entered in, so changing only the calories doesn't replace gram
+            // targets with the rounded percentages' grams.
+            if let macrosInGrams {
+                macroInput = macrosInGrams ? .grams : .percent
+            } else {
+                macroInput = Self.matchesPercentSplit(target.macros, split: shown, kcal: target.kcal) ? .percent : .grams
+            }
         }
+    }
+
+    /// Settings key (Bool): the macros of the last saved target were entered in grams.
+    static let macrosInGramsKey = "targetsMacrosInGrams"
+
+    /// True when `macros` are (within a gram, for rounding) what the whole-percent `split` gives at `kcal`, i.e. they
+    /// could have been entered as percentages. Used to pick the input mode when none was saved.
+    static func matchesPercentSplit(_ macros: MacroTargets, split: MacroSplit, kcal: Double) -> Bool {
+        guard split.isValid, kcal > 0 else { return false }
+        let fromSplit = split.grams(forKcal: kcal)
+        return abs(fromSplit.proteinG - macros.proteinG) <= 1 && abs(fromSplit.carbsG - macros.carbsG) <= 1
+            && abs(fromSplit.fatG - macros.fatG) <= 1
     }
 
     // MARK: Calculation
@@ -100,8 +126,14 @@ final class TargetsModel {
         return Energy.age(birthDate: LocalDay(birthDate), on: today)
     }
 
+    /// Calorie targets the screen saves, manual or suggested (kcal; the field is always in kcal).
+    static let kcalRange: ClosedRange<Double> = 500 ... 20000
+    /// Each macro (and fiber) in grams.
+    static let gramRange: ClosedRange<Double> = 0 ... 2000
+    static let heightRange: ClosedRange<Double> = 50 ... 300
+
     var bmr: Double? {
-        guard let height = Format.number(heightCm), height > 0, let weight = weightKg,
+        guard let height = Format.number(heightCm), Self.heightRange.contains(height), let weight = weightKg,
               let age, let sex else { return nil }
         return Energy.mifflinStJeor(weightKg: weight, heightCm: height, ageYears: Double(age), sex: sex)
     }
@@ -124,9 +156,20 @@ final class TargetsModel {
         Energy.dailyDelta(goal: goal, rateKgPerWeek: rateKgPerWeek)
     }
 
-    /// The calorie target that will be saved.
+    /// The suggested target: `formulaKcal`, but never below the lowest target the weekly check-in proposes.
+    var suggestedKcal: Double? {
+        formulaKcal.flatMap { $0.isFinite ? max($0, AdaptiveTDEE.minimumTargetKcal) : nil }
+    }
+
+    /// True when maintenance ± the goal is below `AdaptiveTDEE.minimumTargetKcal`, so the suggestion is that minimum.
+    var suggestionRaisedToFloor: Bool {
+        formulaKcal.map { $0 < AdaptiveTDEE.minimumTargetKcal } ?? false
+    }
+
+    /// The calorie target that will be saved: always within `kcalRange` (so never ≤ 0), nil otherwise.
     var effectiveKcal: Double? {
-        overrideKcal ? Format.number(manualKcal).flatMap { $0 > 0 ? $0 : nil } : formulaKcal
+        let kcal = overrideKcal ? Format.number(manualKcal) : suggestedKcal
+        return kcal.flatMap { Self.kcalRange.contains($0) ? $0 : nil }
     }
 
     var split: MacroSplit? {
@@ -148,26 +191,61 @@ final class TargetsModel {
             return split.grams(forKcal: kcal)
         case .grams:
             guard let p = Format.number(proteinG), let c = Format.number(carbsG), let f = Format.number(fatG),
-                  p >= 0, c >= 0, f >= 0 else { return nil }
+                  [p, c, f].allSatisfy({ Self.gramRange.contains($0) }) else { return nil }
             return MacroTargets(proteinG: p, carbsG: c, fatG: f)
         }
     }
 
     var validationErrors: [String] {
         var errors: [String] = []
+        // Non-empty text that doesn't parse ("1e30", 25 digits, "inf": `Format.number` rejects those) gets the range
+        // message, like a number that parses but is out of range; only an empty field asks for a value.
+        if !Self.isBlank(heightCm), !Self.inRange(heightCm, Self.heightRange) {
+            errors.append("Enter a height between 50 and 300 cm.")
+        }
         if effectiveKcal == nil {
-            errors
-                .append(overrideKcal ? "Enter a calorie target." : weightKg == nil
+            if overrideKcal {
+                errors.append(Self.isBlank(manualKcal)
+                    ? "Enter a calorie target."
+                    : "Enter a daily target between 500 and 20,000 kcal.")
+            } else if suggestedKcal != nil {
+                errors.append("The suggested target is above 20,000 kcal. Check your height, or set calories manually.")
+            } else {
+                errors.append(weightKg == nil
                     ? "Add a weight (Today → Weight) and fill in height, birth date and sex — or set calories manually."
                     : "Fill in height, birth date and sex — or set calories manually.")
+            }
         }
-        if macroInput == .percent, split?.isValid != true {
-            errors.append("Macro percentages must add up to 100 % (now \(Int(percentSum.rounded())) %).")
+        switch macroInput {
+        case .percent:
+            let filled = [proteinPct, carbsPct, fatPct].filter { !Self.isBlank($0) }
+            if !filled.allSatisfy({ Self.inRange($0, 0 ... 100) }) {
+                errors.append("Each macro percentage must be between 0 and 100.")
+            } else if split?.isValid != true {
+                errors.append("Macro percentages must add up to 100 % (now \(DisplayRounding.whole(percentSum)) %).")
+            }
+        case .grams:
+            let fields = [proteinG, carbsG, fatG]
+            if fields.contains(where: Self.isBlank) {
+                errors.append("Enter protein, carbs and fat in grams.")
+            } else if !fields.allSatisfy({ Self.inRange($0, Self.gramRange) }) {
+                errors.append("Protein, carbs and fat must each be between 0 and 2,000 g.")
+            }
         }
-        if macroInput == .grams, macros == nil {
-            errors.append("Enter protein, carbs and fat in grams.")
+        // Fiber is optional and ≤ 0 means none; text that doesn't parse would otherwise be dropped silently.
+        if fiberG != loadedFiber, !Self.isBlank(fiberG), Format.number(fiberG).map({ $0 > Self.gramRange.upperBound }) ?? true {
+            errors.append("Fiber must be a number up to 2,000 g.")
         }
         return errors
+    }
+
+    private static func isBlank(_ text: String) -> Bool {
+        text.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
+    /// True when `text` parses to a number within `range` (false for text `Format.number` rejects).
+    private static func inRange(_ text: String, _ range: ClosedRange<Double>) -> Bool {
+        Format.number(text).map { range.contains($0) } ?? false
     }
 
     /// True when the stored gram targets still apply: the macro fields of the current input mode are as
@@ -223,6 +301,8 @@ final class TargetsModel {
         if let profileToSave {
             try profiles.save(profileToSave)
         }
+        // Only a convenience for the next visit (the mode is otherwise inferred), so a failure here isn't an error.
+        try? profiles.setSetting(Self.macrosInGramsKey, macroInput == .grams)
         return true
     }
 }

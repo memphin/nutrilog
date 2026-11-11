@@ -183,15 +183,18 @@ Single user (the owner). Representative daily flows:
 #### 5.4.1 Adaptive TDEE algorithm (v1)
 Inputs: daily `kcalIn` (diary totals; days with < 3 entries and no "complete day" flag are treated as missing), daily morning `weightKg` (Health), user goal rate.
 
-1. **Weight trend**: exponential moving average of weight, α ≈ 0.1 (≈ 10-day half-life trend, Happy Scale/MacroFactor-like). Missing days carry the previous trend value forward; outliers (> 2.5% jump day-over-day) are down-weighted.
-2. **Window**: rolling 14 days (minimum 7 logged days to show an estimate; confidence grows to "high" at 21+ days with ≥ 80% logged days).
-3. **Energy balance**: `ΔE = (trend_end − trend_start) × 7,700 kcal/kg` over the window.
-4. **Estimate**: `TDEE_est = mean(kcalIn over logged days) − ΔE / windowDays`.
+1. **Weight trend**: exponential moving average of weight, α = 0.1 (≈ 10-day time constant, Happy Scale/MacroFactor-like), gap-aware: a weigh-in `g` days after the previous one moves the trend by `1 − (1 − α)^g` of the difference (exactly α on consecutive days), so the trend decays for every missed day and a long gap effectively restarts it. Days without a weigh-in carry the trend forward. Outliers (> 2.5 % jump from the previous accepted weigh-in at most 3 days earlier) move it by only a quarter of that step; a jump confirmed by the next weigh-in is accepted.
+2. **Window**: rolling 14 days ending yesterday. **Partly logged days**: a logged day not marked complete whose `kcalIn` is below 50 % of the median of the window's logged days (e.g. only breakfast, logged as three items) is left out of the mean; a day marked complete always counts, and since at least half the days are at or above the median the rule never removes all of them. At least 7 logged days must remain to show an estimate, and ≥ 2 weigh-ins in the window.
+3. **Weight change** `Δw` over the window, by one of two methods (the estimate records which):
+   - **Trend** (mature): the trend reaches back ≥ 28 days before the window's end — counted from the first weigh-in after the last gap of ≥ 14 days between weigh-ins — and the window has ≥ 7 weigh-ins. `Δw = trend_end − trend_start`, from the day before the window (14 days), or from the first window day with a trend.
+   - **Weigh-in line** (young, restarting or sparse): otherwise a young trend still lags its first weigh-in (or the gap) and its difference reads that catch-up as real change, so `Δw` is the slope of a least-squares line through the weigh-ins from the day before the window (but not before the trend's restart) to the window's end, outliers left out, times the span from the first weigh-in used to the window's end. The weigh-ins used must span ≥ 7 days.
+   `ΔE = Δw × 7,700 kcal/kg`; the trend (or line) must span ≥ 7 days.
+4. **Estimate**: `TDEE_est = mean(kcalIn over the remaining logged days) − ΔE / span`. **Confidence**: high = data reaches back 21 days with ≥ 80 % of them logged **and** the trend method was used (a young, restarting or sparse weight record is never high); medium = ≥ 10 logged days and ≥ 4 weigh-ins in the window; low otherwise.
 5. **Smoothing**: blend with the previous week's estimate (0.7 new / 0.3 old) to avoid jumps; clamp to ±25% of the baseline (FR-31 maintenance: measured Health energy, else Mifflin-St Jeor × activity) until confidence is high.
 6. **Check-in** (configurable weekday, default Monday): show actual weekly weight change vs. goal rate, new TDEE estimate, and the proposed target `TDEE_est − goalRateKgPerWeek × 7,700 / 7`. User accepts, edits or skips.
 7. **Transparency**: every number tappable to a "how was this computed" sheet listing the days used and their kcal/weight.
 
-Unit tests cover: perfect-logging synthetic data (recovers the true TDEE within ±50 kcal), missing days, water-weight spikes, under-logging detection (if intake is implausibly low vs. estimate, warn rather than lower the target).
+Unit tests cover: perfect-logging synthetic data (recovers the true TDEE within ±50 kcal), missing days, water-weight spikes, under-logging detection (if intake is implausibly low vs. estimate, warn rather than lower the target), a new user, weekly and every-third-day weigh-ins and a restart after a 60-day gap (within ±120 kcal from the first estimate; ±150 after the gap from day 14), seeded scale noise, and partly logged days.
 
 ### 5.5 Health & body data (MUST)
 - FR-40 Request HealthKit read permissions for steps, weight, body fat %, sleep, active energy, basal energy; write permission for dietary nutrients and body mass.

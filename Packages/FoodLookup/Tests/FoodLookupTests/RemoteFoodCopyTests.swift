@@ -88,6 +88,16 @@ struct RemoteFoodCopyTests {
         #expect(detail.servings.first?.label == "1 tablet (500 mg)")
     }
 
+    @Test(arguments: [1e19, 100_000.5, Double.infinity, Double.nan])
+    func `an absurd serving weight in a draft counts as none`(amount: Double) {
+        let absurd = ServingSize(label: "1 bar", amount: amount)
+        let per100 = FoodDetail(draft: draft(serving: absurd))
+        #expect(per100.servings.isEmpty)
+        let perServing = FoodDetail(draft: draft(basis: .perServing, serving: absurd, servingDescription: "1 bar"))
+        #expect(perServing.food.notes == FoodDetail.perServingUnknownWeightNote)
+        #expect(perServing.servings.first?.grams == 100)
+    }
+
     @Test func `per 100 draft is not a per serving placeholder`() {
         let detail = FoodDetail(draft: draft())
         #expect(!detail.food.perServingOnly)

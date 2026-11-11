@@ -60,12 +60,48 @@ final class DiaryModel {
         diary?.sections.map(\.slot).filter(\.isActive) ?? []
     }
 
+    /// A meal of the day view: its logged entries, and the planned ones (`planned(in:)`) shown below them.
+    struct MealSection: Identifiable, Hashable {
+        let slot: MealSlot
+        let entries: [DiaryEntry]
+        var id: String {
+            slot.id
+        }
+
+        var totals: Nutrients {
+            Nutrients.sum(entries.map(\.nutrients))
+        }
+    }
+
+    /// The diary's sections plus one for every switched-off slot that still holds planned food, in slot order: the
+    /// diary keeps an inactive slot only while it has entries, but its plan still counts and must stay editable.
+    var sections: [MealSection] {
+        guard let diary else { return [] }
+        var result = diary.sections.map { MealSection(slot: $0.slot, entries: $0.entries) }
+        let shown = Set(result.map(\.id))
+        let missing = Set(planned.map(\.mealSlotID)).subtracting(shown)
+        guard !missing.isEmpty else { return result }
+        let all = (try? environment.diary?.mealSlots(includeInactive: true)) ?? []
+        result += all.filter { missing.contains($0.id) }.map { MealSection(slot: $0, entries: []) }
+        result.sort { $0.slot.sortOrder < $1.slot.sortOrder }
+        return result
+    }
+
     /// Slots an entry can be moved to: the active ones plus the entry's own slot, even when inactive.
     func moveTargets(for entry: DiaryEntry) -> [MealSlot] {
+        moveTargets(ownSlotID: entry.mealSlotID)
+    }
+
+    /// Slots a planned entry can be moved to: the active ones plus its own slot, even when inactive.
+    func moveTargets(for entry: PlannedEntry) -> [MealSlot] {
+        moveTargets(ownSlotID: entry.mealSlotID)
+    }
+
+    private func moveTargets(ownSlotID: String) -> [MealSlot] {
         var result = slots
-        if !result.contains(where: { $0.id == entry.mealSlotID }),
-           let own = diary?.sections.first(where: { $0.slot.id == entry.mealSlotID })?.slot
-           ?? (try? environment.diary?.mealSlots(includeInactive: true))?.first(where: { $0.id == entry.mealSlotID })
+        if !result.contains(where: { $0.id == ownSlotID }),
+           let own = diary?.sections.first(where: { $0.slot.id == ownSlotID })?.slot
+           ?? (try? environment.diary?.mealSlots(includeInactive: true))?.first(where: { $0.id == ownSlotID })
         {
             result.append(own)
             result.sort { $0.sortOrder < $1.sortOrder }
@@ -180,11 +216,17 @@ final class DiaryModel {
         perform { _ = try $0.duplicate(entryID: entry.id) }
     }
 
+    /// Moves a logged entry. Never to a future day: eaten food would count (and reach Apple Health) ahead of time.
     func move(_ entry: DiaryEntry, toSlot slotID: String, day targetDay: LocalDay? = nil) {
-        perform { try $0.move(entryID: entry.id, toSlot: slotID, day: targetDay ?? entry.day) }
+        let target = targetDay ?? entry.day
+        guard target <= today || target <= entry.day else {
+            errorMessage = "Eaten food can't move to a future day. To have it then, plan it on that day."
+            return
+        }
+        perform { try $0.move(entryID: entry.id, toSlot: slotID, day: target) }
     }
 
-    func reorder(in section: DayDiary.Section, from source: IndexSet, to destination: Int) {
+    func reorder(in section: MealSection, from source: IndexSet, to destination: Int) {
         var ids = section.entries.map(\.id)
         ids.move(fromOffsets: source, toOffset: destination)
         perform { try $0.reorder(day: day, slotID: section.slot.id, orderedIDs: ids) }

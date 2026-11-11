@@ -6,6 +6,8 @@ import UserNotifications
 protocol CheckInReminderScheduling: Sendable {
     /// Asks for notification permission if needed; false when the user declined.
     func requestAuthorization() async -> Bool
+    /// True when notifications are already allowed. Never asks: for background reconciling (launch, import, restore).
+    func isAuthorized() async -> Bool
     /// Replaces the reminder with one on `weekday` (1 = Sunday … 7 = Saturday) at `hour`:00.
     func schedule(weekday: Int, hour: Int) async throws
     func cancel() async
@@ -14,6 +16,10 @@ protocol CheckInReminderScheduling: Sendable {
 /// Tests, previews: nothing is scheduled.
 struct NoCheckInReminder: CheckInReminderScheduling {
     func requestAuthorization() async -> Bool {
+        true
+    }
+
+    func isAuthorized() async -> Bool {
         true
     }
 
@@ -34,6 +40,13 @@ struct LocalNotificationCheckInReminder: CheckInReminderScheduling {
             return false
         default:
             return await (try? center.requestAuthorization(options: [.alert, .sound])) ?? false
+        }
+    }
+
+    func isAuthorized() async -> Bool {
+        switch await UNUserNotificationCenter.current().notificationSettings().authorizationStatus {
+        case .authorized, .provisional, .ephemeral: true
+        default: false
         }
     }
 

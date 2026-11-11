@@ -162,7 +162,7 @@ public struct MealTemplateRepository: Sendable {
 
     /// Replaces the meal's items (amount changes, removed foods).
     public func setItems(id: String, items: [NewItem]) throws {
-        let valid = items.filter { $0.grams > 0 && $0.grams.isFinite }
+        let valid = try Self.validItems(items)
         guard !valid.isEmpty else { throw PersistenceError.validation("A meal needs at least one food.") }
         let now = clock.now()
         try database.writer.write { db in
@@ -250,7 +250,7 @@ public struct MealTemplateRepository: Sendable {
     static func create(_ db: Database, name: String, slotHint: String?, items: [NewItem], now: Date) throws -> MealTemplateDetail {
         let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { throw PersistenceError.validation("A meal needs a name.") }
-        let valid = items.filter { $0.grams > 0 && $0.grams.isFinite }
+        let valid = try validItems(items)
         guard !valid.isEmpty else { throw PersistenceError.validation("This meal has no foods to save.") }
         let template = MealTemplate(
             id: newID(), name: name, mealSlotHint: slotHint, useCount: 0, lastUsedAt: nil,
@@ -260,6 +260,16 @@ public struct MealTemplateRepository: Sendable {
         try insertItems(db, templateID: template.id, items: valid, now: now)
         guard let detail = try detail(db, id: template.id) else { throw PersistenceError.notFound(template.id) }
         return detail
+    }
+
+    /// Items with an amount: zero / negative / NaN amounts are left out (a removed food), as before; an infinite or
+    /// too-large amount fails the save instead of being dropped silently.
+    static func validItems(_ items: [NewItem]) throws -> [NewItem] {
+        let valid = items.filter { $0.grams > 0 && !$0.grams.isNaN }
+        for item in valid {
+            try EntryLimits.validate(amount: item.grams)
+        }
+        return valid
     }
 
     static func insertItems(_ db: Database, templateID: String, items: [NewItem], now: Date) throws {

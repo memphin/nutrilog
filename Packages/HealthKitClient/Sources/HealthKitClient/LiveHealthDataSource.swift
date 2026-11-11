@@ -11,7 +11,9 @@
     ///   local day anchored at local midnight. The totals come from a query *without* `.separateBySource`, so
     ///   Health's de-duplication across iPhone and Watch applies; a second query with `.separateBySource` names the
     ///   main source for the source summary and lets Core leave Vitalion's own water out.
-    /// - weight, body fat, resting heart rate, HRV: plain sample queries over the days, reduced in Core.
+    /// - weight, body fat, resting heart rate, HRV: plain sample queries over the days, reduced in Core. Each sample
+    ///   carries its `HKMetadataKeyExternalUUID`, so Core can tell the app's own samples that still have a local row.
+    /// - the app's own water samples (with external ids), for the same reason (`HealthDataBatch.waterSamples`).
     /// - sleep: category samples whose end date falls inside the nights' windows.
     ///
     /// Statistics buckets follow the device calendar (`Calendar.current`), so pass that calendar in production.
@@ -78,6 +80,7 @@
             async let restingHR = samples(.restingHeartRate, plan: plan)
             async let hrv = samples(.heartRateVariabilitySDNN, plan: plan)
             async let sleep = sleepSamples(plan: plan)
+            async let ownWater = ownWaterSamples(plan: plan)
 
             return try await HealthDataBatch(
                 days: days,
@@ -89,6 +92,7 @@
                     .heartRateVariabilitySDNN: hrv,
                 ],
                 sleep: sleep,
+                waterSamples: ownWater,
             )
         }
 
@@ -141,6 +145,35 @@
                     end: sample.endDate,
                     value: sample.quantity.doubleValue(for: unit) * scale,
                     source: HealthSource(sample.sourceRevision),
+                    externalID: sample.externalID,
+                )
+            }
+        }
+
+        /// This app's own `dietaryWater` samples with their external ids, so Core can tell water whose `water_entry`
+        /// row still exists from water written by an earlier install. Only the app's own source is read: the totals and
+        /// the other sources come from the statistics query.
+        private func ownWaterSamples(plan: HealthFetchPlan) async throws -> [HealthQuantitySample] {
+            let descriptor = HKSampleQueryDescriptor(
+                predicates: [.quantitySample(
+                    type: HKQuantityType(.dietaryWater),
+                    predicate: NSCompoundPredicate(andPredicateWithSubpredicates: [
+                        HKQuery.predicateForSamples(
+                            withStart: plan.dayInterval.start, end: plan.dayInterval.end, options: .strictStartDate,
+                        ),
+                        HKQuery.predicateForObjects(from: HKSource.default()),
+                    ]),
+                )],
+                sortDescriptors: [SortDescriptor(\.startDate)],
+            )
+            let unit = CumulativeMetric.dietaryWater.unit
+            return try await descriptor.result(for: store).map { sample in
+                HealthQuantitySample(
+                    start: sample.startDate,
+                    end: sample.endDate,
+                    value: sample.quantity.doubleValue(for: unit),
+                    source: HealthSource(sample.sourceRevision),
+                    externalID: sample.externalID,
                 )
             }
         }
@@ -287,6 +320,13 @@
             case .awake: self = .awake
             default: return nil
             }
+        }
+    }
+
+    extension HKObject {
+        /// `HKMetadataKeyExternalUUID`: Vitalion writes the id of the row a sample mirrors there.
+        var externalID: String? {
+            metadata?[HKMetadataKeyExternalUUID] as? String
         }
     }
 

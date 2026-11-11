@@ -43,7 +43,9 @@ public extension FoodRepository {
     /// - barcodes move over; servings the kept food lacks (by label) are copied;
     /// - missing details of the kept food (brand, local name, image, Nutri-Score, optional nutrients) are filled in
     ///   from the removed ones; use counts add up, the latest use and a favorite mark are kept;
-    /// - the removed foods are soft-deleted.
+    /// - the removed foods are soft-deleted and remember the kept food (`Food.mergedIntoID`), so a copy of a bundled or
+    ///   USDA food that was merged away resolves to the kept food in search, ``localCopy(of:)`` and ``saveCopy(_:)``
+    ///   instead of coming back.
     @discardableResult
     func merge(keep keepID: String, remove removeIDs: [String]) throws -> FoodDetail {
         let ids = removeIDs.reduce(into: [String]()) { result, id in
@@ -108,14 +110,46 @@ public extension FoodRepository {
                 keep.lastUsedAt = [keep.lastUsedAt, removed.lastUsedAt].compactMap(\.self).max()
                 keep.isFavorite = keep.isFavorite || removed.isFavorite
 
+                removed.mergedIntoID = keepID
                 removed.stampDeleted(now)
                 try removed.update(db)
             }
+            keep.mergedIntoID = nil // active, so it isn't merged into anything (and no chain can loop back through it)
             keep.stampUpdated(now)
             try keep.update(db)
             guard let detail = try Self.detail(db, id: keepID) else { throw PersistenceError.notFound(keepID) }
             return detail
         }
+    }
+
+    /// The active food `food` was finally merged into: follows `merged_into_id` through later merges of the kept
+    /// food. nil when `food` wasn't merged away, or the chain ends at a food the user deleted (or loops).
+    static func mergeKeeper(_ db: Database, of food: Food) throws -> Food? {
+        var visited: Set<String> = [food.id]
+        var next = food.mergedIntoID
+        while let id = next, visited.insert(id).inserted {
+            guard let target = try Food.fetchOne(db, key: id) else { return nil }
+            if target.deletedAt == nil {
+                return target
+            }
+            next = target.mergedIntoID
+        }
+        return nil
+    }
+
+    /// The active food a deleted copy with `sourceID` from one of `sources` was merged into, if any (oldest copy first).
+    static func mergeKeeper(_ db: Database, sources: [FoodSource], sourceID: String) throws -> Food? {
+        let merged = try Food
+            .filter(sources.contains(Food.Columns.source) && Food.Columns.sourceID == sourceID)
+            .filter(Food.Columns.deletedAt != nil && Food.Columns.mergedIntoID != nil)
+            .order(Food.Columns.createdAt, Food.Columns.id)
+            .fetchAll(db)
+        for food in merged {
+            if let keeper = try mergeKeeper(db, of: food) {
+                return keeper
+            }
+        }
+        return nil
     }
 
     private static func isBetterKeeper(_ lhs: FoodDetail, _ rhs: FoodDetail) -> Bool {

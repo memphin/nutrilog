@@ -141,6 +141,7 @@ public struct DiaryRepository: Sendable {
         food: Food, quantity: Quantity, servingID: String? = nil, slotID: String, day: LocalDay,
     ) throws -> DiaryEntry {
         guard quantity.baseAmount > 0 else { throw PersistenceError.validation("amount must be greater than zero") }
+        try EntryLimits.validate(amount: quantity.baseAmount)
         let now = clock.now()
         return try database.writer.write { db in
             try Self.insertFoodEntry(db, food: food, quantity: quantity, servingID: servingID, slotID: slotID, day: day, now: now)
@@ -166,6 +167,9 @@ public struct DiaryRepository: Sendable {
         guard items.allSatisfy({ $0.quantity.baseAmount > 0 }) else {
             throw PersistenceError.validation("amount must be greater than zero")
         }
+        for item in items {
+            try EntryLimits.validate(amount: item.quantity.baseAmount)
+        }
         let now = clock.now()
         return try database.writer.write { db in
             try items.map { item in
@@ -181,11 +185,14 @@ public struct DiaryRepository: Sendable {
     static func insertFoodEntry(
         _ db: Database, food: Food, quantity: Quantity, servingID: String?, slotID: String, day: LocalDay, now: Date,
     ) throws -> DiaryEntry {
+        try EntryLimits.validate(amount: quantity.baseAmount) // also covers saved meals logged through here
+        let nutrients = quantity.nutrients(per100: food.per100)
+        try EntryLimits.validateFinite(nutrients)
         guard var stored = try Food.fetchOne(db, key: food.id) else { throw PersistenceError.notFound(food.id) }
         var entry = try DiaryEntry(
             day: day, mealSlotID: slotID, foodID: food.id, displayName: food.name,
             grams: quantity.baseAmount, servingLabel: quantity.servingLabel, isQuickAdd: false,
-            nutrients: quantity.nutrients(per100: food.per100), loggedAt: now,
+            nutrients: nutrients, loggedAt: now,
             sortOrder: nextSortOrder(db, day: day, slotID: slotID),
         )
         try entry.insert(db)
@@ -212,6 +219,7 @@ public struct DiaryRepository: Sendable {
     /// Quick-add calories (and optional macros) without a food (FR-5, backlog #10).
     @discardableResult
     public func logQuickAdd(name: String?, nutrients: Nutrients, slotID: String, day: LocalDay) throws -> DiaryEntry {
+        try EntryLimits.validate(nutrients)
         let now = clock.now()
         let title = name?.trimmingCharacters(in: .whitespacesAndNewlines)
         return try database.writer.write { db in
@@ -233,6 +241,7 @@ public struct DiaryRepository: Sendable {
     /// never leak into history (NFR-4).
     public func updateQuantity(entryID: String, quantity: Quantity) throws {
         guard quantity.baseAmount > 0 else { throw PersistenceError.validation("amount must be greater than zero") }
+        try EntryLimits.validate(amount: quantity.baseAmount)
         let now = clock.now()
         try database.writer.write { db in
             guard var entry = try DiaryEntry.fetchOne(db, key: entryID) else { throw PersistenceError.notFound(entryID) }
@@ -252,6 +261,7 @@ public struct DiaryRepository: Sendable {
 
     /// Edits a quick-add entry's name and nutrients.
     public func updateQuickAdd(entryID: String, name: String?, nutrients: Nutrients) throws {
+        try EntryLimits.validate(nutrients)
         let now = clock.now()
         try database.writer.write { db in
             guard var entry = try DiaryEntry.fetchOne(db, key: entryID) else { throw PersistenceError.notFound(entryID) }
@@ -390,7 +400,8 @@ public struct DiaryRepository: Sendable {
                 copy.loggedAt = now
                 copy.note = nil
                 copy.sortOrder = try Self.nextSortOrder(db, day: targetDay, slotID: slot)
-                if !source.isQuickAdd, let foodID = source.foodID,
+                // A 0 g entry (legacy or imported) has no amount to re-snapshot: it keeps its own snapshot and name.
+                if !source.isQuickAdd, source.grams > 0, let foodID = source.foodID,
                    let food = try Food.fetchOne(db, key: foodID), food.deletedAt == nil
                 {
                     copy.nutrients = food.per100.scaled(toGrams: source.grams)

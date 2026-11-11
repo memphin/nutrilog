@@ -52,12 +52,16 @@ public struct HealthQuantitySample: Hashable, Sendable, Codable {
     /// Value in `SampledMetric.unitSymbol`.
     public var value: Double
     public var source: HealthSource
+    /// `HKMetadataKeyExternalUUID`: for samples Vitalion wrote, the id of the row they mirror (`weight_entry.id`,
+    /// `water_entry.id`). Nil when the sample has none (most other apps) or it was not read.
+    public var externalID: String?
 
-    public init(start: Date, end: Date? = nil, value: Double, source: HealthSource) {
+    public init(start: Date, end: Date? = nil, value: Double, source: HealthSource, externalID: String? = nil) {
         self.start = start
         self.end = end ?? start
         self.value = value
         self.source = source
+        self.externalID = externalID
     }
 }
 
@@ -179,17 +183,23 @@ public struct HealthDataBatch: Hashable, Sendable {
     public var statistics: [CumulativeMetric: [CumulativeStatistic]]
     public var samples: [SampledMetric: [HealthQuantitySample]]
     public var sleep: [SleepSample]
+    /// Individual `dietaryWater` samples with their external ids, used only to tell which of Vitalion's own water
+    /// still has a local `water_entry` row (the totals come from `statistics`). The live source reads only the app's
+    /// own samples here. Nil when not read: all own water is then treated as local.
+    public var waterSamples: [HealthQuantitySample]?
 
     public init(
         days: ClosedRange<LocalDay>,
         statistics: [CumulativeMetric: [CumulativeStatistic]] = [:],
         samples: [SampledMetric: [HealthQuantitySample]] = [:],
         sleep: [SleepSample] = [],
+        waterSamples: [HealthQuantitySample]? = nil,
     ) {
         self.days = days
         self.statistics = statistics
         self.samples = samples
         self.sleep = sleep
+        self.waterSamples = waterSamples
     }
 }
 
@@ -242,6 +252,6 @@ public extension LocalDay {
 
     /// This day at `hour`:00 local time. An hour skipped by a DST change resolves to the next valid time.
     func date(atHour hour: Int, calendar: Calendar = .current) -> Date {
-        calendar.date(from: DateComponents(year: year, month: month, day: day, hour: hour))!
+        LocalDay.gregorian(calendar).date(from: DateComponents(year: year, month: month, day: day, hour: hour))!
     }
 }

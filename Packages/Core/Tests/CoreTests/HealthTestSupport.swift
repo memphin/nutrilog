@@ -54,8 +54,9 @@ func quantity(
     at start: String,
     _ source: HealthSource,
     _ calendar: Calendar = HealthFixtures.zagreb,
+    id externalID: String? = nil,
 ) -> HealthQuantitySample {
-    HealthQuantitySample(start: time(start, calendar), value: value, source: source)
+    HealthQuantitySample(start: time(start, calendar), value: value, source: source, externalID: externalID)
 }
 
 /// A statistic covering exactly one local day, as a daily statistics collection query returns it.

@@ -27,7 +27,8 @@ public struct TDEEDay: Hashable, Sendable, Codable {
     }
 
     /// A day counts as logged when it is marked complete or has at least `AdaptiveTDEE.minimumEntries` entries;
-    /// other days are treated as missing (SPEC §5.4.1 inputs).
+    /// other days are treated as missing (SPEC §5.4.1 inputs). `AdaptiveTDEE.estimate` additionally leaves out logged
+    /// days that look only partly logged (see `AdaptiveTDEE.partialDayFraction`).
     public var isLogged: Bool {
         isComplete || entryCount >= AdaptiveTDEE.minimumEntries
     }
@@ -53,6 +54,29 @@ public enum TDEEConfidence: String, Sendable, Codable, CaseIterable, Comparable 
         case .low: "Low confidence"
         case .medium: "Medium confidence"
         case .high: "High confidence"
+        }
+    }
+}
+
+/// How the window's weight change was measured (SPEC §5.4.1 step 3).
+public enum TDEEWeightMethod: String, Hashable, Sendable, Codable, CaseIterable {
+    /// The difference of the smoothed weight trend between the window's ends. Used once the trend is mature: it
+    /// reaches back at least `AdaptiveTDEE.matureTrendDays` without a long gap and the window has at least
+    /// `AdaptiveTDEE.denseWeighIns` weigh-ins.
+    case trend
+    /// A least-squares straight line through the window's weigh-ins, its slope × the span. Used while the trend is young,
+    /// restarting after a long gap, or fed by sparse weigh-ins: the trend then still lags its start (or the gap) and its
+    /// difference would read that catch-up as real weight change.
+    case weighInLine
+
+    /// One short line for the "how was this computed" sheet.
+    public var explanation: String {
+        switch self {
+        case .trend:
+            "Weight change measured from your smoothed weight trend."
+        case .weighInLine:
+            "Your weight trend is still young or your weigh-ins are sparse, so the change is measured with a straight "
+                + "line through this window's weigh-ins instead."
         }
     }
 }
@@ -86,13 +110,16 @@ public struct TDEEEstimate: Hashable, Sendable, Codable {
     public var day: LocalDay
     /// The days of the window, oldest first (logged or not).
     public var days: [TDEEDay]
+    /// Logged days whose intake was used (partly logged days left out, see `partialDays`).
     public var loggedDays: Int
     public var weighIns: Int
     /// Mean diary energy over the logged days.
     public var meanIntakeKcal: Double
-    /// The day the trend change is measured from, and the trend on it.
+    /// The day the weight change is measured from, and the weight on it: the trend on that day for `.trend`, the fitted
+    /// line's value for `.weighInLine` (then the day is the first weigh-in used).
     public var trendStartDay: LocalDay
     public var trendStartKg: Double
+    /// The trend (or fitted line) on `day`.
     public var trendEndKg: Double
     /// Days between `trendStartDay` and `day`.
     public var trendSpanDays: Int
@@ -109,6 +136,31 @@ public struct TDEEEstimate: Hashable, Sendable, Codable {
     public var confidence: TDEEConfidence
     /// Logged intake looks implausibly low for the weight trend (see `AdaptiveTDEE.estimate`).
     public var underLoggingSuspected: Bool
+    /// How the weight change was measured; nil in estimates stored before this was recorded, which used the trend.
+    public var weightMethod: TDEEWeightMethod? = nil
+    /// Days that count as logged but were left out of the mean intake as partly logged (not marked complete and below
+    /// `AdaptiveTDEE.partialDayFraction` of the window's median); nil in estimates stored before this rule.
+    public var partialDays: [LocalDay]? = nil
+
+    /// The method actually used (`.trend` for older stored estimates).
+    public var resolvedWeightMethod: TDEEWeightMethod {
+        weightMethod ?? .trend
+    }
+
+    /// Number of partly logged days left out of the mean intake.
+    public var partialDaysLeftOut: Int {
+        partialDays?.count ?? 0
+    }
+
+    /// True when `day` counts as logged but was left out as partly logged.
+    public func isPartial(_ day: LocalDay) -> Bool {
+        partialDays?.contains(day) ?? false
+    }
+
+    /// True when the day's intake went into the mean.
+    public func isUsed(_ day: TDEEDay) -> Bool {
+        day.isLogged && !isPartial(day.day)
+    }
 
     public var windowDays: Int {
         days.count
@@ -178,6 +230,20 @@ public enum AdaptiveTDEE {
     public static let underLoggingFraction = 0.75
     /// A single day below this share of the estimate looks under-logged (backlog #36).
     public static let lowDayFraction = 0.5
+    /// A logged day not marked complete whose energy is below this share of the median of the window's logged days is
+    /// treated as partly logged (e.g. only breakfast with three items) and left out of the mean intake. At least half of
+    /// the days are at or above the median, so the rule can never leave out every day.
+    public static let partialDayFraction = 0.5
+    /// The trend's slope is trusted once it reaches back this many days before the window's end without a long gap:
+    /// the start value then weighs 0.9^14 ≈ 23 % at the window's start and the trend difference over the window
+    /// understates a steady change by about 11 %, against ~25 % or more at three weeks (SPEC §5.4.1 step 3).
+    public static let matureTrendDays = 28
+    /// The trend method also needs at least this many weigh-ins in the window (half its days); with fewer, a line through
+    /// the weigh-ins measures the change without the trend's step-wise catch-up between them.
+    public static let denseWeighIns = 7
+    /// Weigh-ins this many days or more apart break the trend's history: the gap-aware trend has then moved at least
+    /// 1 − 0.9^14 ≈ 77 % of the way to the new weigh-in, so it restarts there for the maturity rule.
+    public static let restartGapDays = 14
     /// Proposed targets never go below this (kcal/day).
     public static let minimumTargetKcal: Double = 1200
 
@@ -190,9 +256,12 @@ public enum AdaptiveTDEE {
     ///   - baselineKcal: Mifflin-St Jeor × activity, or nil when the profile is incomplete (no clamp then).
     ///   - previousKcal: the last stored estimate, blended in with 0.3.
     ///
-    /// Steps (SPEC §5.4.1): window of 14 days; needs 7 logged days. `ΔE = (trend_end − trend_start) × 7,700`.
-    /// `raw = mean(kcalIn over logged days) − ΔE / span`. Blend `0.7 × raw + 0.3 × previous`, then clamp to ±25 %
-    /// of the baseline unless confidence is high.
+    /// Steps (SPEC §5.4.1): window of 14 days. Logged days that look partly logged (not marked complete, below half
+    /// the window's median) are left out; 7 remaining logged days are needed. `ΔE = Δweight × 7,700`, where Δweight is
+    /// the trend difference once the trend is mature (`matureTrendDays`, `denseWeighIns`) and otherwise the slope of a
+    /// least-squares line through the window's weigh-ins × span. `raw = mean(kcalIn over logged days) − ΔE / span`.
+    /// Blend `0.7 × raw + 0.3 × previous`, then clamp to ±25 % of the baseline unless confidence is high (which needs
+    /// the mature trend).
     ///
     /// Under-logging: eating more than was logged keeps the weight up, so the raw estimate comes out low. When it is
     /// below 75 % of the baseline the result is flagged, and `proposal` then never lowers the target.
@@ -208,23 +277,35 @@ public enum AdaptiveTDEE {
             let day = start.adding(days: offset)
             return byDay[day] ?? TDEEDay(day: day, kcalIn: 0, entryCount: 0, isComplete: false)
         }
-        let logged = window.filter(\.isLogged)
+        let counted = window.filter(\.isLogged)
+        let partial = partialDays(counted)
+        let logged = counted.filter { !partial.contains($0.day) }
         guard logged.count >= minimumLoggedDays else { return .failure(.notEnoughLoggedDays(logged.count)) }
         let weighIns = window.count(where: { $0.weightKg != nil })
         guard weighIns >= minimumWeighIns else { return .failure(.notEnoughWeighIns(weighIns)) }
 
-        // Trend change: from the day before the window (so 14 days of intake face 14 days of change) when the trend
-        // already existed then, else from the first window day that has a trend.
-        let candidates = [byDay[start.previous]].compactMap(\.self) + window
-        guard let first = candidates.first(where: { $0.trendKg != nil }), let trendStart = first.trendKg,
-              let trendEnd = window.last?.trendKg
-        else { return .failure(.trendTooShort) }
-        let span = first.day.days(until: endDay)
-        guard span >= minimumTrendSpanDays else { return .failure(.trendTooShort) }
+        let weighInDays = byDay.values.filter { $0.day <= endDay && $0.weightKg != nil }.map(\.day).sorted()
+        let since = trendStart(weighInDays: weighInDays)
+        let isMature = (since.map { $0.days(until: endDay) >= matureTrendDays } ?? false) && weighIns >= denseWeighIns
+        // A mature trend's difference is smoother than any line; while it is young, restarting or sparse it lags, so the
+        // line through the weigh-ins measures the change (also when a caller passed no trend values at all).
+        let change: WeightChange
+        if isMature, let fromTrend = trendChange(byDay: byDay, window: window, start: start, endDay: endDay) {
+            change = fromTrend
+        } else {
+            guard let since,
+                  let fromLine = lineChange(byDay: byDay, from: max(start.previous, since), endDay: endDay)
+            else { return .failure(.trendTooShort) }
+            change = fromLine
+        }
+        guard change.span >= minimumTrendSpanDays else { return .failure(.trendTooShort) }
 
         let meanIntake = logged.reduce(0) { $0 + $1.kcalIn } / Double(logged.count)
-        let raw = meanIntake - (trendEnd - trendStart) * Energy.kcalPerKg / Double(span)
-        let confidence = confidence(byDay: byDay, endDay: endDay, loggedInWindow: logged.count, weighIns: weighIns)
+        let raw = meanIntake - (change.endKg - change.startKg) * Energy.kcalPerKg / Double(change.span)
+        let confidence = confidence(
+            byDay: byDay, endDay: endDay, loggedInWindow: logged.count, weighIns: weighIns,
+            weightIsMature: change.method == .trend,
+        )
 
         var value = previousKcal.map { blendNew * raw + (1 - blendNew) * $0 } ?? raw
         var clamped = false
@@ -238,19 +319,93 @@ public enum AdaptiveTDEE {
         let underLogging = baselineKcal.map { $0 > 0 && raw < $0 * underLoggingFraction } ?? false
         return .success(TDEEEstimate(
             day: endDay, days: window, loggedDays: logged.count, weighIns: weighIns, meanIntakeKcal: meanIntake,
-            trendStartDay: first.day, trendStartKg: trendStart, trendEndKg: trendEnd, trendSpanDays: span,
+            trendStartDay: change.startDay, trendStartKg: change.startKg, trendEndKg: change.endKg, trendSpanDays: change.span,
             rawKcal: raw, previousKcal: previousKcal, baselineKcal: baselineKcal, wasClamped: clamped,
             kcal: value, confidence: confidence, underLoggingSuspected: underLogging,
+            weightMethod: change.method, partialDays: window.map(\.day).filter(partial.contains),
         ))
     }
 
-    /// High: data reaches back `highConfidenceDays` and ≥ 80 % of those days are logged. Medium: ≥ 10 logged days
-    /// and ≥ 4 weigh-ins in the window. Low otherwise.
-    static func confidence(byDay: [LocalDay: TDEEDay], endDay: LocalDay, loggedInWindow: Int, weighIns: Int) -> TDEEConfidence {
+    /// The weight change of a window: from `startDay` (weight `startKg`) to the window's end (`endKg`), `span` days.
+    struct WeightChange {
+        var method: TDEEWeightMethod
+        var startDay: LocalDay
+        var startKg: Double
+        var endKg: Double
+        var span: Int
+    }
+
+    /// Logged days (of `logged`) that look partly logged: not marked complete and below `partialDayFraction` of the
+    /// median energy of `logged`.
+    static func partialDays(_ logged: [TDEEDay]) -> Set<LocalDay> {
+        let kcal = logged.map(\.kcalIn).sorted()
+        guard !kcal.isEmpty else { return [] }
+        let middle = kcal.count / 2
+        let median = kcal.count.isMultiple(of: 2) ? (kcal[middle - 1] + kcal[middle]) / 2 : kcal[middle]
+        let threshold = median * partialDayFraction
+        return Set(logged.filter { !$0.isComplete && $0.kcalIn < threshold }.map(\.day))
+    }
+
+    /// The first weigh-in of the trend's current run: the earliest weigh-in reached from the last one without a gap of
+    /// `restartGapDays` or more. Nil without weigh-ins. `weighInDays` must be sorted.
+    static func trendStart(weighInDays: [LocalDay]) -> LocalDay? {
+        guard var start = weighInDays.last else { return nil }
+        for earlier in weighInDays.dropLast().reversed() {
+            guard earlier.days(until: start) < restartGapDays else { break }
+            start = earlier
+        }
+        return start
+    }
+
+    /// The trend difference: from the day before the window (so 14 days of intake face 14 days of change) when the
+    /// trend already existed then, else from the first window day that has a trend.
+    static func trendChange(byDay: [LocalDay: TDEEDay], window: [TDEEDay], start: LocalDay, endDay: LocalDay) -> WeightChange? {
+        let candidates = [byDay[start.previous]].compactMap(\.self) + window
+        guard let first = candidates.first(where: { $0.trendKg != nil }), let trendStart = first.trendKg,
+              let trendEnd = window.last?.trendKg
+        else { return nil }
+        return WeightChange(method: .trend, startDay: first.day, startKg: trendStart, endKg: trendEnd, span: first.day.days(until: endDay))
+    }
+
+    /// A least-squares line through the weigh-ins from `from` (at the earliest the day before the window) to `endDay`,
+    /// leaving out weigh-ins the trend marks as outliers. The change runs from the first weigh-in used to `endDay`
+    /// along the line. Nil with fewer than two weigh-ins or when they span less than `minimumTrendSpanDays`.
+    static func lineChange(byDay: [LocalDay: TDEEDay], from: LocalDay, endDay: LocalDay) -> WeightChange? {
+        var samples: [LocalDay: Double] = [:]
+        for day in byDay.values where day.day <= endDay {
+            if let kg = day.weightKg {
+                samples[day.day] = kg
+            }
+        }
+        let outliers = Set(WeightTrend.compute(samples: samples, through: endDay).filter(\.isOutlier).map(\.day))
+        let points = samples.filter { $0.key >= from && !outliers.contains($0.key) }.sorted { $0.key < $1.key }
+        guard let first = points.first?.key, let last = points.last?.key, points.count >= 2,
+              first.days(until: last) >= minimumTrendSpanDays
+        else { return nil }
+        let xs = points.map { Double(first.days(until: $0.key)) }
+        let ys = points.map(\.value)
+        let meanX = xs.reduce(0, +) / Double(xs.count)
+        let meanY = ys.reduce(0, +) / Double(ys.count)
+        let sxx = xs.reduce(0) { $0 + ($1 - meanX) * ($1 - meanX) }
+        let sxy = zip(xs, ys).reduce(0) { $0 + ($1.0 - meanX) * ($1.1 - meanY) }
+        let slope = sxy / sxx
+        let span = first.days(until: endDay)
+        return WeightChange(
+            method: .weighInLine, startDay: first, startKg: meanY - slope * meanX,
+            endKg: meanY + slope * (Double(span) - meanX), span: span,
+        )
+    }
+
+    /// High: data reaches back `highConfidenceDays`, ≥ 80 % of those days are logged and the weight change came from a
+    /// mature trend (`weightIsMature`: `matureTrendDays` of trend and `denseWeighIns` weigh-ins in the window). Medium:
+    /// ≥ 10 logged days and ≥ 4 weigh-ins in the window. Low otherwise.
+    static func confidence(
+        byDay: [LocalDay: TDEEDay], endDay: LocalDay, loggedInWindow: Int, weighIns: Int, weightIsMature: Bool,
+    ) -> TDEEConfidence {
         let long = (0 ..< highConfidenceDays).compactMap { byDay[endDay.adding(days: -$0)] }
         let longLogged = long.count(where: \.isLogged)
         let reachesBack = byDay.keys.contains { $0 <= endDay.adding(days: -(highConfidenceDays - 1)) && (byDay[$0]?.isLogged ?? false) }
-        if reachesBack, Double(longLogged) >= highConfidenceLoggedShare * Double(highConfidenceDays), weighIns >= mediumWeighIns {
+        if weightIsMature, reachesBack, Double(longLogged) >= highConfidenceLoggedShare * Double(highConfidenceDays), weighIns >= mediumWeighIns {
             return .high
         }
         if loggedInWindow >= mediumLoggedDays, weighIns >= mediumWeighIns {
