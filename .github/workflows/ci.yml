@@ -94,8 +94,8 @@ jobs:
       # Xcode's compilation cache: compiler outputs keyed by the content of their inputs, so (unlike a cached
       # DerivedData, which goes stale because a checkout gives every file a new mtime) it is reused after a fresh
       # checkout and only what changed is compiled again. Saved after every run, restored from the newest one.
-      XCODE_CAS: ${{ github.workspace }}/../xcode-cas
-      SOURCE_PACKAGES: ${{ github.workspace }}/../SourcePackages
+      XCODE_CAS: ${{ github.workspace }}/.ci-cache/xcode-cas
+      SOURCE_PACKAGES: ${{ github.workspace }}/.ci-cache/SourcePackages
     steps:
       - uses: actions/checkout@v5
       - name: Show toolchain
