@@ -30,4 +30,4 @@ struct AppConfig: Sendable {
     }
 }
 
-// CI timing probe: reverted in the next commit.
+// CI timing probe 2: reverted before merge.

@@ -117,9 +117,8 @@ jobs:
             | jq -r '[.devices | to_entries[] | select(.key | contains("iOS")) | .value[] | select(.name | startswith("iPhone"))] | last | .udid')
           echo "Using simulator $UDID"
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
-          # Start booting now (returns at once): the simulator boots while the app compiles, not after. Not before the
-          # cache restore: a booting simulator takes the runner's 3 cores and slowed the restore from ~40 s to ~85 s.
-          xcrun simctl boot "$UDID" || true
+          # Not booted here but by the test step, after the build: on the runner's 3 cores a booting simulator slows the
+          # compiler more than the boot takes on its own (measured in #93).
       - name: Build for testing
         run: |
           set -o pipefail
@@ -130,6 +129,7 @@ jobs:
             -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }},arch=arm64" \
             -derivedDataPath "$DERIVED_DATA" \
             -enableCodeCoverage NO \
+            -showBuildTimingSummary \
             CODE_SIGNING_ALLOWED=NO \
             COMPILER_INDEX_STORE_ENABLE=NO \
             COMPILATION_CACHE_ENABLE_CACHING=YES \
