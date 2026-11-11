@@ -166,6 +166,17 @@ struct HydrationTests {
         )
     }
 
+    @Test func `reminder behind clamped uses pace at now`() {
+        // 300 ml in sips, last at 17:30: behind time 07:00 + 800/2400 · 15 h = 12:00 has passed, gap time is 20:30.
+        let sips = [t(9), t(12), t(15), t(17, 30)].map { water(75, at: $0) }
+        let day = day(sips, now: t(17, 30))
+        #expect(day.pace(at: t(17, 30)) == 1680)
+        #expect(
+            HydrationReminder.next(day: day, tomorrowWake: tomorrowWake)
+                == HydrationReminder.Plan(date: t(17, 30), reason: .behind(expectedMl: 1680)),
+        )
+    }
+
     @Test func `no reminder when goal reached`() {
         let day = day([water(2400, at: t(9))], now: t(10))
         #expect(HydrationReminder.next(day: day, tomorrowWake: tomorrowWake) == nil)

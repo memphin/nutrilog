@@ -173,15 +173,18 @@ public struct HydrationDay: Sendable {
         }
         lastIntakeAt = sorted.last { $0.at <= now }?.at
 
-        let paceEnd = bedtime.addingTimeInterval(-3600)
-        gaps = wake < paceEnd
+        // Same as `isWindowValid`, which can't be called before every stored property is set.
+        gaps = wake < bedtime.addingTimeInterval(-Self.paceLeadTime)
             ? Self.gaps(in: sorted.map(\.at), wake: wake, end: min(now, bedtime), now: now, threshold: gapThreshold)
             : []
     }
 
-    /// When the pace line reaches the goal: an hour before bedtime.
+    /// How long before bedtime the pace line reaches the goal: an hour.
+    public static let paceLeadTime: TimeInterval = 3600
+
+    /// When the pace line reaches the goal: ``paceLeadTime`` before bedtime.
     public var paceEnd: Date {
-        bedtime.addingTimeInterval(-3600)
+        bedtime.addingTimeInterval(-Self.paceLeadTime)
     }
 
     /// Whether there is a waking window to pace and find gaps in: `wake` before ``paceEnd``.
@@ -262,7 +265,8 @@ public enum HydrationReminder {
     /// The next reminder for `day`, or nil when the goal is reached.
     ///
     /// Two candidates: the gap time (`max(last drink, wake) + threshold`) and the behind time (see the pace line in
-    /// ``HydrationDay``). The earliest wins; one already in the past is moved to `now` and keeps its reason. When
+    /// ``HydrationDay``). The earliest wins; one already in the past is moved to `now` and keeps its reason (a behind
+    /// reason then carries the pace at `now`). When
     /// neither lands by ``HydrationDay/paceEnd`` (or the window is invalid), the plan is tomorrow at
     /// `tomorrowWake + threshold` for a gap since `tomorrowWake`.
     public static func next(day: HydrationDay, tomorrowWake: Date) -> Plan? {
@@ -278,7 +282,15 @@ public enum HydrationReminder {
         if let earliest = candidates.min(by: { $0.date < $1.date }) {
             let date = max(earliest.date, day.now)
             if date <= day.paceEnd {
-                return Plan(date: date, reason: earliest.reason)
+                switch earliest.reason {
+                case .gap:
+                    return Plan(date: date, reason: earliest.reason)
+                case .behind:
+                    // What the pace line expects at the planned time, which is more than total + margin when the
+                    // behind time has passed and the plan was moved to now.
+                    let expected = day.pace(at: date) ?? (day.totalMl + day.behindMarginMl)
+                    return Plan(date: date, reason: .behind(expectedMl: expected))
+                }
             }
         }
         return Plan(date: tomorrowWake.addingTimeInterval(day.gapThreshold), reason: .gap(since: tomorrowWake))
