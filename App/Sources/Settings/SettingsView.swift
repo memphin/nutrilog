@@ -7,7 +7,6 @@ import UniformTypeIdentifiers
 /// Settings: profile & targets, meal slots, Apple Health, units, data export/import, network, attributions (backlog #15).
 struct SettingsView: View {
     @Environment(AppEnvironment.self) private var environment
-    @State private var waterGoal = 2500.0
     @State private var stepGoal = StepGoal.defaultSteps
     @State private var sleepGoal = SleepGoal.defaultMinutes
     @State private var errorMessage: String?
@@ -40,11 +39,7 @@ struct SettingsView: View {
                         LabeledContent("Sleep", value: DashboardFormat.duration(sleepGoal))
                     }
                     .onChange(of: sleepGoal) { saveSleepGoal() }
-                    Stepper(value: $waterGoal, in: 500 ... 6000, step: 250) {
-                        LabeledContent("Water", value: "\(Int(waterGoal)) ml")
-                    }
-                    .onChange(of: waterGoal) { saveWaterGoal() }
-                    NavigationLink("Water quick-add sizes") { WaterSettingsView() }
+                    NavigationLink("Hydration") { HydrationSettingsView() }
                     NavigationLink("Caffeine") { CaffeineSettingsView() }
                 } header: {
                     Text("Daily goals")
@@ -88,7 +83,6 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             // Re-read after an import replaced the data.
             .task(id: environment.dataGeneration) {
-                waterGoal = (try? environment.profiles?.profile().waterGoalMl) ?? 2500
                 stepGoal = environment.profiles.map(StepGoal.load(from:)) ?? StepGoal.defaultSteps
                 sleepGoal = environment.profiles.map(SleepGoal.load(from:)) ?? SleepGoal.defaultMinutes
             }
@@ -178,19 +172,6 @@ struct SettingsView: View {
             try SleepGoal.save(sleepGoal, to: profiles)
         } catch {
             errorMessage = "Couldn't save the sleep goal: \(error.localizedDescription)"
-        }
-    }
-
-    private func saveWaterGoal() {
-        guard let profiles = environment.profiles else { return }
-        do {
-            var profile = try profiles.profile()
-            guard profile.waterGoalMl != waterGoal else { return }
-            profile.waterGoalMl = waterGoal
-            try profiles.save(profile)
-            environment.widgetDataDidChange() // the water widget shows the goal
-        } catch {
-            errorMessage = "Couldn't save the water goal: \(error.localizedDescription)"
         }
     }
 }

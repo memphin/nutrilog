@@ -80,7 +80,7 @@ private struct MetricDetailView: View {
             }
             if tile == .water {
                 Section {
-                    NavigationLink("Quick-add sizes") { WaterSettingsView() }
+                    NavigationLink("Quick-add sizes") { HydrationSettingsView() }
                 }
             }
         }

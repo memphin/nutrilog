@@ -179,6 +179,11 @@ final class AppEnvironment {
         db.map { CaffeineRepository($0, clock: clock) }
     }
 
+    /// Everything drunk (water quick-adds, diary fluids, caffeine drinks) as `FluidIntake`s per day.
+    var hydration: HydrationRepository? {
+        db.map { HydrationRepository($0) }
+    }
+
     // MARK: Health background work (backlog #26, #27)
 
     /// At launch (also a background launch for Health delivery): register the observer queries once the user has been
@@ -601,6 +606,14 @@ enum SettingKey {
     static let caffeineHalfLifeOverride = "caffeineHalfLifeOverride"
     /// [String]: `CaffeineDrink` ids of the caffeine quick-add buttons; missing means `CaffeineDrink.defaultQuickAddIDs`.
     static let caffeineQuickAddDrinks = "caffeineQuickAddDrinks"
+    /// Int (minutes from midnight): wake-up time when Apple Health has no sleep for the day; missing means 07:00.
+    static let hydrationFallbackWakeMinutes = "hydrationFallbackWakeMinutes"
+    /// Int (minutes): a stretch without a drink longer than this is a gap; missing means 180.
+    static let hydrationGapMinutes = "hydrationGapMinutes"
+    /// Double (ml): how far below the pace line counts as behind; missing means 500.
+    static let hydrationBehindMarginMl = "hydrationBehindMarginMl"
+    /// Bool: hydration reminder notifications are on; missing means off.
+    static let hydrationRemindersEnabled = "hydrationRemindersEnabled"
 }
 
 /// kcal or kJ for display (Settings → Units). Storage is always kcal.
