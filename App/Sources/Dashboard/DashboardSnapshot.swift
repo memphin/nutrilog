@@ -306,6 +306,9 @@ struct TileHistoryRow: Equatable, Identifiable {
     /// nil: no value that day.
     var value: String?
     var detail: String?
+    /// Hydration only: the day's total and that day's goal, which colour the value.
+    var amountMl: Double?
+    var goalMl: Double?
 
     var id: LocalDay {
         day
@@ -318,13 +321,14 @@ enum TileHistory {
 
     /// - Parameters:
     ///   - kcalByDay: diary energy per day (only for `.energy`).
-    ///   - loggedWaterByDay: water logged in Vitalion per day (only for `.water`).
+    ///   - loggedFluidByDay: every drink logged in Vitalion per day — water, diary drinks, caffeine drinks (only
+    ///     for `.water`).
     ///   - caffeineByDay: caffeine per day, quick-adds and diary (only for `.caffeine`).
     static func rows(
         for tile: DashboardTile,
         data: DashboardData,
         kcalByDay: [LocalDay: Double] = [:],
-        loggedWaterByDay: [LocalDay: Double] = [:],
+        loggedFluidByDay: [LocalDay: Double] = [:],
         caffeineByDay: [LocalDay: Double] = [:],
         energyUnit: EnergyUnit = .kcal,
         calendar: Calendar = .current,
@@ -376,15 +380,7 @@ enum TileHistory {
             case .hrv:
                 return TileHistoryRow(day: day, value: row?.hrvSDNNms.map(DashboardFormat.ms))
             case .water:
-                let logged = loggedWaterByDay[day] ?? 0
-                let other = row?.waterMl ?? 0
-                let total = logged + other
-                return TileHistoryRow(
-                    day: day,
-                    value: total > 0 ? DashboardFormat.ml(total) : nil,
-                    detail: other > 0 && logged > 0 ?
-                        "\(DashboardFormat.ml(logged)) in Vitalion, \(DashboardFormat.ml(other)) from other apps" : nil,
-                )
+                return hydrationRow(day, totalMl: (loggedFluidByDay[day] ?? 0) + (row?.waterMl ?? 0), data: data)
             case .caffeine:
                 let mg = caffeineByDay[day] ?? 0
                 return TileHistoryRow(
@@ -395,6 +391,15 @@ enum TileHistory {
                 )
             }
         }
+    }
+
+    /// Every drink plus other apps' water, against that day's own goal: "1,840 ml" "of 2,400 ml".
+    private static func hydrationRow(_ day: LocalDay, totalMl: Double, data: DashboardData) -> TileHistoryRow {
+        guard totalMl > 0 else { return TileHistoryRow(day: day) }
+        let goal = data.hydrationGoalMl(on: day)
+        return TileHistoryRow(
+            day: day, value: DashboardFormat.ml(totalMl), detail: "of \(DashboardFormat.ml(goal))", amountMl: totalMl, goalMl: goal,
+        )
     }
 }
 

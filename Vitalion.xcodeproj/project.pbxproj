@@ -44,6 +44,7 @@
 		3ECFC0DA93A20EDA8A972387 /* Sparkline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01EE353FF2D90F6EFF2F3B3B /* Sparkline.swift */; };
 		421CEB7BA2BE3816DB3899C1 /* FoodEditorLookupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E2F70519A059DDAC9177C03 /* FoodEditorLookupTests.swift */; };
 		466BB6D6405885DDB5039427 /* DashboardEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEFCCA68F0A67ECF0B040E21 /* DashboardEditing.swift */; };
+		485C87A4107165A4DF3AFDD1 /* HydrationDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A6BBD67C5C882E7C4FF9E51 /* HydrationDetailView.swift */; };
 		48CF0140E6C20D235385AFE3 /* SmartLogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43D66CA0BD012691840B5848 /* SmartLogTests.swift */; };
 		4B3249A25400669043F23BFD /* TileDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB5B6EE728347650CA8871CD /* TileDetailView.swift */; };
 		4E6E423EA294CE432DABE3EE /* DebugScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 398357AEBA3E46B5F2975E21 /* DebugScreens.swift */; };
@@ -62,6 +63,7 @@
 		70FB1EF9E4C1215967A03CE2 /* DashboardAccessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37EF81A77CEAC542C034074D /* DashboardAccessTests.swift */; };
 		74B2381D81030F4F1E7A5741 /* VitalionIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = C765BACA160F1ECF2058D539 /* VitalionIntents.swift */; };
 		790621B1B50CB4C7B4CB880D /* TestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = B676A848F8A4FD5E187A9F63 /* TestSupport.swift */; };
+		815F51B813312E155D5FBC9B /* HydrationDetailTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36BCF11A7CC4A1C69281B243 /* HydrationDetailTests.swift */; };
 		8542CDA8DAFD67E8F8BE182E /* OnlineResultsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBFC8A195B20CF85237483E9 /* OnlineResultsView.swift */; };
 		855DC2C54103B68E1E6677D3 /* HydrationDayBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B82C78F6A08FA91289CE96E4 /* HydrationDayBuilder.swift */; };
 		85CAC62B98EA1EF2D62E3099 /* BarcodeResolutionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E03AFAD5C0A1F4E335A85AF0 /* BarcodeResolutionView.swift */; };
@@ -94,10 +96,12 @@
 		D07E24984F4338BF87992581 /* DiaryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCC70763AAEBD410E4DF9815 /* DiaryModel.swift */; };
 		D1EDC409D6C35023BB9FC5F8 /* IntentActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C12F08E320C3A4A2C61245E /* IntentActions.swift */; };
 		D1F832013B37E2BC43954B4E /* BackupsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0583A6CE45E2E519F019A6FF /* BackupsView.swift */; };
+		D22F4AC14D869883AD21AD5B /* HydrationChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FAEDF11C58DD3B0EA3B71DF /* HydrationChart.swift */; };
 		D240C801D1F58BD8F3EAE44C /* USDAKeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00652CD81B32347A8298794 /* USDAKeyTests.swift */; };
 		D302A63BD349DDC0689E6B43 /* CheckInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7326C092CB2CF226670ECEB /* CheckInView.swift */; };
 		D33EC33651141E5B8CBC4B74 /* Expenditure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F3CA8ECBD0C8936637C8DBC /* Expenditure.swift */; };
 		D6BF7D02A3FFA88EA3A9D8B4 /* FoodSources in Frameworks */ = {isa = PBXBuildFile; productRef = 4896686C4D5E07F669D3661E /* FoodSources */; };
+		D779BD3350F4727B7A9BAB1F /* HydrationEntrySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BAC2A50C1B94957AD9A02BB /* HydrationEntrySheet.swift */; };
 		D966635131B7160864F40550 /* LabelPhotoStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7B466B5B167E23658F3B7FF /* LabelPhotoStore.swift */; };
 		DBA3F521232C925D59674D47 /* AppModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2251AD561F7592E7581BA671 /* AppModelTests.swift */; };
 		DEA8A104E6F2AB33493C97C6 /* HydrationTileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09BAC3A8F9E799BDA94D4974 /* HydrationTileTests.swift */; };
@@ -161,6 +165,7 @@
 		0583A6CE45E2E519F019A6FF /* BackupsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupsView.swift; sourceTree = "<group>"; };
 		09BAC3A8F9E799BDA94D4974 /* HydrationTileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HydrationTileTests.swift; sourceTree = "<group>"; };
 		0A83FF24C8E676D75F22F754 /* VitalionWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = VitalionWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		0BAC2A50C1B94957AD9A02BB /* HydrationEntrySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HydrationEntrySheet.swift; sourceTree = "<group>"; };
 		0E2F70519A059DDAC9177C03 /* FoodEditorLookupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodEditorLookupTests.swift; sourceTree = "<group>"; };
 		0E7DC27A52B4580444E9532C /* FoodSources */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FoodSources; path = Packages/FoodSources; sourceTree = SOURCE_ROOT; };
 		112641AFE0BDBA2BF649E84E /* Core */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Core; path = Packages/Core; sourceTree = SOURCE_ROOT; };
@@ -173,8 +178,10 @@
 		1E3AAC9A8782E4521AA9304F /* Scanner */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Scanner; path = Packages/Scanner; sourceTree = SOURCE_ROOT; };
 		2251AD561F7592E7581BA671 /* AppModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModelTests.swift; sourceTree = "<group>"; };
 		233510B95C35C985722A7C17 /* ProductCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductCardView.swift; sourceTree = "<group>"; };
+		2A6BBD67C5C882E7C4FF9E51 /* HydrationDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HydrationDetailView.swift; sourceTree = "<group>"; };
 		2A761CBEE8771B0186D02D01 /* HydrationSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HydrationSettingsTests.swift; sourceTree = "<group>"; };
 		3181C2776D24E2128BB05805 /* CaffeineTile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaffeineTile.swift; sourceTree = "<group>"; };
+		36BCF11A7CC4A1C69281B243 /* HydrationDetailTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HydrationDetailTests.swift; sourceTree = "<group>"; };
 		37EF81A77CEAC542C034074D /* DashboardAccessTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardAccessTests.swift; sourceTree = "<group>"; };
 		398357AEBA3E46B5F2975E21 /* DebugScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugScreens.swift; sourceTree = "<group>"; };
 		3F43367A7535A76FE70C2845 /* MealPlanTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPlanTests.swift; sourceTree = "<group>"; };
@@ -205,6 +212,7 @@
 		6BA3CBA42FC3C42A0F41781B /* OnlineSearchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnlineSearchTests.swift; sourceTree = "<group>"; };
 		6BC0669B4BB9DD8FE9B279F7 /* VitalionWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = VitalionWidgets.entitlements; sourceTree = "<group>"; };
 		6EDDD808D19DB3854B8D610A /* StatsLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsLoader.swift; sourceTree = "<group>"; };
+		6FAEDF11C58DD3B0EA3B71DF /* HydrationChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HydrationChart.swift; sourceTree = "<group>"; };
 		72C954B5795DDCACDCBA6BB8 /* DashboardTiles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardTiles.swift; sourceTree = "<group>"; };
 		751975B9265E5F9AECC45D73 /* DashboardFeedbackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardFeedbackTests.swift; sourceTree = "<group>"; };
 		7B32B0099874D197AF1C4CFB /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -499,7 +507,10 @@
 				C3A6C8154BF03A64FECDE2B0 /* DashboardSnapshot.swift */,
 				72C954B5795DDCACDCBA6BB8 /* DashboardTiles.swift */,
 				65CB71012E9A8D3148E74F61 /* DashboardView.swift */,
+				6FAEDF11C58DD3B0EA3B71DF /* HydrationChart.swift */,
 				B82C78F6A08FA91289CE96E4 /* HydrationDayBuilder.swift */,
+				2A6BBD67C5C882E7C4FF9E51 /* HydrationDetailView.swift */,
+				0BAC2A50C1B94957AD9A02BB /* HydrationEntrySheet.swift */,
 				42D866798F0ED1775651F94E /* HydrationSettings.swift */,
 				8E067E35D2053C35B6E3086B /* HydrationSettingsView.swift */,
 				FF5C1443D3C481089F5EB5B1 /* HydrationStrip.swift */,
@@ -544,6 +555,7 @@
 				0E2F70519A059DDAC9177C03 /* FoodEditorLookupTests.swift */,
 				69B66F3373A92F44845F68B4 /* HealthTests.swift */,
 				5BA0B226DE90A3D156F5DE73 /* HealthWriteTests.swift */,
+				36BCF11A7CC4A1C69281B243 /* HydrationDetailTests.swift */,
 				2A761CBEE8771B0186D02D01 /* HydrationSettingsTests.swift */,
 				09BAC3A8F9E799BDA94D4974 /* HydrationTileTests.swift */,
 				3F43367A7535A76FE70C2845 /* MealPlanTests.swift */,
@@ -745,6 +757,7 @@
 				421CEB7BA2BE3816DB3899C1 /* FoodEditorLookupTests.swift in Sources */,
 				899883FC0E437839BF4F8843 /* HealthTests.swift in Sources */,
 				E7400BC0044C7A9C72F3879A /* HealthWriteTests.swift in Sources */,
+				815F51B813312E155D5FBC9B /* HydrationDetailTests.swift in Sources */,
 				1DDAF77A67E857B98BD25391 /* HydrationSettingsTests.swift in Sources */,
 				DEA8A104E6F2AB33493C97C6 /* HydrationTileTests.swift in Sources */,
 				31A211C649A04D1145D678A2 /* MealPlanTests.swift in Sources */,
@@ -802,7 +815,10 @@
 				14DDA87A51B7C682A1D79CEE /* HealthSyncService.swift in Sources */,
 				0DEB286310433A42C13AC843 /* HealthWriteService.swift in Sources */,
 				507C57C26A7F77EA28A17B7B /* HistoryCalendarView.swift in Sources */,
+				D22F4AC14D869883AD21AD5B /* HydrationChart.swift in Sources */,
 				855DC2C54103B68E1E6677D3 /* HydrationDayBuilder.swift in Sources */,
+				485C87A4107165A4DF3AFDD1 /* HydrationDetailView.swift in Sources */,
+				D779BD3350F4727B7A9BAB1F /* HydrationEntrySheet.swift in Sources */,
 				3D96B40690DBB4753FEC9D30 /* HydrationSettings.swift in Sources */,
 				F5ED014BA3EE2EB0FE6DAA1D /* HydrationSettingsView.swift in Sources */,
 				36E347BA3711A2FDA9CCE0F6 /* HydrationStrip.swift in Sources */,

@@ -4,16 +4,19 @@ import Persistence
 import SwiftUI
 
 /// A tile's detail: its chart (FR-51, backlog #38) and the last 14 days as a list. Weight lists the manual entries
-/// (edit, delete with undo); water lists today's entries (delete with undo). Caffeine has its own detail
-/// (`CaffeineDetailView`).
+/// (edit, delete with undo). Hydration and caffeine have their own details (`HydrationDetailView`,
+/// `CaffeineDetailView`).
 struct TileDetailView: View {
     let tile: DashboardTile
     @Bindable var model: DashboardModel
 
     var body: some View {
-        if tile == .caffeine {
+        switch tile {
+        case .caffeine:
             CaffeineDetailView(model: model)
-        } else {
+        case .water:
+            HydrationDetailView(model: model)
+        default:
             MetricDetailView(tile: tile, model: model)
         }
     }
@@ -49,13 +52,6 @@ private struct MetricDetailView: View {
                 } footer: {
                     Text("Every weight entered in Vitalion, however old.")
                 }
-            case .water:
-                Section {
-                    WaterTileContent(day: model.hydrationDay(at: model.now), sizes: model.waterSizes) { model.addWater(ml: $0) }
-                } footer: {
-                    Text("Water you log here is also written to Apple Health. Water from other apps is included in the total.")
-                }
-                todayWater
             default:
                 EmptyView()
             }
@@ -78,15 +74,8 @@ private struct MetricDetailView: View {
                     Text(description)
                 }
             }
-            if tile == .water {
-                Section {
-                    NavigationLink("Quick-add sizes") { HydrationSettingsView() }
-                }
-            }
         }
         .navigationTitle(tile.title)
-        // Popping back from "Quick-add sizes" doesn't fire the dashboard root's onAppear; re-read the sizes here.
-        .onAppear { model.reloadSettings() }
         .refreshable { await model.refresh() }
         .task(id: model.data) { rows = model.history(for: tile) }
         .sheet(item: $weightSheet) { target in
@@ -101,20 +90,6 @@ private struct MetricDetailView: View {
             Section("Entered in Vitalion") {
                 ForEach(Array(entries)) { entry in
                     ManualWeightRow(entry: entry, model: model) { weightSheet = .edit(entry) }
-                }
-            }
-        }
-    }
-
-    @ViewBuilder private var todayWater: some View {
-        let entries = model.data.water.reversed()
-        if !entries.isEmpty {
-            Section("Logged today") {
-                ForEach(Array(entries)) { entry in
-                    LabeledContent(entry.loggedAt.formatted(date: .omitted, time: .shortened), value: DashboardFormat.ml(entry.ml))
-                        .swipeActions {
-                            Button("Delete", role: .destructive) { model.deleteWater([entry]) }
-                        }
                 }
             }
         }

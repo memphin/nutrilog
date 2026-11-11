@@ -237,11 +237,13 @@ final class DashboardModel {
         snapshot.hydrationDay(now: now, calendar: calendar)
     }
 
-    /// Logs `ml` now and offers undo (which soft-deletes the entry again).
-    func addWater(ml: Int) {
+    /// Logs `ml` drunk now (or at `loggedAt`, on that time's day) and offers undo (which soft-deletes the entry
+    /// again).
+    func addWater(ml: Int, loggedAt: Date? = nil) {
         guard let water = environment.water else { return }
         do {
-            let entry = try water.add(ml: Double(ml), day: environment.today)
+            let day = loggedAt.map { LocalDay($0, calendar: calendar) } ?? environment.today
+            let entry = try water.add(ml: Double(ml), day: day, loggedAt: loggedAt)
             offerUndo("Added \(ml) ml water") { try water.softDelete(ids: [entry.id]) }
         } catch {
             errorMessage = "Couldn't log water: \(error.localizedDescription)"
@@ -259,6 +261,47 @@ final class DashboardModel {
         } catch {
             errorMessage = "Couldn't remove water: \(error.localizedDescription)"
         }
+    }
+
+    /// Deletes a water or caffeine quick-add from the Hydration detail and offers undo (restore). Diary drinks are
+    /// changed in the diary, so they are left alone.
+    func deleteIntake(_ intake: FluidIntake) {
+        switch intake.source {
+        case .water:
+            guard let water = environment.water else { return }
+            do {
+                try water.softDelete(ids: [intake.id])
+                offerUndo("Removed \(DashboardFormat.ml(intake.ml)) water") { try water.restore(ids: [intake.id]) }
+            } catch {
+                errorMessage = "Couldn't remove water: \(error.localizedDescription)"
+            }
+        case .caffeine:
+            guard let caffeine = environment.caffeine else { return }
+            do {
+                try caffeine.softDelete(ids: [intake.id])
+                offerUndo("Removed \(intake.name)") { try caffeine.restore(ids: [intake.id]) }
+            } catch {
+                errorMessage = "Couldn't remove the drink: \(error.localizedDescription)"
+            }
+        case .diary:
+            return
+        }
+    }
+
+    /// The meal each diary drink of `intakes` was logged in (its slot's name), by intake id. Drinks from other
+    /// sources, and entries or slots that can't be read, are absent.
+    func diaryMealNames(for intakes: [FluidIntake]) -> [String: String] {
+        let diaryIntakes = intakes.filter { $0.source == .diary }
+        guard let diary = environment.diary, !diaryIntakes.isEmpty,
+              let slots = try? diary.mealSlots(includeInactive: true) else { return [:] }
+        let slotNames = Dictionary(slots.map { ($0.id, $0.name) }) { first, _ in first }
+        var names: [String: String] = [:]
+        for intake in diaryIntakes {
+            if let slotID = (try? diary.entry(id: intake.id))??.mealSlotID, let name = slotNames[slotID] {
+                names[intake.id] = name
+            }
+        }
+        return names
     }
 
     // MARK: Caffeine
@@ -372,7 +415,7 @@ final class DashboardModel {
     func history(for tile: DashboardTile) -> [TileHistoryRow] {
         let days = (0 ..< TileHistory.days).map { data.today.adding(days: -$0) }
         var kcal: [LocalDay: Double] = [:]
-        var water: [LocalDay: Double] = [:]
+        var fluid: [LocalDay: Double] = [:]
         var caffeine: [LocalDay: Double] = [:]
         if tile == .energy, let diary = environment.diary {
             for day in days {
@@ -381,10 +424,10 @@ final class DashboardModel {
                 }
             }
         }
-        if tile == .water, let repo = environment.water {
-            for day in days {
-                water[day] = try? repo.totalMl(for: day)
-            }
+        if tile == .water, let repo = environment.hydration, let first = days.last,
+           let intakes = try? repo.intakes(in: first ... data.today)
+        {
+            fluid = intakes.mapValues { $0.reduce(0) { $0 + $1.ml } }
         }
         if tile == .caffeine, let repo = environment.caffeine, let first = days.last,
            let intakes = try? repo.intakes(in: first ... data.today)
@@ -394,7 +437,7 @@ final class DashboardModel {
             }
         }
         return TileHistory.rows(
-            for: tile, data: data, kcalByDay: kcal, loggedWaterByDay: water, caffeineByDay: caffeine,
+            for: tile, data: data, kcalByDay: kcal, loggedFluidByDay: fluid, caffeineByDay: caffeine,
             energyUnit: energyUnit, calendar: calendar,
         )
     }
