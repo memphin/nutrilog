@@ -73,6 +73,8 @@ final class FoodEditorModel {
     var brand = ""
     var notes = ""
     var isLiquid = false
+    /// "Counts as a drink" for hydration: nil follows ``FluidRule`` (Automatic), true / false override it.
+    var countsAsFluid: Bool?
 
     // Nutrition input
     var basis: InputBasis = .per100
@@ -239,6 +241,7 @@ final class FoodEditorModel {
         food.brand = Self.optional(brand)
         food.notes = Self.optional(notes)
         food.isLiquid = isLiquid
+        food.countsAsFluid = countsAsFluid
         food.per100 = keepingUneditedValues(per100)
         // Editing a bundled / USDA / Open Food Facts food keeps its data-quality flag, unless the user just completed
         // its nutrition (all four required values are validated numbers). Per-serving placeholders stay partial
@@ -489,6 +492,7 @@ final class FoodEditorModel {
         brand = food.brand ?? ""
         notes = food.notes ?? ""
         isLiquid = food.isLiquid
+        countsAsFluid = food.countsAsFluid
         energy = Format.field(energyUnit.display(food.kcal100))
         protein = Format.field(food.proteinG100)
         carbs = Format.field(food.carbsG100)
@@ -607,5 +611,22 @@ extension FoodEditorModel {
         var converted = try placeholder.convertingPerServingPlaceholder(servingWeight: weight, missing: missing)
         converted.food.defaultServingID = restoresStandIn ? standInID : detail.food.defaultServingID
         return converted
+    }
+}
+
+// MARK: - Counts as a drink
+
+extension FoodEditorModel {
+    /// Whether the food as currently edited counts as a drink under ``FluidRule`` (liquid, fat per 100 at most
+    /// ``FluidRule/maxFatPer100``), ignoring the override. Fat comes from the per-100 values when they are complete,
+    /// else from the fat field as typed.
+    var countsAsDrinkAutomatically: Bool {
+        let fatPer100 = per100?.fatG ?? Self.value(fat) ?? 0
+        return FluidRule.counts(isLiquid: isLiquid, fatPer100: fatPer100, override: nil)
+    }
+
+    /// The Automatic option of "Counts as a drink", saying what the rule decides for the food as edited.
+    var automaticCountsAsDrinkLabel: String {
+        countsAsDrinkAutomatically ? "Automatic (counts)" : "Automatic (doesn't count)"
     }
 }

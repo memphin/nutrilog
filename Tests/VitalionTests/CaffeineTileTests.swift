@@ -259,6 +259,26 @@ struct CaffeineDashboardTests {
         #expect(await waitUntil { model.data.caffeine.quickAdds.count == 1 })
     }
 
+    @Test func `customCaffeineWithMlStoresMl`() async throws {
+        let env = AppEnvironment.preview(clock: ManualClock().appClock)
+        let model = DashboardModel(environment: env)
+        let task = Task { await model.observe() }
+        defer { task.cancel() }
+
+        model.addCaffeine(mg: 120, at: nil, drinkID: nil, name: "Cold brew", ml: 330)
+        #expect(await waitUntil { model.data.caffeine.quickAdds.count == 1 })
+        #expect(model.data.caffeine.quickAdds.first?.ml == 330)
+    }
+
+    @Test func `the caffeine sheet's volume is optional and must be positive`() {
+        #expect(CaffeineEntrySheet.volumeMl("") == nil)
+        #expect(CaffeineEntrySheet.volumeMl("  ") == nil)
+        #expect(CaffeineEntrySheet.volumeMl("0") == nil)
+        #expect(CaffeineEntrySheet.volumeMl("-200") == nil)
+        #expect(CaffeineEntrySheet.volumeMl("abc") == nil)
+        #expect(CaffeineEntrySheet.volumeMl("330") == 330)
+    }
+
     @Test func `settings saved in Settings reach the tile`() throws {
         let env = AppEnvironment.preview()
         let profiles = try #require(env.profiles)

@@ -325,12 +325,13 @@ final class DashboardModel {
         addCaffeine(mg: drink.mg, at: nil, drinkID: drink.id, name: drink.name)
     }
 
-    /// Logs `mg` of caffeine taken at `at` (nil: now) and offers undo. The entry's day is the day of `at`.
-    func addCaffeine(mg: Double, at: Date?, drinkID: String?, name: String?) {
+    /// Logs `mg` of caffeine taken at `at` (nil: now) and offers undo. The entry's day is the day of `at`. `ml` is the
+    /// drink's volume for hydration; nil uses the preset's serving, or no volume for a custom drink.
+    func addCaffeine(mg: Double, at: Date?, drinkID: String?, name: String?, ml: Double? = nil) {
         guard let caffeine = environment.caffeine else { return }
         do {
             let day = at.map { LocalDay($0, calendar: calendar) } ?? environment.today
-            let entry = try caffeine.add(mg: mg, day: day, loggedAt: at, drinkID: drinkID, name: name)
+            let entry = try caffeine.add(mg: mg, day: day, loggedAt: at, drinkID: drinkID, name: name, ml: ml)
             let what = name.map { "\($0) (\(CaffeineStatus.mg(mg)))" } ?? "\(CaffeineStatus.mg(mg)) caffeine"
             offerUndo("Added \(what)") { try caffeine.softDelete(ids: [entry.id]) }
         } catch {

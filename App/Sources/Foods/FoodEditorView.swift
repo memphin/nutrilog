@@ -145,6 +145,16 @@ private struct FoodEditorForm: View {
             }
 
             Section {
+                Picker("Counts as a drink", selection: $model.countsAsFluid) {
+                    Text(model.automaticCountsAsDrinkLabel).tag(Bool?.none)
+                    Text("On").tag(Optional(true))
+                    Text("Off").tag(Optional(false))
+                }
+            } footer: {
+                Text("Applies to new diary entries.")
+            }
+
+            Section {
                 Picker("Values are", selection: $model.basis) {
                     ForEach(FoodEditorModel.InputBasis.allCases) { Text($0.rawValue).tag($0) }
                 }
