@@ -150,6 +150,16 @@ struct HydrationReminderServiceTests {
         )])
     }
 
+    @Test func `the behind amount is rounded to 50 ml`() async throws {
+        // 100 ml at 11:30: pace reached 600 ml at 10:36, so the reminder is due now, when pace is at 833 ml.
+        try drink(100, at: at(11, 30))
+        try await makeService().recompute()
+        #expect(scheduler.calls == [.schedule(
+            at: at(12), title: "You're behind on hydration",
+            body: "100 ml so far — about 850 by now keeps you on track", actionTitle: "+ 250 ml",
+        )])
+    }
+
     @Test func `goal reached cancels`() async throws {
         try drink(2500, at: at(11))
         try await makeService().recompute()
@@ -229,6 +239,26 @@ struct HydrationReminderServiceTests {
             at: at(10, days: 1), title: "Time for a drink", body: "No drink since 07:00 · 250 of 2,500 ml", actionTitle: "+ 250 ml",
         )
         #expect(await waitUntil { scheduler.scheduled.last == afterDrink })
+    }
+
+    @Test func `a Health sync after midnight plans the new day without a restart`() async throws {
+        let service = try makeService()
+        service.start()
+        defer { service.stop() }
+        #expect(await waitUntil { !scheduler.scheduled.isEmpty })
+
+        // The app stays suspended past midnight; nothing calls `start()` again. A background Health sync then
+        // writes the new day's wake-up time.
+        clock.advance(hours: 13) // 01:00 the next day
+        let tomorrow = today.next
+        try #require(env.dailyMetrics).upsert([DailyHealthMetrics(day: tomorrow, wokeAt: at(8, 30, days: 1))])
+
+        // Woken at 08:30, pace (to 22:00) reaches 500 ml at 11:12, before the 11:30 gap.
+        #expect(await waitUntil {
+            guard case let .schedule(date, title, body, _) = scheduler.scheduled.last else { return false }
+            return abs(date.timeIntervalSince(at(11, 12, days: 1))) < 1 && title == "You're behind on hydration"
+                && body == "0 ml so far — about 500 by now keeps you on track"
+        })
     }
 
     @Test func `late in the evening it plans tomorrow's first reminder`() async throws {

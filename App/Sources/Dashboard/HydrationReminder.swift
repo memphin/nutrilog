@@ -91,7 +91,8 @@ enum HydrationReminderCopy {
     }
 
     /// "No drink since 13:00 · 1,320 of 2,400 ml" or "1,100 ml so far — about 1,600 by now keeps you on track";
-    /// amounts grouped by `locale` like the Hydration tile, times as 24-hour HH:mm in `calendar`'s time zone.
+    /// amounts grouped by `locale` like the Hydration tile, the "about" amount to the nearest 50 ml, times as 24-hour
+    /// HH:mm in `calendar`'s time zone.
     static func body(
         _ reason: HydrationReminder.Reason, totalMl: Double, goalMl: Double, calendar: Calendar, locale: Locale,
     ) -> String {
@@ -99,7 +100,7 @@ enum HydrationReminderCopy {
         case let .gap(since):
             "No drink since \(time(since, calendar: calendar)) · \(number(totalMl, locale)) of \(number(goalMl, locale)) ml"
         case let .behind(expectedMl):
-            "\(number(totalMl, locale)) ml so far — about \(number(expectedMl, locale)) by now keeps you on track"
+            "\(number(totalMl, locale)) ml so far — about \(number((expectedMl / 50).rounded() * 50, locale)) by now keeps you on track"
         }
     }
 

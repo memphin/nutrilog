@@ -73,8 +73,10 @@ final class HydrationReminderService {
 
     // MARK: Observing
 
-    /// Recomputes whenever today's drinks, Health row or profile change. Call again after the day changed: it then
-    /// observes the new day (and recomputes for it); otherwise it does nothing.
+    /// Recomputes whenever today's drinks, Health row or profile change. Tomorrow's drinks and Health row are watched
+    /// too: a suspended app that wakes up after midnight for a Health sync sees the new day's row (its wake-up time)
+    /// written, and the recompute then moves the observation to the new day. Call again after the day changed: it
+    /// then observes the new day (and recomputes for it); otherwise it does nothing.
     func start() {
         let day = LocalDay(clock.now(), calendar: calendar)
         guard observation == nil || observedDay != day else { return }
@@ -86,8 +88,8 @@ final class HydrationReminderService {
         let changed: @MainActor @Sendable () -> Void = { [weak self] in self?.enqueueRecompute() }
         observation = Task {
             await withDiscardingTaskGroup { group in
-                group.addTask { await Self.follow({ hydration.observeIntakes(in: day ... day) }, changed: changed) }
-                group.addTask { await Self.follow({ metrics.observeMetrics(on: day) }, changed: changed) }
+                group.addTask { await Self.follow({ hydration.observeIntakes(in: day ... day.next) }, changed: changed) }
+                group.addTask { await Self.follow({ metrics.observeMetrics(in: day ... day.next) }, changed: changed) }
                 group.addTask { await Self.follow({ profiles.observeProfile() }, changed: changed) }
             }
         }
@@ -134,6 +136,9 @@ final class HydrationReminderService {
     }
 
     private func apply() async {
+        if observation != nil {
+            start() // past midnight: observe the new day
+        }
         guard HydrationSettings.load(from: profiles).remindersEnabled, await scheduler.isAuthorized() else {
             await cancel()
             return
