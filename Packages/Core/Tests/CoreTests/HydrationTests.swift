@@ -223,4 +223,20 @@ struct HydrationTests {
         #expect(HydrationGoal.ml(weightKg: nil, mode: .weight, fixedMl: 1800) == 2500)
         #expect(HydrationGoal.ml(weightKg: 80, mode: .fixed, fixedMl: 1800) == 1800)
     }
+
+    @Test func `daily totals add other apps' water to every drink logged`() throws {
+        let monday = try #require(LocalDay(year: 2026, month: 11, day: 9))
+        let intakes: [LocalDay: [FluidIntake]] = [
+            monday: [
+                FluidIntake(id: "w", ml: 500, at: t(8), kind: .water, source: .water, name: "Water"),
+                FluidIntake(id: "c", ml: 330, at: t(12), kind: .other, source: .diary, name: "Cola"),
+            ],
+            monday.next: [FluidIntake(id: "e", ml: 40, at: t(9), kind: .other, source: .caffeine, name: "Espresso")],
+        ]
+        let other = [monday: 250.0, monday.adding(days: 2): 400, monday.adding(days: 3): 0]
+        #expect(HydrationTotals.loggedMl(intakes) == [monday: 830, monday.next: 40])
+        #expect(HydrationTotals.byDay(intakes: intakes, otherAppsMl: other) == [
+            monday: 1080, monday.next: 40, monday.adding(days: 2): 400,
+        ])
+    }
 }

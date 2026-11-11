@@ -428,7 +428,7 @@ final class DashboardModel {
         if tile == .water, let repo = environment.hydration, let first = days.last,
            let intakes = try? repo.intakes(in: first ... data.today)
         {
-            fluid = intakes.mapValues { $0.reduce(0) { $0 + $1.ml } }
+            fluid = HydrationTotals.loggedMl(intakes)
         }
         if tile == .caffeine, let repo = environment.caffeine, let first = days.last,
            let intakes = try? repo.intakes(in: first ... data.today)

@@ -72,6 +72,17 @@ struct WaterProgress: Equatable {
     var totalMl: Double {
         loggedMl + otherAppsMl
     }
+
+    /// `day`'s hydration read straight from the database (widget, Siri): the same total and goal as the tile.
+    @MainActor
+    static func read(on day: LocalDay, environment: AppEnvironment) throws -> WaterProgress? {
+        guard let hydration = environment.hydration, let profiles = environment.profiles else { return nil }
+        let logged = try HydrationTotals.loggedMl(hydration.intakes(in: day ... day))[day] ?? 0
+        let other = (try? environment.dailyMetrics?.metrics(on: day)?.waterMl) ?? 0
+        let trends = HydrationGoalResolver.trendsKg(in: day ... day, from: environment.dailyMetrics)
+        let goal = try HydrationGoalResolver.goalMl(on: day, profile: profiles.profile(), trendKg: trends[day])
+        return WaterProgress(loggedMl: logged, otherAppsMl: other, goalMl: goal)
+    }
 }
 
 /// The Hydration tile's texts (spec §3): "1,840 / 2,400 ml" and "1,300 water · 540 drinks", grouped by `locale`.

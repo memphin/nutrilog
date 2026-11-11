@@ -1,5 +1,6 @@
 import Core
 import Foundation
+import Persistence
 
 /// What can be charted (FR-51, backlog #38).
 enum ChartMetric: String, CaseIterable, Identifiable {
@@ -19,7 +20,7 @@ enum ChartMetric: String, CaseIterable, Identifiable {
         case .sleep: "Sleep"
         case .restingHeartRate: "Resting heart rate"
         case .hrv: "HRV"
-        case .water: "Water"
+        case .water: "Hydration"
         case .totalEnergy: "Total energy"
         }
     }
@@ -255,6 +256,22 @@ enum ChartBuilder {
                 resting: Stats.mean(points.map(\.resting)), active: Stats.mean(points.map(\.active)),
             )
         }
+    }
+
+    /// Each day's hydration goal (`HydrationGoalResolver`); `trendsKg` from `HydrationGoalResolver.trendsKg(in:from:)`.
+    static func hydrationGoals(in days: ClosedRange<LocalDay>, profile: Profile, trendsKg: [LocalDay: Double]) -> [LocalDay: Double] {
+        var goals: [LocalDay: Double] = [:]
+        var day = days.lowerBound
+        while day <= days.upperBound {
+            goals[day] = HydrationGoalResolver.goalMl(on: day, profile: profile, trendKg: trendsKg[day])
+            day = day.next
+        }
+        return goals
+    }
+
+    /// The goal of a bar: its day's, or for a weekly bar the mean of its days' goals; nil when none is known.
+    static func goal(of point: ChartPoint, in goals: [LocalDay: Double]) -> Double? {
+        Stats.mean((0 ..< point.spanDays).map { goals[point.day.adding(days: $0)] })
     }
 
     /// "8,412 steps", "7.4 h", "81.3 kg".

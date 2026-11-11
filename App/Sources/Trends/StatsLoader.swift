@@ -12,14 +12,15 @@ enum StatsBuilder {
     ///   - targets: every target by its first day.
     ///   - metrics: Health values of the range.
     ///   - dayWeights: reconciled weights from the first weigh-in on (not only the range), so the trend is right.
-    ///   - loggedWaterMl: water logged in Vitalion per day.
+    ///   - loggedFluidMl: every drink logged in Vitalion per day (water, diary drinks, caffeine drinks); other apps'
+    ///     water from `metrics` is added to it (`HydrationTotals`).
     static func build(
         range: ClosedRange<LocalDay>,
         summaries: [DiaryDaySummary],
         targets: EffectiveTimeline<Target>,
         metrics: [DailyHealthMetrics],
         dayWeights: [DayWeight],
-        loggedWaterMl: [LocalDay: Double],
+        loggedFluidMl: [LocalDay: Double],
     ) -> [DayStats] {
         let summaryByDay = Dictionary(summaries.map { ($0.day, $0) }) { first, _ in first }
         let metricsByDay = Dictionary(metrics.map { ($0.day, $0) }) { first, _ in first }
@@ -30,7 +31,7 @@ enum StatsBuilder {
         while day <= range.upperBound {
             let summary = summaryByDay[day]
             let health = metricsByDay[day]
-            let water = (loggedWaterMl[day] ?? 0) + (health?.waterMl ?? 0)
+            let water = (loggedFluidMl[day] ?? 0) + (health?.waterMl ?? 0)
             result.append(DayStats(
                 day: day,
                 // A day marked complete without entries is a logged day with nothing eaten.
@@ -63,7 +64,7 @@ enum StatsLoader {
 
     static func load(_ range: ClosedRange<LocalDay>, environment: AppEnvironment, calendar: Calendar = .current) throws -> [DayStats] {
         guard let diary = environment.diary, let profiles = environment.profiles, let dailyMetrics = environment.dailyMetrics,
-              let water = environment.water
+              let hydration = environment.hydration
         else { return [] }
         return try StatsBuilder.build(
             range: range,
@@ -71,7 +72,7 @@ enum StatsLoader {
             targets: profiles.targetTimeline(),
             metrics: dailyMetrics.metrics(in: range).map(\.metrics),
             dayWeights: dayWeights(through: range.upperBound, environment: environment, calendar: calendar),
-            loggedWaterMl: water.totals(in: range),
+            loggedFluidMl: HydrationTotals.loggedMl(hydration.intakes(in: range)),
         )
     }
 

@@ -132,13 +132,8 @@ extension DashboardSnapshot {
 
         // Hydration: every drink logged in Vitalion plus other apps' water from Health, as on the tile; a day with
         // neither is a gap.
-        var water = data.hydrationIntakes.mapValues { intakes in intakes.reduce(0) { $0 + $1.ml } }
-        for row in recent {
-            if let other = row.waterMl {
-                water[row.day, default: 0] += other
-            }
-        }
-        water = water.filter { $0.value > 0 }
+        let otherAppsMl = Dictionary(recent.compactMap { row in row.waterMl.map { (row.day, $0) } }, uniquingKeysWith: +)
+        let water = HydrationTotals.byDay(intakes: data.hydrationIntakes, otherAppsMl: otherAppsMl)
 
         let steps = series { $0.steps.map(Double.init) }
         let total = series { EnergyBurned(activeKcal: $0.activeKcal, restingKcal: $0.basalKcal).totalKcal }

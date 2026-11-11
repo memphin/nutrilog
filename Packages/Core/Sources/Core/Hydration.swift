@@ -37,6 +37,23 @@ public struct FluidIntake: Hashable, Sendable, Identifiable {
     }
 }
 
+// MARK: - Daily totals
+
+/// Each day's hydration total: every drink logged in Vitalion (water, diary drinks, caffeine drinks) plus water other
+/// apps wrote to Apple Health. Vitalion's own Health samples are already left out of the other apps' water, so nothing
+/// is counted twice. The one sum behind the Hydration tile's sparkline and history, the widget, Siri and Trends.
+public enum HydrationTotals {
+    /// The ml logged in Vitalion per day; days without intakes are absent.
+    public static func loggedMl(_ intakes: [LocalDay: [FluidIntake]]) -> [LocalDay: Double] {
+        intakes.mapValues { day in day.reduce(0) { $0 + $1.ml } }
+    }
+
+    /// Logged plus other apps' water per day; days with neither (0 ml) are absent.
+    public static func byDay(intakes: [LocalDay: [FluidIntake]], otherAppsMl: [LocalDay: Double]) -> [LocalDay: Double] {
+        loggedMl(intakes).merging(otherAppsMl, uniquingKeysWith: +).filter { $0.value > 0 }
+    }
+}
+
 // MARK: - Fluid rule
 
 /// Which diary foods count as fluid: liquids that aren't mostly fat (milk and juice count, oil and cream liqueur

@@ -76,17 +76,20 @@ struct IntentActions {
         return try "Added \(Int(kcal.rounded())) kcal to \(slot.name). \(remainingSentence())"
     }
 
-    /// Logs water (ml) for today.
+    /// Logs plain water (ml) for today; the reply gives today's hydration (every drink) against the hydration goal.
     func logWater(ml: Double) async throws -> String {
         environment.refreshToday()
-        guard let water = environment.water, let profiles = environment.profiles else { throw Failure.databaseUnavailable }
+        guard let water = environment.water, environment.hydration != nil, environment.profiles != nil else {
+            throw Failure.databaseUnavailable
+        }
         guard ml > 0, ml.isFinite, ml <= 5000 else { throw Failure.invalidAmount }
         try water.add(ml: ml, day: environment.today)
         await finishWrite()
-        let other = (try? environment.dailyMetrics?.metrics(on: environment.today)?.waterMl) ?? 0
-        let total = try water.totalMl(for: environment.today) + other
-        let goal = try profiles.profile().waterGoalMl
-        return "Logged \(Int(ml.rounded())) ml of water. \(Int(total.rounded())) of \(Int(goal.rounded())) ml today."
+        guard let progress = try WaterProgress.read(on: environment.today, environment: environment) else {
+            throw Failure.databaseUnavailable
+        }
+        let total = Int(progress.totalMl.rounded()), goal = Int(progress.goalMl.rounded())
+        return "Logged \(Int(ml.rounded())) ml of water. \(total) of \(goal) ml today."
     }
 
     /// Today's remaining energy against the target; `remainingKcal` is nil without a target.
