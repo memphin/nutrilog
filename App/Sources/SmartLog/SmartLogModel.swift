@@ -197,7 +197,8 @@ final class SmartLogModel {
     /// Logs every line into `slotID`. Local foods are logged as themselves; an estimate becomes a food of its own
     /// (reusing one made from an identical earlier estimate), so the entry keeps its amount: tapping it edits the
     /// weight and the nutrients follow, and the meal can be saved as a meal.
-    func log(slotID: String, day: LocalDay, in environment: AppEnvironment) throws {
+    /// With `planned`, the lines go to the meal plan instead (still saving estimated foods, so the plan can be confirmed).
+    func log(slotID: String, day: LocalDay, planned: Bool = false, in environment: AppEnvironment) throws {
         guard canLog, let diary = environment.diary, let foods = environment.foods else { return }
         var items: [DiaryRepository.LogItem] = []
         var estimatedFoods: [Food]?
@@ -216,7 +217,10 @@ final class SmartLogModel {
                 try items.append(.init(food: foods.localCopy(of: bundled), quantity: .base(grams)))
             }
         }
-        if !items.isEmpty {
+        guard !items.isEmpty else { return }
+        if planned {
+            try environment.mealPlan?.planAll(items, slotID: slotID, day: day)
+        } else {
             try diary.logAll(items, slotID: slotID, day: day)
         }
     }
@@ -263,13 +267,12 @@ final class SmartLogModel {
         guard let search = environment.search, let foods = environment.foods else { throw MealEstimateError.noFood }
         let matcher = OnDeviceMealMatcher(search: search, foods: foods)
         let described = !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        let match: OnDeviceMealMatcher.Match
-        if described {
-            match = try matcher.match(text: text)
+        let match: OnDeviceMealMatcher.Match = if described {
+            try matcher.match(text: text)
         } else if let jpeg {
-            match = try await matcher.match(labels: environment.imageLabeler.labels(jpeg: jpeg))
+            try await matcher.match(labels: environment.imageLabeler.labels(jpeg: jpeg))
         } else {
-            match = .init()
+            .init()
         }
         guard !match.lines.isEmpty else { throw OnDeviceError.nothingMatched }
         var notice = described

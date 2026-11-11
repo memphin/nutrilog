@@ -65,7 +65,7 @@ public extension FoodRepository {
             let stamp = Timestamp.string(now)
             for id in ids {
                 guard var removed = try Food.fetchOne(db, key: id), removed.deletedAt == nil else { throw PersistenceError.notFound(id) }
-                for table in ["diary_entry", "recipe_ingredient"] {
+                for table in ["diary_entry", "planned_entry", "recipe_ingredient"] {
                     try db.execute(
                         sql: "UPDATE \(table) SET food_id = ?, updated_at = ?, revision = revision + 1 WHERE food_id = ?",
                         arguments: [keepID, stamp, id],

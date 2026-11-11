@@ -6,8 +6,11 @@ import SwiftUI
 /// Choose an amount (base unit or a serving) with a live nutrient preview, then log or save (backlog #8).
 struct QuantitySheet: View {
     enum Mode {
-        case log(slotID: String, day: LocalDay)
+        /// Logs the food, or adds it to the meal plan when `planned`.
+        case log(slotID: String, day: LocalDay, planned: Bool = false)
         case edit(DiaryEntry)
+        /// Changes the amount of a planned food.
+        case editPlanned(PlannedEntry)
     }
 
     let detail: FoodDetail
@@ -135,7 +138,7 @@ struct QuantitySheet: View {
                 }
             }
         }
-        .navigationTitle(isEditing ? "Edit amount" : "Log food")
+        .navigationTitle(isEditing ? (isPlanEdit ? "Edit planned amount" : "Edit amount") : (isPlanning ? "Plan food" : "Log food"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if isEditing {
@@ -150,7 +153,7 @@ struct QuantitySheet: View {
                 }
             }
             ToolbarItem(placement: .confirmationAction) {
-                Button(isEditing ? "Save" : "Log") { commit() }
+                Button(isEditing ? "Save" : (isPlanning ? "Plan" : "Log")) { commit() }
                     .disabled(quantity == nil || (quantity?.baseAmount ?? 0) <= 0)
             }
         }
@@ -165,7 +168,21 @@ struct QuantitySheet: View {
     }
 
     private var isEditing: Bool {
-        if case .edit = mode {
+        switch mode {
+        case .edit, .editPlanned: true
+        case .log: false
+        }
+    }
+
+    private var isPlanning: Bool {
+        if case let .log(_, _, planned) = mode {
+            return planned
+        }
+        return false
+    }
+
+    private var isPlanEdit: Bool {
+        if case .editPlanned = mode {
             return true
         }
         return false
@@ -178,22 +195,28 @@ struct QuantitySheet: View {
     private func prefill() {
         isFavorite = food.isFavorite
         switch mode {
-        case let .log(slot, _):
+        case let .log(slot, _, _):
             slotID = slot
             let initial = Self.initialLogQuantity(detail)
             apply(initial.quantity, servingID: initial.servingID)
         case let .edit(entry):
-            slotID = entry.mealSlotID
-            // Restore "2 × slice" when the label matches a serving; otherwise show the base amount.
-            if let label = entry.servingLabel,
-               let serving = detail.servings.first(where: { label.hasSuffix("× \($0.label)") }), serving.grams > 0
-            {
-                apply(.servings(count: entry.grams / serving.grams, serving: serving.size), servingID: serving.id)
-            } else {
-                apply(.base(entry.grams))
-            }
+            restore(slotID: entry.mealSlotID, grams: entry.grams, servingLabel: entry.servingLabel)
+        case let .editPlanned(entry):
+            restore(slotID: entry.mealSlotID, grams: entry.grams, servingLabel: entry.servingLabel)
         }
         amountFocused = true
+    }
+
+    /// Restores "2 × slice" when the label matches a serving; otherwise shows the base amount.
+    private func restore(slotID slot: String, grams: Double, servingLabel: String?) {
+        slotID = slot
+        if let label = servingLabel,
+           let serving = detail.servings.first(where: { label.hasSuffix("× \($0.label)") }), serving.grams > 0
+        {
+            apply(.servings(count: grams / serving.grams, serving: serving.size), servingID: serving.id)
+        } else {
+            apply(.base(grams))
+        }
     }
 
     private func apply(_ quantity: Quantity, servingID: String? = nil) {
@@ -220,10 +243,17 @@ struct QuantitySheet: View {
         guard let quantity, let diary = environment.diary else { return }
         do {
             switch mode {
-            case let .log(_, day):
-                try diary.log(food: food, quantity: quantity, servingID: selectedServing?.id, slotID: slotID, day: day)
+            case let .log(_, day, planned):
+                if planned {
+                    guard let plan = environment.mealPlan else { return }
+                    try plan.plan(food: food, quantity: quantity, slotID: slotID, day: day)
+                } else {
+                    try diary.log(food: food, quantity: quantity, servingID: selectedServing?.id, slotID: slotID, day: day)
+                }
             case let .edit(entry):
                 try diary.updateQuantity(entryID: entry.id, quantity: quantity)
+            case let .editPlanned(entry):
+                try environment.mealPlan?.updateQuantity(plannedID: entry.id, quantity: quantity)
             }
             onDone()
         } catch {
