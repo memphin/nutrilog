@@ -28,7 +28,9 @@ renamed **Hydration**.
   `fluid_ml = grams` (for a liquid food `grams` is ml; for a food forced on with a solid base unit, grams are taken as
   ml). Quick-add diary entries (no food) have NULL. Editing an entry's amount scales `fluid_ml` proportionally.
 - Backfill: existing active and deleted entries whose food has `is_liquid = 1` and `fat_g_100 <= 50` get
-  `fluid_ml = grams`. Entries whose food was deleted stay NULL.
+  `fluid_ml = grams`, also when the food was soft-deleted later (a logged drink stays a drink, like its saved
+  nutrients). Entries whose food row is gone (`food_id` NULL) stay NULL. Importing an export from before this
+  change re-runs these backfills, like the importer re-runs earlier data repairs.
 - `food.counts_as_fluid INTEGER` — NULL automatic, 1 always, 0 never.
 - `caffeine_entry.ml REAL` — preset `servingMl` at log time; optional for custom amounts. Backfill from `drink_id`
   via the preset table (Swift-coded, since presets live in Core).
