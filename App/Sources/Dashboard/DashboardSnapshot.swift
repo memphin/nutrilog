@@ -20,8 +20,8 @@ struct DashboardData: Equatable {
     /// Today's diary totals.
     var totals: Nutrients = .zero
     var target: Target?
-    /// The weight each day of the history window's hydration goal uses: the latest stored trend on or before the
-    /// day, however old (`HydrationGoalResolver.trendsKg(in:from:)`).
+    /// The weight each day of the history window's hydration goal uses: the latest weight trend on or before the
+    /// day, however old (`HydrationGoalResolver.trendsKg(in:environment:)`).
     var weightTrends: [LocalDay: Double] = [:]
     /// The fixed hydration goal, used when `waterGoalMode` is `.fixed`.
     var waterGoalMl: Double = 2500
@@ -79,7 +79,7 @@ struct WaterProgress: Equatable {
         guard let hydration = environment.hydration, let profiles = environment.profiles else { return nil }
         let logged = try HydrationTotals.loggedMl(hydration.intakes(in: day ... day))[day] ?? 0
         let other = (try? environment.dailyMetrics?.metrics(on: day)?.waterMl) ?? 0
-        let trends = HydrationGoalResolver.trendsKg(in: day ... day, from: environment.dailyMetrics)
+        let trends = HydrationGoalResolver.trendsKg(in: day ... day, environment: environment)
         let goal = try HydrationGoalResolver.goalMl(on: day, profile: profiles.profile(), trendKg: trends[day])
         return WaterProgress(loggedMl: logged, otherAppsMl: other, goalMl: goal)
     }

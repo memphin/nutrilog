@@ -43,7 +43,10 @@ renamed **Hydration**.
   `hydrationBehindMarginMl` (500, range 250–1000, step 50), `hydrationRemindersEnabled` (false).
 - Bedtime: the existing `caffeineBedtimeMinutes` key becomes the app's one bedtime (no data move); it is edited in
   both Caffeine and Hydration settings.
-- Goal weight: the latest `daily_metrics.weight_trend_kg` on or before the day.
+- Goal weight: the latest `daily_metrics.weight_trend_kg` on or before the day; for a day with none (e.g. weight
+  logged only in Vitalion, without Apple Health), the weight trend computed from the weigh-ins
+  (`StatsLoader.dayWeights` + `WeightTrend.trendByDay`, as the weight screens do). No `daily_metrics` rows are
+  created for it. One lookup (`HydrationGoalResolver.trendsKg`) serves every surface.
 - Export/import include the new columns and settings.
 
 ## 2. Core logic (`Packages/Core/Sources/Core/Hydration.swift`, pure)

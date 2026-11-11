@@ -30,7 +30,7 @@ struct HydrationTileTests {
     }
 
     /// Today's dashboard data: the drinks, other apps' water and the weight trend, stored on `trendDay` (default
-    /// today) and carried forward to today as `HydrationGoalResolver.trendsKg(in:from:)` reads it.
+    /// today) and carried forward to today as `HydrationGoalResolver.trendsKg(in:environment:)` reads it.
     func data(
         _ intakes: [FluidIntake], otherAppsMl: Double? = nil, trendKg: Double? = nil, trendDay: LocalDay? = nil,
     ) -> DashboardData {
@@ -279,9 +279,45 @@ struct HydrationTileModelTests {
 
         // Settings → Hydration reads the weight and the goal the same way.
         let today = env.today
-        let settingsTrendKg = HydrationGoalResolver.trendsKg(in: today ... today, from: env.dailyMetrics)[today]
+        let settingsTrendKg = HydrationGoalResolver.trendsKg(in: today ... today, environment: env)[today]
         #expect(settingsTrendKg == 80)
         let profile = try #require(env.profiles).profile()
         #expect(HydrationGoalResolver.goalMl(on: today, profile: profile, trendKg: settingsTrendKg) == model.snapshot.water.goalMl)
+    }
+
+    @Test func `a weight logged in Vitalion without Apple Health sets the goal, on the tile and in Settings`() async throws {
+        let env = AppEnvironment.preview(clock: ManualClock().appClock)
+        let today = env.today
+        #expect(try #require(env.dailyMetrics).metrics(on: today) == nil) // no Health row, so no stored trend
+
+        let model = DashboardModel(environment: env)
+        let task = Task { await model.observe() }
+        defer { task.cancel() }
+        #expect(await waitUntil { model.snapshot.water.goalMl == HydrationGoal.fallbackMl })
+
+        // Logged while Today is open: the tile follows.
+        try #require(env.weights).add(kg: 80, measuredAt: today.startDate().addingTimeInterval(7 * 3600))
+        #expect(await waitUntil { model.snapshot.water.goalMl == 2400 })
+        #expect(model.hydrationDay(at: model.now).goalMl == 2400)
+
+        // Settings → Hydration, the widget and Siri read the same weight and goal.
+        let settingsTrendKg = HydrationGoalResolver.trendsKg(in: today ... today, environment: env)[today]
+        #expect(settingsTrendKg == 80)
+        let profile = try #require(env.profiles).profile()
+        #expect(HydrationGoalResolver.goalMl(on: today, profile: profile, trendKg: settingsTrendKg) == 2400)
+        #expect(try WaterProgress.read(on: today, environment: env)?.goalMl == 2400)
+        // Nothing was written to daily_metrics.
+        #expect(try #require(env.dailyMetrics).metrics(on: today) == nil)
+    }
+
+    @Test func `a stored trend wins over the weights; days before it use the weights`() throws {
+        let env = AppEnvironment.preview(clock: ManualClock().appClock)
+        let today = env.today, yesterday = env.today.adding(days: -1)
+        try #require(env.weights).add(kg: 70, measuredAt: yesterday.startDate().addingTimeInterval(7 * 3600))
+        let metrics = try #require(env.dailyMetrics)
+        _ = try metrics.upsert([DailyHealthMetrics(day: today, weightKg: 90)])
+        _ = try metrics.setWeightTrends([today: 90])
+        let trends = HydrationGoalResolver.trendsKg(in: yesterday ... today, environment: env)
+        #expect(trends == [yesterday: 70, today: 90])
     }
 }

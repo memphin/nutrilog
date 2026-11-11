@@ -69,7 +69,7 @@ struct MetricChartView: View {
         let days = range.days(endingOn: environment.today)
         dayGoals = [:]
         if metric == .water, let profile = try? environment.profiles?.profile() {
-            let trends = HydrationGoalResolver.trendsKg(in: days, from: environment.dailyMetrics)
+            let trends = HydrationGoalResolver.trendsKg(in: days, environment: environment)
             dayGoals = ChartBuilder.hydrationGoals(in: days, profile: profile, trendsKg: trends)
             goal = dayGoals[environment.today]
         }

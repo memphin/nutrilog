@@ -94,6 +94,7 @@ struct HydrationReminderServiceTests {
             metrics: #require(env.dailyMetrics),
             profiles: #require(env.profiles),
             water: #require(env.water),
+            weights: #require(env.weights),
             scheduler: scheduler ?? self.scheduler,
             clock: clock.appClock,
             calendar: calendar,
@@ -200,6 +201,22 @@ struct HydrationReminderServiceTests {
         try drink(1500, at: at(12))
         let expected = RecordingHydrationReminder.Call.schedule(
             at: at(15), title: "Time for a drink", body: "No drink since 12:00 · 1,500 of 2,500 ml", actionTitle: "+ 250 ml",
+        )
+        #expect(await waitUntil { scheduler.scheduled.last == expected })
+    }
+
+    @Test func `a weight logged in Vitalion without Apple Health sets the goal`() async throws {
+        let service = try makeService()
+        service.start()
+        defer { service.stop() }
+        try drink(2000, at: at(11))
+        #expect(await waitUntil { scheduler.scheduled.last == .schedule(
+            at: at(14), title: "Time for a drink", body: "No drink since 11:00 · 2,000 of 2,500 ml", actionTitle: "+ 250 ml",
+        ) })
+
+        try #require(env.weights).add(kg: 80, measuredAt: at(7))
+        let expected = RecordingHydrationReminder.Call.schedule(
+            at: at(14), title: "Time for a drink", body: "No drink since 11:00 · 2,000 of 2,400 ml", actionTitle: "+ 250 ml",
         )
         #expect(await waitUntil { scheduler.scheduled.last == expected })
     }

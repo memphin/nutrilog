@@ -113,14 +113,40 @@ struct HydrationSettings: Equatable {
 // MARK: - Goal
 
 /// The day's hydration goal (spec §1): 30 ml/kg of the latest weight trend on or before the day, however old (weight
-/// mode), or the fixed amount. The one goal lookup: Today's tile and detail, Settings and the reminders all read the
-/// weight with `trendsKg(in:from:)` and the goal with `goalMl`, so they always agree.
+/// mode), or the fixed amount. The one goal lookup: Today's tile and detail, Settings, the reminders, the widget, Siri
+/// and Trends all read the weight with `trendsKg` and the goal with `goalMl`, so they always agree.
 enum HydrationGoalResolver {
     /// The weight each day's goal uses: the latest stored trend on or before the day, also one from before `days`
-    /// (`DailyMetricsRepository.weightTrends(in:)`). Days before the first trend are absent; so is everything when
-    /// the trends can't be read (the goal then falls back like without a weight).
-    static func trendsKg(in days: ClosedRange<LocalDay>, from metrics: DailyMetricsRepository?) -> [LocalDay: Double] {
-        (try? metrics?.weightTrends(in: days)) ?? [:]
+    /// (`DailyMetricsRepository.weightTrends(in:)`, kept on Apple Health's rows). A day without a stored trend — e.g.
+    /// every day for someone who logs weight only in Vitalion — uses the trend computed from the weights instead
+    /// (`StatsLoader.dayWeights`, `WeightTrend.trendByDay`), as every weight screen does. Days before the first weight
+    /// are absent; so is everything when nothing can be read (the goal then falls back like without a weight).
+    static func trendsKg(
+        in days: ClosedRange<LocalDay>, metrics: DailyMetricsRepository?, weights: WeightRepository?, calendar: Calendar = .current,
+    ) -> [LocalDay: Double] {
+        var trends = (try? metrics?.weightTrends(in: days)) ?? [:]
+        var missing: [LocalDay] = []
+        var day = days.lowerBound
+        while day <= days.upperBound {
+            if trends[day] == nil {
+                missing.append(day)
+            }
+            day = day.next
+        }
+        guard !missing.isEmpty,
+              let dayWeights = try? StatsLoader.dayWeights(through: days.upperBound, metrics: metrics, weights: weights, calendar: calendar)
+        else { return trends }
+        let computed = WeightTrend.trendByDay(WeightTrend.samples(dayWeights), through: days.upperBound)
+        for day in missing {
+            trends[day] = computed[day]
+        }
+        return trends
+    }
+
+    /// The same, from the app's repositories.
+    @MainActor
+    static func trendsKg(in days: ClosedRange<LocalDay>, environment: AppEnvironment) -> [LocalDay: Double] {
+        trendsKg(in: days, metrics: environment.dailyMetrics, weights: environment.weights)
     }
 
     /// `trendKg` is the weight trend on or before `day` (nil when none is known: the fallback goal).

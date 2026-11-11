@@ -60,7 +60,7 @@ enum StatsBuilder {
 @MainActor
 enum StatsLoader {
     /// Weights are read from here on, so the trend of any range starts at the first weigh-in.
-    static let historyStart = LocalDay(year: 2000, month: 1, day: 1)!
+    nonisolated static let historyStart = LocalDay(year: 2000, month: 1, day: 1)!
 
     static func load(_ range: ClosedRange<LocalDay>, environment: AppEnvironment, calendar: Calendar = .current) throws -> [DayStats] {
         guard let diary = environment.diary, let profiles = environment.profiles, let dailyMetrics = environment.dailyMetrics,
@@ -78,7 +78,14 @@ enum StatsLoader {
 
     /// Manual and Health weights merged per day, from the first weigh-in through `lastDay`.
     static func dayWeights(through lastDay: LocalDay, environment: AppEnvironment, calendar: Calendar = .current) throws -> [DayWeight] {
-        guard let dailyMetrics = environment.dailyMetrics, let weights = environment.weights, historyStart <= lastDay else { return [] }
+        try dayWeights(through: lastDay, metrics: environment.dailyMetrics, weights: environment.weights, calendar: calendar)
+    }
+
+    /// The same, from the repositories.
+    nonisolated static func dayWeights(
+        through lastDay: LocalDay, metrics: DailyMetricsRepository?, weights: WeightRepository?, calendar: Calendar = .current,
+    ) throws -> [DayWeight] {
+        guard let dailyMetrics = metrics, let weights, historyStart <= lastDay else { return [] }
         let health = try dailyMetrics.metrics(in: historyStart ... lastDay).map(\.metrics)
         let interval = DateInterval(start: historyStart.startDate(calendar: calendar), end: lastDay.next.startDate(calendar: calendar))
         let manual = try weights.entries(in: interval).map {

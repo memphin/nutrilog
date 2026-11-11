@@ -258,7 +258,7 @@ enum ChartBuilder {
         }
     }
 
-    /// Each day's hydration goal (`HydrationGoalResolver`); `trendsKg` from `HydrationGoalResolver.trendsKg(in:from:)`.
+    /// Each day's hydration goal (`HydrationGoalResolver`); `trendsKg` from `HydrationGoalResolver.trendsKg(in:environment:)`.
     static func hydrationGoals(in days: ClosedRange<LocalDay>, profile: Profile, trendsKg: [LocalDay: Double]) -> [LocalDay: Double] {
         var goals: [LocalDay: Double] = [:]
         var day = days.lowerBound

@@ -148,7 +148,7 @@ struct HydrationSettingsView: View {
             fixedGoalMl = profile.waterGoalMl
         }
         let today = environment.today
-        trendKg = HydrationGoalResolver.trendsKg(in: today ... today, from: environment.dailyMetrics)[today]
+        trendKg = HydrationGoalResolver.trendsKg(in: today ... today, environment: environment)[today]
     }
 
     private func saveGoal(mode: HydrationGoalMode, fixedMl: Double) {
