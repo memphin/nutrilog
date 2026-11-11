@@ -380,6 +380,24 @@ struct FoodMergeTests {
         #expect(try f.foods.duplicateGroups().isEmpty)
     }
 
+    @Test func `merge carries a "counts as a drink" choice to a kept food on Automatic`() throws {
+        let f = try Fixture()
+        let keep = try f.makeFood("Shake")
+        var extra = try f.foods.save(FoodDetail(food: Food(name: "Shake", per100: Nutrients(kcal: 80, proteinG: 8, carbsG: 6, fatG: 2))))
+        extra.food.countsAsFluid = false
+        try f.foods.save(extra)
+        #expect(try f.foods.merge(keep: keep.id, remove: [extra.food.id]).food.countsAsFluid == false)
+
+        // The kept food's own choice wins.
+        var chosen = try f.foods.save(FoodDetail(food: Food(name: "Juice", per100: Nutrients(kcal: 45, proteinG: 0, carbsG: 11, fatG: 0))))
+        chosen.food.countsAsFluid = true
+        chosen = try f.foods.save(chosen)
+        var other = try f.foods.save(FoodDetail(food: Food(name: "Juice", per100: Nutrients(kcal: 45, proteinG: 0, carbsG: 11, fatG: 0))))
+        other.food.countsAsFluid = false
+        try f.foods.save(other)
+        #expect(try f.foods.merge(keep: chosen.food.id, remove: [other.food.id]).food.countsAsFluid == true)
+    }
+
     @Test func `merge is all or nothing`() throws {
         let f = try Fixture()
         let keep = try f.makeFood("Milk")

@@ -382,6 +382,7 @@ public struct FoodRepository: Sendable {
                 var revived = detail
                 revived.food.id = existing.id
                 revived.food.isFavorite = existing.isFavorite
+                revived.food.countsAsFluid = existing.countsAsFluid ?? revived.food.countsAsFluid // the user's choice
                 revived.food.deletedAt = nil
                 revived.food.mergedIntoID = nil
                 revived.servings = Self.reusingServingIDs(detail.servings, from: existingDetail.servings)

@@ -153,6 +153,17 @@ struct FoodCopyTests {
         #expect(try f.foods.food(barcode: "3017620422003")?.food.id == first.food.id)
     }
 
+    @Test func `a revived copy keeps its "counts as a drink" choice`() throws {
+        var first = try f.foods.saveCopy(offCopy())
+        first.food.countsAsFluid = false
+        try f.foods.save(first)
+        try f.foods.softDelete(id: first.food.id)
+        f.clock.advance(60)
+        let revived = try f.foods.saveCopy(offCopy(kcal: 540))
+        #expect(revived.food.id == first.food.id)
+        #expect(revived.food.countsAsFluid == false)
+    }
+
     @Test func `linking a barcode bumps the copy and the deleted previous owner`() throws {
         var withoutBarcode = offCopy()
         withoutBarcode.barcodes = []
