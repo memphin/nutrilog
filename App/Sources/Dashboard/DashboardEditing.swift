@@ -24,7 +24,6 @@ struct EditableTile: ViewModifier {
                 return NSItemProvider(object: tile.rawValue as NSString)
             }
             .onDrop(of: [.text], delegate: TileDropDelegate(target: tile, model: model, dragging: $dragging))
-            .modifier(EndsDragOnSessionEnd(dragging: $dragging))
     }
 
     @ViewBuilder private func editingLook(_ content: Content) -> some View {
@@ -61,25 +60,6 @@ struct EditableTile: ViewModifier {
         } else {
             content
                 .accessibilityAction(named: "Edit Today") { model.isEditing = true }
-        }
-    }
-}
-
-/// iOS 27 reports when a drag ends however it ends (dropped, let go in place, cancelled), so the dragged tile never
-/// stays dimmed. Earlier systems rely on the drop delegates alone.
-private struct EndsDragOnSessionEnd: ViewModifier {
-    @Binding var dragging: DashboardTile?
-
-    func body(content: Content) -> some View {
-        if #available(iOS 27.0, *) {
-            content.onDragSessionUpdated { session in
-                if case .ended = session.phase {
-                    dragging = nil
-                    TileDropDelegate.lifted = nil
-                }
-            }
-        } else {
-            content
         }
     }
 }
