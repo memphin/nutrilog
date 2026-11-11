@@ -39,7 +39,7 @@ extension DashboardSnapshot {
     }
 }
 
-/// The flame and day count in a tile's header; nothing when there is no streak.
+/// The bolt and day count in a tile's header; nothing when there is no streak.
 struct StreakBadge: View {
     let streak: Streak
 
@@ -57,7 +57,7 @@ struct StreakBadge: View {
     var body: some View {
         if streak.days > 0 {
             // Green once today counts too; secondary while today is still open.
-            Label(Self.text(streak), systemImage: "flame.fill")
+            Label(Self.text(streak), systemImage: "bolt.fill")
                 .labelStyle(.titleAndIcon)
                 .font(NL.Typography.label.monospacedDigit())
                 .foregroundStyle(streak.includesToday ? GoalColor.color(.reached) : .secondary)
