@@ -139,6 +139,57 @@ struct FoodEditorModelTests {
         model.caffeine = "lots"
         #expect(!model.canSave)
     }
+
+    private func filled(name: String, liquid: Bool, fat: String) -> FoodEditorModel {
+        let model = FoodEditorModel(energyUnit: .kcal, initialName: name)
+        model.isLiquid = liquid
+        model.energy = "64"
+        model.protein = "3.4"
+        model.carbs = "4.8"
+        model.fat = fat
+        return model
+    }
+
+    @Test func `countsAsDrinkAutomaticDescribesRule`() {
+        let milk = filled(name: "Milk", liquid: true, fat: "3.5")
+        #expect(milk.countsAsFluid == nil)
+        #expect(milk.automaticCountsAsDrinkLabel == "Automatic (counts)")
+
+        let oil = filled(name: "Olive oil", liquid: true, fat: "100")
+        #expect(oil.automaticCountsAsDrinkLabel == "Automatic (doesn't count)")
+
+        // Follows the form as edited: a solid doesn't count, and neither does a liquid over the fat limit.
+        milk.isLiquid = false
+        #expect(milk.automaticCountsAsDrinkLabel == "Automatic (doesn't count)")
+        milk.isLiquid = true
+        milk.fat = "51"
+        #expect(milk.automaticCountsAsDrinkLabel == "Automatic (doesn't count)")
+        milk.fat = "50"
+        #expect(milk.automaticCountsAsDrinkLabel == "Automatic (counts)")
+    }
+
+    @Test func `savingOverridePersists`() throws {
+        let env = AppEnvironment.preview(clock: ManualClock().appClock)
+        let foods = try #require(env.foods)
+
+        let model = filled(name: "Soup", liquid: false, fat: "2")
+        model.countsAsFluid = true
+        let saved = try #require(try model.save(to: foods))
+        #expect(try foods.detail(id: saved.food.id)?.food.countsAsFluid == true)
+
+        let stored = try #require(try foods.detail(id: saved.food.id))
+        let editor = FoodEditorModel(energyUnit: .kcal, editing: stored)
+        #expect(editor.countsAsFluid == true)
+        editor.countsAsFluid = false
+        try editor.save(to: foods)
+        #expect(try foods.detail(id: saved.food.id)?.food.countsAsFluid == false)
+
+        let edited = try #require(try foods.detail(id: saved.food.id))
+        let reopened = FoodEditorModel(energyUnit: .kcal, editing: edited)
+        reopened.countsAsFluid = nil
+        try reopened.save(to: foods)
+        #expect(try foods.detail(id: saved.food.id)?.food.countsAsFluid == nil)
+    }
 }
 
 @MainActor

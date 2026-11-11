@@ -94,6 +94,7 @@ extension LocalDay: @retroactive DatabaseValueConvertible {
 extension Sex: @retroactive DatabaseValueConvertible {}
 extension ActivityLevel: @retroactive DatabaseValueConvertible {}
 extension GoalMode: @retroactive DatabaseValueConvertible {}
+extension HydrationGoalMode: @retroactive DatabaseValueConvertible {}
 
 // MARK: - Errors
 

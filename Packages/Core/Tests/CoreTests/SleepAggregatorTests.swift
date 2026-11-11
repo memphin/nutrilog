@@ -238,6 +238,39 @@ struct SleepAggregatorTests {
         #expect(nights[night.next]?.asleepMinutes == 420)
         #expect(nights[day("2026-11-12")] == nil)
     }
+
+    @Test func `woke at is the end of the last asleep sample before noon`() throws {
+        let samples = [
+            sleep(.asleepCore, "2026-11-08 23:00", "2026-11-09 06:40"),
+            sleep(.awake, "2026-11-09 06:40", "2026-11-09 06:50"),
+        ]
+        let summary = try #require(SleepAggregator.aggregate(samples: samples, for: night, calendar: zagreb))
+        #expect(summary.wokeAt == time("2026-11-09 06:40")) // the awake sample after it does not count
+    }
+
+    @Test func `an afternoon nap does not move woke at`() throws {
+        let samples = [
+            sleep(.asleepCore, "2026-11-08 23:00", "2026-11-09 06:40"),
+            sleep(.awake, "2026-11-09 06:40", "2026-11-09 06:50"),
+            sleep(.asleepCore, "2026-11-09 14:00", "2026-11-09 14:30"),
+        ]
+        let summary = try #require(SleepAggregator.aggregate(samples: samples, for: night, calendar: zagreb))
+        #expect(summary.wokeAt == time("2026-11-09 06:40"))
+    }
+
+    @Test func `no asleep samples means no woke at`() throws {
+        let phone = sleep(.inBed, "2026-11-08 22:00", "2026-11-09 08:00", HealthFixtures.iPhone)
+        let summary = try #require(SleepAggregator.aggregate(samples: [phone], for: night, calendar: zagreb))
+        #expect(summary.wokeAt == nil)
+    }
+
+    @Test func `apply sleep copies woke at`() {
+        let wokeAt = time("2026-11-09 06:40")
+        let summary = SleepSummary(night: night, source: HealthFixtures.watch, asleep: 27600, inBed: 27600, wokeAt: wokeAt)
+        var metrics = DailyHealthMetrics(day: night)
+        metrics.apply(sleep: summary)
+        #expect(metrics.wokeAt == wokeAt)
+    }
 }
 
 struct HealthSourceTests {

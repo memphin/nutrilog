@@ -235,18 +235,24 @@ private struct CaffeineCurveChart: View {
 // MARK: - Entry sheet
 
 /// A drink at another time, or a custom amount: preset or custom, mg, time (since yesterday morning).
-private struct CaffeineEntrySheet: View {
+struct CaffeineEntrySheet: View {
     let model: DashboardModel
     @Environment(\.dismiss) private var dismiss
     @State private var drinkID: String? = CaffeineDrink.espresso.id
     @State private var mgText = Format.field(CaffeineDrink.espresso.mg)
     @State private var name = ""
+    @State private var mlText = ""
     @State private var time = Date()
 
     static let maximumMg = 1000.0
 
     private var mg: Double? {
         Format.number(mgText).flatMap { $0 > 0 && $0 <= Self.maximumMg ? $0 : nil }
+    }
+
+    /// The optional "Volume (ml)" field: nil when empty, not a number, or not positive.
+    static func volumeMl(_ text: String) -> Double? {
+        Format.number(text).flatMap { $0 > 0 ? $0 : nil }
     }
 
     var body: some View {
@@ -270,6 +276,11 @@ private struct CaffeineEntrySheet: View {
                                 .multilineTextAlignment(.trailing)
                             Text("mg").foregroundStyle(.secondary)
                         }
+                    }
+                    LabeledContent("Volume (ml)") {
+                        TextField("Optional", text: $mlText)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
                     }
                     DatePicker("Time", selection: $time, in: range, displayedComponents: [.date, .hourAndMinute])
                 } footer: {
@@ -301,6 +312,7 @@ private struct CaffeineEntrySheet: View {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         model.addCaffeine(
             mg: mg, at: min(time, model.now), drinkID: preset?.id, name: preset?.name ?? (trimmed.isEmpty ? nil : trimmed),
+            ml: Self.volumeMl(mlText),
         )
         dismiss()
     }

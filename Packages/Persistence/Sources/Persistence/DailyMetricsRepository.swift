@@ -17,6 +17,8 @@ public struct DailyMetricsRecord: Codable, Hashable, Sendable, TimestampedRecord
     public var sleepDeepMin: Int?
     public var sleepRemMin: Int?
     public var sleepAwakeMin: Int?
+    /// When the user woke up, from the night's sleep (see `DailyHealthMetrics.wokeAt`).
+    public var wokeAt: Date?
     public var weightKg: Double?
     public var bodyFatPct: Double?
     /// EMA weight trend, computed by Core (phase 3); kept as is when Health values are refreshed.
@@ -42,6 +44,7 @@ public struct DailyMetricsRecord: Codable, Hashable, Sendable, TimestampedRecord
         case sleepDeepMin = "sleep_deep_min"
         case sleepRemMin = "sleep_rem_min"
         case sleepAwakeMin = "sleep_awake_min"
+        case wokeAt = "woke_at"
         case weightKg = "weight_kg"
         case bodyFatPct = "body_fat_pct"
         case weightTrendKg = "weight_trend_kg"
@@ -66,6 +69,7 @@ public struct DailyMetricsRecord: Codable, Hashable, Sendable, TimestampedRecord
         sleepDeepMin = metrics.sleepDeepMin
         sleepRemMin = metrics.sleepRemMin
         sleepAwakeMin = metrics.sleepAwakeMin
+        wokeAt = metrics.wokeAt
         weightKg = metrics.weightKg
         bodyFatPct = metrics.bodyFatPct
         restingHR = metrics.restingHR
@@ -82,7 +86,7 @@ public struct DailyMetricsRecord: Codable, Hashable, Sendable, TimestampedRecord
         DailyHealthMetrics(
             day: day, steps: steps, activeKcal: activeKcal, basalKcal: basalKcal,
             sleepAsleepMin: sleepAsleepMin, sleepInBedMin: sleepInBedMin, sleepCoreMin: sleepCoreMin,
-            sleepDeepMin: sleepDeepMin, sleepRemMin: sleepRemMin, sleepAwakeMin: sleepAwakeMin,
+            sleepDeepMin: sleepDeepMin, sleepRemMin: sleepRemMin, sleepAwakeMin: sleepAwakeMin, wokeAt: wokeAt,
             weightKg: weightKg, bodyFatPct: bodyFatPct, restingHR: restingHR, hrvSDNNms: hrvSDNNms, waterMl: waterMl,
             sources: DailyHealthMetrics.sources(fromJSON: sourceSummary),
         )
@@ -107,11 +111,16 @@ public struct DailyMetricsRepository: Sendable {
         let now = clock.now()
         return try database.writer.write { db in
             var changed = 0
-            for item in metrics {
+            for var item in metrics {
                 guard var existing = try DailyMetricsRecord.fetchOne(db, key: item.day) else {
                     try DailyMetricsRecord(item, fetchedAt: now).insert(db)
                     changed += 1
                     continue
+                }
+                // Stored timestamps keep milliseconds and don't parse back bit for bit: a wake-up time that differs
+                // from the stored one only by that rounding is the same, or every refresh would look like a change.
+                if let woke = item.wokeAt, let stored = existing.wokeAt, abs(woke.timeIntervalSince(stored)) < 0.002 {
+                    item.wokeAt = stored
                 }
                 if existing.metrics == item {
                     existing.fetchedAt = now
@@ -155,6 +164,36 @@ public struct DailyMetricsRepository: Sendable {
         }
     }
 
+    /// The latest stored weight trend on or before `day` (e.g. the body weight for the hydration goal), or nil when
+    /// there is none yet.
+    public func weightTrendKg(onOrBefore day: LocalDay) throws -> Double? {
+        try database.reader.read { db in try Self.weightTrendKg(db, onOrBefore: day) }
+    }
+
+    /// For each day in `days`, the latest stored weight trend on or before it. Days before the first trend are absent.
+    public func weightTrends(in days: ClosedRange<LocalDay>) throws -> [LocalDay: Double] {
+        try database.reader.read { db in
+            var trends: [LocalDay: Double] = [:]
+            for row in try Row.fetchAll(db, sql: """
+            SELECT day, weight_trend_kg FROM daily_metrics
+            WHERE weight_trend_kg IS NOT NULL AND day >= ? AND day <= ?
+            """, arguments: [days.lowerBound, days.upperBound]) {
+                trends[row["day"]] = row["weight_trend_kg"]
+            }
+            var result: [LocalDay: Double] = [:]
+            var latest = try Self.weightTrendKg(db, onOrBefore: days.lowerBound)
+            var day = days.lowerBound
+            while day <= days.upperBound {
+                latest = trends[day] ?? latest
+                if let latest {
+                    result[day] = latest
+                }
+                day = day.next
+            }
+            return result
+        }
+    }
+
     public func metrics(on day: LocalDay) throws -> DailyMetricsRecord? {
         try database.reader.read { db in try DailyMetricsRecord.fetchOne(db, key: day) }
     }
@@ -194,6 +233,12 @@ public struct DailyMetricsRepository: Sendable {
     /// Empties the cache (it can always be rebuilt from Health).
     public func deleteAll() throws {
         try database.writer.write { db in _ = try DailyMetricsRecord.deleteAll(db) }
+    }
+
+    private static func weightTrendKg(_ db: Database, onOrBefore day: LocalDay) throws -> Double? {
+        try Double.fetchOne(db, sql: """
+        SELECT weight_trend_kg FROM daily_metrics WHERE weight_trend_kg IS NOT NULL AND day <= ? ORDER BY day DESC LIMIT 1
+        """, arguments: [day])
     }
 
     private static func request(_ days: ClosedRange<LocalDay>) -> QueryInterfaceRequest<DailyMetricsRecord> {

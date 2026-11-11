@@ -100,6 +100,13 @@ private struct DashboardContent: View {
             } message: { Text(model.errorMessage ?? "") }
         }
         .task(id: environment.today) { await model.observe() }
+        // A tap on the hydration reminder: show that tile's detail (also when Today opens because of it).
+        .onChange(of: environment.dashboardTileRequest, initial: true) { _, tile in
+            guard let tile else { return }
+            environment.dashboardTileRequest = nil
+            model.isEditing = false
+            path = [tile]
+        }
         .task(id: environment.dataGeneration) {
             model.reloadSettings()
             model.undo.dismiss()
@@ -135,8 +142,8 @@ struct DashboardTileView: View {
     let open: () -> Void
 
     var body: some View {
-        if tile == .caffeine {
-            // The amount in the body changes by the minute.
+        if tile == .caffeine || tile == .water {
+            // The caffeine in the body and where the day's hydration stands change by the minute.
             TimelineView(.periodic(from: .now, by: 60)) { _ in
                 card(now: model.now)
             }
@@ -166,7 +173,7 @@ struct DashboardTileView: View {
                 TileContent(tile: tile, model: model, now: now)
                 if let sparkline {
                     SparklineView(sparkline: sparkline, tint: tile == .totalEnergy ? .orange : NL.Palette.trend) {
-                        snapshot.goalColor(of: tile, value: $0.value)
+                        snapshot.goalColor(of: tile, value: $0.value, day: $0.day)
                     }
                 }
             } else {
@@ -305,7 +312,7 @@ private struct TileContent: View {
                 comparison: snapshot.hrv, unit: "ms", today: snapshot.today, showsDeviation: true, color: snapshot.baselineColor(of: .hrv),
             )
         case .water:
-            WaterTileContent(water: snapshot.water, sizes: model.waterSizes) { model.addWater(ml: $0) }
+            WaterTileContent(day: model.hydrationDay(at: now), sizes: model.waterSizes) { model.addWater(ml: $0) }
         case .caffeine:
             CaffeineTileContent(
                 status: model.caffeineStatus(at: now), drinks: snapshot.caffeineSettings.quickAddDrinks,
@@ -430,35 +437,28 @@ private struct BaselineContent: View {
     }
 }
 
+/// The Hydration tile (spec §3): every drink of the day against the goal, coloured by where the day stands; water
+/// and other drinks; today's drinks on the strip; quick-add buttons for plain water.
 struct WaterTileContent: View {
-    let water: WaterProgress
+    let day: HydrationDay
     let sizes: [Int]
     let add: (Int) -> Void
 
     var body: some View {
-        // Red far below the goal, orange close to it, green once it is reached (#64).
-        let goalColor = GoalColor.water(water.totalMl, goalMl: water.goalMl)
+        // Green at the goal, orange behind pace or during a long gap without a drink, plain on pace.
+        let color = GoalColor.hydration(day.status)
         VStack(alignment: .leading, spacing: NL.Spacing.s) {
             HStack(alignment: .firstTextBaseline) {
-                ValueText(
-                    water.totalMl.formatted(.number.precision(.fractionLength(0))), unit: "of \(DashboardFormat.ml(water.goalMl))",
-                    color: goalColor,
-                )
+                ValueText(HydrationTileText.amount(day), unit: HydrationTileText.goal(day), color: color)
                 Spacer()
-                if water.isGoalReached {
+                if day.status == .goalReached {
                     Label("Goal reached", systemImage: "checkmark.circle.fill")
                         .labelStyle(.iconOnly)
-                        .foregroundStyle(goalColor)
+                        .foregroundStyle(color)
                 }
             }
-            ProgressView(value: water.fraction)
-                .tint(goalColor)
-                .accessibilityLabel("Water")
-                .accessibilityValue("\(DisplayRounding.whole(water.totalMl)) of \(DisplayRounding.whole(water.goalMl)) millilitres")
-            if water.otherAppsMl > 0 {
-                Text("Includes \(DashboardFormat.ml(water.otherAppsMl)) from other apps")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
+            Text(HydrationTileText.breakdown(day)).font(.footnote).foregroundStyle(.secondary)
+            HydrationStrip(day: day)
             HStack(spacing: NL.Spacing.s) {
                 ForEach(sizes, id: \.self) { size in
                     Button {

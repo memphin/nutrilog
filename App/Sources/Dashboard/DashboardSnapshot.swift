@@ -12,14 +12,19 @@ struct DashboardData: Equatable {
     var metrics: [DailyMetricsRecord] = []
     /// Manual weights of the history window.
     var manualWeights: [WeightEntry] = []
-    /// Water logged in Vitalion today.
-    var water: [WaterEntry] = []
-    /// Water logged in Vitalion per day over the history window (today included), in ml: the sparkline and the streak.
-    var waterByDay: [LocalDay: Double] = [:]
+    /// Every drink logged in Vitalion (water, diary drinks, caffeine drinks) per day over the history window, today
+    /// included: today's for the tile, the sparkline's last 7 days and the hydration streak.
+    var hydrationIntakes: [LocalDay: [FluidIntake]] = [:]
     /// Today's diary totals.
     var totals: Nutrients = .zero
     var target: Target?
+    /// The weight each day of the history window's hydration goal uses: the latest weight trend on or before the
+    /// day, however old (`HydrationGoalResolver.trendsKg(in:environment:)`).
+    var weightTrends: [LocalDay: Double] = [:]
+    /// The fixed hydration goal, used when `waterGoalMode` is `.fixed`.
     var waterGoalMl: Double = 2500
+    var waterGoalMode: HydrationGoalMode = .weight
+    var hydrationSettings = HydrationSettings.default
     var stepGoal: Int = StepGoal.defaultSteps
     var sleepGoalMin: Int = SleepGoal.defaultMinutes
     /// The profile's goal (lose, maintain, gain): which way the weight should move.
@@ -46,11 +51,18 @@ struct DashboardData: Equatable {
     func weightInterval(calendar: Calendar = .current) -> DateInterval {
         DateInterval(start: window.lowerBound.startDate(calendar: calendar), end: today.next.startDate(calendar: calendar))
     }
+
+    /// The hydration goal of `day` (`HydrationGoalResolver`).
+    func hydrationGoalMl(on day: LocalDay) -> Double {
+        HydrationGoalResolver.goalMl(on: day, mode: waterGoalMode, fixedMl: waterGoalMl, trendKg: weightTrends[day])
+    }
 }
 
-/// Today's water: logged in Vitalion plus other apps' water from Health (FR-46). Vitalion's own Health samples are
-/// already left out of `otherAppsMl`, so nothing is counted twice.
+/// Today's hydration, whatever the time: every drink logged in Vitalion plus other apps' water from Health (FR-46).
+/// Vitalion's own Health samples are already left out of `otherAppsMl`, so nothing is counted twice. Pace, gaps and
+/// status depend on the time: `DashboardSnapshot.hydrationDay(now:calendar:)`.
 struct WaterProgress: Equatable {
+    /// Water, diary drinks and caffeine drinks logged in Vitalion.
     var loggedMl: Double
     var otherAppsMl: Double
     var goalMl: Double
@@ -59,18 +71,43 @@ struct WaterProgress: Equatable {
         loggedMl + otherAppsMl
     }
 
-    /// 0…1 for drawing.
-    var fraction: Double {
-        guard goalMl > 0 else { return 0 }
-        return min(max(totalMl / goalMl, 0), 1)
+    /// `day`'s hydration read straight from the database (widget, Siri): the same total and goal as the tile.
+    @MainActor
+    static func read(on day: LocalDay, environment: AppEnvironment) throws -> WaterProgress? {
+        guard let hydration = environment.hydration, let profiles = environment.profiles else { return nil }
+        let logged = try HydrationTotals.loggedMl(hydration.intakes(in: day ... day))[day] ?? 0
+        let other = (try? environment.dailyMetrics?.metrics(on: day)?.waterMl) ?? 0
+        let trends = HydrationGoalResolver.trendsKg(in: day ... day, environment: environment)
+        let goal = try HydrationGoalResolver.goalMl(on: day, profile: profiles.profile(), trendKg: trends[day])
+        return WaterProgress(loggedMl: logged, otherAppsMl: other, goalMl: goal)
+    }
+}
+
+/// The Hydration tile's texts (spec §3): "1,840 / 2,400 ml" and "1,300 water · 540 drinks", grouped by `locale`.
+/// Water from other apps is water; "drinks" are all the others.
+enum HydrationTileText {
+    /// "1,840".
+    static func amount(_ day: HydrationDay, locale: Locale = .autoupdatingCurrent) -> String {
+        number(day.totalMl, locale)
     }
 
-    var isGoalReached: Bool {
-        goalMl > 0 && totalMl >= goalMl
+    /// "/ 2,400 ml".
+    static func goal(_ day: HydrationDay, locale: Locale = .autoupdatingCurrent) -> String {
+        "/ \(number(day.goalMl, locale)) ml"
     }
 
-    var remainingMl: Double {
-        max(goalMl - totalMl, 0)
+    /// "1,840 / 2,400 ml".
+    static func total(_ day: HydrationDay, locale: Locale = .autoupdatingCurrent) -> String {
+        "\(amount(day, locale: locale)) \(goal(day, locale: locale))"
+    }
+
+    /// "1,300 water · 540 drinks".
+    static func breakdown(_ day: HydrationDay, locale: Locale = .autoupdatingCurrent) -> String {
+        "\(number(day.waterMl + day.otherAppsMl, locale)) water · \(number(day.otherDrinksMl, locale)) drinks"
+    }
+
+    private static func number(_ ml: Double, _ locale: Locale) -> String {
+        ml.formatted(.number.precision(.fractionLength(0)).locale(locale))
     }
 }
 
@@ -128,6 +165,13 @@ struct DashboardSnapshot: Equatable {
     let restingHR: BaselineComparison?
     let hrv: BaselineComparison?
     let water: WaterProgress
+    /// Today's drinks logged in Vitalion, in time order.
+    let hydrationIntakes: [FluidIntake]
+    /// When Apple Health says the user woke up today.
+    let wokeAt: Date?
+    let hydrationSettings: HydrationSettings
+    /// The hydration goal of each sparkline day, from that day's weight trend.
+    let hydrationGoals: [LocalDay: Double]
     let totals: Nutrients
     let target: Target?
     let stepGoal: Int
@@ -160,11 +204,18 @@ struct DashboardSnapshot: Equatable {
             .flatMap { day in day.bodyFatPct.map { BodyFatValue(day: day.day, pct: $0) } }
         restingHR = MetricBaseline.compare(Self.values(rows, \.restingHR), today: data.today)
         hrv = MetricBaseline.compare(Self.values(rows, \.hrvSDNNms), today: data.today)
+        hydrationIntakes = data.hydrationIntakes[data.today] ?? []
         water = WaterProgress(
-            loggedMl: data.water.reduce(0) { $0 + $1.ml },
+            loggedMl: hydrationIntakes.reduce(0) { $0 + $1.ml },
             otherAppsMl: todayMetrics?.waterMl ?? 0,
-            goalMl: data.waterGoalMl,
+            goalMl: data.hydrationGoalMl(on: data.today),
         )
+        wokeAt = todayMetrics?.wokeAt
+        hydrationSettings = data.hydrationSettings
+        hydrationGoals = Dictionary(uniqueKeysWithValues: (0 ..< Sparkline.days).map { offset in
+            let day = data.today.adding(days: -offset)
+            return (day, data.hydrationGoalMl(on: day))
+        })
         totals = data.totals
         target = data.target
         stepGoal = data.stepGoal
@@ -182,6 +233,14 @@ struct DashboardSnapshot: Equatable {
         caffeine = data.caffeine
         caffeineSettings = data.caffeineSettings
         streaks = Self.streaks(data: data, rows: rows)
+    }
+
+    /// Today's hydration at `now`: totals, pace, gaps and status.
+    func hydrationDay(now: Date, calendar: Calendar = .current) -> HydrationDay {
+        HydrationDayBuilder.make(
+            day: today, intakes: hydrationIntakes, otherAppsMl: water.otherAppsMl, wokeAt: wokeAt,
+            settings: hydrationSettings, goalMl: water.goalMl, now: now, calendar: calendar,
+        )
     }
 
     /// Caffeine at `now`: the amount in the body, today's total, the sleep outlook.
@@ -259,6 +318,9 @@ struct TileHistoryRow: Equatable, Identifiable {
     /// nil: no value that day.
     var value: String?
     var detail: String?
+    /// Hydration only: the day's total and that day's goal, which colour the value.
+    var amountMl: Double?
+    var goalMl: Double?
 
     var id: LocalDay {
         day
@@ -271,13 +333,14 @@ enum TileHistory {
 
     /// - Parameters:
     ///   - kcalByDay: diary energy per day (only for `.energy`).
-    ///   - loggedWaterByDay: water logged in Vitalion per day (only for `.water`).
+    ///   - loggedFluidByDay: every drink logged in Vitalion per day — water, diary drinks, caffeine drinks (only
+    ///     for `.water`).
     ///   - caffeineByDay: caffeine per day, quick-adds and diary (only for `.caffeine`).
     static func rows(
         for tile: DashboardTile,
         data: DashboardData,
         kcalByDay: [LocalDay: Double] = [:],
-        loggedWaterByDay: [LocalDay: Double] = [:],
+        loggedFluidByDay: [LocalDay: Double] = [:],
         caffeineByDay: [LocalDay: Double] = [:],
         energyUnit: EnergyUnit = .kcal,
         calendar: Calendar = .current,
@@ -329,15 +392,7 @@ enum TileHistory {
             case .hrv:
                 return TileHistoryRow(day: day, value: row?.hrvSDNNms.map(DashboardFormat.ms))
             case .water:
-                let logged = loggedWaterByDay[day] ?? 0
-                let other = row?.waterMl ?? 0
-                let total = logged + other
-                return TileHistoryRow(
-                    day: day,
-                    value: total > 0 ? DashboardFormat.ml(total) : nil,
-                    detail: other > 0 && logged > 0 ?
-                        "\(DashboardFormat.ml(logged)) in Vitalion, \(DashboardFormat.ml(other)) from other apps" : nil,
-                )
+                return hydrationRow(day, totalMl: (loggedFluidByDay[day] ?? 0) + (row?.waterMl ?? 0), data: data)
             case .caffeine:
                 let mg = caffeineByDay[day] ?? 0
                 return TileHistoryRow(
@@ -348,6 +403,15 @@ enum TileHistory {
                 )
             }
         }
+    }
+
+    /// Every drink plus other apps' water, against that day's own goal: "1,840 ml" "of 2,400 ml".
+    private static func hydrationRow(_ day: LocalDay, totalMl: Double, data: DashboardData) -> TileHistoryRow {
+        guard totalMl > 0 else { return TileHistoryRow(day: day) }
+        let goal = data.hydrationGoalMl(on: day)
+        return TileHistoryRow(
+            day: day, value: DashboardFormat.ml(totalMl), detail: "of \(DashboardFormat.ml(goal))", amountMl: totalMl, goalMl: goal,
+        )
     }
 }
 

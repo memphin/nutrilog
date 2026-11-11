@@ -64,8 +64,14 @@ final class AppEnvironment {
     var selectedTab: AppTab = .today
     /// A day the diary should show next; the diary clears it once applied. Set through `openDiary(on:)`.
     var diaryDayRequest: LocalDay?
+    /// A tile whose detail Today should open next; Today clears it once applied. Set through `openDashboardTile(_:)`.
+    var dashboardTileRequest: DashboardTile?
     /// The opt-in weekly check-in reminder (a local notification, backlog #35); a no-op in tests and previews.
     let checkInReminder: any CheckInReminderScheduling
+    /// The opt-in hydration reminder (a local notification, spec §4); a no-op in tests and previews.
+    let hydrationReminder: any HydrationReminderScheduling
+    /// Keeps the hydration reminder in line with today's drinks; nil when the database could not be opened.
+    let hydrationReminderService: HydrationReminderService?
     /// Folder of the automatic local backups (FR-62); nil turns them off (tests, previews).
     let backupsDirectory: URL?
 
@@ -93,9 +99,13 @@ final class AppEnvironment {
         labelPhotos: LabelPhotoStore = .temporary(),
         offSearch: any OpenFoodFactsSearchClient = StubOpenFoodFactsSearchClient(),
         checkInReminder: any CheckInReminderScheduling = NoCheckInReminder(),
+        hydrationReminder: any HydrationReminderScheduling = NoHydrationReminder(),
+        // Where the hydration reminder remembers its last plan across launches; nil keeps it in memory.
+        hydrationReminderDefaults: UserDefaults? = nil,
         backupsDirectory: URL? = nil,
     ) {
         self.checkInReminder = checkInReminder
+        self.hydrationReminder = hydrationReminder
         self.backupsDirectory = backupsDirectory
         self.database = database
         self.config = config
@@ -119,9 +129,13 @@ final class AppEnvironment {
                 settings: ProfileRepository(db, clock: clock),
                 clock: clock,
             )
+            hydrationReminderService = HydrationReminderService(
+                database: db, scheduler: hydrationReminder, clock: clock, defaults: hydrationReminderDefaults,
+            )
         } else {
             healthSync = nil
             healthWrites = nil
+            hydrationReminderService = nil
         }
         self.usdaKeyStore = usdaKeyStore
         self.imageLabeler = imageLabeler
@@ -169,7 +183,8 @@ final class AppEnvironment {
         db.map { DailyMetricsRepository($0, clock: clock) }
     }
 
-    /// Water logged in Vitalion (FR-46). The day's total is these entries + `daily_metrics.water_ml` (other apps).
+    /// Water quick-adds logged in Vitalion (FR-46). The day's hydration total also counts diary and caffeine drinks
+    /// (`hydration`) and other apps' water (`daily_metrics.water_ml`): `WaterProgress`.
     var water: WaterRepository? {
         db.map { WaterRepository($0, clock: clock) }
     }
@@ -177,6 +192,11 @@ final class AppEnvironment {
     /// Caffeine quick-adds logged in Vitalion; `observeIntakes(in:)` adds the caffeine of diary entries.
     var caffeine: CaffeineRepository? {
         db.map { CaffeineRepository($0, clock: clock) }
+    }
+
+    /// Everything drunk (water quick-adds, diary fluids, caffeine drinks) as `FluidIntake`s per day.
+    var hydration: HydrationRepository? {
+        db.map { HydrationRepository($0) }
     }
 
     // MARK: Health background work (backlog #26, #27)
@@ -241,14 +261,16 @@ final class AppEnvironment {
     func systemTimeDidChange() async {
         refreshToday()
         await healthSync?.refresh(force: true)
+        refreshHydrationReminder() // the reminder's time of day may have moved
     }
 
-    /// Re-reads the clock; returns true when the local day changed.
+    /// Re-reads the clock; returns true when the local day changed (the hydration reminder then plans the new day).
     @discardableResult
     func refreshToday() -> Bool {
         let current = LocalDay.today(now: clock.now())
         guard current != today else { return false }
         today = current
+        refreshHydrationReminder()
         return true
     }
 
@@ -318,12 +340,13 @@ final class AppEnvironment {
 
     /// Call after an import replaced or merged data (synchronously, before the Health queue gets a chance to drain):
     /// invalidates pending undo actions, reloads cached settings — the energy unit and "Write to Apple Health", so the
-    /// rows the import queued are written or discarded by the stored choice — reconciles the check-in reminder with the
-    /// stored toggle and refreshes the widgets.
+    /// rows the import queued are written or discarded by the stored choice — reconciles the check-in and hydration
+    /// reminders with the stored settings and refreshes the widgets.
     func dataDidChangeExternally() throws {
         dataGeneration += 1
         healthWrites?.reloadStoredSetting()
         reconcileCheckInReminder()
+        refreshHydrationReminder()
         defer { widgetDataDidChange() }
         try reloadSettings()
     }
@@ -385,6 +408,8 @@ final class AppEnvironment {
             labelPhotos: .live,
             offSearch: OpenFoodFactsSearchHTTPClient(contact: config.offContact, appVersion: config.appVersion),
             checkInReminder: LocalNotificationCheckInReminder(),
+            hydrationReminder: LocalNotificationHydrationReminder(),
+            hydrationReminderDefaults: .standard,
             backupsDirectory: try? FileManager.default
                 .url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
                 .appendingPathComponent("Backups", isDirectory: true),
@@ -403,6 +428,7 @@ final class AppEnvironment {
         openFoodFacts: (any OpenFoodFactsClient)? = nil,
         labelPhotos: LabelPhotoStore? = nil,
         checkInReminder: (any CheckInReminderScheduling)? = nil,
+        hydrationReminder: (any HydrationReminderScheduling)? = nil,
         backupsDirectory: URL? = nil,
     ) -> AppEnvironment {
         let state: DatabaseState
@@ -422,6 +448,7 @@ final class AppEnvironment {
             openFoodFacts: openFoodFacts ?? StubOpenFoodFactsClient(),
             labelPhotos: labelPhotos ?? .temporary(),
             checkInReminder: checkInReminder ?? NoCheckInReminder(),
+            hydrationReminder: hydrationReminder ?? NoHydrationReminder(),
             backupsDirectory: backupsDirectory,
         )
         if sampleData {
@@ -601,6 +628,14 @@ enum SettingKey {
     static let caffeineHalfLifeOverride = "caffeineHalfLifeOverride"
     /// [String]: `CaffeineDrink` ids of the caffeine quick-add buttons; missing means `CaffeineDrink.defaultQuickAddIDs`.
     static let caffeineQuickAddDrinks = "caffeineQuickAddDrinks"
+    /// Int (minutes from midnight): wake-up time when Apple Health has no sleep for the day; missing means 07:00.
+    static let hydrationFallbackWakeMinutes = "hydrationFallbackWakeMinutes"
+    /// Int (minutes): a stretch without a drink longer than this is a gap; missing means 180.
+    static let hydrationGapMinutes = "hydrationGapMinutes"
+    /// Double (ml): how far below the pace line counts as behind; missing means 500.
+    static let hydrationBehindMarginMl = "hydrationBehindMarginMl"
+    /// Bool: hydration reminder notifications are on; missing means off.
+    static let hydrationRemindersEnabled = "hydrationRemindersEnabled"
 }
 
 /// kcal or kJ for display (Settings → Units). Storage is always kcal.

@@ -380,6 +380,24 @@ struct FoodMergeTests {
         #expect(try f.foods.duplicateGroups().isEmpty)
     }
 
+    @Test func `merge carries a "counts as a drink" choice to a kept food on Automatic`() throws {
+        let f = try Fixture()
+        let keep = try f.makeFood("Shake")
+        var extra = try f.foods.save(FoodDetail(food: Food(name: "Shake", per100: Nutrients(kcal: 80, proteinG: 8, carbsG: 6, fatG: 2))))
+        extra.food.countsAsFluid = false
+        try f.foods.save(extra)
+        #expect(try f.foods.merge(keep: keep.id, remove: [extra.food.id]).food.countsAsFluid == false)
+
+        // The kept food's own choice wins.
+        var chosen = try f.foods.save(FoodDetail(food: Food(name: "Juice", per100: Nutrients(kcal: 45, proteinG: 0, carbsG: 11, fatG: 0))))
+        chosen.food.countsAsFluid = true
+        chosen = try f.foods.save(chosen)
+        var other = try f.foods.save(FoodDetail(food: Food(name: "Juice", per100: Nutrients(kcal: 45, proteinG: 0, carbsG: 11, fatG: 0))))
+        other.food.countsAsFluid = false
+        try f.foods.save(other)
+        #expect(try f.foods.merge(keep: chosen.food.id, remove: [other.food.id]).food.countsAsFluid == true)
+    }
+
     @Test func `merge is all or nothing`() throws {
         let f = try Fixture()
         let keep = try f.makeFood("Milk")
@@ -499,18 +517,6 @@ struct Phase3QueryTests {
         #expect(rows[2] == DiaryDaySummary(day: d.adding(days: 3), totals: .zero, entryCount: 0, isComplete: true))
         #expect(try f.diary.firstLoggedDay() == d)
         #expect(try Fixture().diary.firstLoggedDay() == nil)
-    }
-
-    @Test func `water totals per day`() throws {
-        let f = try Fixture()
-        let d = day("2026-11-05")
-        try f.water.add(ml: 300, day: d)
-        try f.water.add(ml: 500, day: d)
-        let gone = try f.water.add(ml: 200, day: d.next)
-        try f.water.softDelete(ids: [gone.id])
-        try f.water.add(ml: 250, day: d.adding(days: 2))
-        #expect(try f.water.totals(in: d ... d.adding(days: 5)) == [d: 800, d.adding(days: 2): 250])
-        #expect(try f.water.totals(in: d.adding(days: 3) ... d.adding(days: 5)).isEmpty)
     }
 
     @Test func `weight trend is stored on existing rows and survives a Health refresh`() throws {

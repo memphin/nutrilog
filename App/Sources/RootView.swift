@@ -19,6 +19,7 @@ struct RootView: View {
                         await environment.healthSync?.refresh()
                         await environment.healthSync?.waitForSync()
                         environment.refreshStoredWeightTrend()
+                        environment.refreshHydrationReminder() // drinks may have been logged in other apps
                     }
                     environment.reloadUSDAKey() // the Keychain may have been locked at launch
                     Task { await environment.healthDidEnterForeground() }

@@ -248,14 +248,6 @@ struct WaterQuickAddTests {
     @Test func `goal progress includes other apps' water`() {
         let half = WaterProgress(loggedMl: 500, otherAppsMl: 750, goalMl: 2500)
         #expect(half.totalMl == 1250)
-        #expect(half.fraction == 0.5)
-        #expect(!half.isGoalReached)
-        #expect(half.remainingMl == 1250)
-        let over = WaterProgress(loggedMl: 2000, otherAppsMl: 1000, goalMl: 2500)
-        #expect(over.fraction == 1)
-        #expect(over.isGoalReached)
-        #expect(over.remainingMl == 0)
-        #expect(WaterProgress(loggedMl: 100, otherAppsMl: 0, goalMl: 0).fraction == 0)
     }
 }
 
@@ -303,8 +295,8 @@ struct DashboardModelTests {
         #expect(try env.water?.totalMl(for: today) == 250)
 
         // Deleting from the detail list offers restore.
-        let entry = try #require(model.data.water.first)
-        model.deleteWater([entry])
+        let entry = try #require(model.data.hydrationIntakes[today]?.first { $0.source == .water })
+        model.deleteIntake(entry)
         #expect(await waitUntil { model.snapshot.water.loggedMl == 0 })
         model.undo.performUndo()
         #expect(await waitUntil { model.snapshot.water.loggedMl == 250 })

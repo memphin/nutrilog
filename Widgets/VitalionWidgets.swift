@@ -259,7 +259,7 @@ struct MetricsWidgetView: View {
                         snapshot.steps.map { "\($0.formatted()) steps" },
                         snapshot.weightKg.map { "\($0.formatted(.number.precision(.fractionLength(1)))) kg" },
                     ].compactMap(\.self).joined(separator: " · "))
-                    Text("Water \(wholeNumber(snapshot.waterMl)) / \(wholeNumber(snapshot.waterGoalMl)) ml")
+                    Text("Hydration \(wholeNumber(snapshot.waterMl)) / \(wholeNumber(snapshot.waterGoalMl)) ml")
                 }
                 .font(.caption)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -274,7 +274,7 @@ struct MetricsWidgetView: View {
                         metric("scalemass", "Weight", snapshot.weightKg.map { "\($0.formatted(.number.precision(.fractionLength(1)))) kg" } ?? "—")
                     }
                     GridRow {
-                        metric("drop", "Water", "\(wholeNumber(snapshot.waterMl)) / \(wholeNumber(snapshot.waterGoalMl)) ml")
+                        metric("drop", "Hydration", "\(wholeNumber(snapshot.waterMl)) / \(wholeNumber(snapshot.waterGoalMl)) ml")
                             .gridCellColumns(2)
                     }
                 }
@@ -327,7 +327,7 @@ struct MetricsWidget: Widget {
             MetricsWidgetView(entry: entry).containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Today")
-        .description("Calories, steps, sleep, weight and water for today.")
+        .description("Calories, steps, sleep, weight and hydration for today.")
         .supportedFamilies([.systemMedium, .accessoryRectangular])
     }
 }

@@ -83,13 +83,18 @@ public struct FoodRepository: Sendable {
     }
 
     /// Multiplies the amounts stored for `foodID` (diary entries, planned entries, saved-meal items, active or not)
-    /// by `factor`; nutrient snapshots stay as they are. Deliberately not capped at ``EntryLimits/maxAmount``: grams
-    /// must stay consistent with the nutrient snapshot, and later edits validate only the new amount.
+    /// by `factor`; nutrient snapshots stay as they are. A diary entry's fluid snapshot is its amount in ml, so it is
+    /// scaled too (NULL stays NULL). Deliberately not capped at ``EntryLimits/maxAmount``: grams must stay consistent
+    /// with the nutrient snapshot, and later edits validate only the new amount.
     private static func rescaleAmounts(_ db: Database, foodID: String, by factor: Double, now: Date) throws {
         let stamp = Timestamp.string(now)
         for table in ["diary_entry", "planned_entry", "meal_template_item"] {
+            let fluid = table == "diary_entry" ? ", fluid_ml = fluid_ml * ?1" : ""
             try db.execute(
-                sql: "UPDATE \(table) SET grams = grams * ?, updated_at = ?, revision = revision + 1 WHERE food_id = ? AND grams > 0",
+                sql: """
+                UPDATE \(table) SET grams = grams * ?1\(fluid), updated_at = ?2, revision = revision + 1
+                WHERE food_id = ?3 AND grams > 0
+                """,
                 arguments: [factor, stamp, foodID],
             )
         }
@@ -377,6 +382,7 @@ public struct FoodRepository: Sendable {
                 var revived = detail
                 revived.food.id = existing.id
                 revived.food.isFavorite = existing.isFavorite
+                revived.food.countsAsFluid = existing.countsAsFluid ?? revived.food.countsAsFluid // the user's choice
                 revived.food.deletedAt = nil
                 revived.food.mergedIntoID = nil
                 revived.servings = Self.reusingServingIDs(detail.servings, from: existingDetail.servings)

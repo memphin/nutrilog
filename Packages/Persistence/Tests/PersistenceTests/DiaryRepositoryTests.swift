@@ -254,4 +254,122 @@ struct DiaryRepositoryTests {
         let second = try await iterator.next()
         #expect(second?.entryCount == 1)
     }
+
+    // MARK: Fluid
+
+    /// A food with the given base unit, fat per 100 and fluid override.
+    private func drink(
+        _ f: Fixture, _ name: String, liquid: Bool = true, fat: Double = 0, countsAsFluid: Bool? = nil,
+    ) throws -> Food {
+        var food = Food(name: name, per100: Nutrients(kcal: 40, proteinG: 0, carbsG: 10, fatG: fat), isLiquid: liquid)
+        food.countsAsFluid = countsAsFluid
+        return try f.foods.save(FoodDetail(food: food)).food
+    }
+
+    @Test func `log liquid food snapshots fluid`() throws {
+        let f = try Fixture()
+        let cola = try drink(f, "Cola")
+        let entry = try f.diary.log(food: cola, quantity: .base(330), slotID: "snacks", day: day("2026-11-09"))
+        #expect(entry.fluidMl == 330)
+        #expect(try f.diary.entry(id: entry.id)?.fluidMl == 330)
+    }
+
+    @Test func `log oil has no fluid`() throws {
+        let f = try Fixture()
+        let oil = try drink(f, "Olive oil", fat: 100)
+        let entry = try f.diary.log(food: oil, quantity: .base(20), slotID: "lunch", day: day("2026-11-09"))
+        #expect(entry.fluidMl == nil)
+        #expect(try f.diary.entry(id: entry.id)?.fluidMl == nil)
+    }
+
+    @Test func `override on counts solid food`() throws {
+        let f = try Fixture()
+        let soup = try drink(f, "Soup", liquid: false, fat: 3, countsAsFluid: true)
+        let entry = try f.diary.log(food: soup, quantity: .base(300), slotID: "lunch", day: day("2026-11-09"))
+        #expect(try f.diary.entry(id: entry.id)?.fluidMl == 300)
+
+        let juice = try drink(f, "Juice", countsAsFluid: false) // override off beats the automatic rule
+        let off = try f.diary.log(food: juice, quantity: .base(200), slotID: "lunch", day: day("2026-11-09"))
+        #expect(try f.diary.entry(id: off.id)?.fluidMl == nil)
+    }
+
+    @Test func `log all and meal plan snapshot fluid`() throws {
+        let f = try Fixture()
+        let d = day("2026-11-09")
+        let cola = try drink(f, "Cola")
+        let bread = try f.makeFood("Bread")
+        let logged = try f.diary.logAll(
+            [DiaryRepository.LogItem(food: cola, quantity: .base(330)), DiaryRepository.LogItem(food: bread, quantity: .base(50))],
+            slotID: "lunch", day: d,
+        )
+        #expect(try logged.map { try f.diary.entry(id: $0.id)?.fluidMl } == [330, nil])
+
+        let plans = MealPlanRepository(f.db, clock: f.clock.appClock)
+        let planned = try plans.plan(food: cola, quantity: .base(250), slotID: "dinner", day: d)
+        let quick = try plans.planQuickAdd(
+            name: "Smoothie", nutrients: Nutrients(kcal: 200, proteinG: 2, carbsG: 40, fatG: 1), slotID: "dinner", day: d,
+        )
+        let ids = try plans.confirm(plannedIDs: [planned.id, quick.id])
+        #expect(try ids.map { try f.diary.entry(id: $0)?.fluidMl } == [250, nil])
+    }
+
+    @Test func `update quantity scales fluid`() throws {
+        let f = try Fixture()
+        let d = day("2026-11-09")
+        let cola = try drink(f, "Cola")
+        let entry = try f.diary.log(food: cola, quantity: .base(330), slotID: "snacks", day: d)
+        try f.diary.updateQuantity(entryID: entry.id, quantity: .base(500))
+        #expect(try f.diary.entry(id: entry.id)?.fluidMl == 500)
+
+        let bread = try f.diary.log(food: f.makeFood("Bread"), quantity: .base(50), slotID: "snacks", day: d)
+        try f.diary.updateQuantity(entryID: bread.id, quantity: .base(80))
+        #expect(try f.diary.entry(id: bread.id)?.fluidMl == nil)
+    }
+
+    @Test func `changing food override keeps old entries`() throws {
+        let f = try Fixture()
+        let d = day("2026-11-09")
+        let cola = try drink(f, "Cola")
+        let before = try f.diary.log(food: cola, quantity: .base(330), slotID: "snacks", day: d)
+        var detail = try #require(try f.foods.detail(id: cola.id))
+        detail.food.countsAsFluid = false
+        let switchedOff = try f.foods.save(detail).food
+        let after = try f.diary.log(food: switchedOff, quantity: .base(330), slotID: "snacks", day: d)
+        #expect(try f.diary.entry(id: before.id)?.fluidMl == 330)
+        #expect(try f.diary.entry(id: after.id)?.fluidMl == nil)
+
+        // And the other way round: a solid food switched on doesn't turn old entries into drinks.
+        let soup = try drink(f, "Soup", liquid: false)
+        let solid = try f.diary.log(food: soup, quantity: .base(300), slotID: "lunch", day: d)
+        var soupDetail = try #require(try f.foods.detail(id: soup.id))
+        soupDetail.food.countsAsFluid = true
+        try f.foods.save(soupDetail)
+        #expect(try f.diary.entry(id: solid.id)?.fluidMl == nil)
+    }
+
+    @Test func `copy follows the food's current fluid setting`() throws {
+        let f = try Fixture()
+        let d = day("2026-11-09")
+        let cola = try drink(f, "Cola")
+        let logged = try f.diary.log(food: cola, quantity: .base(330), slotID: "snacks", day: d)
+        var detail = try #require(try f.foods.detail(id: cola.id))
+        detail.food.countsAsFluid = false
+        try f.foods.save(detail)
+
+        let copied = try f.diary.copy(from: d, to: d.next)
+        #expect(copied.count == 1)
+        #expect(try f.diary.entry(id: copied[0])?.fluidMl == nil)
+        #expect(try f.diary.entry(id: logged.id)?.fluidMl == 330) // the original keeps its snapshot
+    }
+
+    @Test func `fluid rule uses the food's fat and override`() {
+        let milk = Food(name: "Milk", per100: Nutrients(kcal: 64, proteinG: 3.3, carbsG: 4.8, fatG: 3.5), isLiquid: true)
+        #expect(DiaryRepository.fluidMl(for: milk, baseAmount: 250) == 250)
+        #expect(DiaryRepository.fluidMl(for: milk, baseAmount: 0) == nil)
+        var liqueur = milk
+        liqueur.fatG100 = 51
+        #expect(DiaryRepository.fluidMl(for: liqueur, baseAmount: 40) == nil)
+        liqueur.countsAsFluid = true
+        #expect(DiaryRepository.fluidMl(for: liqueur, baseAmount: 40) == 40)
+    }
 }

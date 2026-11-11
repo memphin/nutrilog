@@ -97,8 +97,8 @@ final class DashboardModel {
 
     // MARK: Loading
 
-    /// Re-reads the settings the dashboard caches (layout, water sizes, step and sleep goals, caffeine) — they are
-    /// edited in Settings.
+    /// Re-reads the settings the dashboard caches (layout, water sizes, step and sleep goals, caffeine, hydration) —
+    /// they are edited in Settings.
     func reloadSettings() {
         guard let profiles = environment.profiles else { return }
         layout = DashboardLayout.load(from: profiles)
@@ -115,6 +115,10 @@ final class DashboardModel {
         if data.caffeineSettings != caffeineSettings {
             data.caffeineSettings = caffeineSettings
         }
+        let hydrationSettings = HydrationSettings.load(from: profiles)
+        if data.hydrationSettings != hydrationSettings {
+            data.hydrationSettings = hydrationSettings
+        }
     }
 
     func reloadAccess() async {
@@ -126,15 +130,16 @@ final class DashboardModel {
         let today = environment.today
         if data.today != today {
             data = DashboardData(
-                today: today, stepGoal: data.stepGoal, sleepGoalMin: data.sleepGoalMin, goalMode: data.goalMode,
-                caffeineSettings: data.caffeineSettings,
+                today: today, waterGoalMl: data.waterGoalMl, waterGoalMode: data.waterGoalMode,
+                hydrationSettings: data.hydrationSettings, stepGoal: data.stepGoal, sleepGoalMin: data.sleepGoalMin,
+                goalMode: data.goalMode, caffeineSettings: data.caffeineSettings,
             )
         }
         await reloadAccess()
         await withDiscardingTaskGroup { group in
             group.addTask { await self.observeMetrics() }
             group.addTask { await self.observeWeights() }
-            group.addTask { await self.observeWater() }
+            group.addTask { await self.observeHydration() }
             group.addTask { await self.observeCaffeine() }
             group.addTask { await self.observeDiary(today) }
             group.addTask { await self.observeTarget(today) }
@@ -142,28 +147,42 @@ final class DashboardModel {
         }
     }
 
+    /// The window's Health rows, and with them the weight trends of the hydration goal.
     private func observeMetrics() async {
         guard let repo = environment.dailyMetrics else { return }
         let window = data.window
-        await DiaryModel.resubscribing { repo.observeMetrics(in: window) } onValue: { data.metrics = $0 } onError: { report($0) }
+        await DiaryModel.resubscribing { repo.observeMetrics(in: window) } onValue: { rows in
+            data.metrics = rows
+            refreshWeightTrends()
+        } onError: { report($0) }
     }
 
+    /// The window's weigh-ins, and with them the weight trends of the hydration goal (without Apple Health, the goal
+    /// follows the weights logged here).
     private func observeWeights() async {
         guard let repo = environment.weights else { return }
         let interval = data.weightInterval(calendar: calendar)
-        await DiaryModel.resubscribing { repo.observeEntries(in: interval) } onValue: { data.manualWeights = $0 } onError: { report($0) }
+        await DiaryModel.resubscribing { repo.observeEntries(in: interval) } onValue: { entries in
+            data.manualWeights = entries
+            refreshWeightTrends()
+        } onError: { report($0) }
     }
 
-    /// One observation for the history window: today's entries for the tile, daily totals for the chart (its last
-    /// 7 days) and the water streak.
-    private func observeWater() async {
-        guard let repo = environment.water else { return }
+    /// The hydration goal's weight for each day of the window (a trend from before the window counts too, so it is
+    /// read from the database rather than from the observed rows).
+    private func refreshWeightTrends() {
+        let trends = HydrationGoalResolver.trendsKg(in: data.window, environment: environment)
+        if data.weightTrends != trends {
+            data.weightTrends = trends
+        }
+    }
+
+    /// Every drink of the history window in one observation: today's for the tile, daily totals for the chart (its
+    /// last 7 days) and the hydration streak.
+    private func observeHydration() async {
+        guard let repo = environment.hydration else { return }
         let window = data.window
-        let today = data.today
-        await DiaryModel.resubscribing { repo.observeEntries(in: window) } onValue: { entries in
-            data.water = entries.filter { $0.day == today }
-            data.waterByDay = entries.reduce(into: [:]) { $0[$1.day, default: 0] += $1.ml }
-        } onError: { report($0) }
+        await DiaryModel.resubscribing { repo.observeIntakes(in: window) } onValue: { data.hydrationIntakes = $0 } onError: { report($0) }
     }
 
     /// Yesterday's and today's caffeine, quick-adds and diary entries in one observation.
@@ -189,6 +208,9 @@ final class DashboardModel {
             if let goal = profile?.waterGoalMl {
                 data.waterGoalMl = goal
             }
+            if let mode = profile?.waterGoalMode, data.waterGoalMode != mode {
+                data.waterGoalMode = mode
+            }
             if let mode = profile?.goalMode, data.goalMode != mode {
                 data.goalMode = mode
             }
@@ -212,30 +234,65 @@ final class DashboardModel {
         await reloadAccess()
     }
 
-    // MARK: Water (FR-46)
+    // MARK: Hydration (FR-46)
 
-    /// Logs `ml` now and offers undo (which soft-deletes the entry again).
-    func addWater(ml: Int) {
+    /// Today's hydration at `now`, for the tile and the detail.
+    func hydrationDay(at now: Date) -> HydrationDay {
+        snapshot.hydrationDay(now: now, calendar: calendar)
+    }
+
+    /// Logs `ml` drunk now (or at `loggedAt`, on that time's day) and offers undo (which soft-deletes the entry
+    /// again).
+    func addWater(ml: Int, loggedAt: Date? = nil) {
         guard let water = environment.water else { return }
         do {
-            let entry = try water.add(ml: Double(ml), day: environment.today)
+            let day = loggedAt.map { LocalDay($0, calendar: calendar) } ?? environment.today
+            let entry = try water.add(ml: Double(ml), day: day, loggedAt: loggedAt)
             offerUndo("Added \(ml) ml water") { try water.softDelete(ids: [entry.id]) }
         } catch {
             errorMessage = "Couldn't log water: \(error.localizedDescription)"
         }
     }
 
-    /// Deletes logged water entries and offers undo (restore).
-    func deleteWater(_ entries: [WaterEntry]) {
-        guard let water = environment.water, !entries.isEmpty else { return }
-        let ids = entries.map(\.id)
-        do {
-            try water.softDelete(ids: ids)
-            let total = entries.reduce(0) { $0 + $1.ml }
-            offerUndo("Removed \(DashboardFormat.ml(total)) water") { try water.restore(ids: ids) }
-        } catch {
-            errorMessage = "Couldn't remove water: \(error.localizedDescription)"
+    /// Deletes a water or caffeine quick-add from the Hydration detail and offers undo (restore). Diary drinks are
+    /// changed in the diary, so they are left alone.
+    func deleteIntake(_ intake: FluidIntake) {
+        switch intake.source {
+        case .water:
+            guard let water = environment.water else { return }
+            do {
+                try water.softDelete(ids: [intake.id])
+                offerUndo("Removed \(DashboardFormat.ml(intake.ml)) water") { try water.restore(ids: [intake.id]) }
+            } catch {
+                errorMessage = "Couldn't remove water: \(error.localizedDescription)"
+            }
+        case .caffeine:
+            guard let caffeine = environment.caffeine else { return }
+            do {
+                try caffeine.softDelete(ids: [intake.id])
+                offerUndo("Removed \(intake.name)") { try caffeine.restore(ids: [intake.id]) }
+            } catch {
+                errorMessage = "Couldn't remove the drink: \(error.localizedDescription)"
+            }
+        case .diary:
+            return
         }
+    }
+
+    /// The meal each diary drink of `intakes` was logged in (its slot's name), by intake id. Drinks from other
+    /// sources, and entries or slots that can't be read, are absent.
+    func diaryMealNames(for intakes: [FluidIntake]) -> [String: String] {
+        let diaryIntakes = intakes.filter { $0.source == .diary }
+        guard let diary = environment.diary, !diaryIntakes.isEmpty,
+              let slots = try? diary.mealSlots(includeInactive: true) else { return [:] }
+        let slotNames = Dictionary(slots.map { ($0.id, $0.name) }) { first, _ in first }
+        var names: [String: String] = [:]
+        for intake in diaryIntakes {
+            if let slotID = (try? diary.entry(id: intake.id))??.mealSlotID, let name = slotNames[slotID] {
+                names[intake.id] = name
+            }
+        }
+        return names
     }
 
     // MARK: Caffeine
@@ -259,12 +316,13 @@ final class DashboardModel {
         addCaffeine(mg: drink.mg, at: nil, drinkID: drink.id, name: drink.name)
     }
 
-    /// Logs `mg` of caffeine taken at `at` (nil: now) and offers undo. The entry's day is the day of `at`.
-    func addCaffeine(mg: Double, at: Date?, drinkID: String?, name: String?) {
+    /// Logs `mg` of caffeine taken at `at` (nil: now) and offers undo. The entry's day is the day of `at`. `ml` is the
+    /// drink's volume for hydration; nil uses the preset's serving, or no volume for a custom drink.
+    func addCaffeine(mg: Double, at: Date?, drinkID: String?, name: String?, ml: Double? = nil) {
         guard let caffeine = environment.caffeine else { return }
         do {
             let day = at.map { LocalDay($0, calendar: calendar) } ?? environment.today
-            let entry = try caffeine.add(mg: mg, day: day, loggedAt: at, drinkID: drinkID, name: name)
+            let entry = try caffeine.add(mg: mg, day: day, loggedAt: at, drinkID: drinkID, name: name, ml: ml)
             let what = name.map { "\($0) (\(CaffeineStatus.mg(mg)))" } ?? "\(CaffeineStatus.mg(mg)) caffeine"
             offerUndo("Added \(what)") { try caffeine.softDelete(ids: [entry.id]) }
         } catch {
@@ -349,7 +407,7 @@ final class DashboardModel {
     func history(for tile: DashboardTile) -> [TileHistoryRow] {
         let days = (0 ..< TileHistory.days).map { data.today.adding(days: -$0) }
         var kcal: [LocalDay: Double] = [:]
-        var water: [LocalDay: Double] = [:]
+        var fluid: [LocalDay: Double] = [:]
         var caffeine: [LocalDay: Double] = [:]
         if tile == .energy, let diary = environment.diary {
             for day in days {
@@ -358,10 +416,10 @@ final class DashboardModel {
                 }
             }
         }
-        if tile == .water, let repo = environment.water {
-            for day in days {
-                water[day] = try? repo.totalMl(for: day)
-            }
+        if tile == .water, let repo = environment.hydration, let first = days.last,
+           let intakes = try? repo.intakes(in: first ... data.today)
+        {
+            fluid = HydrationTotals.loggedMl(intakes)
         }
         if tile == .caffeine, let repo = environment.caffeine, let first = days.last,
            let intakes = try? repo.intakes(in: first ... data.today)
@@ -371,7 +429,7 @@ final class DashboardModel {
             }
         }
         return TileHistory.rows(
-            for: tile, data: data, kcalByDay: kcal, loggedWaterByDay: water, caffeineByDay: caffeine,
+            for: tile, data: data, kcalByDay: kcal, loggedFluidByDay: fluid, caffeineByDay: caffeine,
             energyUnit: energyUnit, calendar: calendar,
         )
     }

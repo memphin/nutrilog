@@ -11,7 +11,7 @@ enum WeeklyReportLoader {
         let stats = try StatsLoader.load(weekStart.previous ... end, environment: environment)
         let snapshot = try? Expenditure.snapshot(environment: environment)
         // Today is still being logged: it counts once it is over or marked as fully logged (as in the charts). Its
-        // steps and water are still growing, so the report leaves them out of the averages (as the charts do too).
+        // steps and hydration are still growing, so the report leaves them out of the averages (as the charts do too).
         return WeeklyReport(
             days: IntakeStats.finished(Array(stats.dropFirst()), today: environment.today), trendBefore: stats.first?.trendKg,
             expenditureKcal: expenditure(for: end, snapshot: snapshot, environment: environment),
@@ -208,7 +208,7 @@ struct WeeklyReportCard: View {
                         row("Sleep", DashboardFormat.duration(DisplayRounding.whole(sleep)), detail: "per night")
                     }
                     if let water = report.averageWaterMl {
-                        row("Water", DashboardFormat.ml(water), detail: "per day")
+                        row("Hydration", DashboardFormat.ml(water), detail: "per day")
                     }
                 }
             }

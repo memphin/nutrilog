@@ -12,6 +12,8 @@ public struct DailyHealthMetrics: Hashable, Sendable, Codable {
     public var sleepDeepMin: Int?
     public var sleepRemMin: Int?
     public var sleepAwakeMin: Int?
+    /// When the user woke up, from the night's sleep (`SleepSummary.wokeAt`); stored as `daily_metrics.woke_at`.
+    public var wokeAt: Date?
     /// First weigh-in of the day from *other* sources: weights Vitalion wrote itself (manual entries) are excluded
     /// while their `weight_entry` row exists, and `WeightReconciler` merges both.
     public var weightKg: Double?
@@ -39,6 +41,7 @@ public struct DailyHealthMetrics: Hashable, Sendable, Codable {
         sleepDeepMin: Int? = nil,
         sleepRemMin: Int? = nil,
         sleepAwakeMin: Int? = nil,
+        wokeAt: Date? = nil,
         weightKg: Double? = nil,
         bodyFatPct: Double? = nil,
         restingHR: Double? = nil,
@@ -56,6 +59,7 @@ public struct DailyHealthMetrics: Hashable, Sendable, Codable {
         self.sleepDeepMin = sleepDeepMin
         self.sleepRemMin = sleepRemMin
         self.sleepAwakeMin = sleepAwakeMin
+        self.wokeAt = wokeAt
         self.weightKg = weightKg
         self.bodyFatPct = bodyFatPct
         self.restingHR = restingHR
@@ -94,6 +98,7 @@ public struct DailyHealthMetrics: Hashable, Sendable, Codable {
             sleepRemMin = Self.minutes(summary.rem)
             sleepAwakeMin = Self.minutes(summary.awake)
         }
+        wokeAt = summary.wokeAt
         sources[.sleep] = summary.source.name
     }
 

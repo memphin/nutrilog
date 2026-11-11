@@ -106,6 +106,24 @@ struct PlaceholderConversionRepositoryTests {
         expectOneServing(logged[0].nutrients)
     }
 
+    @Test func `a converted drink keeps its fluid at one serving`() throws {
+        let f = try Fixture()
+        let standIn = Serving(label: "1 can", grams: 100)
+        var food = Food(name: "Cola", source: .off, sourceID: "456", per100: perServing, isLiquid: true)
+        food.perServingOnly = true
+        food.defaultServingID = standIn.id
+        let placeholder = try f.foods.save(FoodDetail(food: food, servings: [standIn]))
+        let entry = try f.diary.log(food: placeholder.food, quantity: oneServing(placeholder), slotID: "lunch", day: day("2026-11-09"))
+        let solid = try f.diary.log(food: f.makeFood("Bread"), quantity: .base(50), slotID: "lunch", day: day("2026-11-09"))
+        #expect(entry.fluidMl == 100)
+
+        try f.foods.saveConvertedPlaceholder(converted(placeholder, weight: 330))
+        let rescaled = try #require(try f.diary.entry(id: entry.id))
+        #expect(abs(rescaled.grams - 330) < 1e-9)
+        #expect(try abs(#require(rescaled.fluidMl) - 330) < 1e-9)
+        #expect(try f.diary.entry(id: solid.id)?.fluidMl == nil) // other foods' entries untouched
+    }
+
     @Test func `the remembered base amount and soft-deleted rows are rescaled, serving counts are not`() throws {
         let f = try Fixture()
         let placeholder = try makePlaceholder(f)

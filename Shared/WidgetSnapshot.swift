@@ -20,6 +20,7 @@ struct WidgetSnapshot: Codable, Equatable {
     var steps: Int?
     var sleepMin: Int?
     var weightKg: Double?
+    /// Hydration (every drink plus other apps' water) and its goal; the names stay so stored snapshots still decode.
     var waterMl: Double
     var waterGoalMl: Double
     /// "kcal" or "kJ".

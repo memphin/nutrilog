@@ -13,7 +13,8 @@ enum WidgetSnapshotWriter {
         let totals = (try? diary.totals(for: today)) ?? .zero
         let target = try? profiles.target(on: today)
         let metrics = try? environment.dailyMetrics?.metrics(on: today)?.metrics
-        let logged = (try? environment.water?.totalMl(for: today)) ?? 0
+        // Hydration: every drink plus other apps' water against the day's goal, as on the Today tile.
+        let hydration = try? WaterProgress.read(on: today, environment: environment)
         let weights = (try? StatsLoader.dayWeights(through: today, environment: environment)) ?? []
         return WidgetSnapshot(
             day: today.isoString, kcal: totals.kcal, targetKcal: target?.kcal,
@@ -21,8 +22,8 @@ enum WidgetSnapshotWriter {
             targetProteinG: target?.proteinG, targetCarbsG: target?.carbsG, targetFatG: target?.fatG,
             steps: metrics?.steps, sleepMin: metrics?.sleepAsleepMin ?? metrics?.sleepInBedMin,
             weightKg: WeightTrend.summary(weights, today: today)?.latestKg,
-            waterMl: logged + (metrics?.waterMl ?? 0),
-            waterGoalMl: (try? profiles.profile().waterGoalMl) ?? 2500,
+            waterMl: hydration?.totalMl ?? 0,
+            waterGoalMl: hydration?.goalMl ?? HydrationGoal.fallbackMl,
             energyUnit: environment.energyUnit.rawValue, updatedAt: environment.clock.now(),
         )
     }
@@ -40,14 +41,14 @@ enum WidgetSnapshotWriter {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
-    /// Keeps the snapshot current while the app runs: rewrites it whenever today's diary, water, target or Health
+    /// Keeps the snapshot current while the app runs: rewrites it whenever today's diary, drinks, target or Health
     /// values change. Runs until cancelled.
     static func keepCurrent(environment: AppEnvironment) async {
         let today = environment.today
         write(from: environment)
         await withDiscardingTaskGroup { group in
             group.addTask { await followDiary(environment, today) }
-            group.addTask { await followWater(environment, today) }
+            group.addTask { await followHydration(environment, today) }
             group.addTask { await followTarget(environment, today) }
             group.addTask { await followMetrics(environment, today) }
         }
@@ -58,9 +59,10 @@ enum WidgetSnapshotWriter {
         await DiaryModel.resubscribing { repo.observeDiary(for: day) } onValue: { _ in write(from: environment) } onError: { _ in }
     }
 
-    private static func followWater(_ environment: AppEnvironment, _ day: LocalDay) async {
-        guard let repo = environment.water else { return }
-        await DiaryModel.resubscribing { repo.observeEntries(for: day) } onValue: { _ in write(from: environment) } onError: { _ in }
+    /// Water, diary drinks and caffeine drinks: the hydration total.
+    private static func followHydration(_ environment: AppEnvironment, _ day: LocalDay) async {
+        guard let repo = environment.hydration else { return }
+        await DiaryModel.resubscribing { repo.observeIntakes(in: day ... day) } onValue: { _ in write(from: environment) } onError: { _ in }
     }
 
     private static func followTarget(_ environment: AppEnvironment, _ day: LocalDay) async {

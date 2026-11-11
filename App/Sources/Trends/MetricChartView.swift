@@ -11,8 +11,11 @@ struct MetricChartView: View {
     @State private var range: ChartRange = .month
     @State private var series: ChartSeries?
     @State private var selectedDate: Date?
-    /// The daily goal the bars are coloured by: steps (#63), ml of water (#64) or hours of sleep (#72); nil for the other metrics.
+    /// The daily goal the bars are coloured by: steps (#63), ml of hydration (#64, today's) or hours of sleep (#72);
+    /// nil for the other metrics.
     @State private var goal: Double?
+    /// Hydration only: each day's goal (it follows the weight), so every bar is coloured by its own day's goal.
+    @State private var dayGoals: [LocalDay: Double] = [:]
 
     var body: some View {
         VStack(alignment: .leading, spacing: NL.Spacing.m) {
@@ -61,10 +64,16 @@ struct MetricChartView: View {
         case .steps: environment.profiles.map { Double(StepGoal.load(from: $0)) }
         // The sleep chart is in hours.
         case .sleep: environment.profiles.map { Double(SleepGoal.load(from: $0)) / 60 }
-        case .water: try? environment.profiles?.profile().waterGoalMl
         default: nil
         }
-        let stats = (try? StatsLoader.load(range.days(endingOn: environment.today), environment: environment)) ?? []
+        let days = range.days(endingOn: environment.today)
+        dayGoals = [:]
+        if metric == .water, let profile = try? environment.profiles?.profile() {
+            let trends = HydrationGoalResolver.trendsKg(in: days, environment: environment)
+            dayGoals = ChartBuilder.hydrationGoals(in: days, profile: profile, trendsKg: trends)
+            goal = dayGoals[environment.today]
+        }
+        let stats = (try? StatsLoader.load(days, environment: environment)) ?? []
         series = ChartBuilder.series(
             metric, range: range, stats: stats, unit: environment.energyUnit, firstWeekday: Calendar.current.firstWeekday,
             today: environment.today,
@@ -219,7 +228,7 @@ struct MetricChartView: View {
         case .steps, .water, .sleep:
             if let value = point.value {
                 BarMark(x: .value("Day", date(point), unit: component), y: .value(series.unitLabel, value))
-                    .foregroundStyle(goalColor(value).opacity(0.85))
+                    .foregroundStyle(goalColor(value, point).opacity(0.85))
             }
         case .weight:
             if let value = point.value {
@@ -250,11 +259,12 @@ struct MetricChartView: View {
         }
     }
 
-    /// Steps: green at the goal, orange close below, red further away. Water: red below the goal, green at it.
-    private func goalColor(_ value: Double) -> Color {
+    /// Steps: green at the goal, orange close below, red further away. Hydration: red below the day's (or the week's
+    /// mean) goal, green at it.
+    private func goalColor(_ value: Double, _ point: ChartPoint) -> Color {
         guard let goal else { return tint }
         switch metric {
-        case .water: return GoalColor.water(value, goalMl: goal)
+        case .water: return GoalColor.water(value, goalMl: ChartBuilder.goal(of: point, in: dayGoals) ?? goal)
         case .sleep: return GoalColor.sleep(minutes: value * 60, goal: DisplayRounding.whole(goal * 60))
         default: return GoalColor.steps(value, goal: DisplayRounding.whole(goal))
         }

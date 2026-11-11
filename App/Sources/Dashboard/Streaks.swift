@@ -3,8 +3,9 @@ import DesignSystem
 import Foundation
 import SwiftUI
 
-// Streaks: days in a row the step, sleep and water goals were reached, shown as a small badge on those tiles.
-// Past days are measured against today's goals (goals have no history).
+// Streaks: days in a row the step, sleep and hydration goals were reached, shown as a small badge on those tiles.
+// Past days are measured against today's step and sleep goals (those have no history); hydration uses each day's own
+// goal (`DashboardData.hydrationGoalMl(on:)`).
 
 extension DashboardSnapshot {
     /// The tiles that have a streak.
@@ -17,6 +18,9 @@ extension DashboardSnapshot {
 
     static func streaks(data: DashboardData, rows: [DailyHealthMetrics]) -> [DashboardTile: Streak] {
         let metrics = Dictionary(rows.map { ($0.day, $0) }) { first, _ in first }
+        // Like the tile, sparkline and history: every drink logged in Vitalion plus other apps' water.
+        let otherAppsMl = Dictionary(rows.compactMap { row in row.waterMl.map { (row.day, $0) } }, uniquingKeysWith: +)
+        let hydrationMl = HydrationTotals.byDay(intakes: data.hydrationIntakes, otherAppsMl: otherAppsMl)
         func streak(_ reached: (LocalDay) -> Bool) -> Streak {
             Streak.current(today: data.today, maxDays: DashboardData.historyDays, reached: reached)
         }
@@ -30,10 +34,10 @@ extension DashboardSnapshot {
                 guard let row = metrics[day], let minutes = row.sleepAsleepMin ?? row.sleepInBedMin else { return false }
                 return SleepGoal.band(minutes: Double(minutes), goal: data.sleepGoalMin) == .reached
             },
-            // Like the tile: logged in Vitalion plus other apps' water.
+            // That day's total against that day's goal.
             .water: streak { day in
-                let ml = (data.waterByDay[day] ?? 0) + (metrics[day]?.waterMl ?? 0)
-                return data.waterGoalMl > 0 && ml >= data.waterGoalMl
+                let goal = data.hydrationGoalMl(on: day)
+                return goal > 0 && (hydrationMl[day] ?? 0) >= goal
             },
         ]
     }

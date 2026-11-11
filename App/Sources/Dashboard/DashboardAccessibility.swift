@@ -5,7 +5,8 @@ import Foundation
 extension DashboardSnapshot {
     /// The spoken label of a tile, e.g. "Weight, 81.4 kilograms" or
     /// "Steps, no data. No data found — check Health permissions".
-    /// - Parameter now: the moment caffeine is read at (the amount changes by the minute).
+    /// - Parameter now: the moment caffeine and hydration are read at (the caffeine amount and the hydration status
+    ///   change by the minute).
     func accessibilityLabel(
         of tile: DashboardTile, state: TileState, energyUnit: EnergyUnit = .kcal, now: Date = Date(), calendar: Calendar = .current,
     ) -> String {
@@ -15,8 +16,12 @@ extension DashboardSnapshot {
         if tile == .caffeine {
             return ([tile.title] + caffeineStatus(now: now, calendar: calendar).accessibilityParts()).joined(separator: ", ")
         }
-        let parts = accessibilityParts(of: tile, energyUnit: energyUnit)
         let spokenStreak = streak(for: tile).flatMap(StreakBadge.spoken)
+        if tile == .water {
+            let parts = hydrationParts(hydrationDay(now: now, calendar: calendar))
+            return ([tile.title] + parts + [spokenStreak].compactMap(\.self)).joined(separator: ", ")
+        }
+        let parts = accessibilityParts(of: tile, energyUnit: energyUnit)
         return ([tile.title] + (parts.isEmpty ? ["no data"] : parts) + [spokenStreak].compactMap(\.self)).joined(separator: ", ")
     }
 
@@ -78,19 +83,23 @@ extension DashboardSnapshot {
             }
             parts += [measured(comparison.day)].compactMap(\.self)
             return parts
-        case .caffeine:
+        case .caffeine, .water:
             return [] // spoken with the time, see accessibilityLabel
-        case .water:
-            return ["\(number(water.totalMl)) of \(number(water.goalMl)) millilitres", waterGoalPart]
         }
     }
 
-    private var waterGoalPart: String {
-        switch WaterGoal.band(ml: water.totalMl, goalMl: water.goalMl) {
-        case .reached: "goal reached"
-        case .near: "close to the goal"
-        case .far: "below goal"
+    /// "1,840 of 2,400 millilitres" and where the day stands, which is what the tile's colour shows.
+    private func hydrationParts(_ day: HydrationDay) -> [String] {
+        func number(_ value: Double) -> String {
+            value.formatted(.number.precision(.fractionLength(0)).locale(Locale(identifier: "en_US")))
         }
+        let status = switch day.status {
+        case .goalReached: "goal reached"
+        case .onPace: "on pace"
+        case let .behind(byMl): "\(number(byMl)) millilitres behind pace"
+        case let .inGap(since): "no drink since \(since.formatted(date: .omitted, time: .shortened))"
+        }
+        return ["\(number(day.totalMl)) of \(number(day.goalMl)) millilitres", status]
     }
 
     /// "above the weekly average" — what the value's colour is read against; nil without a weekly average.

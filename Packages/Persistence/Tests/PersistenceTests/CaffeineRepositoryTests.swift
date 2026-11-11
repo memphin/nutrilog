@@ -85,6 +85,40 @@ struct CaffeineRepositoryTests {
         #expect(try f.caffeine.entry(id: espresso.id) == espresso)
     }
 
+    @Test func `preset stores serving ml`() throws {
+        let f = try Fixture()
+        let espresso = try f.caffeine.add(mg: 64, day: d, drinkID: "espresso", name: "Espresso")
+        #expect(espresso.ml == 30)
+        #expect(try f.caffeine.entry(id: espresso.id)?.ml == 30)
+        let cola = try f.caffeine.add(mg: 33, day: d, drinkID: "cola", name: "Cola")
+        #expect(try f.caffeine.entry(id: cola.id)?.ml == 330)
+        // A given volume wins over the preset's serving.
+        let large = try f.caffeine.add(mg: 66, day: d, drinkID: "cola", name: "Cola", ml: 500)
+        #expect(try f.caffeine.entry(id: large.id)?.ml == 500)
+    }
+
+    @Test func `custom amount stores given ml`() throws {
+        let f = try Fixture()
+        let custom = try f.caffeine.add(mg: 80, day: d, name: "Cold brew", ml: 250)
+        #expect(custom.ml == 250)
+        #expect(try f.caffeine.entry(id: custom.id)?.ml == 250)
+        for bad in [0.0, -5, .nan, .infinity] {
+            #expect(throws: PersistenceError.validation("amount must be greater than zero")) {
+                try f.caffeine.add(mg: 80, day: d, ml: bad)
+            }
+        }
+    }
+
+    @Test func `custom without ml is nil`() throws {
+        let f = try Fixture()
+        let custom = try f.caffeine.add(mg: 80, day: d)
+        #expect(custom.ml == nil)
+        #expect(try f.caffeine.entry(id: custom.id)?.ml == nil)
+        // An id no preset has gets no volume either.
+        let unknown = try f.caffeine.add(mg: 80, day: d, drinkID: "retired_drink")
+        #expect(try f.caffeine.entry(id: unknown.id)?.ml == nil)
+    }
+
     @Test func `entries are listed per day and per range, oldest first`() throws {
         let f = try Fixture()
         let now = f.clock.now

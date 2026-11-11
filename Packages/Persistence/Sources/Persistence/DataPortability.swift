@@ -121,6 +121,8 @@ public struct DataPortability: Sendable {
             var summary = ImportSummary()
             // Rows whose Apple Health copy must follow the import (backlog #27), queued in this transaction.
             var healthChanges: [HealthKitOwner: [String]] = [:]
+            // Tables with rows taken from the file (inserted or updated), for the repairs of older exports.
+            var importedTables: Set<String> = []
             if mode == .replace {
                 // The wipe drops `healthkit_link`; queue every row that has samples first, so samples of rows the
                 // backup doesn't contain (logged after it was made) are deleted instead of stranded in Health.
@@ -154,6 +156,7 @@ public struct DataPortability: Sendable {
                         )
                         if db.changesCount > 0 {
                             summary.inserted += 1
+                            importedTables.insert(table)
                             if let healthOwner, let id = values["id"]?.stringValue {
                                 healthChanges[healthOwner, default: []].append(id)
                             }
@@ -169,6 +172,7 @@ public struct DataPortability: Sendable {
                         let assignments = names.map { "\($0) = ?" }.joined(separator: ", ")
                         try db.execute(sql: "UPDATE \(table) SET \(assignments) WHERE \(keyClause)", arguments: args + keyArgs)
                         summary.updated += 1
+                        importedTables.insert(table)
                         if let healthOwner, let id = values["id"]?.stringValue {
                             healthChanges[healthOwner, default: []].append(id)
                         }
@@ -182,6 +186,12 @@ public struct DataPortability: Sendable {
             try db.execute(
                 sql: "UPDATE food SET source = ?, updated_at = ?, revision = revision + 1 WHERE source = ?",
                 arguments: [FoodSource.custom.rawValue, Timestamp.string(now), FoodSource.recipe.rawValue],
+            )
+            // Exports made before hydration tracking: like migrations 013 and 014. The file's diary entries are the
+            // inserted and updated ones, whose Health samples follow too.
+            try Self.repairHydration(
+                db, schemaVersion: file.schemaVersion, diaryIDs: healthChanges[.diaryEntry] ?? [],
+                profileImported: importedTables.contains("profile"),
             )
             // Exports made before `LocalDay` always used the Gregorian calendar may hold days in the device calendar
             // (e.g. "2569-11-11" on a Buddhist iPhone): like migration 011, they move to their Gregorian day.
@@ -204,6 +214,27 @@ public struct DataPortability: Sendable {
             }
             return summary
         }
+    }
+
+    /// Exports made before hydration tracking have no fluid volumes and no goal mode: like migrations 013 and 014, the
+    /// file's diary entries of drinks (`diaryIDs`) and caffeine drinks get their volume, and the file's profile its goal
+    /// mode. Local rows the file didn't replace (merge) keep theirs.
+    static func repairHydration(_ db: Database, schemaVersion: Int, diaryIDs: [String], profileImported: Bool) throws {
+        if predates(schemaVersion, migration: "013_hydration") {
+            try HydrationBackfill.diaryFluid(db, entryIDs: diaryIDs)
+            if profileImported {
+                try HydrationBackfill.goalMode(db)
+            }
+        }
+        if predates(schemaVersion, migration: "014_caffeine_ml") {
+            try CaffeineMlMigration.run(db) // only preset drinks without a volume, which only an old file has
+        }
+    }
+
+    /// Whether a file of `schemaVersion` (the number of migrations its app had run) was exported before `migration`.
+    static func predates(_ schemaVersion: Int, migration: String) -> Bool {
+        guard let index = Migrator.migrations.firstIndex(of: migration) else { return false }
+        return schemaVersion <= index
     }
 
     /// Rows migration 001 seeds on install (the profile and the default meal slots), keyed by table.

@@ -711,8 +711,36 @@ struct TrendsDataTests {
         }
         return StatsBuilder.build(
             range: monday ... monday.adding(days: 6), summaries: summaries, targets: targets, metrics: metrics,
-            dayWeights: weights, loggedWaterMl: [monday: 1500, monday.next: 1000],
+            dayWeights: weights, loggedFluidMl: [monday: 1500, monday.next: 1000],
         )
+    }
+
+    @Test func `trends count every drink and colour each day by its own hydration goal`() throws {
+        let env = AppEnvironment.preview(clock: ManualClock().appClock)
+        let day = env.today.previous
+        try #require(env.water).add(ml: 500, day: day)
+        let cola = try #require(env.foods).save(FoodDetail(food: Food(
+            name: "Cola", per100: Nutrients(kcal: 42, proteinG: 0, carbsG: 10.6, fatG: 0), isLiquid: true,
+        ))).food
+        _ = try #require(env.diary).log(food: cola, quantity: .base(330), slotID: "snacks", day: day)
+        try #require(env.dailyMetrics).upsert([DailyHealthMetrics(day: day, waterMl: 250)])
+        let stats = try StatsLoader.load(day ... env.today, environment: env)
+        #expect(stats.map(\.waterMl) == [1080, nil])
+        #expect(ChartMetric.water.title == "Hydration")
+
+        // Weight mode: the goal follows the trend of each day; days before the first trend use the fallback.
+        let profile = try #require(env.profiles).profile()
+        let monday = try #require(LocalDay("2026-11-02"))
+        let goals = ChartBuilder.hydrationGoals(
+            in: monday ... monday.adding(days: 6), profile: profile, trendsKg: [monday.adding(days: 3): 80, monday.adding(days: 4): 90],
+        )
+        #expect(goals[monday] == HydrationGoal.fallbackMl && goals[monday.adding(days: 3)] == 2400)
+        #expect(goals[monday.adding(days: 4)] == 2700)
+        #expect(ChartBuilder.goal(of: ChartPoint(day: monday.adding(days: 3), spanDays: 1), in: goals) == 2400)
+        // A weekly bar: the mean of the days it knows (2500, 2400, 2700, 2500, 2500; two days lie outside).
+        let week = ChartPoint(day: monday.adding(days: 2), spanDays: 7)
+        #expect(ChartBuilder.goal(of: week, in: goals) == 2520)
+        #expect(ChartBuilder.goal(of: ChartPoint(day: monday.adding(days: 20), spanDays: 1), in: goals) == nil)
     }
 
     @Test func `stats merge the diary, targets, Health and weights per day`() {
@@ -916,6 +944,19 @@ struct IntentActionsTests {
         await #expect(throws: IntentActions.Failure.invalidAmount) { try await actions.logWater(ml: 0) }
     }
 
+    // swiftformat:disable:next swiftTestingTestCaseNames
+    @Test func logWaterReportsHydrationTotal() async throws {
+        try #require(env.water).add(ml: 500, day: env.today)
+        let cola = try #require(env.foods).save(FoodDetail(food: Food(
+            name: "Cola", per100: Nutrients(kcal: 42, proteinG: 0, carbsG: 10.6, fatG: 0), isLiquid: true,
+        ))).food
+        _ = try #require(env.diary).log(food: cola, quantity: .base(330), slotID: "snacks", day: env.today)
+        let message = try await actions.logWater(ml: 250)
+        // Still plain water: only the new 250 ml is a water entry; the total counts every drink.
+        #expect(message == "Logged 250 ml of water. 1080 of 2500 ml today.")
+        #expect(try env.water?.entries(for: env.today).count == 2)
+    }
+
     @Test func `the evening is dinner, and a new day is picked up`() async throws {
         clock.advance(hours: 7) // 19:00
         #expect(try actions.currentSlot().id == "dinner")
@@ -962,7 +1003,7 @@ struct WidgetAndBackupTests {
         #expect(snapshot.kcal == 640 && snapshot.targetKcal == 2000)
         #expect(snapshot.proteinG == 40 && snapshot.targetCarbsG == 200)
         #expect(snapshot.steps == 8123 && snapshot.sleepMin == 431)
-        #expect(snapshot.waterMl == 750 && snapshot.waterGoalMl == 2500)
+        #expect(snapshot.waterMl == 750 && snapshot.waterGoalMl == 2450) // 30 ml/kg of the 81.4 kg logged here
         #expect(snapshot.weightKg == 81.4)
         #expect(snapshot.energyUnit == "kcal")
 
@@ -975,6 +1016,28 @@ struct WidgetAndBackupTests {
         WidgetSnapshotWriter.write(from: env, defaults: defaults)
         #expect(WidgetSnapshot.load(defaults: defaults)?.kcal == 740)
         #expect(WidgetSnapshot.load(defaults: UserDefaults(suiteName: "widget-empty-\(UUID().uuidString)")) == nil)
+    }
+
+    @Test func `widget hydration counts every drink against the weight-based goal`() throws {
+        let env = AppEnvironment.preview(clock: clock.appClock)
+        let suite = "widget-test-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        try #require(env.water).add(ml: 500, day: env.today)
+        let cola = try #require(env.foods).save(FoodDetail(food: Food(
+            name: "Cola", per100: Nutrients(kcal: 42, proteinG: 0, carbsG: 10.6, fatG: 0), isLiquid: true,
+        ))).food
+        _ = try #require(env.diary).log(food: cola, quantity: .base(330), slotID: "snacks", day: env.today)
+        let metrics = try #require(env.dailyMetrics)
+        try metrics.upsert([
+            DailyHealthMetrics(day: env.today.adding(days: -3), waterMl: 100), DailyHealthMetrics(day: env.today, waterMl: 250),
+        ])
+        try metrics.setWeightTrends([env.today.adding(days: -3): 80]) // an older trend still sets today's goal
+
+        WidgetSnapshotWriter.write(from: env, defaults: defaults)
+        let snapshot = try #require(WidgetSnapshot.load(defaults: defaults))
+        #expect(snapshot.waterMl == 1080 && snapshot.waterGoalMl == 2400)
     }
 
     @Test func `backups are off without a folder and weekly with one`() async throws {

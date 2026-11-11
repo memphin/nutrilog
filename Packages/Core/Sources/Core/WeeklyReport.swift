@@ -17,7 +17,7 @@ public struct DayStats: Hashable, Sendable {
     public var basalKcal: Double?
     public var restingHR: Double?
     public var hrvMs: Double?
-    /// Water from Vitalion and other apps; nil when there is none.
+    /// Hydration: every drink logged in Vitalion plus other apps' water; nil when there is none.
     public var waterMl: Double?
     public var weightKg: Double?
     public var bodyFatPct: Double?
@@ -99,6 +99,7 @@ public struct WeeklyReport: Hashable, Sendable {
     public var averageTargetKcal: Double?
     public var averageSteps: Double?
     public var averageSleepMin: Double?
+    /// Mean daily hydration (`DayStats.waterMl`).
     public var averageWaterMl: Double?
     /// The logged day closest to / farthest from its target; nil without logged days that had a target.
     public var bestDay: RankedDay?
@@ -119,7 +120,7 @@ public struct WeeklyReport: Hashable, Sendable {
     ///   - days: the seven days of the week, oldest first (other lengths work too).
     ///   - trendBefore: the weight trend on the day before the first day, if known.
     ///   - expenditureKcal: the adaptive estimate (or formula baseline) for the week.
-    ///   - today: the current day. Health totals that accumulate through the day (steps, water) are still growing
+    ///   - today: the current day. Health totals that accumulate through the day (steps, hydration) are still growing
     ///     on it, so it is left out of their averages — as the caller leaves today's unfinished intake out
     ///     (`IntakeStats.finished`). Sleep is unaffected: the night ending today is over by morning.
     public init(days: [DayStats], trendBefore: Double? = nil, expenditureKcal: Double? = nil, today: LocalDay? = nil) {

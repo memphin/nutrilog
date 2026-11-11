@@ -42,7 +42,8 @@ public extension FoodRepository {
     ///   untouched, so history doesn't change); so do rows of the legacy `recipe_ingredient` table;
     /// - barcodes move over; servings the kept food lacks (by label) are copied;
     /// - missing details of the kept food (brand, local name, image, Nutri-Score, optional nutrients) are filled in
-    ///   from the removed ones; use counts add up, the latest use and a favorite mark are kept;
+    ///   from the removed ones; use counts add up, the latest use and a favorite mark are kept, and so is a
+    ///   "Counts as a drink" choice when the kept food has none;
     /// - the removed foods are soft-deleted and remember the kept food (`Food.mergedIntoID`), so a copy of a bundled or
     ///   USDA food that was merged away resolves to the kept food in search, ``localCopy(of:)`` and ``saveCopy(_:)``
     ///   instead of coming back.
@@ -110,6 +111,7 @@ public extension FoodRepository {
                 keep.useCount += removed.useCount
                 keep.lastUsedAt = [keep.lastUsedAt, removed.lastUsedAt].compactMap(\.self).max()
                 keep.isFavorite = keep.isFavorite || removed.isFavorite
+                keep.countsAsFluid = keep.countsAsFluid ?? removed.countsAsFluid // "Counts as a drink", unless set here
 
                 removed.mergedIntoID = keepID
                 removed.stampDeleted(now)

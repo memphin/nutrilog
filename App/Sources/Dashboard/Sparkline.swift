@@ -130,14 +130,10 @@ extension DashboardSnapshot {
             bodyFatByDay[weight.day] = weight.bodyFatPct
         }
 
-        // Water: logged in Vitalion plus other apps' water from Health, as on the tile; a day with neither is a gap.
-        var water: [LocalDay: Double] = data.waterByDay
-        for row in recent {
-            if let other = row.waterMl {
-                water[row.day, default: 0] += other
-            }
-        }
-        water = water.filter { $0.value > 0 }
+        // Hydration: every drink logged in Vitalion plus other apps' water from Health, as on the tile; a day with
+        // neither is a gap.
+        let otherAppsMl = Dictionary(recent.compactMap { row in row.waterMl.map { (row.day, $0) } }, uniquingKeysWith: +)
+        let water = HydrationTotals.byDay(intakes: data.hydrationIntakes, otherAppsMl: otherAppsMl)
 
         let steps = series { $0.steps.map(Double.init) }
         let total = series { EnergyBurned(activeKcal: $0.activeKcal, restingKcal: $0.basalKcal).totalKcal }
@@ -184,19 +180,25 @@ enum GoalColor {
         color(SleepGoal.band(minutes: minutes, goal: goal))
     }
 
-    /// Water: green at or above the goal, orange close below it, red far below.
+    /// A day's hydration total: green at or above the goal, orange close below it, red far below.
     static func water(_ ml: Double, goalMl: Double) -> Color {
         color(WaterGoal.band(ml: ml, goalMl: goalMl))
+    }
+
+    /// Today's hydration, by its status (`WaterGoal.band(status:)`): the primary text colour on pace.
+    static func hydration(_ status: HydrationStatus) -> Color {
+        WaterGoal.band(status: status).map(color) ?? .primary
     }
 }
 
 extension DashboardSnapshot {
     /// The colour of one day's bar on a tile's sparkline; nil for tiles without a goal (the tile's tint is used).
-    func goalColor(of tile: DashboardTile, value: Double) -> Color? {
+    /// Hydration is read against `day`'s own goal (nil: today's).
+    func goalColor(of tile: DashboardTile, value: Double, day: LocalDay? = nil) -> Color? {
         switch tile {
         case .steps: GoalColor.steps(value, goal: stepGoal)
         case .sleep: GoalColor.sleep(minutes: value, goal: sleepGoalMin)
-        case .water: GoalColor.water(value, goalMl: water.goalMl)
+        case .water: GoalColor.water(value, goalMl: day.flatMap { hydrationGoals[$0] } ?? water.goalMl)
         default: nil
         }
     }
