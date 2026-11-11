@@ -40,6 +40,7 @@
 		3A4FB3F3A1F282E55185103A /* DashboardSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50846937FB47D64F6C7FF29D /* DashboardSettingsView.swift */; };
 		3ECFC0DA93A20EDA8A972387 /* Sparkline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01EE353FF2D90F6EFF2F3B3B /* Sparkline.swift */; };
 		421CEB7BA2BE3816DB3899C1 /* FoodEditorLookupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E2F70519A059DDAC9177C03 /* FoodEditorLookupTests.swift */; };
+		466BB6D6405885DDB5039427 /* DashboardEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEFCCA68F0A67ECF0B040E21 /* DashboardEditing.swift */; };
 		48CF0140E6C20D235385AFE3 /* SmartLogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43D66CA0BD012691840B5848 /* SmartLogTests.swift */; };
 		4B3249A25400669043F23BFD /* TileDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB5B6EE728347650CA8871CD /* TileDetailView.swift */; };
 		4E6E423EA294CE432DABE3EE /* DebugScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 398357AEBA3E46B5F2975E21 /* DebugScreens.swift */; };
@@ -222,6 +223,7 @@
 		A3D1C9580AC14854A05181BB /* AppEnvironmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironmentTests.swift; sourceTree = "<group>"; };
 		A51D67B28981C0A28E21D725 /* StubOpenFoodFactsClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StubOpenFoodFactsClient.swift; sourceTree = "<group>"; };
 		AC84424AD8A575A259628DBB /* TrendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsView.swift; sourceTree = "<group>"; };
+		AEFCCA68F0A67ECF0B040E21 /* DashboardEditing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardEditing.swift; sourceTree = "<group>"; };
 		B2562F6E4540C9C32B3D5E43 /* MealPlanViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPlanViews.swift; sourceTree = "<group>"; };
 		B2F38B07CDBC88FC4F971C55 /* MealPhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPhoto.swift; sourceTree = "<group>"; };
 		B635EC1EE150FFE724B4A62D /* MetricChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricChartView.swift; sourceTree = "<group>"; };
@@ -482,6 +484,7 @@
 				BF637A935EF04706613296A2 /* CaffeineStatus.swift */,
 				3181C2776D24E2128BB05805 /* CaffeineTile.swift */,
 				CC8F7BBD0100CDEC8139683A /* DashboardAccessibility.swift */,
+				AEFCCA68F0A67ECF0B040E21 /* DashboardEditing.swift */,
 				C25FBE25FD065F70F074E151 /* DashboardModel.swift */,
 				C3A6C8154BF03A64FECDE2B0 /* DashboardSnapshot.swift */,
 				72C954B5795DDCACDCBA6BB8 /* DashboardTiles.swift */,
@@ -760,6 +763,7 @@
 				E79249404E49D2FE1C4F6248 /* CheckInReminder.swift in Sources */,
 				D302A63BD349DDC0689E6B43 /* CheckInView.swift in Sources */,
 				04E8976C47069667EB0EBEA0 /* DashboardAccessibility.swift in Sources */,
+				466BB6D6405885DDB5039427 /* DashboardEditing.swift in Sources */,
 				87E1F6A8AD99A986439D6A7D /* DashboardModel.swift in Sources */,
 				3A4FB3F3A1F282E55185103A /* DashboardSettingsView.swift in Sources */,
 				8DB27045B44240C76FD57872 /* DashboardSnapshot.swift in Sources */,

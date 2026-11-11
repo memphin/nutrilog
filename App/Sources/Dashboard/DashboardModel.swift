@@ -59,6 +59,42 @@ final class DashboardModel {
         snapshot.state(of: tile, access: access, isFirstSync: isFirstSync)
     }
 
+    // MARK: Editing the layout
+
+    /// True while Today is in edit mode (long-press a tile): tiles can be dragged, hidden and shown.
+    var isEditing = false
+
+    func moveTile(_ tile: DashboardTile, onto target: DashboardTile) {
+        updateLayout { $0.move(tile, onto: target) }
+    }
+
+    func moveTile(_ tile: DashboardTile, by offset: Int) {
+        updateLayout { $0.move(tile, by: offset) }
+    }
+
+    func hideTile(_ tile: DashboardTile) {
+        updateLayout { $0.setVisible(tile, false) }
+    }
+
+    func showTile(_ tile: DashboardTile) {
+        updateLayout { $0.show(tile) }
+    }
+
+    /// Applies `change` and saves it (the same setting Settings → Dashboard edits); the layout changes only when the
+    /// save worked.
+    private func updateLayout(_ change: (inout DashboardLayout) -> Void) {
+        guard let profiles = environment.profiles else { return }
+        var updated = layout
+        change(&updated)
+        guard updated != layout else { return }
+        do {
+            try updated.save(to: profiles)
+            layout = updated
+        } catch {
+            errorMessage = "Couldn't save the dashboard layout: \(error.localizedDescription)"
+        }
+    }
+
     // MARK: Loading
 
     /// Re-reads the settings the dashboard caches (layout, water sizes, step and sleep goals, caffeine) — they are
