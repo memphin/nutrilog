@@ -17,6 +17,28 @@ struct HydrationDetailTests {
         #expect(HydrationStatusText.line(.inGap(since: since), now: now) == "No drink for 3 h 20 min")
     }
 
+    @Test func `the chart spans wake-up to bedtime, drinks at odd times drawn at its edges`() {
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: Date(timeIntervalSinceReferenceDate: 800_000_000))
+        func at(_ hour: Double) -> Date {
+            start.addingTimeInterval(hour * 3600)
+        }
+        func water(_ ml: Double, _ hour: Double) -> FluidIntake {
+            FluidIntake(id: "\(hour)", ml: ml, at: at(hour), kind: .water, source: .water, name: "Water")
+        }
+        let day = HydrationDay(
+            intakes: [water(250, 2), water(500, 9), water(100, 23.75)], otherAppsMl: 0, goalMl: 2500,
+            wake: at(7), bedtime: at(23), gapThreshold: 3 * 3600, behindMarginMl: 500, now: at(23.9),
+        )
+        let window = HydrationChart.window(day)
+        #expect(window == at(7) ... at(23))
+        // The 02:00 glass counts from wake-up; the late one at bedtime.
+        #expect(HydrationChart.points(day, window: window).map { [$0.at, $0.totalMl] as [AnyHashable] }
+            == [[at(7), 250.0], [at(9), 750.0], [at(23), 850.0]])
+        #expect(HydrationChart.totalLine(day, window: window).map { [$0.at, $0.totalMl] as [AnyHashable] }
+            == [[at(7), 250.0], [at(9), 750.0], [at(23), 850.0]])
+    }
+
     @Test func `delete water intake offers undo`() async throws {
         let env = AppEnvironment.preview(clock: ManualClock().appClock)
         let model = DashboardModel(environment: env)

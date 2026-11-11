@@ -22,6 +22,15 @@ struct HydrationSettingsTests {
         return calendar.date(bySettingHour: hour, minute: minute, second: 0, of: day)!
     }
 
+    @Test func `the notifications-off hint shows when reminders are on but permission is gone`() async {
+        let denied = RecordingHydrationReminder(authorized: false)
+        let allowed = RecordingHydrationReminder(authorized: true)
+        #expect(await HydrationSettingsView.notificationsAreOff(remindersEnabled: true, reminder: denied))
+        #expect(await !HydrationSettingsView.notificationsAreOff(remindersEnabled: true, reminder: allowed))
+        #expect(await !HydrationSettingsView.notificationsAreOff(remindersEnabled: false, reminder: denied))
+        #expect(denied.calls.isEmpty) // never asks for permission
+    }
+
     @Test func `defaults when nothing stored`() throws {
         let profiles = try #require(AppEnvironment.preview().profiles)
         let loaded = HydrationSettings.load(from: profiles)

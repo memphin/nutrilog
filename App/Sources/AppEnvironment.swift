@@ -183,7 +183,8 @@ final class AppEnvironment {
         db.map { DailyMetricsRepository($0, clock: clock) }
     }
 
-    /// Water logged in Vitalion (FR-46). The day's total is these entries + `daily_metrics.water_ml` (other apps).
+    /// Water quick-adds logged in Vitalion (FR-46). The day's hydration total also counts diary and caffeine drinks
+    /// (`hydration`) and other apps' water (`daily_metrics.water_ml`): `WaterProgress`.
     var water: WaterRepository? {
         db.map { WaterRepository($0, clock: clock) }
     }

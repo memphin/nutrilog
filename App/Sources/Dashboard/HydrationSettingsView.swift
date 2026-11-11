@@ -27,7 +27,10 @@ struct HydrationSettingsView: View {
             remindersSection
         }
         .navigationTitle("Hydration")
-        .task(id: environment.dataGeneration) { load() }
+        .task(id: environment.dataGeneration) {
+            load()
+            await checkNotifications()
+        }
         .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: {
             if !$0 {
                 errorMessage = nil
@@ -149,6 +152,20 @@ struct HydrationSettingsView: View {
         }
         let today = environment.today
         trendKg = HydrationGoalResolver.trendsKg(in: today ... today, environment: environment)[today]
+    }
+
+    /// Shows the "Notifications are off" hint when permission was taken away while reminders stayed on.
+    private func checkNotifications() async {
+        notificationsDenied = await Self.notificationsAreOff(
+            remindersEnabled: settings.remindersEnabled, reminder: environment.hydrationReminder,
+        )
+    }
+
+    /// Whether to show "Notifications are off": reminders are on, but notifications are not allowed (permission
+    /// revoked in iOS Settings, or reminders restored from a backup). Never asks for permission.
+    static func notificationsAreOff(remindersEnabled: Bool, reminder: any HydrationReminderScheduling) async -> Bool {
+        guard remindersEnabled else { return false }
+        return await !reminder.isAuthorized()
     }
 
     private func saveGoal(mode: HydrationGoalMode, fixedMl: Double) {

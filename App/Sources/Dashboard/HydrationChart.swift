@@ -9,7 +9,7 @@ import SwiftUI
 struct HydrationChart: View {
     let day: HydrationDay
 
-    private struct Step: Identifiable {
+    struct Step: Identifiable {
         var at: Date
         var totalMl: Double
         var id: Date {
@@ -19,7 +19,7 @@ struct HydrationChart: View {
 
     var body: some View {
         let window = Self.window(day)
-        let points = zip(day.intakes, day.steps).map { intake, step in (intake: intake, totalMl: step.totalMl) }
+        let points = Self.points(day, window: window)
         let top = max(day.goalMl, day.steps.last?.totalMl ?? 0) * 1.1
         Chart {
             ForEach(day.gaps, id: \.start) { gap in
@@ -46,7 +46,7 @@ struct HydrationChart: View {
                     .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
             }
             ForEach(points, id: \.intake.id) { point in
-                PointMark(x: .value("Time", point.intake.at), y: .value("Total", point.totalMl))
+                PointMark(x: .value("Time", point.at), y: .value("Total", point.totalMl))
                     .foregroundStyle(Self.color(point.intake.kind))
                     .symbolSize(40)
             }
@@ -82,17 +82,24 @@ struct HydrationChart: View {
         .accessibilityValue(Self.accessibilityValue(day))
     }
 
-    /// Wake-up to bedtime, widened to take in drinks outside it and now.
-    private static func window(_ day: HydrationDay) -> ClosedRange<Date> {
+    /// The day the chart spans: wake-up to bedtime, so a drink at an odd time doesn't squash it (such drinks are
+    /// drawn at its edges). Without a valid waking window, everything from the earliest to the latest of wake-up,
+    /// bedtime, now and the drinks.
+    static func window(_ day: HydrationDay) -> ClosedRange<Date> {
+        if day.isWindowValid {
+            return day.wake ... day.bedtime
+        }
         let dates = [day.wake, day.bedtime, day.now] + day.intakes.map(\.at)
         let start = dates.min() ?? day.wake
         let end = dates.max() ?? day.bedtime
         return start ... max(end, start.addingTimeInterval(3600))
     }
 
-    /// The running total from the window's start (0) through each drink to now (or the last drink, when later).
-    private static func totalLine(_ day: HydrationDay, window: ClosedRange<Date>) -> [Step] {
-        var line = [Step(at: window.lowerBound, totalMl: 0)] + day.steps.map { Step(at: $0.at, totalMl: $0.totalMl) }
+    /// The running total from the window's start (0, or what was drunk before it) through each drink to now (or the
+    /// last drink, when later); drinks outside the window count at its edges.
+    static func totalLine(_ day: HydrationDay, window: ClosedRange<Date>) -> [Step] {
+        var line = [Step(at: window.lowerBound, totalMl: 0)]
+            + day.steps.map { Step(at: $0.at.clamped(to: window), totalMl: $0.totalMl) }
         let last = line[line.count - 1]
         let end = max(min(day.now, window.upperBound), last.at)
         if end > last.at {
@@ -108,6 +115,11 @@ struct HydrationChart: View {
             }
         }
         return unique
+    }
+
+    /// Each drink where it is drawn (outside the window: at its edge), with the running total after it.
+    static func points(_ day: HydrationDay, window: ClosedRange<Date>) -> [(intake: FluidIntake, at: Date, totalMl: Double)] {
+        zip(day.intakes, day.steps).map { intake, step in (intake: intake, at: intake.at.clamped(to: window), totalMl: step.totalMl) }
     }
 
     private static func color(_ kind: FluidIntake.Kind) -> Color {
@@ -131,5 +143,11 @@ struct HydrationChart: View {
             text += ", \(HydrationStrip.accessibilityLabel(day))"
         }
         return text + "."
+    }
+}
+
+private extension Date {
+    func clamped(to range: ClosedRange<Date>) -> Date {
+        min(max(self, range.lowerBound), range.upperBound)
     }
 }

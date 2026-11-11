@@ -12,8 +12,6 @@ struct DashboardData: Equatable {
     var metrics: [DailyMetricsRecord] = []
     /// Manual weights of the history window.
     var manualWeights: [WeightEntry] = []
-    /// Water logged in Vitalion today (the detail's list of entries).
-    var water: [WaterEntry] = []
     /// Every drink logged in Vitalion (water, diary drinks, caffeine drinks) per day over the sparkline window, today
     /// included.
     var hydrationIntakes: [LocalDay: [FluidIntake]] = [:]

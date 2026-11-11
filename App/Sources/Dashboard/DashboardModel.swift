@@ -139,7 +139,6 @@ final class DashboardModel {
         await withDiscardingTaskGroup { group in
             group.addTask { await self.observeMetrics() }
             group.addTask { await self.observeWeights() }
-            group.addTask { await self.observeWater(today) }
             group.addTask { await self.observeHydration() }
             group.addTask { await self.observeCaffeine() }
             group.addTask { await self.observeDiary(today) }
@@ -176,12 +175,6 @@ final class DashboardModel {
         if data.weightTrends != trends {
             data.weightTrends = trends
         }
-    }
-
-    /// Today's water entries, for the detail's list.
-    private func observeWater(_ day: LocalDay) async {
-        guard let repo = environment.water else { return }
-        await DiaryModel.resubscribing { repo.observeEntries(for: day) } onValue: { data.water = $0 } onError: { report($0) }
     }
 
     /// Every drink of the sparkline's 7 days in one observation: today's for the tile, daily totals for the chart.
@@ -257,19 +250,6 @@ final class DashboardModel {
             offerUndo("Added \(ml) ml water") { try water.softDelete(ids: [entry.id]) }
         } catch {
             errorMessage = "Couldn't log water: \(error.localizedDescription)"
-        }
-    }
-
-    /// Deletes logged water entries and offers undo (restore).
-    func deleteWater(_ entries: [WaterEntry]) {
-        guard let water = environment.water, !entries.isEmpty else { return }
-        let ids = entries.map(\.id)
-        do {
-            try water.softDelete(ids: ids)
-            let total = entries.reduce(0) { $0 + $1.ml }
-            offerUndo("Removed \(DashboardFormat.ml(total)) water") { try water.restore(ids: ids) }
-        } catch {
-            errorMessage = "Couldn't remove water: \(error.localizedDescription)"
         }
     }
 

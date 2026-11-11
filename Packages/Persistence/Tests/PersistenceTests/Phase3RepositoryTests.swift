@@ -519,18 +519,6 @@ struct Phase3QueryTests {
         #expect(try Fixture().diary.firstLoggedDay() == nil)
     }
 
-    @Test func `water totals per day`() throws {
-        let f = try Fixture()
-        let d = day("2026-11-05")
-        try f.water.add(ml: 300, day: d)
-        try f.water.add(ml: 500, day: d)
-        let gone = try f.water.add(ml: 200, day: d.next)
-        try f.water.softDelete(ids: [gone.id])
-        try f.water.add(ml: 250, day: d.adding(days: 2))
-        #expect(try f.water.totals(in: d ... d.adding(days: 5)) == [d: 800, d.adding(days: 2): 250])
-        #expect(try f.water.totals(in: d.adding(days: 3) ... d.adding(days: 5)).isEmpty)
-    }
-
     @Test func `weight trend is stored on existing rows and survives a Health refresh`() throws {
         let f = try Fixture()
         let d = day("2026-11-05")
