@@ -3,6 +3,7 @@ import Foundation
 import Persistence
 import Synchronization
 import Testing
+import UserNotifications
 @testable import Vitalion
 
 /// Records what the reminder service asks of the notification center. Like iOS, it refuses to schedule without
@@ -297,6 +298,20 @@ struct HydrationReminderServiceTests {
         await env.handleHydrationAddAction()
         #expect(try #require(env.water).entries(for: today).map(\.ml) == [250])
         #expect(reminder.scheduledDates.last != nil)
+    }
+
+    @Test func `the notification delegate routes only the hydration reminder`() {
+        let reminder = LocalNotificationHydrationReminder.identifier
+        let add = LocalNotificationHydrationReminder.addActionIdentifier
+        #expect(NotificationDelegate.action(identifier: reminder, actionIdentifier: add) == .addWater)
+        let tap = UNNotificationDefaultActionIdentifier, dismiss = UNNotificationDismissActionIdentifier
+        #expect(NotificationDelegate.action(identifier: reminder, actionIdentifier: tap) == .openHydration)
+        #expect(NotificationDelegate.action(identifier: reminder, actionIdentifier: dismiss) == nil)
+        // Other notifications (the weekly check-in) are left alone, whatever the action.
+        #expect(NotificationDelegate.action(identifier: "weekly-check-in", actionIdentifier: tap) == nil)
+        #expect(NotificationDelegate.action(identifier: "weekly-check-in", actionIdentifier: add) == nil)
+        #expect(NotificationDelegate.presentationOptions(identifier: reminder) == [.banner, .sound])
+        #expect(NotificationDelegate.presentationOptions(identifier: "weekly-check-in") == [])
     }
 
     @Test func `tapping the reminder opens the Hydration detail on Today`() {

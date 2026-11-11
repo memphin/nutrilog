@@ -5,7 +5,7 @@ import UserNotifications
 /// reminder's background action reaches it). Only the hydration reminder is handled here: its "+ 250 ml" action logs
 /// water and its tap opens the Hydration detail. Every other notification (the weekly check-in) behaves as without a
 /// delegate: not shown while the app is open, a tap just opens the app.
-final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate, Sendable {
+final class NotificationDelegate: NSObject, @preconcurrency UNUserNotificationCenterDelegate, Sendable {
     /// The notification center keeps its delegate weakly.
     @MainActor private static var installed: NotificationDelegate?
 
@@ -28,21 +28,47 @@ final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate, Se
         UNUserNotificationCenter.current().delegate = delegate
     }
 
+    /// What a tap on a notification does.
+    enum Action: Equatable {
+        /// The hydration reminder's "+ 250 ml" action.
+        case addWater
+        /// A tap on the hydration reminder itself.
+        case openHydration
+    }
+
+    // Main actor: the completion handler UIKit bridges these async methods to must be called on the main thread, so
+    // they must not finish on a background executor after an await. (The `@preconcurrency` conformance lets the
+    // notification center's non-Sendable arguments into the main actor: it calls its delegate on the main thread.)
+
+    @MainActor
     func userNotificationCenter(
         _: UNUserNotificationCenter, willPresent notification: UNNotification,
     ) async -> UNNotificationPresentationOptions {
-        Self.isHydrationReminder(notification.request.identifier) ? [.banner, .sound] : []
+        Self.presentationOptions(identifier: notification.request.identifier)
     }
 
+    @MainActor
     func userNotificationCenter(_: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
-        guard Self.isHydrationReminder(response.notification.request.identifier) else { return }
-        switch response.actionIdentifier {
-        case LocalNotificationHydrationReminder.addActionIdentifier:
-            await addWater()
-        case UNNotificationDefaultActionIdentifier:
-            await openHydration()
-        default:
-            break // dismissed
+        switch Self.action(identifier: response.notification.request.identifier, actionIdentifier: response.actionIdentifier) {
+        case .addWater: await addWater()
+        case .openHydration: openHydration()
+        case nil: break // dismissed, or not the hydration reminder
+        }
+    }
+
+    /// How a notification arriving while the app is open is shown: only the hydration reminder is.
+    static func presentationOptions(identifier: String) -> UNNotificationPresentationOptions {
+        isHydrationReminder(identifier) ? [.banner, .sound] : []
+    }
+
+    /// What the response `actionIdentifier` to the notification `identifier` does; nil for anything but a tap or the
+    /// add action on the hydration reminder.
+    static func action(identifier: String, actionIdentifier: String) -> Action? {
+        guard isHydrationReminder(identifier) else { return nil }
+        switch actionIdentifier {
+        case LocalNotificationHydrationReminder.addActionIdentifier: return .addWater
+        case UNNotificationDefaultActionIdentifier: return .openHydration
+        default: return nil
         }
     }
 
