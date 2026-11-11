@@ -29,50 +29,98 @@ jobs:
           gitleaks git --no-banner --redact -v .
 
   packages:
-    name: Swift packages — build & test
+    name: Swift packages — build & test (${{ matrix.group.name }})
     runs-on: macos-26
+    # Two jobs, not one per package: a run then takes 3 macOS runners instead of 8, so runs no longer wait for each
+    # other's runners (the repo gets 5 macOS runners at a time). The packages that build GRDB go together.
     strategy:
       fail-fast: false
       matrix:
-        package: [Core, Persistence, FoodSources, FoodLookup, DesignSystem, Scanner, HealthKitClient]  # Scanner's camera UI and HealthKitClient's live HealthKit code are `#if os(iOS)` (built by the app job); their logic tests run here
+        group:
+          - name: GRDB
+            packages: Persistence FoodLookup
+          - name: other
+            packages: Core FoodSources DesignSystem Scanner HealthKitClient  # Scanner's camera UI and HealthKitClient's live HealthKit code are `#if os(iOS)` (built by the app job); their logic tests run here
     steps:
       - uses: actions/checkout@v5
       - name: Show toolchain
-        run: xcodebuild -version && swift --version
-      - name: Cache SwiftPM
-        uses: actions/cache@v5
+        id: toolchain
+        run: |
+          xcodebuild -version && swift --version
+          echo "xcode=$(xcodebuild -version | awk '/Build version/ { print $3 }')" >> "$GITHUB_OUTPUT"
+      - name: Restore SwiftPM cache
+        id: spm-cache
+        uses: actions/cache/restore@v5
         with:
           path: |
-            Packages/${{ matrix.package }}/.build
+            Packages/*/.build
             ~/Library/Caches/org.swift.swiftpm
           # The repo name is in the key because .build holds absolute paths: a cache from a checkout under another
           # name (the repo was renamed from nutrilog) fails with "missing required module 'SwiftShims'".
-          key: spm-${{ github.event.repository.name }}-${{ matrix.package }}-${{ hashFiles(format('Packages/{0}/Package.resolved', matrix.package)) }}
-      - name: Test ${{ matrix.package }}
-        working-directory: Packages/${{ matrix.package }}
-        run: swift test --parallel --enable-code-coverage
-      - name: Coverage
-        working-directory: Packages/${{ matrix.package }}
+          # The source hash makes every change save a fresh cache; restore-keys start from the latest one.
+          key: spm-${{ github.event.repository.name }}-${{ steps.toolchain.outputs.xcode }}-${{ matrix.group.name }}-${{ hashFiles('Packages/**/*.swift', 'Packages/**/Package.resolved') }}
+          restore-keys: spm-${{ github.event.repository.name }}-${{ steps.toolchain.outputs.xcode }}-${{ matrix.group.name }}-
+      - name: Test ${{ matrix.group.packages }}
         run: |
-          JSON=$(swift test --show-codecov-path)
-          PCT=$(jq '[.data[0].files[] | select(.filename | test("/Sources/"))] | (map(.summary.lines.covered) | add) * 100 / (map(.summary.lines.count) | add) | floor' "$JSON")
-          echo "${{ matrix.package }} line coverage: ${PCT}%" | tee -a "$GITHUB_STEP_SUMMARY"
-          # Core holds the nutrient/TDEE/date math: keep it ≥ 70 % (NFR-7, backlog #16).
-          if [ "${{ matrix.package }}" = "Core" ] && [ "$PCT" -lt 70 ]; then
-            echo "::error::Core coverage ${PCT}% is below 70%"
+          failed=()
+          for package in ${{ matrix.group.packages }}; do
+            echo "::group::$package"
+            if ! (cd "Packages/$package" && swift test --parallel --enable-code-coverage); then
+              failed+=("$package")
+              echo "::error::$package tests failed"
+              echo "::endgroup::"
+              continue
+            fi
+            JSON=$(cd "Packages/$package" && swift test --show-codecov-path)
+            PCT=$(jq '[.data[0].files[] | select(.filename | test("/Sources/"))] | (map(.summary.lines.covered) | add) * 100 / (map(.summary.lines.count) | add) | floor' "$JSON")
+            echo "$package line coverage: ${PCT}%" | tee -a "$GITHUB_STEP_SUMMARY"
+            # Core holds the nutrient/TDEE/date math: keep it ≥ 70 % (NFR-7, backlog #16).
+            if [ "$package" = "Core" ] && [ "$PCT" -lt 70 ]; then
+              echo "::error::Core coverage ${PCT}% is below 70%"
+              failed+=("Core coverage")
+            fi
+            echo "::endgroup::"
+          done
+          if [ ${#failed[@]} -gt 0 ]; then
+            echo "::error::Failed: ${failed[*]}"
             exit 1
           fi
+      # Saved from main only: the GRDB group's cache is ~900 MB, and saving it from every PR would push the other caches
+      # out of the repo's 10 GB. PRs restore main's.
+      - name: Save SwiftPM cache
+        if: github.ref == 'refs/heads/main' && steps.spm-cache.outputs.cache-matched-key != steps.spm-cache.outputs.cache-primary-key
+        uses: actions/cache/save@v5
+        with:
+          path: |
+            Packages/*/.build
+            ~/Library/Caches/org.swift.swiftpm
+          key: ${{ steps.spm-cache.outputs.cache-primary-key }}
 
   app:
     name: iOS app — build & test (simulator)
     runs-on: macos-26
-    # No `needs: packages`: runs alongside the package jobs instead of waiting 2–3 minutes for them.
+    # No `needs: packages`: runs alongside the package jobs instead of waiting for them.
+    env:
+      DERIVED_DATA: ${{ github.workspace }}/DerivedData
+      # Xcode's compilation cache: compiler outputs keyed by the content of their inputs, so (unlike a cached
+      # DerivedData, which goes stale because a checkout gives every file a new mtime) it is reused after a fresh
+      # checkout and only what changed is compiled again. Saved after every run, restored from the newest one.
+      XCODE_CAS: ${{ github.workspace }}/.ci-cache/xcode-cas
     steps:
       - uses: actions/checkout@v5
       - name: Show toolchain
-        run: xcodebuild -version
+        id: toolchain
+        run: |
+          xcodebuild -version
+          echo "xcode=$(xcodebuild -version | awk '/Build version/ { print $3 }')" >> "$GITHUB_OUTPUT"
       - name: Create placeholder secrets
         run: cp Config/Secrets.xcconfig.template Config/Secrets.xcconfig
+      - name: Restore compilation cache
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ env.XCODE_CAS }}
+          key: xcode-cas-${{ steps.toolchain.outputs.xcode }}-${{ github.sha }}
+          restore-keys: xcode-cas-${{ steps.toolchain.outputs.xcode }}-
       - name: Pick an iPhone simulator
         id: sim
         run: |
@@ -80,18 +128,41 @@ jobs:
             | jq -r '[.devices | to_entries[] | select(.key | contains("iOS")) | .value[] | select(.name | startswith("iPhone"))] | last | .udid')
           echo "Using simulator $UDID"
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
-          # Start booting now (returns at once): the simulator boots while the app compiles, not after.
-          xcrun simctl boot "$UDID" || true
-      - name: Build & test
+          # Not booted here but by the test step, after the build: on the runner's 3 cores a booting simulator slows the
+          # compiler more than the boot takes on its own (measured in #93).
+      - name: Build for testing
         run: |
           set -o pipefail
-          xcodebuild test \
+          # COMPILER_INDEX_STORE_ENABLE=NO: CI never uses the index Xcode otherwise writes while compiling.
+          xcodebuild build-for-testing \
             -project Vitalion.xcodeproj \
             -scheme Vitalion \
-            -destination "id=${{ steps.sim.outputs.udid }}" \
-            -resultBundlePath TestResults.xcresult \
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }},arch=arm64" \
+            -derivedDataPath "$DERIVED_DATA" \
             -enableCodeCoverage NO \
             CODE_SIGNING_ALLOWED=NO \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            COMPILATION_CACHE_ENABLE_CACHING=YES \
+            COMPILATION_CACHE_CAS_PATH="$XCODE_CAS" \
+            COMPILATION_CACHE_LIMIT_SIZE=2G \
+            -quiet
+          du -sh "$XCODE_CAS" || true
+      - name: Save compilation cache
+        if: always() && steps.toolchain.outputs.xcode != ''
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ env.XCODE_CAS }}
+          key: xcode-cas-${{ steps.toolchain.outputs.xcode }}-${{ github.sha }}
+      - name: Test
+        run: |
+          set -o pipefail
+          xcodebuild test-without-building \
+            -project Vitalion.xcodeproj \
+            -scheme Vitalion \
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }},arch=arm64" \
+            -derivedDataPath "$DERIVED_DATA" \
+            -resultBundlePath TestResults.xcresult \
+            -enableCodeCoverage NO \
             -quiet
       - name: Upload test results
         if: always()
@@ -99,6 +170,10 @@ jobs:
         with:
           name: TestResults
           path: TestResults.xcresult
+      # Without this the runner spends 20–50 s killing the simulator's leftover processes one by one.
+      - name: Shut down the simulator
+        if: always()
+        run: xcrun simctl shutdown all || true
 
   # Archives, signs (automatic, cloud-managed, via an App Store Connect API key: no certificates or profiles in the
   # repo) and uploads to TestFlight. Runs only for `v*` tags, after the tests passed. One-time setup and the secrets
