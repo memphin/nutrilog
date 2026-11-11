@@ -212,14 +212,20 @@ struct DashboardTileView: View {
             .font(NL.Typography.label)
             .foregroundStyle(.secondary)
             .labelStyle(.titleAndIcon)
-        if hasInlineButtons {
-            Button(action: open) { label }
-                .buttonStyle(.plain)
-                .accessibilityLabel(model.snapshot.accessibilityLabel(of: tile, state: .ready, now: now))
-                .accessibilityValue(trend ?? "")
-                .accessibilityHint(detailHint)
-        } else {
-            label
+        HStack(alignment: .firstTextBaseline) {
+            if hasInlineButtons {
+                Button(action: open) { label }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(model.snapshot.accessibilityLabel(of: tile, state: .ready, now: now))
+                    .accessibilityValue(trend ?? "")
+                    .accessibilityHint(detailHint)
+            } else {
+                label
+            }
+            if let streak = model.snapshot.streak(for: tile) {
+                Spacer(minLength: NL.Spacing.xs)
+                StreakBadge(streak: streak)
+            }
         }
     }
 }

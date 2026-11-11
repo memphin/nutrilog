@@ -16,11 +16,13 @@ extension DashboardSnapshot {
         if tile == .caffeine {
             return ([tile.title] + caffeineStatus(now: now, calendar: calendar).accessibilityParts()).joined(separator: ", ")
         }
+        let spokenStreak = streak(for: tile).flatMap(StreakBadge.spoken)
         if tile == .water {
-            return ([tile.title] + hydrationParts(hydrationDay(now: now, calendar: calendar))).joined(separator: ", ")
+            let parts = hydrationParts(hydrationDay(now: now, calendar: calendar))
+            return ([tile.title] + parts + [spokenStreak].compactMap(\.self)).joined(separator: ", ")
         }
         let parts = accessibilityParts(of: tile, energyUnit: energyUnit)
-        return ([tile.title] + (parts.isEmpty ? ["no data"] : parts)).joined(separator: ", ")
+        return ([tile.title] + (parts.isEmpty ? ["no data"] : parts) + [spokenStreak].compactMap(\.self)).joined(separator: ", ")
     }
 
     private func accessibilityParts(of tile: DashboardTile, energyUnit: EnergyUnit) -> [String] {

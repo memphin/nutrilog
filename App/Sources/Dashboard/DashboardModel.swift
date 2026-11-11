@@ -177,10 +177,11 @@ final class DashboardModel {
         }
     }
 
-    /// Every drink of the sparkline's 7 days in one observation: today's for the tile, daily totals for the chart.
+    /// Every drink of the history window in one observation: today's for the tile, daily totals for the chart (its
+    /// last 7 days) and the hydration streak.
     private func observeHydration() async {
         guard let repo = environment.hydration else { return }
-        let window = data.sparklineWindow
+        let window = data.window
         await DiaryModel.resubscribing { repo.observeIntakes(in: window) } onValue: { data.hydrationIntakes = $0 } onError: { report($0) }
     }
 
