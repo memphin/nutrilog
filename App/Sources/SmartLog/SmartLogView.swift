@@ -49,7 +49,7 @@ struct SmartLogView: View {
                 }
                 if model.phase == .review {
                     ToolbarItem(placement: .confirmationAction) {
-                        Button("Log") { log() }.disabled(!model.canLog)
+                        Button(target.planned ? "Plan" : "Log") { log() }.disabled(!model.canLog)
                     }
                 }
             }
@@ -202,7 +202,7 @@ struct SmartLogView: View {
 
     private func log() {
         do {
-            try model.log(slotID: slotID, day: target.day, in: environment)
+            try model.log(slotID: slotID, day: target.day, planned: target.planned, in: environment)
             dismiss()
             onLogged()
         } catch {

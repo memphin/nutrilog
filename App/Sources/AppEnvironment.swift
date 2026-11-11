@@ -417,6 +417,29 @@ final class AppEnvironment {
             macros: MacroTargets(proteinG: 160, carbsG: 220, fatG: 75), origin: .manual,
         ))
         insertSampleHistory(oats: oats, milk: milk)
+        insertSamplePlan(oats: oats, milk: milk)
+    }
+
+    /// A meal plan for the coming days: tonight's dinner, and the same prepped lunch for the rest of the week.
+    private func insertSamplePlan(oats: Food?, milk: Food?) {
+        guard let foods, let mealPlan else { return }
+        let chicken = try? foods.save(FoodDetail(food: Food(
+            name: "Chicken breast, cooked", per100: Nutrients(kcal: 165, proteinG: 31, carbsG: 0, fatG: 3.6),
+        ))).food
+        let rice = try? foods.save(FoodDetail(food: Food(
+            name: "Rice, cooked", per100: Nutrients(kcal: 130, proteinG: 2.7, carbsG: 28, fatG: 0.3),
+        ))).food
+        guard let chicken, let rice else { return }
+        let prepped: [DiaryRepository.LogItem] = [.init(food: chicken, quantity: .base(150)), .init(food: rice, quantity: .base(200))]
+        _ = try? mealPlan.planAll(prepped, slotID: "dinner", day: today)
+        for offset in 1 ... 4 {
+            _ = try? mealPlan.planAll(prepped, slotID: "lunch", day: today.adding(days: offset))
+        }
+        if let oats, let milk {
+            _ = try? mealPlan.planAll(
+                [.init(food: oats, quantity: .base(60)), .init(food: milk, quantity: .base(250))], slotID: "breakfast", day: today.next,
+            )
+        }
     }
 
     /// Six weeks of diary history, a complete profile and a saved meal, so the Trends screens (maintenance

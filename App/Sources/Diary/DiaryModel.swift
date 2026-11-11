@@ -18,8 +18,10 @@ final class DiaryModel {
     }
 
     private(set) var diary: DayDiary?
+    /// The day's meal plan that is not eaten yet.
+    private(set) var planned: [PlannedEntry] = []
     private(set) var target: Target?
-    /// Foods in the current day measured in ml (entries only store the amount).
+    /// Foods in the current day (entries and plan) measured in ml (entries only store the amount).
     private(set) var liquidFoodIDs: Set<String> = []
     var errorMessage: String?
     let undo = UndoCenter()
@@ -43,6 +45,11 @@ final class DiaryModel {
 
     var isToday: Bool {
         day == today
+    }
+
+    /// A day after today: new food goes to the meal plan, and plans can't be confirmed as eaten yet.
+    var isFuture: Bool {
+        day > today
     }
 
     var energyUnit: EnergyUnit {
@@ -76,11 +83,29 @@ final class DiaryModel {
             repo.observeDiary(for: day)
         } onValue: { value in
             diary = value
-            let ids = Set(value.sections.flatMap(\.entries).compactMap(\.foodID))
-            liquidFoodIDs = Set(ids.filter { (try? environment.foods?.food(id: $0))??.isLiquid == true })
+            refreshLiquidFoods()
         } onError: { error in
             errorMessage = error.localizedDescription
         }
+    }
+
+    func observePlan() async {
+        guard let repo = environment.mealPlan else { return }
+        let day = day
+        await Self.resubscribing {
+            repo.observePending(in: day ... day)
+        } onValue: { value in
+            planned = value
+            refreshLiquidFoods()
+        } onError: { error in
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Which foods of the day's entries and plan are measured in ml.
+    private func refreshLiquidFoods() {
+        let ids = Set((diary?.sections.flatMap(\.entries).compactMap(\.foodID) ?? []) + planned.compactMap(\.foodID))
+        liquidFoodIDs = Set(ids.filter { (try? environment.foods?.food(id: $0))??.isLiquid == true })
     }
 
     func observeTarget() async {
@@ -165,21 +190,123 @@ final class DiaryModel {
         perform { try $0.reorder(day: day, slotID: section.slot.id, orderedIDs: ids) }
     }
 
+    // MARK: Meal plan
+
+    func planned(in slotID: String) -> [PlannedEntry] {
+        planned.filter { $0.mealSlotID == slotID }
+    }
+
+    var plannedTotals: Nutrients {
+        Nutrients.sum(planned.map(\.nutrients))
+    }
+
+    /// "Eaten": logs the planned entries into the diary. Returns the new diary entry ids (nil on failure).
+    @discardableResult
+    func confirm(_ entries: [PlannedEntry]) -> [String]? {
+        guard let repo = environment.mealPlan, !entries.isEmpty else { return nil }
+        do {
+            let ids = try repo.confirm(plannedIDs: entries.map(\.id))
+            guard !ids.isEmpty else { return ids }
+            let message = entries.count == 1 ? "Logged \(entries[0].displayName)" : "Logged \(ids.count) planned entries"
+            // Deleting the logged entries puts them back in the plan.
+            offerUndo(message) { try $0.softDelete(entryIDs: ids) }
+            return ids
+        } catch {
+            errorMessage = error.localizedDescription
+            return nil
+        }
+    }
+
+    /// Confirms the plan of one slot, or of the whole day when `slotID` is nil.
+    func confirmAll(slotID: String?) {
+        confirm(slotID.map(planned(in:)) ?? planned)
+    }
+
+    /// "Eaten, different amount": logs the plan and returns the new entry for editing.
+    func confirmForEditing(_ entry: PlannedEntry) -> DiaryEntry? {
+        guard let id = confirm([entry])?.first else { return nil }
+        return try? environment.diary?.entry(id: id)
+    }
+
+    func deletePlanned(_ entries: [PlannedEntry]) {
+        let ids = entries.map(\.id)
+        guard !ids.isEmpty, performPlan({ try $0.softDelete(plannedIDs: ids) }) else { return }
+        let message = entries.count == 1 ? "Removed \(entries[0].displayName) from the plan" : "Removed \(entries.count) planned entries"
+        let generation = environment.dataGeneration
+        undo.offer(message) { [weak self] in
+            guard let self, environment.dataGeneration == generation else { return }
+            performPlan { try $0.restore(plannedIDs: ids) }
+        }
+    }
+
+    func movePlanned(_ entry: PlannedEntry, toSlot slotID: String, day targetDay: LocalDay? = nil) {
+        performPlan { try $0.move(plannedID: entry.id, toSlot: slotID, day: targetDay ?? entry.day) }
+    }
+
+    /// Plans one meal (or the whole day) of the current day — what was eaten and what is planned — on the next `days`
+    /// days, e.g. the same prepped lunch Monday to Friday.
+    func repeatOnNextDays(slotID: String?, days: Int) {
+        guard let repo = environment.mealPlan, days > 0 else { return }
+        let targets = (1 ... days).map { day.adding(days: $0) }
+        do {
+            let ids = try repo.copyToPlan(from: day, slotID: slotID, to: targets)
+            guard !ids.isEmpty else {
+                errorMessage = "Nothing to plan — this \(slotID == nil ? "day" : "meal") is empty."
+                return
+            }
+            let generation = environment.dataGeneration
+            let message = "Planned \(ids.count) \(ids.count == 1 ? "entry" : "entries") over \(days) \(days == 1 ? "day" : "days")"
+            undo.offer(message) { [weak self] in
+                guard let self, environment.dataGeneration == generation else { return }
+                performPlan { try $0.softDelete(plannedIDs: ids) }
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     // MARK: Copy (backlog #12)
 
-    /// Copies one meal (or the whole day when `slotID` is nil) from `source` into the current day.
+    /// Copies one meal (or the whole day when `slotID` is nil) from `source` into the current day. A future day gets
+    /// it as a plan, so nothing counts as eaten ahead of time.
     func copy(from source: LocalDay, slotID: String?) {
+        if isFuture {
+            copyIntoPlan(from: source, slotID: slotID)
+            return
+        }
         guard let repo = environment.diary else { return }
         do {
             let ids = try repo.copy(from: source, slotID: slotID, to: day)
             guard !ids.isEmpty else {
-                errorMessage = "Nothing to copy — \(Format.day(source, today: today)) has no entries\(slotID == nil ? "" : " in that meal")."
+                errorMessage = Self.nothingToCopy(source, today: today, slotID: slotID)
                 return
             }
             offerUndo("Copied \(ids.count) \(ids.count == 1 ? "entry" : "entries")") { try $0.softDelete(entryIDs: ids) }
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func copyIntoPlan(from source: LocalDay, slotID: String?) {
+        guard let repo = environment.mealPlan else { return }
+        do {
+            let ids = try repo.copyToPlan(from: source, slotID: slotID, to: [day])
+            guard !ids.isEmpty else {
+                errorMessage = Self.nothingToCopy(source, today: today, slotID: slotID)
+                return
+            }
+            let generation = environment.dataGeneration
+            undo.offer("Planned \(ids.count) \(ids.count == 1 ? "entry" : "entries")") { [weak self] in
+                guard let self, environment.dataGeneration == generation else { return }
+                performPlan { try $0.softDelete(plannedIDs: ids) }
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private static func nothingToCopy(_ source: LocalDay, today: LocalDay, slotID: String?) -> String {
+        "Nothing to copy — \(Format.day(source, today: today)) has no entries\(slotID == nil ? "" : " in that meal")."
     }
 
     // MARK: Saved meals (backlog #32)
@@ -249,6 +376,18 @@ final class DiaryModel {
     /// Clears a pending undo when the data changed underneath it.
     func dataDidChangeExternally() {
         undo.dismiss()
+    }
+
+    @discardableResult
+    private func performPlan(_ action: (MealPlanRepository) throws -> Void) -> Bool {
+        guard let repo = environment.mealPlan else { return false }
+        do {
+            try action(repo)
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
     }
 
     @discardableResult

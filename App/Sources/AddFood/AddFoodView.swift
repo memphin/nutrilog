@@ -142,7 +142,7 @@ struct AddFoodView: View {
                 }
             }
             .navigationDestination(for: FoodDetail.self) { detail in
-                QuantitySheet(detail: detail, mode: .log(slotID: target.slotID, day: target.day)) { dismiss() }
+                QuantitySheet(detail: detail, mode: .log(slotID: target.slotID, day: target.day, planned: target.planned)) { dismiss() }
             }
             .task { reloadLists() }
             .task(id: query) { await runSearch() }
@@ -184,7 +184,7 @@ struct AddFoodView: View {
                 SmartLogView(target: target) { dismiss() }
             }
             .sheet(isPresented: $showQuickAdd) {
-                QuickAddView(mode: .create(slotID: target.slotID, day: target.day)) { dismiss() }
+                QuickAddView(mode: .create(slotID: target.slotID, day: target.day, planned: target.planned)) { dismiss() }
             }
             .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: {
                 if !$0 {
@@ -198,7 +198,8 @@ struct AddFoodView: View {
 
     private var slotName: String {
         let slots = (try? environment.diary?.mealSlots(includeInactive: true)) ?? []
-        return "Add to \(slots.first { $0.id == target.slotID }?.name ?? "meal")"
+        let name = slots.first { $0.id == target.slotID }?.name ?? "meal"
+        return target.planned ? "Plan \(name)" : "Add to \(name)"
     }
 
     private var currentList: [Food] {

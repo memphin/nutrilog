@@ -6,7 +6,8 @@ import SwiftUI
 /// Calories (and optional macros) without a food (FR-5, backlog #10).
 struct QuickAddView: View {
     enum Mode {
-        case create(slotID: String, day: LocalDay)
+        /// Logs the calories, or adds them to the meal plan when `planned`.
+        case create(slotID: String, day: LocalDay, planned: Bool = false)
         case edit(DiaryEntry)
     }
 
@@ -57,12 +58,12 @@ struct QuickAddView: View {
                     gramsField("Fat", $fat)
                 }
             }
-            .navigationTitle(isEditing ? "Edit quick add" : "Quick add")
+            .navigationTitle(isEditing ? "Edit quick add" : (isPlanning ? "Plan calories" : "Quick add"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(isEditing ? "Save" : "Add") { save() }.disabled(!isValid)
+                    Button(isEditing ? "Save" : (isPlanning ? "Plan" : "Add")) { save() }.disabled(!isValid)
                 }
             }
             .onAppear(perform: prefill)
@@ -84,6 +85,13 @@ struct QuickAddView: View {
         return false
     }
 
+    private var isPlanning: Bool {
+        if case let .create(_, _, planned) = mode {
+            return planned
+        }
+        return false
+    }
+
     private func gramsField(_ title: String, _ text: Binding<String>) -> some View {
         LabeledContent(title) {
             HStack {
@@ -97,7 +105,7 @@ struct QuickAddView: View {
 
     private func prefill() {
         switch mode {
-        case let .create(slot, _):
+        case let .create(slot, _, _):
             slotID = slot
         case let .edit(entry):
             name = entry.displayName == "Quick add" ? "" : entry.displayName
@@ -118,8 +126,13 @@ struct QuickAddView: View {
         )
         do {
             switch mode {
-            case let .create(_, day):
-                try diary.logQuickAdd(name: name, nutrients: nutrients, slotID: slotID, day: day)
+            case let .create(_, day, planned):
+                if planned {
+                    guard let plan = environment.mealPlan else { return }
+                    try plan.planQuickAdd(name: name, nutrients: nutrients, slotID: slotID, day: day)
+                } else {
+                    try diary.logQuickAdd(name: name, nutrients: nutrients, slotID: slotID, day: day)
+                }
             case let .edit(entry):
                 try diary.updateQuickAdd(entryID: entry.id, name: name, nutrients: nutrients)
             }
