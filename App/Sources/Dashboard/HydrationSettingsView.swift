@@ -82,7 +82,7 @@ struct HydrationSettingsView: View {
 
     private var remindersSection: some View {
         Section("Reminders") {
-            Toggle("Remind me to drink", isOn: Binding(get: { settings.remindersEnabled }, set: setReminders))
+            Toggle("Remind me to drink", isOn: Binding(get: { settings.remindersEnabled }, set: { setReminders($0) }))
             if notificationsDenied {
                 VStack(alignment: .leading, spacing: NL.Spacing.xxs) {
                     Text("Notifications are off for Vitalion")
