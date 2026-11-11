@@ -419,8 +419,8 @@ public struct DiaryRepository: Sendable {
     // MARK: Copy (backlog #12)
 
     /// Copies entries of `sourceDay` (one slot, or all slots when `slotID` is nil) to `targetDay`
-    /// (into `targetSlotID`, or the same slots). Food entries get a fresh snapshot from the food's
-    /// *current* values; quick-adds and entries whose food was deleted keep their snapshot.
+    /// (into `targetSlotID`, or the same slots). Food entries get a fresh snapshot (nutrients and fluid) from the
+    /// food's *current* values; quick-adds and entries whose food was deleted keep their snapshot.
     /// Returns the new entry ids (pass them to `softDelete` to undo).
     @discardableResult
     public func copy(
@@ -451,6 +451,7 @@ public struct DiaryRepository: Sendable {
                    let food = try Food.fetchOne(db, key: foodID), food.deletedAt == nil
                 {
                     copy.nutrients = food.per100.scaled(toGrams: source.grams)
+                    copy.fluidMl = Self.fluidMl(for: food, baseAmount: source.grams)
                     copy.displayName = food.name
                 }
                 copy.stampCreated(now)

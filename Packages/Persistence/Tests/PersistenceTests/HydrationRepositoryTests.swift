@@ -63,6 +63,17 @@ struct HydrationRepositoryTests {
         #expect(try hydration.intakes(in: d ... d)[d]?.map(\.id) == [kept.id])
     }
 
+    @Test func `a drink stays an intake after its food is deleted`() throws {
+        let f = try Fixture()
+        let drink = try cola(f)
+        let entry = try f.diary.log(food: drink, quantity: .base(330), slotID: "snacks", day: d)
+        try f.foods.softDelete(id: drink.id)
+        #expect(try f.foods.food(id: drink.id)?.deletedAt != nil)
+        let intakes = try HydrationRepository(f.db).intakes(in: d ... d)[d]
+        #expect(intakes?.map(\.id) == [entry.id])
+        #expect(intakes?.map(\.ml) == [330])
+    }
+
     @Test func `observation emits on diary change`() async throws {
         let f = try Fixture()
         let drink = try cola(f)

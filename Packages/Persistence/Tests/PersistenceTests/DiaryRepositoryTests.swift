@@ -347,6 +347,21 @@ struct DiaryRepositoryTests {
         #expect(try f.diary.entry(id: solid.id)?.fluidMl == nil)
     }
 
+    @Test func `copy follows the food's current fluid setting`() throws {
+        let f = try Fixture()
+        let d = day("2026-11-09")
+        let cola = try drink(f, "Cola")
+        let logged = try f.diary.log(food: cola, quantity: .base(330), slotID: "snacks", day: d)
+        var detail = try #require(try f.foods.detail(id: cola.id))
+        detail.food.countsAsFluid = false
+        try f.foods.save(detail)
+
+        let copied = try f.diary.copy(from: d, to: d.next)
+        #expect(copied.count == 1)
+        #expect(try f.diary.entry(id: copied[0])?.fluidMl == nil)
+        #expect(try f.diary.entry(id: logged.id)?.fluidMl == 330) // the original keeps its snapshot
+    }
+
     @Test func `fluid rule uses the food's fat and override`() {
         let milk = Food(name: "Milk", per100: Nutrients(kcal: 64, proteinG: 3.3, carbsG: 4.8, fatG: 3.5), isLiquid: true)
         #expect(DiaryRepository.fluidMl(for: milk, baseAmount: 250) == 250)
