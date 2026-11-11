@@ -190,6 +190,41 @@ struct OFFFoodMapperTests {
         #expect(draft.lastModified == nil)
     }
 
+    @Test func `caffeine_100g is in grams and maps to mg; caffeine_serving scales like any value`() {
+        let per100 = OFFFoodMapper.map(OFFProduct(
+            code: "9002490100070",
+            productName: "Energy drink",
+            servingSize: "250 ml",
+            nutriments: ["energy-kcal_100g": 45, "proteins_100g": 0, "carbohydrates_100g": 11, "fat_100g": 0,
+                         "caffeine_100g": 0.032, "caffeine_serving": 0.08],
+        ))
+        #expect(isClose(per100.nutrients.caffeineMg, 32))
+        #expect(per100.nutrients.sodiumMg == nil)
+
+        let fromServing = OFFFoodMapper.map(OFFProduct(
+            code: "9002490100071",
+            productName: "Espresso",
+            servingSize: "40 ml",
+            nutriments: ["energy-kcal_100g": 2, "proteins_100g": 0.1, "carbohydrates_100g": 0, "fat_100g": 0.2,
+                         "caffeine_serving": 0.08],
+        ))
+        #expect(isClose(fromServing.nutrients.caffeineMg, 200)) // 80 mg per 40 ml
+
+        let perServing = OFFFoodMapper.map(OFFProduct(
+            code: "9002490100072",
+            productName: "Shot",
+            servingSize: "1 shot",
+            nutriments: ["energy-kcal_serving": 5, "proteins_serving": 0, "carbohydrates_serving": 1,
+                         "fat_serving": 0, "caffeine_serving": 0.2],
+        ))
+        #expect(perServing.basis == .perServing)
+        #expect(isClose(perServing.nutrients.caffeineMg, 200))
+    }
+
+    @Test func `no caffeine key means caffeine is missing, not zero`() throws {
+        #expect(try Fixture.draft("nutella_complete").nutrients.caffeineMg == nil)
+    }
+
     @Test func `product without nutrition is partial with everything missing`() throws {
         let draft = try Fixture.draft("no_nutrition")
         #expect(draft.name == "Kaugummi") // blank product_name falls back to generic_name

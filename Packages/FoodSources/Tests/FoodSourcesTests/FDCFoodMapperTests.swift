@@ -149,6 +149,23 @@ struct FDCFoodMapperTests {
         #expect(food.dataQuality == .partialMacros)
     }
 
+    @Test func `caffeine by id 1057 or number 262, in mg; implausible caffeine is missing`() throws {
+        func food(_ caffeine: FDCNutrient) throws -> FoodDraft {
+            try #require(FDCFoodMapper.map(FDCFood(fdcId: 9_100_001, name: "Coffee, brewed", foodNutrients: [
+                FDCNutrient(nutrientId: 1008, unitName: "KCAL", value: 1),
+                FDCNutrient(nutrientId: 1003, unitName: "G", value: 0.12),
+                caffeine,
+            ])))
+        }
+        #expect(try food(FDCNutrient(nutrientId: 1057, unitName: "MG", value: 40)).nutrients.caffeineMg == 40)
+        #expect(try food(FDCNutrient(nutrientId: nil, nutrientNumber: "262", unitName: nil, value: 40))
+            .nutrients.caffeineMg == 40) // mg assumed without unitName
+        #expect(isClose(try food(FDCNutrient(nutrientId: 1057, unitName: "G", value: 0.04)).nutrients.caffeineMg, 40))
+        #expect(try food(FDCNutrient(nutrientId: 1057, unitName: "MG", value: 6000)).nutrients.caffeineMg == nil)
+        #expect(try food(FDCNutrient(nutrientId: 1057, unitName: "IU", value: 40)).nutrients.caffeineMg == nil)
+        #expect(try food(FDCNutrient(nutrientId: 1093, unitName: "MG", value: 2)).nutrients.caffeineMg == nil)
+    }
+
     @Test func `foods without an fdcId and non-object entries are dropped`() throws {
         let response = try #require(FDCSearchResponse.parse(Fixture.data("search_edge_cases", in: "USDA")))
         #expect(response.foods.count == 7)

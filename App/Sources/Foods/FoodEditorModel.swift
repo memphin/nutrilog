@@ -86,6 +86,7 @@ final class FoodEditorModel {
     var satFat = ""
     var sodiumOrSalt = ""
     var entersSalt = true // EU labels show salt; US labels sodium
+    var caffeine = "" // mg
 
     var servings: [ServingDraft] = []
     var defaultServingID: String?
@@ -108,7 +109,7 @@ final class FoodEditorModel {
     /// Nutrition fields as loaded from `original`. Fields still showing this text keep the stored value on
     /// save: the fields round to 2 decimals, and USDA / Open Food Facts values often have more.
     private struct LoadedFields {
-        var energy, protein, carbs, fat, fiber, sugar, satFat, sodiumOrSalt: String
+        var energy, protein, carbs, fat, fiber, sugar, satFat, sodiumOrSalt, caffeine: String
         var entersSalt: Bool
     }
 
@@ -159,13 +160,14 @@ final class FoodEditorModel {
     var per100: Nutrients? {
         guard let kcalInput = Self.value(energy), let p = Self.value(protein), let c = Self.value(carbs), let f = Self.value(fat)
         else { return nil }
-        let optionals = [fiber, sugar, satFat, sodiumOrSalt]
+        let optionals = [fiber, sugar, satFat, sodiumOrSalt, caffeine]
         guard optionals.allSatisfy({ $0.trimmingCharacters(in: .whitespaces).isEmpty || Self.value($0) != nil }) else { return nil }
         let sodiumInput = Self.value(sodiumOrSalt)
         let entered = Nutrients(
             kcal: energyUnit.fromDisplay(kcalInput), proteinG: p, carbsG: c, fatG: f,
             fiberG: Self.value(fiber), sugarG: Self.value(sugar), satFatG: Self.value(satFat),
             sodiumMg: sodiumInput.map { entersSalt ? Salt.sodiumMg(fromSaltG: $0) : $0 },
+            caffeineMg: Self.value(caffeine),
         )
         switch basis {
         case .per100:
@@ -369,6 +371,7 @@ final class FoodEditorModel {
         satFat = Format.field(food.satFatG100)
         entersSalt = false
         sodiumOrSalt = Format.field(food.sodiumMg100)
+        caffeine = Format.field(food.caffeineMg100)
         if product.isPerServingPlaceholder {
             // The stored values are per serving of unknown weight.
             basis = .perServing
@@ -464,6 +467,9 @@ final class FoodEditorModel {
         if sodiumOrSalt == loaded.sodiumOrSalt, entersSalt == loaded.entersSalt {
             result.sodiumMg = stored.sodiumMg
         }
+        if caffeine == loaded.caffeine {
+            result.caffeineMg = stored.caffeineMg
+        }
         return result
     }
 
@@ -483,9 +489,10 @@ final class FoodEditorModel {
         satFat = Format.field(food.satFatG100)
         entersSalt = false
         sodiumOrSalt = Format.field(food.sodiumMg100)
+        caffeine = Format.field(food.caffeineMg100)
         loaded = LoadedFields(
             energy: energy, protein: protein, carbs: carbs, fat: fat, fiber: fiber, sugar: sugar, satFat: satFat,
-            sodiumOrSalt: sodiumOrSalt, entersSalt: entersSalt,
+            sodiumOrSalt: sodiumOrSalt, caffeine: caffeine, entersSalt: entersSalt,
         )
         servings = detail.servings.map { ServingDraft(id: $0.id, label: $0.label, amount: Format.field($0.grams)) }
         defaultServingID = food.defaultServingID

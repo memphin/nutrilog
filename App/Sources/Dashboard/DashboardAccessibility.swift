@@ -5,9 +5,15 @@ import Foundation
 extension DashboardSnapshot {
     /// The spoken label of a tile, e.g. "Weight, 81.4 kilograms" or
     /// "Steps, no data. No data found — check Health permissions".
-    func accessibilityLabel(of tile: DashboardTile, state: TileState, energyUnit: EnergyUnit = .kcal) -> String {
+    /// - Parameter now: the moment caffeine is read at (the amount changes by the minute).
+    func accessibilityLabel(
+        of tile: DashboardTile, state: TileState, energyUnit: EnergyUnit = .kcal, now: Date = Date(), calendar: Calendar = .current,
+    ) -> String {
         guard state == .ready else {
             return "\(tile.title), no data. \(state.message ?? "")"
+        }
+        if tile == .caffeine {
+            return ([tile.title] + caffeineStatus(now: now, calendar: calendar).accessibilityParts()).joined(separator: ", ")
         }
         let parts = accessibilityParts(of: tile, energyUnit: energyUnit)
         return ([tile.title] + (parts.isEmpty ? ["no data"] : parts)).joined(separator: ", ")
@@ -71,6 +77,8 @@ extension DashboardSnapshot {
             }
             parts += [measured(comparison.day)].compactMap(\.self)
             return parts
+        case .caffeine:
+            return [] // spoken with the time, see accessibilityLabel
         case .water:
             return ["\(number(water.totalMl)) of \(number(water.goalMl)) millilitres", waterGoalPart]
         }

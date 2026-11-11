@@ -26,6 +26,7 @@ extension AppEnvironment {
 enum DashboardTile: String, CaseIterable, Codable, Identifiable, Hashable {
     case energy
     case water
+    case caffeine
     case sleep
     case weight
     case bodyFat
@@ -49,6 +50,7 @@ enum DashboardTile: String, CaseIterable, Codable, Identifiable, Hashable {
         case .restingHeartRate: "Resting heart rate"
         case .hrv: "HRV"
         case .water: "Water"
+        case .caffeine: "Caffeine"
         }
     }
 
@@ -63,13 +65,14 @@ enum DashboardTile: String, CaseIterable, Codable, Identifiable, Hashable {
         case .restingHeartRate: "heart"
         case .hrv: "waveform.path.ecg"
         case .water: "drop"
+        case .caffeine: "cup.and.saucer"
         }
     }
 
     /// Wide tiles take a full row; the others are paired two per row.
     var isWide: Bool {
         switch self {
-        case .energy, .water: true
+        case .energy, .water, .caffeine: true
         default: false
         }
     }
@@ -80,6 +83,8 @@ enum DashboardTile: String, CaseIterable, Codable, Identifiable, Hashable {
         switch self {
         case .energy, .water:
             nil
+        case .caffeine:
+            CaffeineStatus.explanation(halfLifeHours: CaffeineMetabolism.baseHalfLifeHours)
         case .totalEnergy:
             "Total energy is resting plus active energy from Apple Health: resting is what your body burns just to "
                 + "keep going, active is what movement and exercise add. A day with only one of them has no total."
@@ -100,9 +105,9 @@ enum DashboardTile: String, CaseIterable, Codable, Identifiable, Hashable {
         }
     }
 
-    /// False for tiles that never depend on Health (the diary's calories).
+    /// False for tiles that never depend on Health (the diary's calories, caffeine logged in Vitalion).
     var usesHealth: Bool {
-        self != .energy
+        self != .energy && self != .caffeine
     }
 }
 

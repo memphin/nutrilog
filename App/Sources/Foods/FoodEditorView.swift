@@ -164,6 +164,7 @@ private struct FoodEditorForm: View {
                     Text("Sodium (mg)").tag(false)
                 }
                 numberField(model.entersSalt ? "Salt" : "Sodium", $model.sodiumOrSalt, unit: model.entersSalt ? "g" : "mg", optional: true)
+                numberField("Caffeine", $model.caffeine, unit: "mg", optional: true)
             } header: {
                 Text("Nutrition")
             } footer: {

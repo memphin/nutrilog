@@ -126,6 +126,9 @@ struct QuantitySheet: View {
                 if let sodium = preview.sodiumMg {
                     NutrientRow("Sodium", value: sodium, unit: "mg")
                 }
+                if let caffeine = preview.caffeineMg {
+                    NutrientRow("Caffeine", value: caffeine, unit: "mg")
+                }
             }
 
             if food.dataQuality != .complete {
