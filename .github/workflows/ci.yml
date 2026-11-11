@@ -48,8 +48,9 @@ jobs:
         run: |
           xcodebuild -version && swift --version
           echo "xcode=$(xcodebuild -version | awk '/Build version/ { print $3 }')" >> "$GITHUB_OUTPUT"
-      - name: Cache SwiftPM
-        uses: actions/cache@v5
+      - name: Restore SwiftPM cache
+        id: spm-cache
+        uses: actions/cache/restore@v5
         with:
           path: |
             Packages/*/.build
@@ -84,6 +85,16 @@ jobs:
             echo "::error::Failed: ${failed[*]}"
             exit 1
           fi
+      # Saved from main only: the GRDB group's cache is ~900 MB, and saving it from every PR would push the other caches
+      # out of the repo's 10 GB. PRs restore main's.
+      - name: Save SwiftPM cache
+        if: github.ref == 'refs/heads/main' && steps.spm-cache.outputs.cache-matched-key != steps.spm-cache.outputs.cache-primary-key
+        uses: actions/cache/save@v5
+        with:
+          path: |
+            Packages/*/.build
+            ~/Library/Caches/org.swift.swiftpm
+          key: ${{ steps.spm-cache.outputs.cache-primary-key }}
 
   app:
     name: iOS app — build & test (simulator)
@@ -129,7 +140,6 @@ jobs:
             -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }},arch=arm64" \
             -derivedDataPath "$DERIVED_DATA" \
             -enableCodeCoverage NO \
-            -showBuildTimingSummary \
             CODE_SIGNING_ALLOWED=NO \
             COMPILER_INDEX_STORE_ENABLE=NO \
             COMPILATION_CACHE_ENABLE_CACHING=YES \
