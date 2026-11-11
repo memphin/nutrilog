@@ -4,7 +4,7 @@ import Foundation
 ///
 /// - Energy: whole kcal.
 /// - Macros, fiber, sugar, sat fat: whole grams from 10 g, otherwise one decimal (0.4 g stays visible).
-/// - Sodium: whole mg.
+/// - Sodium, caffeine: whole mg.
 public enum DisplayRounding {
     public static func kcal(_ value: Double) -> Int {
         Int(value.rounded())
@@ -39,6 +39,7 @@ public extension Nutrients {
             sugarG: sugarG.map(DisplayRounding.grams),
             satFatG: satFatG.map(DisplayRounding.grams),
             sodiumMg: sodiumMg.map { Double(DisplayRounding.milligrams($0)) },
+            caffeineMg: caffeineMg.map { Double(DisplayRounding.milligrams($0)) },
         )
     }
 }

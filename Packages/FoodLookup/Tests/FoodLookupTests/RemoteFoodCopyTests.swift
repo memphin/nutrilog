@@ -39,6 +39,13 @@ struct RemoteFoodCopyTests {
         #expect(FoodSource(.usda) == .usda)
     }
 
+    @Test func `caffeine is carried into the copy`() {
+        var energyDrink = draft(name: "Energy")
+        energyDrink.nutrients.caffeineMg = 32
+        #expect(FoodDetail(draft: energyDrink).food.caffeineMg100 == 32)
+        #expect(FoodDetail(draft: draft()).food.caffeineMg100 == nil)
+    }
+
     @Test func `per 100 draft becomes a food with its serving`() {
         let detail = FoodDetail(draft: draft())
         let food = detail.food

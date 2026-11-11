@@ -15,9 +15,10 @@ import Foundation
 /// | Sugars    | 2000 Total Sugars (269), 1063 Sugars, Total (269.3)                             |
 /// | Sat. fat  | 1258 Fatty acids, total saturated (606)                                         |
 /// | Sodium    | 1093 Sodium, Na (307)                                                           |
+/// | Caffeine  | 1057 Caffeine (262)                                                             |
 ///
 /// - Units come from `unitName`: kcal or kJ (÷ 4.184) for energy; g, mg or µg for the rest, converted to g (sodium
-///   to mg). An unknown unit makes the value missing. Without `unitName` the nutrient's usual unit is assumed.
+///   and caffeine to mg). An unknown unit makes the value missing. Without `unitName` the nutrient's usual unit is assumed.
 /// - Foundation foods have no 1008, only the Atwater energies; the specific factors (2048) are the more accurate.
 /// - Values are per 100 g. Branded foods report per 100 g, or per 100 ml when the serving is in ml (the food is
 ///   then liquid), plus `servingSize`/`servingSizeUnit` which become the default serving.
@@ -39,6 +40,7 @@ public enum FDCFoodMapper {
         public static let sugarsTotal = 1063
         public static let saturatedFat = 1258
         public static let sodium = 1093
+        public static let caffeine = 1057
     }
 
     /// Legacy nutrient numbers of the IDs above, for records that only carry `nutrientNumber`.
@@ -50,6 +52,7 @@ public enum FDCFoodMapper {
         "291": NutrientID.fiber, "293": NutrientID.fiberAOAC,
         "269": NutrientID.sugars, "269.3": NutrientID.sugarsTotal,
         "606": NutrientID.saturatedFat, "307": NutrientID.sodium,
+        "262": NutrientID.caffeine,
     ]
 
     /// Food detail page, linked as the source.
@@ -167,6 +170,9 @@ extension NutrientValues {
             sugar: grams(IDs.sugars, IDs.sugarsTotal),
             satFat: grams(IDs.saturatedFat),
             sodiumMg: first([IDs.sodium]) { _, nutrient, raw in
+                FDCFoodMapper.grams(raw, unitName: nutrient.unitName, defaultUnit: "mg").map { $0 * 1000 }
+            },
+            caffeineMg: first([IDs.caffeine]) { _, nutrient, raw in
                 FDCFoodMapper.grams(raw, unitName: nutrient.unitName, defaultUnit: "mg").map { $0 * 1000 }
             },
         )

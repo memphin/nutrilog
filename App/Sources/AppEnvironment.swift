@@ -171,6 +171,11 @@ final class AppEnvironment {
         db.map { WaterRepository($0, clock: clock) }
     }
 
+    /// Caffeine quick-adds logged in Vitalion; `observeIntakes(in:)` adds the caffeine of diary entries.
+    var caffeine: CaffeineRepository? {
+        db.map { CaffeineRepository($0, clock: clock) }
+    }
+
     // MARK: Health background work (backlog #26, #27)
 
     /// At launch (also a background launch for Health delivery): register the observer queries once the user has been
@@ -418,6 +423,7 @@ final class AppEnvironment {
         ))
         insertSampleHistory(oats: oats, milk: milk)
         insertSamplePlan(oats: oats, milk: milk)
+        insertSampleCaffeine()
     }
 
     /// A meal plan for the coming days: tonight's dinner, and the same prepped lunch for the rest of the week.
@@ -438,6 +444,25 @@ final class AppEnvironment {
         if let oats, let milk {
             _ = try? mealPlan.planAll(
                 [.init(food: oats, quantity: .base(60)), .init(food: milk, quantity: .base(250))], slotID: "breakfast", day: today.next,
+            )
+        }
+    }
+
+    /// A cola last evening and two coffees earlier today (relative to now), so the caffeine tile has a curve.
+    private func insertSampleCaffeine() {
+        guard let caffeine else { return }
+        let now = clock.now()
+        let calendar = Calendar.current
+        let yesterdayEvening = calendar.date(bySettingHour: 20, minute: 0, second: 0, of: today.adding(days: -1).startDate())
+        let drinks: [(CaffeineDrink, Date?)] = [
+            (.cola, yesterdayEvening),
+            (.espresso, now.addingTimeInterval(-5 * 3600)),
+            (.filterCoffee, now.addingTimeInterval(-2 * 3600)),
+        ]
+        for (drink, date) in drinks {
+            guard let date, date <= now else { continue }
+            _ = try? caffeine.add(
+                mg: drink.mg, day: LocalDay(date, calendar: calendar), loggedAt: date, drinkID: drink.id, name: drink.name,
             )
         }
     }
@@ -522,6 +547,20 @@ enum SettingKey {
     static let checkInReminderEnabled = "checkInReminderEnabled"
     /// String ("YYYY-MM-DD"): the last day the check-in sheet opened by itself, so it does so once a day at most.
     static let checkInPromptedDay = "checkInPromptedDay"
+    /// Double (mg): the "sleep safe" caffeine line; missing means `CaffeineDefaults.sleepSafeThresholdMg`.
+    static let caffeineThresholdMg = "caffeineThresholdMg"
+    /// Int (minutes from midnight): bedtime for the caffeine tile; missing means `CaffeineDefaults.defaultBedtimeMinutes`.
+    static let caffeineBedtimeMinutes = "caffeineBedtimeMinutes"
+    /// Bool: smoker (shorter caffeine half-life, `CaffeineMetabolism.smoker`); missing means false.
+    static let caffeineSmoker = "caffeineSmoker"
+    /// Bool: takes oral contraceptives (`CaffeineMetabolism.oralContraceptives`); missing means false.
+    static let caffeinePill = "caffeinePill"
+    /// Bool: pregnant (`CaffeineMetabolism.pregnant`); missing means false.
+    static let caffeinePregnant = "caffeinePregnant"
+    /// Double (hours): a caffeine half-life set by hand (`CaffeineMetabolism.overrideHours`); missing means derived.
+    static let caffeineHalfLifeOverride = "caffeineHalfLifeOverride"
+    /// [String]: `CaffeineDrink` ids of the caffeine quick-add buttons; missing means `CaffeineDrink.defaultQuickAddIDs`.
+    static let caffeineQuickAddDrinks = "caffeineQuickAddDrinks"
 }
 
 /// kcal or kJ for display (Settings → Units). Storage is always kcal.

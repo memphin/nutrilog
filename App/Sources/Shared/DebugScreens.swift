@@ -82,8 +82,35 @@
                 MealPlanView { _ in }
             case "diary":
                 DiaryView()
+            case "caffeine":
+                NavigationStack { TileDetailDebugScreen(tile: .caffeine) }
+            case "caffeineSettings":
+                NavigationStack { CaffeineSettingsView() }
             default:
                 Text("Unknown screen \(name)")
+            }
+        }
+    }
+
+    /// A tile's detail with its own dashboard model (`-uiScreen caffeine`).
+    private struct TileDetailDebugScreen: View {
+        let tile: DashboardTile
+        @Environment(AppEnvironment.self) private var environment
+        @State private var model: DashboardModel?
+
+        var body: some View {
+            Group {
+                if let model {
+                    TileDetailView(tile: tile, model: model)
+                        .task { await model.observe() }
+                } else {
+                    ProgressView()
+                }
+            }
+            .task {
+                if model == nil {
+                    model = DashboardModel(environment: environment)
+                }
             }
         }
     }

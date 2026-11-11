@@ -468,11 +468,14 @@ struct DaySummaryHeader: View {
                 MacroBar(macro: .fat, value: totals.fatG, target: target?.fatG)
             }
         }
-        if totals.fiberG != nil || totals.sugarG != nil || totals.sodiumMg != nil {
+        if totals.fiberG != nil || totals.sugarG != nil || totals.sodiumMg != nil || totals.caffeineMg != nil {
             HStack(spacing: NL.Spacing.l) {
                 minor("Fiber", totals.fiberG, "g", target: target?.fiberG)
                 minor("Sugar", totals.sugarG, "g")
                 minor("Sodium", totals.sodiumMg, "mg")
+                if let caffeine = totals.caffeineMg {
+                    minor("Caffeine", caffeine, "mg")
+                }
             }
             .font(.caption)
             .foregroundStyle(.secondary)

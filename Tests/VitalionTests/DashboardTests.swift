@@ -108,7 +108,7 @@ struct DashboardLayoutTests {
         let json = #"{"order":["water","future-tile","water","steps"],"hidden":["steps","other"]}"#
         let layout = try JSONDecoder().decode(DashboardLayout.self, from: Data(json.utf8))
         // Missing tiles follow the tile before them in the default order; `energy` has none and goes last.
-        #expect(layout.order == [.water, .sleep, .weight, .bodyFat, .steps, .totalEnergy, .restingHeartRate, .hrv, .energy])
+        #expect(layout.order == [.water, .caffeine, .sleep, .weight, .bodyFat, .steps, .totalEnergy, .restingHeartRate, .hrv, .energy])
         #expect(Set(layout.order) == Set(DashboardTile.allCases))
         #expect(layout.order.count == DashboardTile.allCases.count)
         #expect(layout.hidden == [.steps])
@@ -125,7 +125,7 @@ struct DashboardLayoutTests {
             + #""hidden":["hrv","activeEnergy"]}"#
         try profiles.setSetting(SettingKey.dashboardLayout, JSONDecoder().decode(OldLayout.self, from: Data(saved.utf8)))
         let layout = DashboardLayout.load(from: profiles)
-        #expect(layout.order == [.weight, .energy, .water, .sleep, .bodyFat, .steps, .totalEnergy, .restingHeartRate, .hrv])
+        #expect(layout.order == [.weight, .energy, .water, .caffeine, .sleep, .bodyFat, .steps, .totalEnergy, .restingHeartRate, .hrv])
         #expect(layout.hidden == [.hrv])
         // A layout from before Total energy existed gets it after Steps, visible.
         let older = #"{"order":["steps","activeEnergy","energy"],"hidden":[]}"#
@@ -149,6 +149,7 @@ struct DashboardLayoutTests {
             [.steps, .weight],
             [.bodyFat],
             [.water],
+            [.caffeine], // not in the order given: added after water, a wide tile
             [.sleep, .hrv], // sleep shows one number now (#62), so it pairs up
             [.restingHeartRate, .totalEnergy],
         ])
@@ -407,8 +408,9 @@ struct DashboardDemoTests {
         #expect(snapshot.hrv?.deviationText != nil)
         #expect(snapshot.restingHR != nil)
         #expect(snapshot.energyBurned?.totalKcal != nil)
-        // A week of demo history: every tile but calories has a sparkline and a spoken trend.
-        for tile in DashboardTile.allCases where tile != .energy {
+        // A week of demo history: every tile but calories and caffeine (whose tile draws today's curve) has a
+        // sparkline and a spoken trend.
+        for tile in DashboardTile.allCases where tile != .energy && tile != .caffeine {
             #expect(snapshot.sparkline(for: tile) != nil, "\(tile)")
             #expect(snapshot.accessibilityTrend(of: tile, state: .ready) != nil, "\(tile)")
         }

@@ -24,6 +24,9 @@ struct DashboardData: Equatable {
     var sleepGoalMin: Int = SleepGoal.defaultMinutes
     /// The profile's goal (lose, maintain, gain): which way the weight should move.
     var goalMode: GoalMode = .maintain
+    /// Caffeine of `caffeineWindow` (quick-adds and diary entries): last night's still counts this morning.
+    var caffeine = CaffeineIntakes()
+    var caffeineSettings = CaffeineSettings.default
 
     var window: ClosedRange<LocalDay> {
         today.adding(days: -(Self.historyDays - 1)) ... today
@@ -32,6 +35,11 @@ struct DashboardData: Equatable {
     /// The days of the tiles' sparklines, today included.
     var sparklineWindow: ClosedRange<LocalDay> {
         today.adding(days: -(Sparkline.days - 1)) ... today
+    }
+
+    /// Yesterday and today: the caffeine doses the curve needs.
+    var caffeineWindow: ClosedRange<LocalDay> {
+        today.adding(days: -1) ... today
     }
 
     /// [midnight of the window's first day, midnight after today) — manual weights to read.
@@ -130,6 +138,9 @@ struct DashboardSnapshot: Equatable {
     let weeklyBodyFatPct: Double?
     /// 7-day series per tile (`DashboardSnapshot.sparklines`), also the ones that can't be drawn.
     let sparklines: [DashboardTile: Sparkline]
+    /// Yesterday's and today's caffeine; the amount depends on the time, see `caffeineStatus(now:calendar:)`.
+    let caffeine: CaffeineIntakes
+    let caffeineSettings: CaffeineSettings
 
     init(_ data: DashboardData, calendar: Calendar = .current) {
         today = data.today
@@ -166,6 +177,13 @@ struct DashboardSnapshot: Equatable {
         weeklyWeightKg = weight.flatMap { WeeklyBand.average(kgByDay, before: $0.latest.day) }
         weeklyBodyFatPct = bodyFat.flatMap { WeeklyBand.average(fatByDay, before: $0.day) }
         sparklines = Self.sparklines(data: data, rows: rows, dayWeights: dayWeights)
+        caffeine = data.caffeine
+        caffeineSettings = data.caffeineSettings
+    }
+
+    /// Caffeine at `now`: the amount in the body, today's total, the sleep outlook.
+    func caffeineStatus(now: Date, calendar: Calendar = .current) -> CaffeineStatus {
+        CaffeineStatus(intakes: caffeine, settings: caffeineSettings, today: today, now: now, calendar: calendar)
     }
 
     /// The tile's 7-day chart, nil when there are fewer than two days to draw or the tile has none.
@@ -204,7 +222,7 @@ struct DashboardSnapshot: Equatable {
 
     func hasValue(_ tile: DashboardTile) -> Bool {
         switch tile {
-        case .energy, .water: true
+        case .energy, .water, .caffeine: true
         case .steps: steps != nil
         case .sleep: sleep != nil
         case .weight: weight != nil
@@ -251,11 +269,13 @@ enum TileHistory {
     /// - Parameters:
     ///   - kcalByDay: diary energy per day (only for `.energy`).
     ///   - loggedWaterByDay: water logged in Vitalion per day (only for `.water`).
+    ///   - caffeineByDay: caffeine per day, quick-adds and diary (only for `.caffeine`).
     static func rows(
         for tile: DashboardTile,
         data: DashboardData,
         kcalByDay: [LocalDay: Double] = [:],
         loggedWaterByDay: [LocalDay: Double] = [:],
+        caffeineByDay: [LocalDay: Double] = [:],
         energyUnit: EnergyUnit = .kcal,
         calendar: Calendar = .current,
     ) -> [TileHistoryRow] {
@@ -314,6 +334,14 @@ enum TileHistory {
                     value: total > 0 ? DashboardFormat.ml(total) : nil,
                     detail: other > 0 && logged > 0 ?
                         "\(DashboardFormat.ml(logged)) in Vitalion, \(DashboardFormat.ml(other)) from other apps" : nil,
+                )
+            case .caffeine:
+                let mg = caffeineByDay[day] ?? 0
+                return TileHistoryRow(
+                    day: day,
+                    value: mg > 0 ? CaffeineStatus.mg(mg) : nil,
+                    detail: CaffeineLevel.isOverLimit(totalMg: mg, limitMg: data.caffeineSettings.dailyLimitMg)
+                        ? "Over the daily \(CaffeineStatus.mg(data.caffeineSettings.dailyLimitMg))" : nil,
                 )
             }
         }

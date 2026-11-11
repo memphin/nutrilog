@@ -5,6 +5,7 @@ import Foundation
 ///
 /// - Energy: `energy-kcal_100g`, else kJ (`energy-kj_100g`, else `energy_100g`, which OFF always stores in kJ) ÷ 4.184.
 /// - Sodium: `salt_100g` × 400 mg, else `sodium_100g` (g) × 1000.
+/// - Caffeine: `caffeine_100g` (g, like every OFF value; `caffeine_unit` is only the display unit) × 1000.
 /// - Each value prefers its `_100g` key; a `_serving` value is scaled to 100 g/ml when the serving weight is known
 ///   (`serving_quantity`, else parsed from `serving_size`).
 /// - When per-100 and per-serving values are both usable, the basis that leaves fewer mandatory nutrients missing
@@ -164,6 +165,7 @@ extension NutrientValues {
         sugar = value("sugars")
         satFat = value("saturated-fat")
         sodiumMg = value("salt").map(Salt.sodiumMg(fromSaltG:)) ?? value("sodium").map { $0 * 1000 }
+        caffeineMg = value("caffeine").map { $0 * 1000 }
     }
 
     /// kcal, else kJ ÷ 4.184. When kcal ≈ kJ the contributor typed the kJ figure into the kcal field: use kJ ÷ 4.184.

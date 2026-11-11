@@ -16,6 +16,8 @@ public struct Nutrients: Hashable, Sendable, Codable {
     public var sugarG: Double?
     public var satFatG: Double?
     public var sodiumMg: Double?
+    /// Caffeine in mg (coffee, tea, cola, energy drinks…). Optional like the other extras: most foods don't state it.
+    public var caffeineMg: Double?
 
     public init(
         kcal: Double,
@@ -26,6 +28,7 @@ public struct Nutrients: Hashable, Sendable, Codable {
         sugarG: Double? = nil,
         satFatG: Double? = nil,
         sodiumMg: Double? = nil,
+        caffeineMg: Double? = nil,
     ) {
         self.kcal = kcal
         self.proteinG = proteinG
@@ -35,6 +38,7 @@ public struct Nutrients: Hashable, Sendable, Codable {
         self.sugarG = sugarG
         self.satFatG = satFatG
         self.sodiumMg = sodiumMg
+        self.caffeineMg = caffeineMg
     }
 
     public static let zero = Nutrients(kcal: 0, proteinG: 0, carbsG: 0, fatG: 0)
@@ -55,6 +59,7 @@ public struct Nutrients: Hashable, Sendable, Codable {
             sugarG: sugarG.map { $0 * factor },
             satFatG: satFatG.map { $0 * factor },
             sodiumMg: sodiumMg.map { $0 * factor },
+            caffeineMg: caffeineMg.map { $0 * factor },
         )
     }
 
@@ -75,6 +80,7 @@ public struct Nutrients: Hashable, Sendable, Codable {
             sugarG: addOptional(lhs.sugarG, rhs.sugarG),
             satFatG: addOptional(lhs.satFatG, rhs.satFatG),
             sodiumMg: addOptional(lhs.sodiumMg, rhs.sodiumMg),
+            caffeineMg: addOptional(lhs.caffeineMg, rhs.caffeineMg),
         )
     }
 

@@ -96,7 +96,8 @@ struct FoodEditorModelTests {
     }
 
     @Test func `editing a non-custom food keeps unedited values and its data quality`() throws {
-        let stored = Nutrients(kcal: 61.234, proteinG: 3.2756, carbsG: 4.6312, fatG: 3.2481, sodiumMg: 43.217)
+        let stored = Nutrients(kcal: 61.234, proteinG: 3.2756, carbsG: 4.6312, fatG: 3.2481, sodiumMg: 43.217,
+                               caffeineMg: 12.3456)
         let food = Food(
             name: "Milk, whole", source: .usda, sourceID: "746782", per100: stored, isLiquid: true,
             dataQuality: .partialMacros,
@@ -116,6 +117,27 @@ struct FoodEditorModelTests {
         #expect(edited.food.kcal100 == stored.kcal)
         #expect(edited.food.fatG100 == stored.fatG)
         #expect(edited.food.sodiumMg100 == stored.sodiumMg)
+        #expect(edited.food.caffeineMg100 == stored.caffeineMg)
+
+        model.caffeine = ""
+        #expect(try #require(model.makeDetail()).food.caffeineMg100 == nil) // cleared on purpose
+    }
+
+    @Test func `caffeine is optional, per 100 or per serving`() throws {
+        let model = FoodEditorModel(energyUnit: .kcal, initialName: "Cold brew")
+        model.energy = "2"
+        model.protein = "0"
+        model.carbs = "0"
+        model.fat = "0"
+        #expect(try #require(model.per100).caffeineMg == nil)
+        model.caffeine = "60"
+        #expect(try #require(model.per100).caffeineMg == 60)
+        model.basis = .perServing
+        model.basisServingAmount = "250"
+        model.caffeine = "150"
+        #expect(try abs(#require(model.per100?.caffeineMg) - 60) < 1e-9)
+        model.caffeine = "lots"
+        #expect(!model.canSave)
     }
 }
 
