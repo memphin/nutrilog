@@ -95,7 +95,6 @@ jobs:
       # DerivedData, which goes stale because a checkout gives every file a new mtime) it is reused after a fresh
       # checkout and only what changed is compiled again. Saved after every run, restored from the newest one.
       XCODE_CAS: ${{ github.workspace }}/.ci-cache/xcode-cas
-      SOURCE_PACKAGES: ${{ github.workspace }}/.ci-cache/SourcePackages
     steps:
       - uses: actions/checkout@v5
       - name: Show toolchain
@@ -105,6 +104,12 @@ jobs:
           echo "xcode=$(xcodebuild -version | awk '/Build version/ { print $3 }')" >> "$GITHUB_OUTPUT"
       - name: Create placeholder secrets
         run: cp Config/Secrets.xcconfig.template Config/Secrets.xcconfig
+      - name: Restore compilation cache
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ env.XCODE_CAS }}
+          key: xcode-cas-${{ steps.toolchain.outputs.xcode }}-${{ github.sha }}
+          restore-keys: xcode-cas-${{ steps.toolchain.outputs.xcode }}-
       - name: Pick an iPhone simulator
         id: sim
         run: |
@@ -112,19 +117,9 @@ jobs:
             | jq -r '[.devices | to_entries[] | select(.key | contains("iOS")) | .value[] | select(.name | startswith("iPhone"))] | last | .udid')
           echo "Using simulator $UDID"
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
-          # Start booting now (returns at once): the simulator boots while the app compiles, not after.
+          # Start booting now (returns at once): the simulator boots while the app compiles, not after. Not before the
+          # cache restore: a booting simulator takes the runner's 3 cores and slowed the restore from ~40 s to ~85 s.
           xcrun simctl boot "$UDID" || true
-      - name: Restore compilation cache
-        uses: actions/cache/restore@v5
-        with:
-          path: ${{ env.XCODE_CAS }}
-          key: xcode-cas-${{ steps.toolchain.outputs.xcode }}-${{ github.sha }}
-          restore-keys: xcode-cas-${{ steps.toolchain.outputs.xcode }}-
-      - name: Cache Swift package checkouts
-        uses: actions/cache@v5
-        with:
-          path: ${{ env.SOURCE_PACKAGES }}
-          key: source-packages-${{ hashFiles('Vitalion.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
       - name: Build for testing
         run: |
           set -o pipefail
@@ -134,7 +129,6 @@ jobs:
             -scheme Vitalion \
             -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }},arch=arm64" \
             -derivedDataPath "$DERIVED_DATA" \
-            -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" \
             -enableCodeCoverage NO \
             CODE_SIGNING_ALLOWED=NO \
             COMPILER_INDEX_STORE_ENABLE=NO \
@@ -157,7 +151,6 @@ jobs:
             -scheme Vitalion \
             -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }},arch=arm64" \
             -derivedDataPath "$DERIVED_DATA" \
-            -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" \
             -resultBundlePath TestResults.xcresult \
             -enableCodeCoverage NO \
             -quiet
