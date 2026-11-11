@@ -1003,7 +1003,7 @@ struct WidgetAndBackupTests {
         #expect(snapshot.kcal == 640 && snapshot.targetKcal == 2000)
         #expect(snapshot.proteinG == 40 && snapshot.targetCarbsG == 200)
         #expect(snapshot.steps == 8123 && snapshot.sleepMin == 431)
-        #expect(snapshot.waterMl == 750 && snapshot.waterGoalMl == 2500)
+        #expect(snapshot.waterMl == 750 && snapshot.waterGoalMl == 2450) // 30 ml/kg of the 81.4 kg logged here
         #expect(snapshot.weightKg == 81.4)
         #expect(snapshot.energyUnit == "kcal")
 
