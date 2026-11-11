@@ -29,7 +29,6 @@ struct StoredDayRepairTests {
         ("1448-05-20", .islamicTabular, "2026-10-31"),
         ("1948-08-20", .indian, "2026-11-11"),
         ("1743-03-02", .coptic, "2026-11-11"),
-        ("7519-03-02", .ethiopicAmeteAlem, "2026-11-11"),
         ("2570-11-11", .buddhist, "2027-11-11"), // a plan up to ~400 days ahead is plausible
     ])
     func `converts from the device calendar`(stored: String, device: Calendar.Identifier, expected: String) {
@@ -107,6 +106,10 @@ struct StoredDayRepairTests {
     @Test func `ethiopic years look gregorian and are left alone`() {
         // Ethiopic 2019-03-02 is Gregorian 2026-11-11, but 2019 is inside the Gregorian years: never guessed.
         #expect(repaired("2019-03-02", .ethiopicAmeteMihret) == nil)
+        // Amete Alem years (7519) don't look Gregorian, but Foundation converts them differently between OS
+        // versions, so they are never repaired either.
+        #expect(repaired("7519-03-02", .ethiopicAmeteAlem) == nil)
+        #expect(repaired("7519-03-02", .gregorian) == nil)
     }
 
     @Test func `is idempotent`() {

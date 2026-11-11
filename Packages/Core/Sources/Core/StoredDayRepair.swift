@@ -48,9 +48,12 @@ public enum StoredDayRepair {
     }
 
     /// Calendars the old `LocalDay` could have written that are converted when the device uses them now.
+    /// Ethiopic Amete Alem is left out: Foundation converts its years differently between OS versions (a day stored
+    /// as 7519-03-02 round-trips on one and not on another), so its days are never repaired rather than repaired
+    /// on some devices only.
     public static let deviceCalendars: Set<Calendar.Identifier> = [
         .buddhist, .japanese, .republicOfChina, .persian, .hebrew, .indian, .coptic, .ethiopicAmeteMihret,
-        .ethiopicAmeteAlem, .islamic, .islamicCivil, .islamicTabular, .islamicUmmAlQura,
+        .islamic, .islamicCivil, .islamicTabular, .islamicUmmAlQura,
     ]
 
     /// Calendars inferred from the year alone when the device calendar doesn't say (rule 4). The Islamic variants
