@@ -59,13 +59,21 @@ struct HydrationMigrationTests {
             try Self.food(db, "olive_oil", liquid: true, fat: 100)
             try Self.food(db, "oats", liquid: false, fat: 7)
             try Self.food(db, "gone", liquid: true, fat: 0)
+            try Self.food(db, "retired_juice", liquid: true, fat: 0.1)
             try Self.diary(db, "milk_entry", foodID: "milk", grams: 250)
             try Self.diary(db, "oil_entry", foodID: "olive_oil", grams: 15)
             try Self.diary(db, "oats_entry", foodID: "oats", grams: 50)
             try Self.diary(db, "quick_entry", foodID: nil, grams: 0, quickAdd: true)
             try Self.diary(db, "orphan_entry", foodID: "gone", grams: 330)
+            try Self.diary(db, "juice_entry", foodID: "retired_juice", grams: 200)
+            try Self.diary(db, "deleted_milk_entry", foodID: "milk", grams: 150)
+            try Self.diary(db, "empty_milk_entry", foodID: "milk", grams: 0)
             // The food row is gone: `diary_entry.food_id` is `ON DELETE SET NULL`.
             try db.execute(sql: "DELETE FROM food WHERE id = 'gone'")
+            // A soft-deleted food keeps its row; a logged drink stays a drink.
+            try db.execute(sql: "UPDATE food SET deleted_at = ? WHERE id = 'retired_juice'", arguments: [Self.stamp])
+            // Deleted entries are backfilled too (they may be restored or synced).
+            try db.execute(sql: "UPDATE diary_entry SET deleted_at = ? WHERE id = 'deleted_milk_entry'", arguments: [Self.stamp])
         }
         let db = try AppDatabase(queue)
         #expect(try queue.read { try Migrator.make().appliedMigrations($0) } == Migrator.migrations)
@@ -75,6 +83,9 @@ struct HydrationMigrationTests {
         #expect(try Self.fluid(queue, "oats_entry") == nil)
         #expect(try Self.fluid(queue, "quick_entry") == nil)
         #expect(try Self.fluid(queue, "orphan_entry") == nil)
+        #expect(try Self.fluid(queue, "juice_entry") == 200)
+        #expect(try Self.fluid(queue, "deleted_milk_entry") == 150)
+        #expect(try Self.fluid(queue, "empty_milk_entry") == nil)
         #expect(try DiaryRepository(db).entry(id: "milk_entry")?.fluidMl == 250)
         #expect(try FoodRepository(db).food(id: "milk")?.countsAsFluid == nil)
     }

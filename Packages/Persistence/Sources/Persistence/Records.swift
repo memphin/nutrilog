@@ -472,7 +472,8 @@ public struct Profile: Codable, Hashable, Sendable, TimestampedRecord {
     public var goalRateKgPerWeek: Double
     /// The fixed daily hydration goal, used when ``waterGoalMode`` is `.fixed`.
     public var waterGoalMl: Double
-    public var waterGoalMode: HydrationGoalMode
+    /// How the daily hydration goal is set: from body weight, or the fixed ``waterGoalMl``.
+    public var waterGoalMode: HydrationGoalMode = .weight
     public var checkinWeekday: Int
     public var updatedAt: Date
     public var revision: Int
