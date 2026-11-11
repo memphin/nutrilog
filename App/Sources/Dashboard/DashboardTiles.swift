@@ -155,6 +155,24 @@ struct DashboardLayout: Equatable, Codable {
         order = shown + order.filter { hidden.contains($0) }
     }
 
+    /// Drag and drop on Today: `tile` takes `target`'s place among the visible tiles (after it when moving forward,
+    /// before it when moving back). No change when either is hidden or they are the same tile.
+    mutating func move(_ tile: DashboardTile, onto target: DashboardTile) {
+        let shown = visible
+        guard tile != target, let from = shown.firstIndex(of: tile), let to = shown.firstIndex(of: target) else { return }
+        moveVisible(fromOffsets: [from], toOffset: to > from ? to + 1 : to)
+    }
+
+    /// Moves a visible tile `offset` places among the visible tiles, stopping at the first and last place.
+    mutating func move(_ tile: DashboardTile, by offset: Int) {
+        let shown = visible
+        guard let from = shown.firstIndex(of: tile) else { return }
+        let to = min(max(from + offset, 0), shown.count - 1)
+        if to != from {
+            move(tile, onto: shown[to])
+        }
+    }
+
     /// Shows a hidden tile as the last visible one.
     mutating func show(_ tile: DashboardTile) {
         guard hidden.remove(tile) != nil else { return }

@@ -157,6 +157,57 @@ struct DashboardLayoutTests {
         hidden.setVisible(.weight, false)
         #expect(hidden.rows.prefix(3) == [[.energy], [.steps, .bodyFat], [.water]])
     }
+
+    @Test func `dragging a tile onto another takes that tile's place`() {
+        var layout = DashboardLayout.default
+        layout.setVisible(.water, false)
+        // Forward: lands after the target. The hidden tile (water) stays behind the visible ones.
+        layout.move(.energy, onto: .sleep)
+        #expect(layout.visible.prefix(4) == [.caffeine, .sleep, .energy, .weight])
+        // Backward: lands before the target.
+        layout.move(.hrv, onto: .caffeine)
+        #expect(layout.visible.prefix(4) == [.hrv, .caffeine, .sleep, .energy])
+        #expect(layout.hidden == [.water])
+        #expect(layout.order.last == .water)
+        #expect(Set(layout.order) == Set(DashboardTile.allCases))
+        // Onto itself, onto a hidden tile, or a hidden tile: nothing changes.
+        let before = layout
+        layout.move(.steps, onto: .steps)
+        layout.move(.steps, onto: .water)
+        layout.move(.water, onto: .steps)
+        #expect(layout == before)
+    }
+
+    @Test func `moving a tile by one step stops at the ends`() throws {
+        var layout = DashboardLayout.default
+        layout.move(.water, by: -1)
+        #expect(layout.visible.prefix(3) == [.water, .energy, .caffeine])
+        layout.move(.water, by: -1) // already first
+        #expect(layout.visible.prefix(3) == [.water, .energy, .caffeine])
+        layout.move(.energy, by: 1)
+        #expect(layout.visible.prefix(3) == [.water, .caffeine, .energy])
+        let last = try #require(layout.visible.last)
+        let before = layout
+        layout.move(last, by: 1)
+        #expect(layout == before)
+    }
+
+    @Test func `editing on Today saves the layout`() throws {
+        let env = AppEnvironment.preview()
+        let profiles = try #require(env.profiles)
+        let model = DashboardModel(environment: env)
+        model.moveTile(.weight, onto: .energy)
+        model.hideTile(.hrv)
+        #expect(model.layout.visible.first == .weight)
+        #expect(model.layout.hidden == [.hrv])
+        #expect(DashboardLayout.load(from: profiles) == model.layout)
+        model.showTile(.hrv)
+        model.moveTile(.weight, by: 1)
+        #expect(model.layout.hidden.isEmpty)
+        #expect(model.layout.visible.last == .hrv)
+        #expect(model.layout.visible.prefix(2) == [.energy, .weight])
+        #expect(DashboardLayout.load(from: profiles) == model.layout)
+    }
 }
 
 @MainActor

@@ -16,6 +16,8 @@
             switch name {
             case "dashboard":
                 DashboardView()
+            case "dashboardEditing":
+                DashboardView(startsEditing: true)
             case "addFood":
                 AddFoodView(target: AddTarget(slotID: "breakfast", day: environment.today))
             case "scan":

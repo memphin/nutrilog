@@ -3,10 +3,13 @@ import DesignSystem
 import Persistence
 import SwiftUI
 
-/// Today: intake, weight, steps, sleep and the other Health tiles (backlog #28, FR-41). Reorderable and hideable;
-/// pull to refresh re-reads Health.
+/// Today: intake, weight, steps, sleep and the other Health tiles (backlog #28, FR-41). Long-press a tile to edit the
+/// layout right here (drag to reorder, hide, show); Settings → Dashboard edits the same layout. Pull to refresh
+/// re-reads Health.
 struct DashboardView: View {
     @Environment(AppEnvironment.self) private var environment
+    /// Opens in edit mode (debug screens).
+    var startsEditing = false
     @State private var model: DashboardModel?
 
     var body: some View {
@@ -19,7 +22,9 @@ struct DashboardView: View {
         }
         .task {
             if model == nil {
-                model = DashboardModel(environment: environment)
+                let model = DashboardModel(environment: environment)
+                model.isEditing = startsEditing
+                self.model = model
             }
         }
     }
@@ -29,6 +34,8 @@ private struct DashboardContent: View {
     @Environment(AppEnvironment.self) private var environment
     @Bindable var model: DashboardModel
     @State private var path: [DashboardTile] = []
+    /// The tile being dragged while editing the layout.
+    @State private var dragging: DashboardTile?
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -38,6 +45,7 @@ private struct DashboardContent: View {
                         HStack(alignment: .top, spacing: NL.Spacing.m) {
                             ForEach(row) { tile in
                                 DashboardTileView(tile: tile, model: model) { path.append(tile) }
+                                    .modifier(EditableTile(tile: tile, model: model, dragging: $dragging))
                             }
                         }
                     }
@@ -45,17 +53,40 @@ private struct DashboardContent: View {
                         EmptyStateView(
                             "All tiles are hidden",
                             systemImage: "square.grid.2x2",
-                            message: "Show them again in Settings → Dashboard.",
+                            message: model.isEditing
+                                ? "Tap + on a hidden tile below to show it again."
+                                : "Edit Today to show them again, or use Settings → Dashboard.",
                         )
+                        if !model.isEditing {
+                            Button("Edit Today") { model.isEditing = true }
+                                .buttonStyle(.bordered)
+                        }
+                    }
+                    if model.isEditing {
+                        HiddenTilesSection(model: model)
                     }
                 }
                 .padding(.horizontal, NL.Spacing.l)
                 .padding(.bottom, NL.Spacing.xxl)
+                // A drop outside any tile ends the drag (the order was already updated while dragging).
+                .onDrop(of: [.text], delegate: EndDragDelegate(dragging: $dragging))
             }
             .background(Color(.systemGroupedBackground))
             .onAppear { model.reloadSettings() } // sizes may have changed in Settings
             .refreshable { await model.refresh() }
             .navigationTitle("Today")
+            .toolbar {
+                if model.isEditing {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { withAnimation(.snappy) { model.isEditing = false } }
+                    }
+                }
+            }
+            .sensoryFeedback(.impact, trigger: model.isEditing) { _, editing in editing }
+            .onDisappear {
+                model.isEditing = false // another tab, or a tile's detail
+                dragging = nil
+            }
             .navigationDestination(for: DashboardTile.self) { tile in
                 TileDetailView(tile: tile, model: model)
             }
