@@ -155,6 +155,7 @@ struct CaffeineSettingsView: View {
         change(&updated)
         do {
             settings = try updated.save(to: profiles)
+            environment.refreshHydrationReminder() // bedtime is shared with hydration
         } catch {
             errorMessage = "Couldn't save the caffeine settings: \(error.localizedDescription)"
         }

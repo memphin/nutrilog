@@ -11,6 +11,10 @@ struct VitalionApp: App {
         // Here rather than in a view: Health may launch the app in the background to deliver observer updates,
         // and the observer queries must be registered on every launch (backlog #26).
         environment.startHealthBackgroundWork()
+        // Also before launching finishes: a tap on the hydration reminder's "+ 250 ml" launches the app in the
+        // background and is delivered to this delegate.
+        NotificationDelegate.install(environment: environment)
+        environment.startHydrationReminders()
     }
 
     var body: some Scene {

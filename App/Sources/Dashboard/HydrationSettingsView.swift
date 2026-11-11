@@ -174,10 +174,11 @@ struct HydrationSettingsView: View {
             notificationsDenied = false
             return
         }
-        let reminder = environment.checkInReminder // asks for the same iOS notification permission
+        let reminder = environment.hydrationReminder
         Task {
             if await reminder.requestAuthorization() {
                 notificationsDenied = false
+                environment.refreshHydrationReminder() // saved before permission was given: plan it now
             } else {
                 update { $0.remindersEnabled = false }
                 notificationsDenied = true
@@ -192,6 +193,7 @@ struct HydrationSettingsView: View {
         change(&updated)
         do {
             settings = try updated.save(to: profiles)
+            environment.refreshHydrationReminder()
         } catch {
             errorMessage = "Couldn't save the hydration settings: \(error.localizedDescription)"
         }
@@ -291,7 +293,9 @@ private struct WaterQuickAddSizesSection: View {
     private func persist(_ updated: [Int]) -> [Int]? {
         guard let profiles = environment.profiles else { return nil }
         do {
-            return try WaterQuickAdd.save(updated, to: profiles)
+            let saved = try WaterQuickAdd.save(updated, to: profiles)
+            environment.refreshHydrationReminder() // the reminder's action adds the smallest size
+            return saved
         } catch {
             errorMessage = "Couldn't save the sizes: \(error.localizedDescription)"
             return nil

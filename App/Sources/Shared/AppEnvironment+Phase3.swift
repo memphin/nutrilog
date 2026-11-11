@@ -39,6 +39,12 @@ extension AppEnvironment {
         selectedTab = .diary
     }
 
+    /// Shows `tile`'s detail on Today (a tap on the hydration reminder).
+    func openDashboardTile(_ tile: DashboardTile) {
+        dashboardTileRequest = tile
+        selectedTab = .today
+    }
+
     /// Recomputes the weight trend from every known weight and stores it in `daily_metrics.weight_trend_kg`
     /// (backlog #33). Cheap; called after Health syncs and weight changes. Failures are ignored: the stored trend is
     /// a cache for sync, every screen computes its own from the weights.

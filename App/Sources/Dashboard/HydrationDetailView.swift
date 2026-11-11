@@ -44,6 +44,8 @@ struct HydrationDetailView: View {
                 } label: {
                     Label("Add water", systemImage: "plus")
                 }
+            } footer: {
+                Text("Water you add here is also written to Apple Health.")
             }
 
             todaysDrinks(day)

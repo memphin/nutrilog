@@ -100,6 +100,13 @@ private struct DashboardContent: View {
             } message: { Text(model.errorMessage ?? "") }
         }
         .task(id: environment.today) { await model.observe() }
+        // A tap on the hydration reminder: show that tile's detail (also when Today opens because of it).
+        .onChange(of: environment.dashboardTileRequest, initial: true) { _, tile in
+            guard let tile else { return }
+            environment.dashboardTileRequest = nil
+            model.isEditing = false
+            path = [tile]
+        }
         .task(id: environment.dataGeneration) {
             model.reloadSettings()
             model.undo.dismiss()

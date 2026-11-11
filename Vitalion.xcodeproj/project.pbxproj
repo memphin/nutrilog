@@ -57,9 +57,11 @@
 		61C770810AECE6E470E23402 /* HealthKitClient in Frameworks */ = {isa = PBXBuildFile; productRef = 21058B4AB52F76D665E5A05D /* HealthKitClient */; };
 		6397A708118A0AE52F85AFCC /* Phase3Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A47272A21296D029D00872F /* Phase3Tests.swift */; };
 		66C1DDA4C05D84E5E41D2D0B /* MealEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51648512C272F5BAB2CCDAEB /* MealEditorView.swift */; };
+		66CB1CE58F2AB831FE8B088C /* HydrationReminder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C69604C57FE502D08D926F /* HydrationReminder.swift */; };
 		6A6D7FB5AE670D82694327BC /* VitalionWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0A83FF24C8E676D75F22F754 /* VitalionWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		6AC867F76974E76ECAE836DD /* CaffeineTile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3181C2776D24E2128BB05805 /* CaffeineTile.swift */; };
 		6D194374FD4F19E37CBF2910 /* DuplicateFoodsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB96FF471284934C83435DA /* DuplicateFoodsView.swift */; };
+		6DBAC34FCD01C3ECED916F48 /* NotificationDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD5EADB32DB99D13A3D5328D /* NotificationDelegate.swift */; };
 		70FB1EF9E4C1215967A03CE2 /* DashboardAccessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37EF81A77CEAC542C034074D /* DashboardAccessTests.swift */; };
 		74B2381D81030F4F1E7A5741 /* VitalionIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = C765BACA160F1ECF2058D539 /* VitalionIntents.swift */; };
 		790621B1B50CB4C7B4CB880D /* TestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = B676A848F8A4FD5E187A9F63 /* TestSupport.swift */; };
@@ -79,6 +81,7 @@
 		99FEAD95FA282EE3EAB24206 /* AddFoodView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F5613F997C8E4249B281438 /* AddFoodView.swift */; };
 		9CC15F4FEEBB6E186D24B1D5 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F4638235FA94DB5B79F0E95 /* RootView.swift */; };
 		9CDD697C2CE53B51833C0BEA /* StatsLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EDDD808D19DB3854B8D610A /* StatsLoader.swift */; };
+		9DF6B5FCD905EBA320AD243C /* HydrationReminderServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6F0D8296D5F2D3CAA0C5F7B /* HydrationReminderServiceTests.swift */; };
 		9DFC1A1DD5062A64161E7B51 /* ScanLogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDDCA8E80C7E59133FC80BB1 /* ScanLogTests.swift */; };
 		9E44E217669F9D9D3B02D684 /* Scanner in Frameworks */ = {isa = PBXBuildFile; productRef = 109B13F8FBA8F197909A34BA /* Scanner */; };
 		9E5A8AC1856736495E2320D3 /* HealthOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAEA9B4600E43C70FAFDE929 /* HealthOnboardingView.swift */; };
@@ -106,6 +109,7 @@
 		DBA3F521232C925D59674D47 /* AppModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2251AD561F7592E7581BA671 /* AppModelTests.swift */; };
 		DEA8A104E6F2AB33493C97C6 /* HydrationTileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09BAC3A8F9E799BDA94D4974 /* HydrationTileTests.swift */; };
 		E0B92D28BE843F8C8BD7745B /* UndoToast.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAA8712BDFB82B06E9D3D9CE /* UndoToast.swift */; };
+		E59BE1059B25EAEF6F36A739 /* HydrationReminderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E532B321AC59BDADC0CD58B2 /* HydrationReminderService.swift */; };
 		E7400BC0044C7A9C72F3879A /* HealthWriteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BA0B226DE90A3D156F5DE73 /* HealthWriteTests.swift */; };
 		E79249404E49D2FE1C4F6248 /* CheckInReminder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00DA0585BCECB7C3CF0878AF /* CheckInReminder.swift */; };
 		E9AB0EBB3F16BAB6CE22CE6F /* TargetsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CBECB4E316C0FF9D7CD73B7 /* TargetsModel.swift */; };
@@ -239,6 +243,7 @@
 		A3D1C9580AC14854A05181BB /* AppEnvironmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironmentTests.swift; sourceTree = "<group>"; };
 		A51D67B28981C0A28E21D725 /* StubOpenFoodFactsClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StubOpenFoodFactsClient.swift; sourceTree = "<group>"; };
 		AC84424AD8A575A259628DBB /* TrendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsView.swift; sourceTree = "<group>"; };
+		AD5EADB32DB99D13A3D5328D /* NotificationDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationDelegate.swift; sourceTree = "<group>"; };
 		AEFCCA68F0A67ECF0B040E21 /* DashboardEditing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardEditing.swift; sourceTree = "<group>"; };
 		B2562F6E4540C9C32B3D5E43 /* MealPlanViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPlanViews.swift; sourceTree = "<group>"; };
 		B2F38B07CDBC88FC4F971C55 /* MealPhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPhoto.swift; sourceTree = "<group>"; };
@@ -262,12 +267,15 @@
 		CDDCA8E80C7E59133FC80BB1 /* ScanLogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanLogTests.swift; sourceTree = "<group>"; };
 		CEE25CF5A3FA9ABD5B5C0FC9 /* CheckInModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckInModel.swift; sourceTree = "<group>"; };
 		CF6487B9D40F670D92683369 /* ChartData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartData.swift; sourceTree = "<group>"; };
+		D1C69604C57FE502D08D926F /* HydrationReminder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HydrationReminder.swift; sourceTree = "<group>"; };
 		D7C112271DD8E6E1BC1CBB87 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		DA6CD3E2A75CDEAED32FC937 /* MealEditorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealEditorModel.swift; sourceTree = "<group>"; };
 		DAA8712BDFB82B06E9D3D9CE /* UndoToast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoToast.swift; sourceTree = "<group>"; };
 		DFBE319DCE5FE5E41BB3744B /* CaffeineSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaffeineSettingsView.swift; sourceTree = "<group>"; };
 		E03AFAD5C0A1F4E335A85AF0 /* BarcodeResolutionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeResolutionView.swift; sourceTree = "<group>"; };
 		E06A37F87F80825C3EB8E826 /* ScanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanView.swift; sourceTree = "<group>"; };
+		E532B321AC59BDADC0CD58B2 /* HydrationReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HydrationReminderService.swift; sourceTree = "<group>"; };
+		E6F0D8296D5F2D3CAA0C5F7B /* HydrationReminderServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HydrationReminderServiceTests.swift; sourceTree = "<group>"; };
 		E7B466B5B167E23658F3B7FF /* LabelPhotoStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabelPhotoStore.swift; sourceTree = "<group>"; };
 		E8BD0F43DB2B86EA3164A4EF /* HistoryCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryCalendarView.swift; sourceTree = "<group>"; };
 		EA071653A47DC8AB30CF4395 /* Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formatting.swift; sourceTree = "<group>"; };
@@ -511,6 +519,8 @@
 				B82C78F6A08FA91289CE96E4 /* HydrationDayBuilder.swift */,
 				2A6BBD67C5C882E7C4FF9E51 /* HydrationDetailView.swift */,
 				0BAC2A50C1B94957AD9A02BB /* HydrationEntrySheet.swift */,
+				D1C69604C57FE502D08D926F /* HydrationReminder.swift */,
+				E532B321AC59BDADC0CD58B2 /* HydrationReminderService.swift */,
 				42D866798F0ED1775651F94E /* HydrationSettings.swift */,
 				8E067E35D2053C35B6E3086B /* HydrationSettingsView.swift */,
 				FF5C1443D3C481089F5EB5B1 /* HydrationStrip.swift */,
@@ -556,6 +566,7 @@
 				69B66F3373A92F44845F68B4 /* HealthTests.swift */,
 				5BA0B226DE90A3D156F5DE73 /* HealthWriteTests.swift */,
 				36BCF11A7CC4A1C69281B243 /* HydrationDetailTests.swift */,
+				E6F0D8296D5F2D3CAA0C5F7B /* HydrationReminderServiceTests.swift */,
 				2A761CBEE8771B0186D02D01 /* HydrationSettingsTests.swift */,
 				09BAC3A8F9E799BDA94D4974 /* HydrationTileTests.swift */,
 				3F43367A7535A76FE70C2845 /* MealPlanTests.swift */,
@@ -599,6 +610,7 @@
 				0132070C8E481EA07DAC3BCA /* AppEnvironment+Phase3.swift */,
 				398357AEBA3E46B5F2975E21 /* DebugScreens.swift */,
 				EA071653A47DC8AB30CF4395 /* Formatting.swift */,
+				AD5EADB32DB99D13A3D5328D /* NotificationDelegate.swift */,
 				DAA8712BDFB82B06E9D3D9CE /* UndoToast.swift */,
 				6977B5AEE305566A1963AD20 /* WidgetSnapshotWriter.swift */,
 			);
@@ -758,6 +770,7 @@
 				899883FC0E437839BF4F8843 /* HealthTests.swift in Sources */,
 				E7400BC0044C7A9C72F3879A /* HealthWriteTests.swift in Sources */,
 				815F51B813312E155D5FBC9B /* HydrationDetailTests.swift in Sources */,
+				9DF6B5FCD905EBA320AD243C /* HydrationReminderServiceTests.swift in Sources */,
 				1DDAF77A67E857B98BD25391 /* HydrationSettingsTests.swift in Sources */,
 				DEA8A104E6F2AB33493C97C6 /* HydrationTileTests.swift in Sources */,
 				31A211C649A04D1145D678A2 /* MealPlanTests.swift in Sources */,
@@ -819,6 +832,8 @@
 				855DC2C54103B68E1E6677D3 /* HydrationDayBuilder.swift in Sources */,
 				485C87A4107165A4DF3AFDD1 /* HydrationDetailView.swift in Sources */,
 				D779BD3350F4727B7A9BAB1F /* HydrationEntrySheet.swift in Sources */,
+				66CB1CE58F2AB831FE8B088C /* HydrationReminder.swift in Sources */,
+				E59BE1059B25EAEF6F36A739 /* HydrationReminderService.swift in Sources */,
 				3D96B40690DBB4753FEC9D30 /* HydrationSettings.swift in Sources */,
 				F5ED014BA3EE2EB0FE6DAA1D /* HydrationSettingsView.swift in Sources */,
 				36E347BA3711A2FDA9CCE0F6 /* HydrationStrip.swift in Sources */,
@@ -831,6 +846,7 @@
 				1A97AEF6376A4C2E760AAD96 /* MealPhoto.swift in Sources */,
 				EE87227E94F5643319A94EDC /* MealPlanViews.swift in Sources */,
 				CA198D75AB48BEC1DE37F7AA /* MetricChartView.swift in Sources */,
+				6DBAC34FCD01C3ECED916F48 /* NotificationDelegate.swift in Sources */,
 				8542CDA8DAFD67E8F8BE182E /* OnlineResultsView.swift in Sources */,
 				0EE82979F3035BB3E93E17F2 /* OnlineSearchModel.swift in Sources */,
 				F6997FB68C7E9629093EAE46 /* ProductCardView.swift in Sources */,
