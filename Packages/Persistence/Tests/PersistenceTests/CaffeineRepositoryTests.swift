@@ -5,10 +5,10 @@ import Testing
 @testable import Persistence
 
 struct CaffeineMigrationTests {
-    @Test func `migration 009 adds the caffeine table and columns and keeps existing rows`() throws {
+    @Test func `migration 010 adds the caffeine table and columns and keeps existing rows`() throws {
         let queue = try DatabaseQueue()
         var old = DatabaseMigrator()
-        for name in Migrator.migrations.prefix(8) {
+        for name in Migrator.migrations.prefix(9) {
             old.registerMigration(name) { db in try db.execute(sql: Migrator.sql(named: name)) }
         }
         try old.migrate(queue)
@@ -26,7 +26,7 @@ struct CaffeineMigrationTests {
         }
         let db = try AppDatabase(queue)
         #expect(try queue.read { try Migrator.make().appliedMigrations($0) } == Migrator.migrations)
-        #expect(Migrator.migrations.contains("009_caffeine"))
+        #expect(Migrator.migrations.contains("010_caffeine"))
 
         let (tables, foodColumns, diaryColumns, caffeineColumns) = try queue.read { db in
             try (

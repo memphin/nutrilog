@@ -28,8 +28,10 @@ struct DiaryView: View {
 struct AddTarget: Identifiable {
     let slotID: String
     let day: LocalDay
+    /// Adds to the meal plan instead of logging: nothing counts as eaten until it is confirmed.
+    var planned = false
     var id: String {
-        "\(day)-\(slotID)"
+        "\(day)-\(slotID)\(planned ? "-plan" : "")"
     }
 }
 
@@ -46,9 +48,23 @@ private struct DiaryContent: View {
     @State private var movingEntry: DiaryEntry?
     @State private var savingMealSlot: MealSlot?
     @State private var mealName = ""
+    @State private var plannedAction: PlannedEntry?
+    @State private var editingPlanned: PlannedEntry?
+    @State private var movingPlanned: PlannedEntry?
+    @State private var repeatRequest: RepeatRequest?
+    @State private var showMealPlan = false
 
     struct CopyRequest: Identifiable {
         let slotID: String?
+        var id: String {
+            slotID ?? "day"
+        }
+    }
+
+    /// "Plan for the next days…" of one meal, or of the whole day when `slotID` is nil.
+    struct RepeatRequest: Identifiable {
+        let slotID: String?
+        let title: String
         var id: String {
             slotID ?? "day"
         }
@@ -60,6 +76,12 @@ private struct DiaryContent: View {
                 DaySummaryHeader(totals: model.diary?.totals ?? .zero, target: model.target, unit: model.energyUnit)
                     .listRowInsets(EdgeInsets(top: NL.Spacing.m, leading: NL.Spacing.l, bottom: NL.Spacing.m, trailing: NL.Spacing.l))
                     .gesture(daySwipe)
+                if !model.planned.isEmpty {
+                    PlannedSummaryRow(
+                        planned: model.plannedTotals, eaten: model.diary?.totals ?? .zero, target: model.target,
+                        unit: model.energyUnit, canConfirm: !model.isFuture,
+                    ) { model.confirmAll(slotID: nil) }
+                }
             }
 
             if let diary = model.diary {
@@ -83,12 +105,32 @@ private struct DiaryContent: View {
                             }
                         }
                         .onMove { model.reorder(in: section, from: $0, to: $1) }
-                        Button {
-                            addTarget = AddTarget(slotID: section.slot.id, day: model.day)
-                        } label: {
-                            Label("Add food", systemImage: "plus")
+                        ForEach(model.planned(in: section.slot.id)) { planned in
+                            PlannedRow(
+                                entry: planned,
+                                unit: model.energyUnit,
+                                isLiquid: planned.foodID.map(model.liquidFoodIDs.contains) ?? false,
+                                canConfirm: !model.isFuture,
+                            ) { model.confirm([planned]) }
+                                .contentShape(Rectangle())
+                                .onTapGesture { plannedAction = planned }
+                                .contextMenu { plannedMenu(planned) }
+                                .swipeActions(edge: .trailing) {
+                                    Button("Remove", systemImage: "trash", role: .destructive) { model.deletePlanned([planned]) }
+                                }
+                                .swipeActions(edge: .leading) {
+                                    if !model.isFuture {
+                                        Button("Eaten", systemImage: "checkmark") { model.confirm([planned]) }
+                                            .tint(.green)
+                                    }
+                                }
                         }
-                        .accessibilityLabel("Add food to \(section.slot.name)")
+                        Button {
+                            addTarget = AddTarget(slotID: section.slot.id, day: model.day, planned: model.isFuture)
+                        } label: {
+                            Label(model.isFuture ? "Plan food" : "Add food", systemImage: "plus")
+                        }
+                        .accessibilityLabel("\(model.isFuture ? "Plan food for" : "Add food to") \(section.slot.name)")
                     } header: {
                         sectionHeader(section)
                     }
@@ -128,6 +170,7 @@ private struct DiaryContent: View {
         .toolbar { toolbar }
         .task(id: model.day) { await model.observeDiary() }
         .task(id: model.day) { await model.observeTarget() }
+        .task(id: model.day) { await model.observePlan() }
         .task(id: model.day) { model.reloadEstimate() }
         .onChange(of: environment.dataGeneration) { model.dataDidChangeExternally() }
         // The history calendar (or anything else) asked for a day.
@@ -172,6 +215,40 @@ private struct DiaryContent: View {
                 model.move(entry, toSlot: slotID, day: day)
             }
         }
+        .confirmationDialog(
+            plannedAction?.displayName ?? "Planned",
+            isPresented: Binding(get: { plannedAction != nil }, set: {
+                if !$0 {
+                    plannedAction = nil
+                }
+            }),
+            titleVisibility: .visible,
+            presenting: plannedAction,
+        ) { planned in
+            plannedMenu(planned)
+        } message: { _ in
+            Text(model.isFuture ? "Planned — confirm it on the day you eat it." : "Planned — not counted until you confirm it.")
+        }
+        .sheet(item: $editingPlanned) { planned in
+            EditPlannedView(entry: planned)
+        }
+        .sheet(item: $movingPlanned) { planned in
+            MoveToDateSheet(
+                title: "Move \(planned.displayName)", day: planned.day, slotID: planned.mealSlotID, slots: model.slots,
+            ) { slotID, day in
+                model.movePlanned(planned, toSlot: slotID, day: day)
+            }
+        }
+        .sheet(item: $repeatRequest) { request in
+            RepeatPlanSheet(title: request.title, from: model.day) { days in
+                model.repeatOnNextDays(slotID: request.slotID, days: days)
+            }
+        }
+        .sheet(isPresented: $showMealPlan) {
+            MealPlanView { day in
+                model.day = day
+            }
+        }
         .sheet(isPresented: $showDatePicker) {
             DayPickerSheet(day: $model.day)
         }
@@ -202,8 +279,31 @@ private struct DiaryContent: View {
                     .monospacedDigit()
             }
             Menu {
-                Button("Add food", systemImage: "plus") { addTarget = AddTarget(slotID: section.slot.id, day: model.day) }
-                Button("Quick add calories", systemImage: "bolt") { quickAddTarget = AddTarget(slotID: section.slot.id, day: model.day) }
+                if model.isFuture {
+                    Button("Plan food", systemImage: "plus") {
+                        addTarget = AddTarget(slotID: section.slot.id, day: model.day, planned: true)
+                    }
+                    Button("Plan calories", systemImage: "bolt") {
+                        quickAddTarget = AddTarget(slotID: section.slot.id, day: model.day, planned: true)
+                    }
+                } else {
+                    Button("Add food", systemImage: "plus") { addTarget = AddTarget(slotID: section.slot.id, day: model.day) }
+                    Button("Quick add calories", systemImage: "bolt") {
+                        quickAddTarget = AddTarget(slotID: section.slot.id, day: model.day)
+                    }
+                    if model.isToday {
+                        Button("Plan for later today", systemImage: "calendar.badge.plus") {
+                            addTarget = AddTarget(slotID: section.slot.id, day: model.day, planned: true)
+                        }
+                    }
+                }
+                if !model.isFuture, !model.planned(in: section.slot.id).isEmpty {
+                    Button("Mark planned as eaten", systemImage: "checkmark.circle") { model.confirmAll(slotID: section.slot.id) }
+                }
+                Button("Plan for the next days…", systemImage: "calendar.badge.clock") {
+                    repeatRequest = RepeatRequest(slotID: section.slot.id, title: "Plan \(section.slot.name)")
+                }
+                .disabled(section.entries.isEmpty && model.planned(in: section.slot.id).isEmpty)
                 Divider()
                 Button("Save as meal…", systemImage: "square.and.arrow.down.on.square") {
                     mealName = section.slot.name
@@ -236,6 +336,29 @@ private struct DiaryContent: View {
         Button("Delete", systemImage: "trash", role: .destructive) { model.delete([entry]) }
     }
 
+    @ViewBuilder
+    private func plannedMenu(_ planned: PlannedEntry) -> some View {
+        if !model.isFuture {
+            Button("Eaten as planned", systemImage: "checkmark.circle") { model.confirm([planned]) }
+            if !planned.isQuickAdd {
+                Button("Eaten, different amount…", systemImage: "pencil.and.list.clipboard") {
+                    editing = model.confirmForEditing(planned)
+                }
+            }
+        }
+        if !planned.isQuickAdd {
+            Button("Change planned amount…", systemImage: "pencil") { editingPlanned = planned }
+        }
+        Menu("Move to", systemImage: "arrow.right.square") {
+            ForEach(model.slots.filter { $0.id != planned.mealSlotID }) { slot in
+                Button(slot.name) { model.movePlanned(planned, toSlot: slot.id) }
+            }
+            Divider()
+            Button("Another day…", systemImage: "calendar") { movingPlanned = planned }
+        }
+        Button("Remove from plan", systemImage: "trash", role: .destructive) { model.deletePlanned([planned]) }
+    }
+
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItemGroup(placement: .topBarLeading) {
@@ -254,11 +377,20 @@ private struct DiaryContent: View {
             if !model.isToday {
                 Button("Today") { model.goToToday() }
             }
+            Button("Meal plan", systemImage: "calendar.badge.clock") { showMealPlan = true }
             Menu("Day options", systemImage: "ellipsis") {
                 Button("Copy whole day from yesterday", systemImage: "doc.on.doc") {
                     model.copy(from: model.day.previous, slotID: nil)
                 }
                 Button("Copy whole day from date…", systemImage: "calendar") { copyRequest = CopyRequest(slotID: nil) }
+                Divider()
+                if !model.isFuture, !model.planned.isEmpty {
+                    Button("Mark all planned as eaten", systemImage: "checkmark.circle") { model.confirmAll(slotID: nil) }
+                }
+                Button("Plan this day for the next days…", systemImage: "calendar.badge.clock") {
+                    repeatRequest = RepeatRequest(slotID: nil, title: "Plan whole day")
+                }
+                .disabled((model.diary?.entryCount ?? 0) == 0 && model.planned.isEmpty)
                 Divider()
                 Button(
                     model.diary?.note?.isComplete == true ? "Unmark fully logged" : "Mark day as fully logged",

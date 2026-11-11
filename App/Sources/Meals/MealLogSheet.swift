@@ -144,7 +144,7 @@ struct MealLogSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Log") { log() }.disabled(draft.logItems == nil)
+                    Button(target.planned ? "Plan" : "Log") { log() }.disabled(draft.logItems == nil)
                 }
             }
             .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: {
@@ -164,7 +164,12 @@ struct MealLogSheet: View {
     private func log() {
         guard let items = draft.logItems, let meals = environment.meals else { return }
         do {
-            try meals.log(templateID: meal.id, items: items, slotID: slotID, day: target.day)
+            if target.planned {
+                guard let plan = environment.mealPlan else { return }
+                try plan.planAll(items, slotID: slotID, day: target.day)
+            } else {
+                try meals.log(templateID: meal.id, items: items, slotID: slotID, day: target.day)
+            }
             dismiss()
             onLogged()
         } catch {

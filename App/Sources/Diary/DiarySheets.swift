@@ -61,14 +61,28 @@ struct CopyFromDateSheet: View {
     }
 }
 
-/// Moves an entry to another day (and slot).
+/// Moves an entry (logged or planned) to another day and slot.
 struct MoveToDateSheet: View {
-    let entry: DiaryEntry
+    let title: String
+    let initialDay: LocalDay
+    let initialSlotID: String
     let slots: [MealSlot]
     let onMove: (String, LocalDay) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var date = Date()
     @State private var slotID = ""
+
+    init(title: String, day: LocalDay, slotID: String, slots: [MealSlot], onMove: @escaping (String, LocalDay) -> Void) {
+        self.title = title
+        initialDay = day
+        initialSlotID = slotID
+        self.slots = slots
+        self.onMove = onMove
+    }
+
+    init(entry: DiaryEntry, slots: [MealSlot], onMove: @escaping (String, LocalDay) -> Void) {
+        self.init(title: "Move \(entry.displayName)", day: entry.day, slotID: entry.mealSlotID, slots: slots, onMove: onMove)
+    }
 
     var body: some View {
         NavigationStack {
@@ -78,7 +92,7 @@ struct MoveToDateSheet: View {
                     ForEach(slots) { Text($0.name).tag($0.id) }
                 }
             }
-            .navigationTitle("Move \(entry.displayName)")
+            .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -92,8 +106,8 @@ struct MoveToDateSheet: View {
         }
         .presentationDetents([.medium])
         .onAppear {
-            date = entry.day.startDate()
-            slotID = entry.mealSlotID
+            date = initialDay.startDate()
+            slotID = initialSlotID
         }
     }
 }

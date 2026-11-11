@@ -17,6 +17,11 @@ extension AppEnvironment {
         db.map { MealTemplateRepository($0, clock: clock) }
     }
 
+    /// The meal plan for the coming days (meal prep): planned foods, confirmed into the diary when eaten.
+    var mealPlan: MealPlanRepository? {
+        db.map { MealPlanRepository($0, clock: clock) }
+    }
+
     /// Weekly check-ins (SPEC §5.4.1).
     var checkIns: CheckInRepository? {
         db.map { CheckInRepository($0, clock: clock) }

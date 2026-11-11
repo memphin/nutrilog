@@ -16,8 +16,8 @@ public struct DataPortability: Sendable {
     /// and `barcode_scan_log` (private, device-local scan diagnostics).
     static let tables = [
         "meal_slot", "food", "serving", "food_barcode", "recipe_ingredient", "meal_template", "meal_template_item",
-        "diary_entry", "healthkit_link", "day_note", "water_entry", "caffeine_entry", "weight_entry", "daily_metrics",
-        "profile", "target", "tdee_estimate", "setting",
+        "diary_entry", "planned_entry", "healthkit_link", "day_note", "water_entry", "caffeine_entry", "weight_entry",
+        "daily_metrics", "profile", "target", "tdee_estimate", "setting",
     ]
 
     public enum ImportMode: Sendable {

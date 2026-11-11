@@ -68,7 +68,7 @@ struct ScanView: View {
                 .environment(environment)
         }
         .sheet(isPresented: $showSessionLog) {
-            SessionLogView(items: model.sessionLog)
+            SessionLogView(items: model.sessionLog, isPlanned: target.planned)
         }
     }
 
@@ -93,7 +93,7 @@ struct ScanView: View {
             }
             if model.loggedCount > 0 {
                 Button { showSessionLog = true } label: {
-                    Label("\(model.loggedCount) logged", systemImage: "checkmark.circle.fill")
+                    Label("\(model.loggedCount) \(target.planned ? "planned" : "logged")", systemImage: "checkmark.circle.fill")
                         .monospacedDigit()
                 }
                 .buttonStyle(.glass)
@@ -117,6 +117,7 @@ struct ScanView: View {
 /// What was logged since the scanner opened.
 private struct SessionLogView: View {
     let items: [ScanFlowModel.LoggedItem]
+    var isPlanned = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -124,7 +125,7 @@ private struct SessionLogView: View {
             List(items) { item in
                 Label(item.name, systemImage: "checkmark.circle")
             }
-            .navigationTitle("Logged this session")
+            .navigationTitle(isPlanned ? "Planned this session" : "Logged this session")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
@@ -163,7 +164,7 @@ struct ScanResultView: View {
                     }
                 }
                 .navigationDestination(for: FoodDetail.self) { detail in
-                    QuantitySheet(detail: detail, mode: .log(slotID: target.slotID, day: target.day)) {
+                    QuantitySheet(detail: detail, mode: .log(slotID: target.slotID, day: target.day, planned: target.planned)) {
                         loggedFood(detail)
                     }
                 }

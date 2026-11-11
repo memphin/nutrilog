@@ -78,6 +78,8 @@
                     target: AddTarget(slotID: "breakfast", day: environment.today),
                     prefilledPhoto: path.flatMap { FileManager.default.contents(atPath: $0) },
                 ) {}
+            case "mealPlan":
+                MealPlanView { _ in }
             case "diary":
                 DiaryView()
             case "caffeine":
