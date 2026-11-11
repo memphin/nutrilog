@@ -7,8 +7,11 @@ struct ExpenditureSnapshot: Equatable {
     /// The day the snapshot was computed on; the estimate's window ends the day before.
     var today: LocalDay
     var estimate: Result<TDEEEstimate, TDEEUnavailable>
-    /// Mifflin-St Jeor × activity; nil while the profile or a weight is missing.
+    /// The 30-day average of Health energy burned or, without enough of it, Mifflin-St Jeor × activity; nil while
+    /// neither is available.
     var baselineKcal: Double?
+    /// True when `baselineKcal` is measured from Health energy rather than the formula.
+    var baselineIsMeasured = false
     var profile: Profile
     /// The target in effect today.
     var currentTarget: Target?
@@ -45,7 +48,9 @@ enum Expenditure {
         let stats = try StatsLoader.load(endDay.adding(days: -(historyDays - 1)) ... endDay, environment: environment, calendar: calendar)
         let profile = try profiles.profile()
         let target = try profiles.target(on: today)
-        let baseline = baseline(profile: profile, weightKg: stats.last?.trendKg ?? stats.last { $0.weightKg != nil }?.weightKg, on: today)
+        let measured = measured(stats)
+        let baseline = measured?.kcal
+            ?? baseline(profile: profile, weightKg: stats.last?.trendKg ?? stats.last { $0.weightKg != nil }?.weightKg, on: today)
         let estimate = try AdaptiveTDEE.estimate(
             history: history(stats), endDay: endDay, baselineKcal: baseline,
             previousKcal: checkIns.previousEstimateKcal(before: today),
@@ -59,8 +64,8 @@ enum Expenditure {
             )
         }
         return try ExpenditureSnapshot(
-            today: today, estimate: estimate, baselineKcal: baseline, profile: profile, currentTarget: target,
-            proposal: proposal, lastCheckIn: checkIns.latest(),
+            today: today, estimate: estimate, baselineKcal: baseline, baselineIsMeasured: measured != nil, profile: profile,
+            currentTarget: target, proposal: proposal, lastCheckIn: checkIns.latest(),
         )
     }
 
@@ -71,6 +76,23 @@ enum Expenditure {
                 weightKg: day.weightKg, trendKg: day.trendKg,
             )
         }
+    }
+
+    /// Measured maintenance from the last `Energy.measuredWindowDays` of `stats` (oldest first, ending yesterday).
+    static func measured(_ stats: [DayStats]) -> MeasuredTDEE? {
+        Energy.measuredTDEE(dailyTotalKcal: stats.suffix(Energy.measuredWindowDays).map(\.totalBurnedKcal))
+    }
+
+    /// Measured maintenance over the `Energy.measuredWindowDays` days before `environment.today` (today is still
+    /// in progress); nil without enough Health energy.
+    static func measured(environment: AppEnvironment, calendar: Calendar = .current) throws -> MeasuredTDEE? {
+        let end = environment.today.previous
+        let stats = try StatsLoader.load(
+            end.adding(days: -(Energy.measuredWindowDays - 1)) ... end,
+            environment: environment,
+            calendar: calendar,
+        )
+        return measured(stats)
     }
 
     /// Formula maintenance (FR-31) for the profile at `weightKg`; nil when something is missing.

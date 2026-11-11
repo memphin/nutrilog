@@ -78,6 +78,25 @@ public enum Energy {
         bmr * activity.factor
     }
 
+    /// Days of Health energy the measured maintenance averages.
+    public static let measuredWindowDays = 30
+    /// Fewer usable days than this and there is no measured maintenance (the formula is used instead).
+    public static let measuredMinimumDays = 7
+    /// Days below this share of the median are left out: usually a day the watch was barely worn, not a real low day.
+    public static let measuredPartialDayFraction = 0.6
+
+    /// Measured maintenance: the mean daily total energy burned (active + resting, from Health) over the given days.
+    /// nil when fewer than `measuredMinimumDays` days are usable.
+    public static func measuredTDEE(dailyTotalKcal: [Double?]) -> MeasuredTDEE? {
+        let values = dailyTotalKcal.compactMap(\.self).filter { $0 > 0 }.sorted()
+        guard !values.isEmpty else { return nil }
+        let mid = values.count / 2
+        let median = values.count.isMultiple(of: 2) ? (values[mid - 1] + values[mid]) / 2 : values[mid]
+        let usable = values.filter { $0 >= median * measuredPartialDayFraction }
+        guard usable.count >= measuredMinimumDays else { return nil }
+        return MeasuredTDEE(kcal: usable.reduce(0, +) / Double(usable.count), days: usable.count)
+    }
+
     /// Daily energy delta for a weekly weight change goal, e.g. lose 0.5 kg/week → −550 kcal/day.
     public static func dailyDelta(goal: GoalMode, rateKgPerWeek: Double) -> Double {
         goal.sign * abs(rateKgPerWeek) * kcalPerKg / 7
@@ -95,6 +114,17 @@ public enum Energy {
             years -= 1
         }
         return years
+    }
+}
+
+/// Maintenance measured from Health energy: the mean of `days` days of active + resting energy.
+public struct MeasuredTDEE: Hashable, Sendable {
+    public var kcal: Double
+    public var days: Int
+
+    public init(kcal: Double, days: Int) {
+        self.kcal = kcal
+        self.days = days
     }
 }
 

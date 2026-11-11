@@ -194,6 +194,22 @@ struct TargetsModelTests {
         #expect(target.macros == MacroSplit.balanced.grams(forKcal: 1590))
     }
 
+    @Test func `measured Health energy replaces the activity factor`() throws {
+        let today = try #require(LocalDay("2026-11-09"))
+        let m = TargetsModel(today: today)
+        let profile = try #require(try AppEnvironment.preview().profiles?.profile())
+        // No height, age or sex needed: the measured maintenance alone gives a target.
+        m.load(profile: profile, target: nil, latestWeightKg: nil, measured: MeasuredTDEE(kcal: 2600, days: 30))
+        m.activity = .veryActive // ignored with a measured maintenance
+        #expect(m.tdee == 2600)
+        #expect(m.formulaKcal == 2600)
+        m.goal = .lose
+        m.rateKgPerWeek = 0.5
+        #expect(m.formulaKcal == 2050) // 2600 − 550
+        #expect(m.validationErrors.isEmpty)
+        #expect(m.makeTarget()?.kcal == 2050)
+    }
+
     @Test func `manual override and gram macros`() throws {
         let m = try model()
         m.overrideKcal = true

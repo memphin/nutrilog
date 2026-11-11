@@ -20,6 +20,17 @@ struct EnergyTests {
         #expect(ActivityLevel.allCases.allSatisfy { !$0.title.isEmpty && !$0.explanation.isEmpty })
     }
 
+    @Test func `measured TDEE averages Health energy and drops partial days`() throws {
+        // Too few days.
+        #expect(Energy.measuredTDEE(dailyTotalKcal: Array(repeating: 2500, count: 6)) == nil)
+        #expect(Energy.measuredTDEE(dailyTotalKcal: [nil, nil]) == nil)
+        // Missing days are skipped; a barely-worn day (900 vs median ~2500) is left out.
+        let days: [Double?] = [2400, 2600, nil, 2500, 2450, 2550, 900, 2500, 2500]
+        let measured = try #require(Energy.measuredTDEE(dailyTotalKcal: days))
+        #expect(measured.days == 7)
+        #expect(measured.kcal == 2500)
+    }
+
     @Test func `goal deltas and targets`() {
         #expect(Energy.dailyDelta(goal: .lose, rateKgPerWeek: 0.5) == -550)
         #expect(Energy.dailyDelta(goal: .gain, rateKgPerWeek: 0.25) == 275)

@@ -19,7 +19,7 @@ enum WeeklyReportLoader {
 
     /// The maintenance estimate that applied to the week ending on `end`: for the current or just-finished week the
     /// live estimate; for older weeks the check-in made in the week after (or the latest before it); else the
-    /// formula baseline.
+    /// baseline (measured Health energy or the formula).
     static func expenditure(for end: LocalDay, snapshot: ExpenditureSnapshot?, environment: AppEnvironment) -> Double? {
         if end >= environment.today.previous, let live = snapshot?.kcal {
             return live
