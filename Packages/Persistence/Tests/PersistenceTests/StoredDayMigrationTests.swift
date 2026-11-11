@@ -299,10 +299,14 @@ struct StoredDayMigrationTests {
         }
         let tables = ["diary_entry", "planned_entry", "water_entry", "caffeine_entry", "day_note", "daily_metrics", "target",
                       "tdee_estimate", "profile", "setting"]
+        // Later migrations add columns (e.g. 013); compare the columns there were before the repair.
+        let columns = try queue.read { db in
+            try Dictionary(uniqueKeysWithValues: tables.map { try ($0, db.columns(in: $0).map(\.name).joined(separator: ", ")) })
+        }
         func snapshot() throws -> [String: [Row]] {
             try queue.read { db in
                 try Dictionary(uniqueKeysWithValues: tables.map { table in
-                    try (table, Row.fetchAll(db, sql: "SELECT * FROM \(table) ORDER BY rowid"))
+                    try (table, Row.fetchAll(db, sql: "SELECT \(columns[table]!) FROM \(table) ORDER BY rowid"))
                 })
             }
         }

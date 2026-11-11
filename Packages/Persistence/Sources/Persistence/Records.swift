@@ -56,6 +56,9 @@ public struct Food: Codable, Hashable, Identifiable, Sendable, SyncedRecord {
     /// Set on a food merged away into another (Settings → Duplicate foods): the id of the food it was merged into,
     /// which may itself have been merged later (see `FoodRepository.mergeKeeper`). nil for every other food.
     public var mergedIntoID: String?
+    /// Whether the food counts towards hydration, overriding the automatic rule (Core `FluidRule`): nil automatic,
+    /// true always, false never.
+    public var countsAsFluid: Bool?
     public var createdAt: Date
     public var updatedAt: Date
     public var deletedAt: Date?
@@ -88,6 +91,7 @@ public struct Food: Codable, Hashable, Identifiable, Sendable, SyncedRecord {
         case lastAmount = "last_amount"
         case perServingOnly = "per_serving_only"
         case mergedIntoID = "merged_into_id"
+        case countsAsFluid = "counts_as_fluid"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case deletedAt = "deleted_at"
@@ -320,6 +324,8 @@ public struct DiaryEntry: Codable, Hashable, Identifiable, Sendable, SyncedRecor
     public var satFatG: Double?
     public var sodiumMg: Double?
     public var caffeineMg: Double?
+    /// The drink's volume in ml, snapshotted at log time; nil when the entry isn't a drink (solid food, quick-add).
+    public var fluidMl: Double?
     public var note: String?
     public var loggedAt: Date
     public var sortOrder: Int
@@ -343,6 +349,7 @@ public struct DiaryEntry: Codable, Hashable, Identifiable, Sendable, SyncedRecor
         case satFatG = "sat_fat_g"
         case sodiumMg = "sodium_mg"
         case caffeineMg = "caffeine_mg"
+        case fluidMl = "fluid_ml"
         case loggedAt = "logged_at"
         case sortOrder = "sort_order"
         case createdAt = "created_at"
@@ -463,7 +470,9 @@ public struct Profile: Codable, Hashable, Sendable, TimestampedRecord {
     public var activityLevel: ActivityLevel
     public var goalMode: GoalMode
     public var goalRateKgPerWeek: Double
+    /// The fixed daily hydration goal, used when ``waterGoalMode`` is `.fixed`.
     public var waterGoalMl: Double
+    public var waterGoalMode: HydrationGoalMode
     public var checkinWeekday: Int
     public var updatedAt: Date
     public var revision: Int
@@ -476,6 +485,7 @@ public struct Profile: Codable, Hashable, Sendable, TimestampedRecord {
         case goalMode = "goal_mode"
         case goalRateKgPerWeek = "goal_rate_kg_per_week"
         case waterGoalMl = "water_goal_ml"
+        case waterGoalMode = "water_goal_mode"
         case checkinWeekday = "checkin_weekday"
         case updatedAt = "updated_at"
     }

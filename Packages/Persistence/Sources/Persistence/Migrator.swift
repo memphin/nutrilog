@@ -19,7 +19,9 @@ public enum Migrator {
         "010_caffeine",
         "011_gregorian_days", // Swift-coded, see `codedMigration`
         "012_food_merged_into",
-        // "013_<description>",
+        "013_hydration",
+        "014_caffeine_ml", // Swift-coded, see `codedMigration`
+        // "015_<description>",
     ]
 
     /// `deviceCalendar`: the calendar the device uses now, which migration 011 needs to tell which calendar the
@@ -52,6 +54,9 @@ public enum Migrator {
                 let now = Date()
                 try StoredDayMigration.run(db, deviceCalendar: deviceCalendar, today: LocalDay(now), now: now)
             }
+        case "014_caffeine_ml":
+            // Drink volumes of existing caffeine quick-adds come from the presets, which live in Core.
+            { db in try CaffeineMlMigration.run(db) }
         default:
             nil
         }

@@ -17,13 +17,15 @@ public struct CaffeineEntry: Codable, Hashable, Identifiable, Sendable, SyncedRe
     public var drinkID: String?
     /// Display name at log time (e.g. "Espresso"); nil when none was given.
     public var name: String?
+    /// The drink's volume in ml: the preset's serving at log time, optional for a custom amount (nil when unknown).
+    public var ml: Double?
     public var createdAt: Date
     public var updatedAt: Date
     public var deletedAt: Date?
     public var revision: Int
 
     public enum CodingKeys: String, CodingKey, ColumnExpression {
-        case id, day, mg, name, revision
+        case id, day, mg, name, ml, revision
         case loggedAt = "logged_at"
         case drinkID = "drink_id"
         case createdAt = "created_at"
