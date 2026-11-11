@@ -14,7 +14,7 @@ struct DashboardData: Equatable {
     var manualWeights: [WeightEntry] = []
     /// Water logged in Vitalion today.
     var water: [WaterEntry] = []
-    /// Water logged in Vitalion per day over the sparkline window (today included), in ml.
+    /// Water logged in Vitalion per day over the history window (today included), in ml: the sparkline and the streak.
     var waterByDay: [LocalDay: Double] = [:]
     /// Today's diary totals.
     var totals: Nutrients = .zero
@@ -141,6 +141,8 @@ struct DashboardSnapshot: Equatable {
     /// Yesterday's and today's caffeine; the amount depends on the time, see `caffeineStatus(now:calendar:)`.
     let caffeine: CaffeineIntakes
     let caffeineSettings: CaffeineSettings
+    /// Days in a row each goal was reached (steps, sleep, water), see `streak(for:)`.
+    let streaks: [DashboardTile: Streak]
 
     init(_ data: DashboardData, calendar: Calendar = .current) {
         today = data.today
@@ -179,6 +181,7 @@ struct DashboardSnapshot: Equatable {
         sparklines = Self.sparklines(data: data, rows: rows, dayWeights: dayWeights)
         caffeine = data.caffeine
         caffeineSettings = data.caffeineSettings
+        streaks = Self.streaks(data: data, rows: rows)
     }
 
     /// Caffeine at `now`: the amount in the body, today's total, the sleep outlook.

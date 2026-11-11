@@ -154,10 +154,11 @@ final class DashboardModel {
         await DiaryModel.resubscribing { repo.observeEntries(in: interval) } onValue: { data.manualWeights = $0 } onError: { report($0) }
     }
 
-    /// One observation for the sparkline's 7 days: today's entries for the tile, daily totals for the chart.
+    /// One observation for the history window: today's entries for the tile, daily totals for the chart (its last
+    /// 7 days) and the water streak.
     private func observeWater() async {
         guard let repo = environment.water else { return }
-        let window = data.sparklineWindow
+        let window = data.window
         let today = data.today
         await DiaryModel.resubscribing { repo.observeEntries(in: window) } onValue: { entries in
             data.water = entries.filter { $0.day == today }

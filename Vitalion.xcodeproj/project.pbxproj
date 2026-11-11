@@ -47,6 +47,7 @@
 		500A55BBB04F419C3FD99DD4 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85F339FF75258A4DD030AC2E /* WidgetSnapshot.swift */; };
 		505E17A0BABCDB042C4D3E87 /* USDAKeyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BB2D69D4FB95D1FA2E9F2EF /* USDAKeyStore.swift */; };
 		507C57C26A7F77EA28A17B7B /* HistoryCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8BD0F43DB2B86EA3164A4EF /* HistoryCalendarView.swift */; };
+		5D5A0BB2EC3F3E4B27330525 /* Streaks.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE614412E9B40CD14693CA20 /* Streaks.swift */; };
 		5EB6FD38A3E2CFB65AB558EE /* DashboardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDEB1244CC8F017910BEA427 /* DashboardTests.swift */; };
 		5F840E3018A414B035EDE468 /* ScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E06A37F87F80825C3EB8E826 /* ScanView.swift */; };
 		6048E5248FB4F93014ED6B8F /* FoodLookup in Frameworks */ = {isa = PBXBuildFile; productRef = B8CBC1F50763FB9CEFB6F4E5 /* FoodLookup */; };
@@ -84,6 +85,7 @@
 		B6AB84B938F35F68C4F5AF1F /* DiarySheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85B4D360C226611E7D4CEC65 /* DiarySheets.swift */; };
 		BC3E09C8E5BF15FBA7B833EE /* StubOpenFoodFactsClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51D67B28981C0A28E21D725 /* StubOpenFoodFactsClient.swift */; };
 		C05C8B9A5A3AC01597866772 /* QuickAddView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55EC2E5E56394F5A6918F97A /* QuickAddView.swift */; };
+		C2C2999B0A08A5486739FC6D /* StreakTileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 431A0E3AA578CECD1896931A /* StreakTileTests.swift */; };
 		C752D515FA30C2B855B481E7 /* WeeklyReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 169CFAAE31AD51A338310634 /* WeeklyReportView.swift */; };
 		C8B442427C7C78DC75B0D3F9 /* AppleMealEstimator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8A212470BB71FD1A31EB4E0 /* AppleMealEstimator.swift */; };
 		CA198D75AB48BEC1DE37F7AA /* MetricChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B635EC1EE150FFE724B4A62D /* MetricChartView.swift */; };
@@ -174,6 +176,7 @@
 		3F43367A7535A76FE70C2845 /* MealPlanTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPlanTests.swift; sourceTree = "<group>"; };
 		3F5613F997C8E4249B281438 /* AddFoodView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddFoodView.swift; sourceTree = "<group>"; };
 		429A64C38EE3E8005CA79961 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		431A0E3AA578CECD1896931A /* StreakTileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakTileTests.swift; sourceTree = "<group>"; };
 		4360E2194A6D16C45FF4D0C4 /* HealthWriteService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthWriteService.swift; sourceTree = "<group>"; };
 		43D66CA0BD012691840B5848 /* SmartLogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartLogTests.swift; sourceTree = "<group>"; };
 		47439C2107E649CA04F96C83 /* FoodLookup */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FoodLookup; path = Packages/FoodLookup; sourceTree = SOURCE_ROOT; };
@@ -223,6 +226,7 @@
 		A3D1C9580AC14854A05181BB /* AppEnvironmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironmentTests.swift; sourceTree = "<group>"; };
 		A51D67B28981C0A28E21D725 /* StubOpenFoodFactsClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StubOpenFoodFactsClient.swift; sourceTree = "<group>"; };
 		AC84424AD8A575A259628DBB /* TrendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsView.swift; sourceTree = "<group>"; };
+		AE614412E9B40CD14693CA20 /* Streaks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Streaks.swift; sourceTree = "<group>"; };
 		AEFCCA68F0A67ECF0B040E21 /* DashboardEditing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardEditing.swift; sourceTree = "<group>"; };
 		B2562F6E4540C9C32B3D5E43 /* MealPlanViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPlanViews.swift; sourceTree = "<group>"; };
 		B2F38B07CDBC88FC4F971C55 /* MealPhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPhoto.swift; sourceTree = "<group>"; };
@@ -490,6 +494,7 @@
 				72C954B5795DDCACDCBA6BB8 /* DashboardTiles.swift */,
 				65CB71012E9A8D3148E74F61 /* DashboardView.swift */,
 				01EE353FF2D90F6EFF2F3B3B /* Sparkline.swift */,
+				AE614412E9B40CD14693CA20 /* Streaks.swift */,
 				FB5B6EE728347650CA8871CD /* TileDetailView.swift */,
 				2515177D4C70E1D8F6C51DDB /* WaterSettingsView.swift */,
 				97DA4A909B6C3A6F354680A4 /* WeightEntrySheet.swift */,
@@ -538,6 +543,7 @@
 				15CD6B45F2D27884C9DF1AC9 /* ScanFlowTests.swift */,
 				CDDCA8E80C7E59133FC80BB1 /* ScanLogTests.swift */,
 				43D66CA0BD012691840B5848 /* SmartLogTests.swift */,
+				431A0E3AA578CECD1896931A /* StreakTileTests.swift */,
 				B676A848F8A4FD5E187A9F63 /* TestSupport.swift */,
 				C00652CD81B32347A8298794 /* USDAKeyTests.swift */,
 			);
@@ -737,6 +743,7 @@
 				22462DF09A1DFAA471195F83 /* ScanFlowTests.swift in Sources */,
 				9DFC1A1DD5062A64161E7B51 /* ScanLogTests.swift in Sources */,
 				48CF0140E6C20D235385AFE3 /* SmartLogTests.swift in Sources */,
+				C2C2999B0A08A5486739FC6D /* StreakTileTests.swift in Sources */,
 				790621B1B50CB4C7B4CB880D /* TestSupport.swift in Sources */,
 				D240C801D1F58BD8F3EAE44C /* USDAKeyTests.swift in Sources */,
 			);
@@ -810,6 +817,7 @@
 				EBBFB7B09F80562ED1768340 /* SmartLogView.swift in Sources */,
 				3ECFC0DA93A20EDA8A972387 /* Sparkline.swift in Sources */,
 				9CDD697C2CE53B51833C0BEA /* StatsLoader.swift in Sources */,
+				5D5A0BB2EC3F3E4B27330525 /* Streaks.swift in Sources */,
 				BC3E09C8E5BF15FBA7B833EE /* StubOpenFoodFactsClient.swift in Sources */,
 				3A1F5417ABC547BE4E353C4D /* StubOpenFoodFactsSearchClient.swift in Sources */,
 				E9AB0EBB3F16BAB6CE22CE6F /* TargetsModel.swift in Sources */,
