@@ -100,3 +100,30 @@ func makeBundledIndex(rows: [(id: String, fdc: String, name: String, kcal: Doubl
     try queue.close()
     return try BundledFoodIndex(url: url)
 }
+
+/// Writes a bundled index with Croatian names (`name_hr`, FTS over both names) as tools/build_food_index.py does now,
+/// and returns its file so a test can open it in either language.
+func makeBilingualIndexFile(rows: [(id: String, fdc: String, name: String, nameHR: String?)]) throws -> URL {
+    let url = FileManager.default.temporaryDirectory.appendingPathComponent("bundled-hr-\(UUID().uuidString).sqlite")
+    let queue = try DatabaseQueue(path: url.path)
+    try queue.write { db in
+        try db.execute(sql: """
+        CREATE TABLE bundled_food (
+            id TEXT PRIMARY KEY, source_id TEXT NOT NULL, name TEXT NOT NULL,
+            kcal_100 REAL NOT NULL, protein_g_100 REAL NOT NULL, carbs_g_100 REAL NOT NULL, fat_g_100 REAL NOT NULL,
+            fiber_g_100 REAL, sugar_g_100 REAL, sat_fat_g_100 REAL, sodium_mg_100 REAL, caffeine_mg_100 REAL,
+            name_hr TEXT);
+        CREATE VIRTUAL TABLE bundled_food_fts USING fts5(name, name_hr, content='bundled_food', content_rowid='rowid',
+            tokenize="unicode61 remove_diacritics 2");
+        """)
+        for row in rows {
+            try db.execute(
+                sql: "INSERT INTO bundled_food VALUES (?,?,?,100,1,2,3,NULL,NULL,NULL,NULL,NULL,?)",
+                arguments: [row.id, row.fdc, row.name, row.nameHR],
+            )
+        }
+        try db.execute(sql: "INSERT INTO bundled_food_fts(bundled_food_fts) VALUES ('rebuild')")
+    }
+    try queue.close()
+    return url
+}

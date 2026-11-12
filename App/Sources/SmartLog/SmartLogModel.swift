@@ -74,7 +74,8 @@ struct OnDeviceMealMatcher {
 
     /// The best search hit. Search matches word prefixes, so "egg" also finds "Eggplant": a hit that holds every
     /// typed word as a whole word (ignoring a plural "s") wins over the top hit. A plural that finds nothing
-    /// ("eggs") is retried in the singular.
+    /// ("eggs") is retried in the singular. A bundled food counts under either of its names (English or Croatian),
+    /// as search finds it by both.
     private func best(_ words: String) throws -> FoodSearchResult? {
         var queries = [words]
         for ending in ["es", "s"] where words.hasSuffix(ending) && words.count > ending.count + 2 {
@@ -84,7 +85,7 @@ struct OnDeviceMealMatcher {
         var fallback: FoodSearchResult?
         for query in queries {
             let hits = try search.search(query, limit: 20)
-            if let exact = hits.first(where: { wanted.isSubset(of: Self.wordStems($0.name)) }) {
+            if let exact = hits.first(where: { $0.names.contains { wanted.isSubset(of: Self.wordStems($0)) } }) {
                 return exact
             }
             fallback = fallback ?? hits.first
@@ -192,7 +193,8 @@ final class SmartLogModel {
         phase = .input
     }
 
-    /// Notes on a food made from an estimate, so it can be told apart and reused by a later estimate.
+    /// Notes on a food made from an estimate, so it can be told apart and reused by a later estimate. Not localized:
+    /// it is the stored marker those foods are found by, whatever the app's language was when they were made.
     static let estimatedFoodNotes = "Estimated by Apple Intelligence."
 
     /// Logs every line into `slotID`. Local foods are logged as themselves; an estimate becomes a food of its own
@@ -229,7 +231,7 @@ final class SmartLogModel {
     /// The food for an estimated line: an earlier estimated food with the same name and values, else a new one.
     private static func estimatedFood(for line: Line, among existing: inout [Food], in foods: FoodRepository) throws -> Food {
         let trimmed = line.name.trimmingCharacters(in: .whitespacesAndNewlines)
-        let name = trimmed.isEmpty ? "Estimated food" : trimmed
+        let name = trimmed.isEmpty ? String(localized: "Estimated food") : trimmed
         let isLiquid = line.unit == .milliliters
         if let match = existing.first(where: {
             $0.name.caseInsensitiveCompare(name) == .orderedSame && $0.isLiquid == isLiquid && sameValues($0.per100, line.per100)
@@ -261,7 +263,10 @@ final class SmartLogModel {
     private func estimated(_ environment: AppEnvironment) async throws -> Result {
         let foods = try await environment.mealEstimator.estimate(.init(text: text, jpeg: jpeg))
         let lines = foods.map { Line(name: $0.name, grams: $0.grams, per100: $0.per100, origin: .estimate) }
-        return (lines, "An estimate made on this iPhone by Apple Intelligence. Check the foods and amounts before logging.")
+        return (
+            lines,
+            String(localized: "An estimate made on this iPhone by Apple Intelligence. Check the foods and amounts before logging."),
+        )
     }
 
     private func matched(_ environment: AppEnvironment) async throws -> Result {
@@ -277,10 +282,13 @@ final class SmartLogModel {
         }
         guard !match.lines.isEmpty else { throw OnDeviceError.nothingMatched }
         var notice = described
-            ? "Matched to foods on this iPhone. Check each food and its amount."
-            : "A guess at what the photo shows, matched to foods on this iPhone. Amounts are not estimated: set them yourself."
+            ? String(localized: "Matched to foods on this iPhone. Check each food and its amount.")
+            : String(localized: """
+            A guess at what the photo shows, matched to foods on this iPhone. Amounts are not estimated: set them yourself.
+            """)
         if !match.unmatched.isEmpty {
-            notice += " Not found: \(match.unmatched.joined(separator: ", "))."
+            // The unmatched words are the user's own text, listed as typed.
+            notice += " " + String(localized: "Not found: \(match.unmatched.joined(separator: ", ")).")
         }
         return (match.lines, notice)
     }
@@ -292,15 +300,15 @@ final class SmartLogModel {
     static func message(for error: any Error) -> String {
         switch error {
         case OnDeviceError.nothingMatched:
-            "Nothing matched a food on this iPhone. Search for it instead."
+            String(localized: "Nothing matched a food on this iPhone. Search for it instead.")
         case MealEstimateError.unavailable:
-            "Apple Intelligence isn't available right now. Try again in a moment."
+            String(localized: "Apple Intelligence isn't available right now. Try again in a moment.")
         case MealEstimateError.noFood:
-            "Couldn't find any food in that. Try another photo, or describe the meal."
+            String(localized: "Couldn't find any food in that. Try another photo, or describe the meal.")
         case MealEstimateError.refused:
-            "The estimate was declined. Describe the meal in words instead."
+            String(localized: "The estimate was declined. Describe the meal in words instead.")
         case is MealEstimateError:
-            "The estimate failed. Try again."
+            String(localized: "The estimate failed. Try again.")
         default:
             error.localizedDescription
         }

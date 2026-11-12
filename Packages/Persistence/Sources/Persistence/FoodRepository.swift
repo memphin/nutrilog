@@ -303,6 +303,9 @@ public struct FoodRepository: Sendable {
     /// The copy keeps `source_id` = FDC id so it is never duplicated. An active food saved from online USDA search
     /// with the same FDC id is the same food and is reused instead. When the copy (bundled or USDA) was merged into
     /// another food that is still active, that kept food is returned; a deleted copy is revived otherwise.
+    /// A new copy takes the shown name (`BundledFood.name`, in the app language at that moment) and keeps it; the
+    /// other language's name goes to `nameLocal`, which search also matches, so "losos" and "salmon" both still find
+    /// the food after it was logged.
     public func localCopy(of bundled: BundledFood) throws -> Food {
         let now = clock.now()
         return try database.writer.write { db in
@@ -331,6 +334,7 @@ public struct FoodRepository: Sendable {
                 return existing
             }
             var food = Food(name: bundled.name, source: .bundled, sourceID: bundled.sourceID, per100: bundled.per100)
+            food.nameLocal = bundled.names.dropFirst().first
             food.stampCreated(now)
             try food.insert(db)
             return food
