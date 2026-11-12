@@ -1,0 +1,88 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "How many calories do I have left in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "How many calories do I have left in ${applicationName}",
+              "Remaining calories in ${applicationName}",
+              "${applicationName} calories left"
+            ]
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koliko mi je kalorija ostalo u aplikaciji ${applicationName}"
+          }
+        }
+      }
+    },
+    "Log ${food} in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Log ${food} in ${applicationName}",
+              "Log a favorite in ${applicationName}",
+              "Add ${food} to ${applicationName}"
+            ]
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zapiši ${food} u aplikaciji ${applicationName}"
+          }
+        }
+      }
+    },
+    "Log water in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Log water in ${applicationName}",
+              "Add water to ${applicationName}"
+            ]
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zapiši vodu u aplikaciji ${applicationName}"
+          }
+        }
+      }
+    },
+    "Quick add calories in ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Quick add calories in ${applicationName}",
+              "Add calories to ${applicationName}"
+            ]
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brzo dodaj kalorije u aplikaciji ${applicationName}"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.3"
+}

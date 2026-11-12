@@ -93,7 +93,8 @@ struct CaffeineDetailView: View {
                         Text(CaffeineStatus.mg(row.mg)).monospacedDigit()
                     } label: {
                         Text(row.name)
-                        Text(row.source == .diary ? "\(CaffeineStatus.time(row.at)) · from the diary" : CaffeineStatus.time(row.at))
+                        let time = CaffeineStatus.time(row.at)
+                        Text(row.source == .diary ? String(localized: "\(time) · from the diary") : time)
                     }
                     .swipeActions {
                         if case let .quickAdd(entry) = row.source {
@@ -117,7 +118,7 @@ struct CaffeineDetailView: View {
         } else {
             AnyShapeStyle(.primary)
         }
-        let spoken: [String?] = [row.value ?? "none", row.detail]
+        let spoken: [String?] = [row.value ?? String(localized: "none", comment: "No caffeine that day (VoiceOver)"), row.detail]
         return LabeledContent(Format.day(row.day, today: model.data.today)) {
             Text(row.value ?? "—").monospacedDigit().foregroundStyle(style)
         }
@@ -126,9 +127,9 @@ struct CaffeineDetailView: View {
 
     private func safeText(_ status: CaffeineStatus) -> String {
         if status.outlook == .safeNow {
-            return "Now"
+            return String(localized: "Now")
         }
-        return status.safeAt.map(CaffeineStatus.time) ?? "Not within 2 days"
+        return status.safeAt.map(CaffeineStatus.time) ?? String(localized: "Not within 2 days")
     }
 }
 
@@ -225,10 +226,17 @@ private struct CaffeineCurveChart: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Caffeine curve")
-        .accessibilityValue(
-            "\(CaffeineStatus.mgNumber(status.mgNow)) milligrams now, about \(CaffeineStatus.mgNumber(status.mgAtBedtime)) "
-                + "at bedtime, \(CaffeineStatus.time(status.bedtime)). \(status.outlookText())",
-        )
+        .accessibilityValue(accessibilityValue)
+    }
+
+    /// "85 milligrams now, about 40 at bedtime, 23:00. Sleep-safe now": whole milligrams as integers, so
+    /// the catalog can pick the plural form.
+    private var accessibilityValue: String {
+        let now = Int(max(status.mgNow, 0).rounded(.toNearestOrEven))
+        let bedtime = Int(max(status.mgAtBedtime, 0).rounded(.toNearestOrEven))
+        let time = CaffeineStatus.time(status.bedtime)
+        let outlook = status.outlookText()
+        return String(localized: "\(now) milligrams now, about \(bedtime) at bedtime, \(time). \(outlook)")
     }
 }
 

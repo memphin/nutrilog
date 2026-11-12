@@ -90,7 +90,8 @@ struct MoveToDateSheet: View {
     /// A logged entry: today or earlier only.
     init(entry: DiaryEntry, slots: [MealSlot], onMove: @escaping (String, LocalDay) -> Void) {
         self.init(
-            title: "Move \(entry.displayName)", day: entry.day, slotID: entry.mealSlotID, slots: slots, allowsFuture: false,
+            title: String(localized: "Move \(entry.displayName)"), day: entry.day, slotID: entry.mealSlotID, slots: slots,
+            allowsFuture: false,
             onMove: onMove,
         )
     }
@@ -118,7 +119,7 @@ struct MoveToDateSheet: View {
             Form {
                 DatePicker("Day", selection: $date, in: dateRange, displayedComponents: .date)
                 Picker("Meal", selection: $slotID) {
-                    ForEach(slots) { Text($0.name).tag($0.id) }
+                    ForEach(slots) { Text($0.displayName).tag($0.id) }
                 }
             }
             .navigationTitle(title)

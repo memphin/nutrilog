@@ -23,10 +23,11 @@ struct CaffeineSettingsView: View {
             } header: {
                 Text("Sleep")
             } footer: {
-                Text(
-                    "The tile says when the caffeine in your body drops below this line, and whether it will by bedtime. "
-                        + "\(CaffeineStatus.mg(CaffeineDefaults.sleepSafeThresholdMg)) is a common rule of thumb.",
-                )
+                let threshold = CaffeineStatus.mg(CaffeineDefaults.sleepSafeThresholdMg)
+                Text("""
+                The tile says when the caffeine in your body drops below this line, and whether it will by bedtime. \
+                \(threshold) is a common rule of thumb.
+                """)
             }
 
             Section {
@@ -47,11 +48,11 @@ struct CaffeineSettingsView: View {
             } header: {
                 Text("Metabolism")
             } footer: {
-                Text(
-                    "Half of the caffeine is cleared in about 5 hours for most adults. Smoking speeds this up (about 3 h); "
-                        + "the pill (about 10 h) and pregnancy (up to 15 h late in pregnancy) slow it down. A custom "
-                        + "half-life replaces these.",
-                )
+                Text("""
+                Half of the caffeine is cleared in about 5 hours for most adults. Smoking speeds this up (about 3 h); \
+                the pill (about 10 h) and pregnancy (up to 15 h late in pregnancy) slow it down. A custom \
+                half-life replaces these.
+                """)
             }
 
             Section {
@@ -77,10 +78,10 @@ struct CaffeineSettingsView: View {
             } header: {
                 Text("Quick-add drinks")
             } footer: {
-                Text(
-                    "Up to \(CaffeineSettings.maximumQuickAdd) buttons on the Today tile. Amounts are typical values per "
-                        + "serving; real drinks vary with brew strength and brand.",
-                )
+                Text("""
+                Up to \(CaffeineSettings.maximumQuickAdd) buttons on the Today tile. Amounts are typical values per \
+                serving; real drinks vary with brew strength and brand.
+                """)
             }
         }
         .navigationTitle("Caffeine")
@@ -100,7 +101,8 @@ struct CaffeineSettingsView: View {
 
     /// "5 h", "7.5 h".
     static func hours(_ value: Double) -> String {
-        "\(value.formatted(.number.precision(.fractionLength(0 ... 1)))) h"
+        let number = value.formatted(.number.precision(.fractionLength(0 ... 1)))
+        return String(localized: "\(number) h", comment: "A duration in hours, e.g. “1.5 h”")
     }
 
     private func binding<Value>(_ keyPath: WritableKeyPath<CaffeineSettings, Value>) -> Binding<Value> {
@@ -157,7 +159,7 @@ struct CaffeineSettingsView: View {
             settings = try updated.save(to: profiles)
             environment.refreshHydrationReminder() // bedtime is shared with hydration
         } catch {
-            errorMessage = "Couldn't save the caffeine settings: \(error.localizedDescription)"
+            errorMessage = String(localized: "Couldn't save the caffeine settings: \(error.localizedDescription)")
         }
     }
 }

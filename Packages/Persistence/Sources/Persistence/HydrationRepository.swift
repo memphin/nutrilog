@@ -24,6 +24,15 @@ public struct HydrationRepository: Sendable {
             .values(in: database.reader)
     }
 
+    /// Names of intakes that carry none of their own, in the app's language when read.
+    static var waterName: String {
+        String(localized: "Water", bundle: .module)
+    }
+
+    static var caffeineName: String {
+        String(localized: "Caffeine", bundle: .module)
+    }
+
     static func intakes(_ db: Database, in days: ClosedRange<LocalDay>) throws -> [LocalDay: [FluidIntake]] {
         var result: [LocalDay: [FluidIntake]] = [:]
         let range: StatementArguments = [days.lowerBound, days.upperBound]
@@ -36,7 +45,7 @@ public struct HydrationRepository: Sendable {
             .filter(WaterEntry.Columns.deletedAt == nil)
             .fetchAll(db)
         {
-            add(entry.day, FluidIntake(id: entry.id, ml: entry.ml, at: entry.loggedAt, kind: .water, source: .water, name: "Water"))
+            add(entry.day, FluidIntake(id: entry.id, ml: entry.ml, at: entry.loggedAt, kind: .water, source: .water, name: Self.waterName))
         }
 
         for row in try Row.fetchAll(db, sql: """
@@ -56,7 +65,7 @@ public struct HydrationRepository: Sendable {
             .fetchAll(db)
         {
             guard let ml = entry.ml else { continue }
-            let name = entry.name ?? entry.drinkID.flatMap(CaffeineDrink.preset(id:))?.name ?? "Caffeine"
+            let name = entry.name ?? entry.drinkID.flatMap(CaffeineDrink.preset(id:))?.name ?? Self.caffeineName
             add(entry.day, FluidIntake(id: entry.id, ml: ml, at: entry.loggedAt, kind: .other, source: .caffeine, name: name))
         }
 

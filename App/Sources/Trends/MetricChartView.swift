@@ -20,15 +20,18 @@ struct MetricChartView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: NL.Spacing.m) {
             Picker("Range", selection: $range) {
-                ForEach(ChartRange.allCases) { Text($0.rawValue).tag($0) }
+                ForEach(ChartRange.allCases) { Text($0.title).tag($0) }
             }
             .pickerStyle(.segmented)
 
             if let series {
                 header(series)
                 if series.isEmpty {
-                    EmptyStateView("No data", systemImage: metric.systemImage, message: "Nothing recorded in the \(range.spokenTitle).")
-                        .frame(maxWidth: .infinity, minHeight: 180)
+                    EmptyStateView(
+                        String(localized: "No data"), systemImage: metric.systemImage,
+                        message: String(localized: "Nothing recorded in the \(range.spokenTitle)."),
+                    )
+                    .frame(maxWidth: .infinity, minHeight: 180)
                 } else {
                     chart(series)
                         .frame(height: 220)
@@ -111,7 +114,7 @@ struct MetricChartView: View {
         guard point.spanDays > 1 else {
             return point.day.startDate().formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated))
         }
-        return "Week of \(point.day.startDate().formatted(.dateTime.day().month(.abbreviated))) · daily average"
+        return String(localized: "Week of \(point.day.startDate().formatted(.dateTime.day().month(.abbreviated))) · daily average")
     }
 
     private func pointValue(_ point: ChartPoint) -> String {
@@ -120,28 +123,55 @@ struct MetricChartView: View {
         if metric == .macros {
             if let protein = point.proteinG, let carbs = point.carbsG, let fat = point.fatG {
                 let grams = [protein, carbs, fat].map(DisplayRounding.whole)
-                parts.append("P \(grams[0]) g · C \(grams[1]) g · F \(grams[2]) g")
+                parts.append(String(
+                    localized: "P \(grams[0]) g · C \(grams[1]) g · F \(grams[2]) g",
+                    comment: "Protein, carbs and fat in grams, abbreviated",
+                ))
             } else {
-                parts.append("Not logged")
+                parts.append(String(localized: "Not logged"))
             }
         } else {
-            parts.append(point.value.map { ChartBuilder.format($0, metric, unit: unit) } ?? "No value")
+            parts.append(point.value.map { ChartBuilder.format($0, metric, unit: unit) } ?? String(localized: "No value"))
         }
         if let resting = point.resting, let active = point.active {
             func number(_ value: Double) -> String {
                 value.formatted(.number.precision(.fractionLength(0)))
             }
-            parts.append("resting \(number(resting)) + active \(number(active))")
+            parts.append(String(localized: "resting \(number(resting)) + active \(number(active))"))
         }
         if let reference = point.reference {
             parts.append(metric == .weight
-                ? "trend \(reference.formatted(.number.precision(.fractionLength(1)))) kg"
-                : "target \(ChartBuilder.format(reference, metric, unit: unit))")
+                ? String(localized: "trend \(reference.formatted(.number.precision(.fractionLength(1)))) kg")
+                : String(localized: "target \(ChartBuilder.format(reference, metric, unit: unit))"))
         }
         return parts.joined(separator: " · ")
     }
 
     // MARK: Chart
+
+    /// Legend entries: the chart shows these plotted values as they are, so they are localized here (domain and marks
+    /// must use the same strings).
+    private enum Legend {
+        static var protein: String {
+            String(localized: "Protein")
+        }
+
+        static var carbs: String {
+            String(localized: "Carbs")
+        }
+
+        static var fat: String {
+            String(localized: "Fat", comment: "The macronutrient")
+        }
+
+        static var resting: String {
+            String(localized: "Resting", comment: "Resting energy")
+        }
+
+        static var active: String {
+            String(localized: "Active", comment: "Active energy")
+        }
+    }
 
     private func date(_ point: ChartPoint) -> Date {
         point.day.startDate()
@@ -180,7 +210,7 @@ struct MetricChartView: View {
             }
         }
         .chartForegroundStyleScale(
-            domain: metric == .totalEnergy ? ["Resting", "Active"] : ["Protein", "Carbs", "Fat"],
+            domain: metric == .totalEnergy ? [Legend.resting, Legend.active] : [Legend.protein, Legend.carbs, Legend.fat],
             range: metric == .totalEnergy
                 ? [Color.orange.opacity(0.45), Color.orange]
                 : [NL.Palette.protein, NL.Palette.carbs, NL.Palette.fat],
@@ -196,11 +226,11 @@ struct MetricChartView: View {
         case .macros:
             if let protein = point.proteinG, let carbs = point.carbsG, let fat = point.fatG {
                 BarMark(x: .value("Day", date(point), unit: component), y: .value("Grams", protein))
-                    .foregroundStyle(by: .value("Macro", "Protein"))
+                    .foregroundStyle(by: .value("Macro", Legend.protein))
                 BarMark(x: .value("Day", date(point), unit: component), y: .value("Grams", carbs))
-                    .foregroundStyle(by: .value("Macro", "Carbs"))
+                    .foregroundStyle(by: .value("Macro", Legend.carbs))
                 BarMark(x: .value("Day", date(point), unit: component), y: .value("Grams", fat))
-                    .foregroundStyle(by: .value("Macro", "Fat"))
+                    .foregroundStyle(by: .value("Macro", Legend.fat))
             }
         case .energy:
             if let value = point.value {
@@ -221,9 +251,9 @@ struct MetricChartView: View {
             // One bar per day (or week): resting below, active on top.
             if let resting = point.resting, let active = point.active {
                 BarMark(x: .value("Day", date(point), unit: component), y: .value(series.unitLabel, resting))
-                    .foregroundStyle(by: .value("Part", "Resting"))
+                    .foregroundStyle(by: .value("Part", Legend.resting))
                 BarMark(x: .value("Day", date(point), unit: component), y: .value(series.unitLabel, active))
-                    .foregroundStyle(by: .value("Part", "Active"))
+                    .foregroundStyle(by: .value("Part", Legend.active))
             }
         case .steps, .water, .sleep:
             if let value = point.value {

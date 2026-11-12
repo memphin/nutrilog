@@ -885,7 +885,7 @@ struct IntentActionsTests {
     init() {
         writer = FakeHealthWriter(mirror: source)
         env = AppEnvironment.preview(clock: clock.appClock, health: source, healthWriter: writer)
-        actions = IntentActions(environment: env)
+        actions = IntentActions(environment: env, locale: Locale(identifier: "en_US"))
     }
 
     @Test func `log favorite: usual amount, explicit amount, through the same repositories and Health`() async throws {
@@ -938,7 +938,7 @@ struct IntentActionsTests {
     @Test func `log water counts other apps' water and reaches Health`() async throws {
         try #require(env.dailyMetrics).upsert([DailyHealthMetrics(day: env.today, waterMl: 400)])
         let message = try await actions.logWater(ml: 330)
-        #expect(message == "Logged 330 ml of water. 730 of 2500 ml today.")
+        #expect(message == "Logged 330 ml of water. 730 of 2,500 ml today.")
         let entry = try #require(try env.water?.entries(for: env.today).first)
         #expect(writer.snapshot.samples(for: entry.id).first?.type == .dietaryWater)
         await #expect(throws: IntentActions.Failure.invalidAmount) { try await actions.logWater(ml: 0) }
@@ -953,7 +953,7 @@ struct IntentActionsTests {
         _ = try #require(env.diary).log(food: cola, quantity: .base(330), slotID: "snacks", day: env.today)
         let message = try await actions.logWater(ml: 250)
         // Still plain water: only the new 250 ml is a water entry; the total counts every drink.
-        #expect(message == "Logged 250 ml of water. 1080 of 2500 ml today.")
+        #expect(message == "Logged 250 ml of water. 1,080 of 2,500 ml today.")
         #expect(try env.water?.entries(for: env.today).count == 2)
     }
 

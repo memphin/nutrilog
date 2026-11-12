@@ -121,10 +121,12 @@ public struct WeightRepository: Sendable {
     }
 
     static func validate(kg: Double, bodyFatPct: Double?) throws {
-        guard kg.isFinite, validKg.contains(kg) else { throw PersistenceError.validation("weight out of range") }
+        guard kg.isFinite, validKg.contains(kg) else {
+            throw PersistenceError.validation(String(localized: "weight out of range", bundle: .module))
+        }
         if let bodyFatPct {
             guard bodyFatPct.isFinite, validBodyFatPct.contains(bodyFatPct) else {
-                throw PersistenceError.validation("body fat out of range")
+                throw PersistenceError.validation(String(localized: "body fat out of range", bundle: .module))
             }
         }
     }

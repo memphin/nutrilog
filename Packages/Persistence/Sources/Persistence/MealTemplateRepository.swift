@@ -149,7 +149,7 @@ public struct MealTemplateRepository: Sendable {
 
     public func rename(id: String, to name: String) throws {
         let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { throw PersistenceError.validation("A meal needs a name.") }
+        guard !name.isEmpty else { throw PersistenceError.validation(String(localized: "A meal needs a name.", bundle: .module)) }
         let now = clock.now()
         try database.writer.write { db in
             guard var template = try MealTemplate.fetchOne(db, key: id) else { throw PersistenceError.notFound(id) }
@@ -163,7 +163,9 @@ public struct MealTemplateRepository: Sendable {
     /// Replaces the meal's items (amount changes, removed foods).
     public func setItems(id: String, items: [NewItem]) throws {
         let valid = try Self.validItems(items)
-        guard !valid.isEmpty else { throw PersistenceError.validation("A meal needs at least one food.") }
+        guard !valid.isEmpty else {
+            throw PersistenceError.validation(String(localized: "A meal needs at least one food.", bundle: .module))
+        }
         let now = clock.now()
         try database.writer.write { db in
             guard var template = try MealTemplate.fetchOne(db, key: id) else { throw PersistenceError.notFound(id) }
@@ -205,7 +207,7 @@ public struct MealTemplateRepository: Sendable {
     @discardableResult
     public func log(templateID: String, items: [DiaryRepository.LogItem], slotID: String, day: LocalDay) throws -> [DiaryEntry] {
         guard !items.isEmpty, items.allSatisfy({ $0.quantity.baseAmount > 0 }) else {
-            throw PersistenceError.validation("Nothing to log.")
+            throw PersistenceError.validation(String(localized: "Nothing to log.", bundle: .module))
         }
         let now = clock.now()
         return try database.writer.write { db in
@@ -249,9 +251,11 @@ public struct MealTemplateRepository: Sendable {
 
     static func create(_ db: Database, name: String, slotHint: String?, items: [NewItem], now: Date) throws -> MealTemplateDetail {
         let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { throw PersistenceError.validation("A meal needs a name.") }
+        guard !name.isEmpty else { throw PersistenceError.validation(String(localized: "A meal needs a name.", bundle: .module)) }
         let valid = try validItems(items)
-        guard !valid.isEmpty else { throw PersistenceError.validation("This meal has no foods to save.") }
+        guard !valid.isEmpty else {
+            throw PersistenceError.validation(String(localized: "This meal has no foods to save.", bundle: .module))
+        }
         let template = MealTemplate(
             id: newID(), name: name, mealSlotHint: slotHint, useCount: 0, lastUsedAt: nil,
             createdAt: now, updatedAt: now, deletedAt: nil, revision: 1,

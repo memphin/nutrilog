@@ -112,13 +112,13 @@ struct HydrationStrip: View {
     /// "8 drinks, longest gap 4 h 30 min", "1 drink", "No drinks yet"; the gap only when there is one.
     nonisolated static func accessibilityLabel(_ day: HydrationDay) -> String {
         let count = day.intakes.count
-        let drinks = switch count {
-        case 0: "No drinks yet"
-        case 1: "1 drink"
-        default: "\(count) drinks"
+        guard let longest = day.gaps.map({ $0.end.timeIntervalSince($0.start) }).max() else {
+            return count == 0 ? String(localized: "No drinks yet") : String(localized: "\(count) drinks")
         }
-        guard let longest = day.gaps.map({ $0.end.timeIntervalSince($0.start) }).max() else { return drinks }
-        return "\(drinks), longest gap \(gapDuration(longest))"
+        let gap = gapDuration(longest)
+        return count == 0
+            ? String(localized: "No drinks yet, longest gap \(gap)")
+            : String(localized: "\(count) drinks, longest gap \(gap)")
     }
 
     /// "4 h 30 min", "4 h", "45 min", in whole minutes.
@@ -127,8 +127,10 @@ struct HydrationStrip: View {
         let hours = minutes / 60
         let rest = minutes % 60
         if hours == 0 {
-            return "\(rest) min"
+            return String(localized: "\(rest) min", comment: "Short duration in minutes")
         }
-        return rest == 0 ? "\(hours) h" : "\(hours) h \(rest) min"
+        return rest == 0
+            ? String(localized: "\(hours) h", comment: "Short duration in hours")
+            : String(localized: "\(hours) h \(rest) min", comment: "Short duration in hours and minutes")
     }
 }

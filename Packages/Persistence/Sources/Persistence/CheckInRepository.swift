@@ -97,7 +97,9 @@ public struct CheckInRepository: Sendable {
         goalChangeKgPerWeek: Double = 0,
     ) throws -> CheckInRecord {
         guard (decision == .skipped) == (appliedTarget == nil) else {
-            throw PersistenceError.validation("accepted and edited check-ins need a target; skipped ones have none")
+            throw PersistenceError.validation(
+                String(localized: "accepted and edited check-ins need a target; skipped ones have none", bundle: .module),
+            )
         }
         let now = clock.now()
         let encoder = JSONEncoder()

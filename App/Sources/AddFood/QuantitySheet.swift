@@ -107,7 +107,7 @@ struct QuantitySheet: View {
                 }
                 if case .log = mode {
                     Picker("Meal", selection: $slotID) {
-                        ForEach(slots) { Text($0.name).tag($0.id) }
+                        ForEach(slots) { Text($0.displayName).tag($0.id) }
                     }
                 }
             } header: {
@@ -116,28 +116,28 @@ struct QuantitySheet: View {
 
             Section("Nutrition for this amount") {
                 NutrientRow(
-                    "Energy",
+                    String(localized: "Energy"),
                     value: environment.energyUnit.display(preview.kcal),
                     unit: environment.energyUnit.symbol,
                     emphasized: true,
                 )
-                NutrientRow("Protein", value: preview.proteinG)
-                NutrientRow("Carbohydrates", value: preview.carbsG)
+                NutrientRow(String(localized: "Protein"), value: preview.proteinG)
+                NutrientRow(String(localized: "Carbohydrates"), value: preview.carbsG)
                 if let sugar = preview.sugarG {
-                    NutrientRow("of which sugars", value: sugar, indent: true)
+                    NutrientRow(String(localized: "of which sugars"), value: sugar, indent: true)
                 }
                 if let fiber = preview.fiberG {
-                    NutrientRow("Fiber", value: fiber)
+                    NutrientRow(String(localized: "Fiber"), value: fiber)
                 }
-                NutrientRow("Fat", value: preview.fatG)
+                NutrientRow(String(localized: "Fat", comment: "The macronutrient"), value: preview.fatG)
                 if let sat = preview.satFatG {
-                    NutrientRow("of which saturated", value: sat, indent: true)
+                    NutrientRow(String(localized: "of which saturated"), value: sat, indent: true)
                 }
                 if let sodium = preview.sodiumMg {
-                    NutrientRow("Sodium", value: sodium, unit: "mg")
+                    NutrientRow(String(localized: "Sodium"), value: sodium, unit: "mg")
                 }
                 if let caffeine = preview.caffeineMg {
-                    NutrientRow("Caffeine", value: caffeine, unit: "mg")
+                    NutrientRow(String(localized: "Caffeine"), value: caffeine, unit: "mg")
                 }
             }
 

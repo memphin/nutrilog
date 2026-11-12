@@ -279,9 +279,12 @@ public struct BaselineComparison: Hashable, Sendable {
         guard let deviation, deviation.isFinite else { return nil }
         let percent = DisplayRounding.whole(abs(deviation) * 100)
         if percent < 1 {
-            return "In line with your 30-day average"
+            return String(localized: "In line with your 30-day average", bundle: .module)
         }
-        return "\(percent)% \(deviation < 0 ? "below" : "above") your 30-day average"
+        if deviation < 0 {
+            return String(localized: "\(percent)% below your 30-day average", bundle: .module)
+        }
+        return String(localized: "\(percent)% above your 30-day average", bundle: .module)
     }
 }
 

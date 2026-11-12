@@ -26,18 +26,40 @@ public extension FoodSource {
 
 public extension FoodDetail {
     /// Label of the stand-in serving used when a draft only has per-serving values and no usable serving weight.
-    static let perServingFallbackLabel = "1 serving"
+    /// Stored with the food in the app's language at copy time.
+    static var perServingFallbackLabel: String {
+        String(localized: "1 serving", bundle: .module, comment: "Name of a stand-in serving")
+    }
 
-    /// Note stored on a copy whose values are per serving and whose source gives no serving weight.
-    static let perServingUnknownWeightNote =
+    /// Note stored on a copy whose values are per serving and whose source gives no serving weight. Stored in the
+    /// app's language at copy time; ``isPerServingPlaceholderNote(_:)`` recognizes it in English too.
+    static var perServingUnknownWeightNote: String {
+        String(
+            localized: "Nutrition per serving; the serving weight is unknown, so 1 serving is counted as 100 g/ml.",
+            bundle: .module,
+        )
+    }
+
+    /// The English ``perServingUnknownWeightNote``, as stored before notes were localized.
+    private static let englishPerServingUnknownWeightNote =
         "Nutrition per serving; the serving weight is unknown, so 1 serving is counted as 100 g/ml."
 
     /// Note stored on a copy whose values are per serving and whose serving weight (e.g. "0.5 g") is too small, or
-    /// gives implausible per-100 values, to convert with.
-    static func perServingUnusableWeightNote(_ size: ServingSize, isLiquid: Bool) -> String {
-        let weight = "\(NumberFormatting.compact(size.amount)) \(BaseUnit(isLiquid: isLiquid).symbol)"
-        return "Nutrition per serving; the serving weight given (\(weight)) can't be used to work out values per 100, "
-            + "so 1 serving is counted as 100 g/ml."
+    /// gives implausible per-100 values, to convert with. The weight is written in the user's locale ("0,5 g").
+    static func perServingUnusableWeightNote(_ size: ServingSize, isLiquid: Bool, locale: Locale = .current) -> String {
+        let weight = "\(NumberFormatting.compact(size.amount, locale: locale)) \(BaseUnit(isLiquid: isLiquid).symbol)"
+        return unusableWeightNote(weight: weight)
+    }
+
+    /// The unusable-weight note around an already formatted `weight`.
+    private static func unusableWeightNote(weight: String) -> String {
+        String(
+            localized: """
+            Nutrition per serving; the serving weight given (\(weight)) can't be used to work out values per 100, \
+            so 1 serving is counted as 100 g/ml.
+            """,
+            bundle: .module,
+        )
     }
 
     /// A new, unsaved local food copied from an online `draft`, for ``FoodRepository/saveRemoteCopy(_:)`` (or
@@ -115,22 +137,31 @@ public enum ServingWeightError: LocalizedError, Hashable, Sendable {
     public var errorDescription: String? {
         switch self {
         case .notPositive:
-            "Enter a weight above 0."
+            return String(localized: "Enter a weight above 0.", bundle: .module)
         case .outOfRange:
-            "Enter a weight between \(Self.number(FoodDetail.servingWeightRange.lowerBound, fractionDigits: 1)) "
-                + "and \(Self.number(FoodDetail.servingWeightRange.upperBound))."
+            let lower = Self.number(FoodDetail.servingWeightRange.lowerBound, fractionDigits: 1)
+            let upper = Self.number(FoodDetail.servingWeightRange.upperBound)
+            return String(localized: "Enter a weight between \(lower) and \(upper).", bundle: .module)
         case let .implausibleEnergy(kcal):
-            "That weight would mean \(Self.number(kcal)) kcal per 100 — more than pure fat. Check the weight."
+            let kcalText = Self.number(kcal)
+            return String(
+                localized: "That weight would mean \(kcalText) kcal per 100 — more than pure fat. Check the weight.",
+                bundle: .module,
+            )
         case let .implausibleMacros(grams):
-            "That weight would mean \(Self.number(grams)) g of protein, carbs and fat per 100. Check the weight."
+            let gramsText = Self.number(grams)
+            return String(
+                localized: "That weight would mean \(gramsText) g of protein, carbs and fat per 100. Check the weight.",
+                bundle: .module,
+            )
         }
     }
 
     /// `value` for display without an `Int` conversion, so huge or non-finite values (a weight of 1e-17 g gives
-    /// ~1e19 kcal per 100) can't trap.
-    static func number(_ value: Double, fractionDigits: Int = 0) -> String {
+    /// ~1e19 kcal per 100) can't trap. Follows `locale` ("0,1" in Croatian).
+    static func number(_ value: Double, fractionDigits: Int = 0, locale: Locale = .current) -> String {
         guard value.isFinite else { return value.isNaN ? "?" : (value < 0 ? "-∞" : "∞") }
-        return value.formatted(.number.precision(.fractionLength(0 ... fractionDigits)))
+        return value.formatted(.number.precision(.fractionLength(0 ... fractionDigits)).locale(locale))
     }
 }
 
@@ -146,9 +177,19 @@ public extension FoodDetail {
     /// wrote).
     static func isPerServingPlaceholderNote(_ note: String?) -> Bool {
         guard let note else { return false }
-        return note == perServingUnknownWeightNote
-            || (note.hasPrefix("Nutrition per serving; the serving weight given (")
-                && note.hasSuffix("so 1 serving is counted as 100 g/ml."))
+        if note == perServingUnknownWeightNote || note == englishPerServingUnknownWeightNote {
+            return true
+        }
+        if note.hasPrefix("Nutrition per serving; the serving weight given ("),
+           note.hasSuffix("so 1 serving is counted as 100 g/ml.")
+        {
+            return true
+        }
+        // The note in the current language: the text around the weight, split at a marker standing in for it.
+        let marker = "\u{1}"
+        let parts = unusableWeightNote(weight: marker).components(separatedBy: marker)
+        guard parts.count == 2, !parts[0].isEmpty, !parts[1].isEmpty else { return false }
+        return note.hasPrefix(parts[0]) && note.hasSuffix(parts[1]) && note.count > parts[0].count + parts[1].count
     }
 
     /// This per-serving placeholder (``isPerServingPlaceholder``: values per serving, stored as per 100 with a
@@ -161,7 +202,8 @@ public extension FoodDetail {
     /// - Quality comes from the stored food: complete when no mandatory value is missing, otherwise the stored
     ///   quality is kept. `missing` is what the source lacks when known; `nil` infers it from the stored food
     ///   (a mandatory value of 0 counts as missing — a real 0 just keeps the food partial).
-    /// - Throws ``ServingWeightError`` for a non-positive weight, one outside ``servingWeightRange``, or one that gives implausible values per 100
+    /// - Throws ``ServingWeightError`` for a non-positive weight, one outside ``servingWeightRange``, or one that gives implausible values
+    /// per 100
     ///   (energy above ``maximumKcalPer100``, protein + carbs + fat above ``maximumMacroGramsPer100``).
     func convertingPerServingPlaceholder(
         servingWeight: Double,

@@ -1,0 +1,261 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "A meal needs a name." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obrok mora imati naziv."
+          }
+        }
+      }
+    },
+    "A meal needs at least one food." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obrok mora imati barem jednu namirnicu."
+          }
+        }
+      }
+    },
+    "Breakfast" : {
+      "comment" : "Meal slot",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doručak"
+          }
+        }
+      }
+    },
+    "Caffeine" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kofein"
+          }
+        }
+      }
+    },
+    "Dinner" : {
+      "comment" : "Meal slot",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Večera"
+          }
+        }
+      }
+    },
+    "Lunch" : {
+      "comment" : "Meal slot",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ručak"
+          }
+        }
+      }
+    },
+    "Nothing to log." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nema se što zapisati."
+          }
+        }
+      }
+    },
+    "Quick add" : {
+      "comment" : "Name of a quick-add entry the user didn't name",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brzi unos"
+          }
+        }
+      }
+    },
+    "Snacks" : {
+      "comment" : "Meal slot",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Međuobroci"
+          }
+        }
+      }
+    },
+    "That amount is not a number." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta količina nije broj."
+          }
+        }
+      }
+    },
+    "That amount is too large." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta je količina prevelika."
+          }
+        }
+      }
+    },
+    "That barcode is already used by another food." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Taj barkod već koristi druga namirnica."
+          }
+        }
+      }
+    },
+    "That barcode isn't valid." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Taj barkod nije valjan."
+          }
+        }
+      }
+    },
+    "That isn't valid." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To nije valjano."
+          }
+        }
+      }
+    },
+    "That item no longer exists." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta stavka više ne postoji."
+          }
+        }
+      }
+    },
+    "This meal has no foods to save." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ovaj obrok nema namirnica za spremanje."
+          }
+        }
+      }
+    },
+    "Water" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voda"
+          }
+        }
+      }
+    },
+    "accepted and edited check-ins need a target; skipped ones have none" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "prihvaćene i uređene tjedne provjere moraju imati cilj; preskočene ga nemaju"
+          }
+        }
+      }
+    },
+    "amount must be greater than zero" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "količina mora biti veća od nule"
+          }
+        }
+      }
+    },
+    "body fat out of range" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tjelesna mast izvan raspona"
+          }
+        }
+      }
+    },
+    "choose one food to keep and at least one other to merge into it" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "odaberi jednu namirnicu koju zadržavaš i barem još jednu koju ćeš spojiti s njom"
+          }
+        }
+      }
+    },
+    "entry has no amount to scale" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "unos nema količinu koja bi se mogla skalirati"
+          }
+        }
+      }
+    },
+    "not a quick-add entry" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "to nije brzi unos"
+          }
+        }
+      }
+    },
+    "quick-add entries have no quantity" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "brzi unosi nemaju količinu"
+          }
+        }
+      }
+    },
+    "weight out of range" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "težina izvan raspona"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

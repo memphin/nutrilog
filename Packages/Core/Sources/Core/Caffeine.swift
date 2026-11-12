@@ -234,7 +234,7 @@ public enum CaffeineDefaults {
 public struct CaffeineDrink: Hashable, Sendable, Identifiable {
     /// Stable id, stored with each quick-add entry (`caffeine_entry.drink_id`) and in the quick-add setting.
     public let id: String
-    /// English display name.
+    /// Display name in the app's language.
     public let name: String
     /// Caffeine per serving in mg.
     public let mg: Double
@@ -253,29 +253,36 @@ public struct CaffeineDrink: Hashable, Sendable, Identifiable {
 
     /// Single shot (~30 ml).
     public static let espresso = CaffeineDrink(
-        id: "espresso", name: "Espresso", mg: 64, servingMl: 30, symbolName: "cup.and.saucer.fill",
+        id: "espresso", name: String(localized: "Espresso", bundle: .module),
+        mg: 64, servingMl: 30, symbolName: "cup.and.saucer.fill",
     )
     /// Brewed / filter coffee, one cup (~240 ml).
     public static let filterCoffee = CaffeineDrink(
-        id: "filter_coffee", name: "Filter coffee", mg: 95, servingMl: 240, symbolName: "mug.fill",
+        id: "filter_coffee", name: String(localized: "Filter coffee", bundle: .module),
+        mg: 95, servingMl: 240, symbolName: "mug.fill",
     )
     public static let blackTea = CaffeineDrink(
-        id: "black_tea", name: "Black tea", mg: 47, servingMl: 240, symbolName: "leaf.fill",
+        id: "black_tea", name: String(localized: "Black tea", bundle: .module),
+        mg: 47, servingMl: 240, symbolName: "leaf.fill",
     )
     public static let greenTea = CaffeineDrink(
-        id: "green_tea", name: "Green tea", mg: 28, servingMl: 240, symbolName: "leaf.fill",
+        id: "green_tea", name: String(localized: "Green tea", bundle: .module),
+        mg: 28, servingMl: 240, symbolName: "leaf.fill",
     )
     /// One can (330 ml).
     public static let cola = CaffeineDrink(
-        id: "cola", name: "Cola", mg: 33, servingMl: 330, symbolName: "takeoutbag.and.cup.and.straw.fill",
+        id: "cola", name: String(localized: "Cola", bundle: .module),
+        mg: 33, servingMl: 330, symbolName: "takeoutbag.and.cup.and.straw.fill",
     )
     /// One can (250 ml).
     public static let energyDrink = CaffeineDrink(
-        id: "energy_drink", name: "Energy drink", mg: 80, servingMl: 250, symbolName: "bolt.fill",
+        id: "energy_drink", name: String(localized: "Energy drink", bundle: .module),
+        mg: 80, servingMl: 250, symbolName: "bolt.fill",
     )
     /// About 2 g of powder (1 tsp) whisked into a cup.
     public static let matcha = CaffeineDrink(
-        id: "matcha", name: "Matcha", mg: 70, servingMl: 240, symbolName: "leaf.fill",
+        id: "matcha", name: String(localized: "Matcha", bundle: .module),
+        mg: 70, servingMl: 240, symbolName: "leaf.fill",
     )
 
     /// Every preset, in display order.

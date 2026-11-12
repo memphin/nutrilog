@@ -74,9 +74,12 @@ struct WeightEntrySheet: View {
                             form = WeightForm(entry: existing)
                         }
                     } footer: {
-                        Text("You already entered \(DashboardFormat.kg(existing.kg)) at "
-                            + "\(existing.measuredAt.formatted(date: .omitted, time: .shortened)) today. "
-                            + "A new entry for today replaces it on the dashboard.")
+                        let kg = DashboardFormat.kg(existing.kg)
+                        let time = existing.measuredAt.formatted(date: .omitted, time: .shortened)
+                        Text("""
+                        You already entered \(kg) at \(time) today. A new entry for today replaces it on the \
+                        dashboard.
+                        """)
                     }
                 }
                 Section {
@@ -128,8 +131,8 @@ struct WeightEntrySheet: View {
 
     private var footer: String {
         environment.healthWrites?.isEnabled == false
-            ? "Writing to Apple Health is off, so this weight stays in Vitalion."
-            : "Also saved to Apple Health as weight and body fat."
+            ? String(localized: "Writing to Apple Health is off, so this weight stays in Vitalion.")
+            : String(localized: "Also saved to Apple Health as weight and body fat.")
     }
 
     private func save() {

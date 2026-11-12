@@ -68,7 +68,7 @@
                         }
                         .toolbar {
                             ToolbarItem(placement: .cancellationAction) {
-                                Button("Cancel") { isShowingManualEntry = false }
+                                Button(String(localized: "Cancel", bundle: .module)) { isShowingManualEntry = false }
                             }
                         }
                     }
@@ -107,14 +107,16 @@
                             isTorchOn = Torch.set(!isTorchOn)
                         } label: {
                             Label(
-                                isTorchOn ? "Turn Torch Off" : "Turn Torch On",
+                                isTorchOn
+                                    ? String(localized: "Turn Torch Off", bundle: .module)
+                                    : String(localized: "Turn Torch On", bundle: .module),
                                 systemImage: isTorchOn ? "flashlight.on.fill" : "flashlight.off.fill",
                             )
                         }
                         .accessibilityIdentifier("scannerTorch")
                     }
                     Button(action: showManualEntry) {
-                        Label("Enter Manually", systemImage: "keyboard")
+                        Label(String(localized: "Enter Manually", bundle: .module), systemImage: "keyboard")
                     }
                     .accessibilityIdentifier("scannerManualEntry")
                 }
@@ -180,36 +182,52 @@
                 Text(message)
             } actions: {
                 if reason == .denied, let url = URL(string: UIApplication.openSettingsURLString) {
-                    Button("Open Settings") { openURL(url) }
+                    Button(String(localized: "Open Settings", bundle: .module)) { openURL(url) }
                         .buttonStyle(.borderedProminent)
                         .accessibilityIdentifier("scannerOpenSettings")
                 }
-                Button("Enter Barcode Manually", action: onManualEntry)
+                Button(String(localized: "Enter Barcode Manually", bundle: .module), action: onManualEntry)
                     .accessibilityIdentifier("scannerManualEntryFallback")
             }
         }
 
         private var title: String {
             switch reason {
-            case .denied: "Camera Access Off"
-            case .restricted: "Camera Restricted"
-            case .unsupported: "Scanning Not Available"
-            case .unavailable: "Camera Unavailable"
+            case .denied: String(localized: "Camera Access Off", bundle: .module)
+            case .restricted: String(localized: "Camera Restricted", bundle: .module)
+            case .unsupported: String(localized: "Scanning Not Available", bundle: .module)
+            case .unavailable: String(localized: "Camera Unavailable", bundle: .module)
             }
         }
 
         private var message: String {
             switch reason {
             case .denied:
-                "Vitalion needs the camera to scan product barcodes. Turn on Camera for Vitalion in Settings, "
-                    + "or type the barcode instead."
+                String(
+                    localized: """
+                    Vitalion needs the camera to scan product barcodes. Turn on Camera for Vitalion in Settings, \
+                    or type the barcode instead.
+                    """,
+                    bundle: .module,
+                )
             case .restricted:
-                "Camera access is restricted on this device, e.g. by Screen Time. You can type the barcode instead."
+                String(
+                    localized: "Camera access is restricted on this device, e.g. by Screen Time. You can type the barcode instead.",
+                    bundle: .module,
+                )
             case .unsupported:
-                "This device can't scan barcodes with the camera. You can type the barcode instead."
+                String(
+                    localized: "This device can't scan barcodes with the camera. You can type the barcode instead.",
+                    bundle: .module,
+                )
             case .unavailable:
-                "The camera can't be used right now, e.g. because another app is using it. "
-                    + "You can type the barcode instead."
+                String(
+                    localized: """
+                    The camera can't be used right now, e.g. because another app is using it. \
+                    You can type the barcode instead.
+                    """,
+                    bundle: .module,
+                )
             }
         }
     }

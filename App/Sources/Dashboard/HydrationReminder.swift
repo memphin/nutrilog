@@ -76,7 +76,7 @@ struct LocalNotificationHydrationReminder: HydrationReminderScheduling {
     }
 }
 
-/// The reminder's texts (spec §4), exact.
+/// The reminder's texts (spec §4), from the string catalog.
 enum HydrationReminderCopy {
     /// "+ 250 ml": the smallest quick-add size.
     static func actionTitle(ml: Int) -> String {
@@ -85,22 +85,26 @@ enum HydrationReminderCopy {
 
     static func title(_ reason: HydrationReminder.Reason) -> String {
         switch reason {
-        case .gap: "Time for a drink"
-        case .behind: "You're behind on hydration"
+        case .gap: String(localized: "Time for a drink")
+        case .behind: String(localized: "You're behind on hydration")
         }
     }
 
     /// "No drink since 13:00 · 1,320 of 2,400 ml" or "1,100 ml so far — about 1,600 by now keeps you on track";
-    /// amounts grouped by `locale` like the Hydration tile, the "about" amount to the nearest 50 ml, times as 24-hour
-    /// HH:mm in `calendar`'s time zone.
+    /// amounts grouped by `locale` like the Hydration tile, the "about" amount to the nearest 50 ml, the time in
+    /// `locale`'s hour cycle (13:00, or 01:00 PM in the US) and `calendar`'s time zone.
     static func body(
         _ reason: HydrationReminder.Reason, totalMl: Double, goalMl: Double, calendar: Calendar, locale: Locale,
     ) -> String {
+        let total = number(totalMl, locale)
         switch reason {
         case let .gap(since):
-            "No drink since \(time(since, calendar: calendar)) · \(number(totalMl, locale)) of \(number(goalMl, locale)) ml"
+            let sinceText = time(since, calendar: calendar, locale: locale)
+            let goal = number(goalMl, locale)
+            return String(localized: "No drink since \(sinceText) · \(total) of \(goal) ml", locale: locale)
         case let .behind(expectedMl):
-            "\(number(totalMl, locale)) ml so far — about \(number((expectedMl / 50).rounded() * 50, locale)) by now keeps you on track"
+            let expected = number((expectedMl / 50).rounded() * 50, locale)
+            return String(localized: "\(total) ml so far — about \(expected) by now keeps you on track", locale: locale)
         }
     }
 
@@ -108,8 +112,11 @@ enum HydrationReminderCopy {
         ml.formatted(.number.precision(.fractionLength(0)).locale(locale))
     }
 
-    private static func time(_ date: Date, calendar: Calendar) -> String {
-        let parts = calendar.dateComponents([.hour, .minute], from: date)
-        return String(format: "%02d:%02d", parts.hour ?? 0, parts.minute ?? 0)
+    /// Two-digit hours in `locale`'s hour cycle: "07:00" where the day has 24 hours, "07:00 AM" in the US.
+    private static func time(_ date: Date, calendar: Calendar, locale: Locale) -> String {
+        var style = Date.FormatStyle.dateTime.hour(.twoDigits(amPM: .abbreviated)).minute(.twoDigits).locale(locale)
+        style.calendar = calendar
+        style.timeZone = calendar.timeZone
+        return date.formatted(style)
     }
 }

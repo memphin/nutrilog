@@ -52,10 +52,11 @@ public enum ManualBarcodeValidation: Equatable, Sendable {
     public var message: String? {
         switch self {
         case .valid, .empty: nil
-        case .invalidCharacters: "Use digits only."
-        case .invalidLength: "A barcode has 8, 12, 13 or 14 digits."
-        case .invalidChecksum: "The check digit doesn't match. Please re-check the number."
-        case .outerPackCode: "This is an outer-pack code. Type the 13 digits printed on the product itself."
+        case .invalidCharacters: String(localized: "Use digits only.", bundle: .module)
+        case .invalidLength: String(localized: "A barcode has 8, 12, 13 or 14 digits.", bundle: .module)
+        case .invalidChecksum: String(localized: "The check digit doesn't match. Please re-check the number.", bundle: .module)
+        case .outerPackCode:
+            String(localized: "This is an outer-pack code. Type the 13 digits printed on the product itself.", bundle: .module)
         }
     }
 

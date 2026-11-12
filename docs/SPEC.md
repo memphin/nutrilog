@@ -224,7 +224,7 @@ Unit tests cover: perfect-logging synthetic data (recovers the true TDEE within 
 - FR-71 Siri Shortcuts / App Intents: "Log 1 coffee", "How many calories do I have left" (SHOULD).
 - FR-72 Apple Watch companion: view remaining kcal, quick-add favorites (COULD, post-v1).
 - FR-73 Dark mode, Dynamic Type, VoiceOver labels (MUST — accessibility is cheap in SwiftUI if done from the start).
-- FR-74 UI language English; Croatian localization (COULD).
+- FR-74 UI in English and Croatian (done): the language follows iOS, incl. the per-app Language setting; bundled foods have Croatian names and search matches both languages.
 
 ### 5.9 Web client (phase 4, SHOULD)
 - FR-80 Responsive web app (read + full edit of diary, foods, recipes; charts; export). No barcode camera required (keyboard entry allowed; (COULD) browser barcode scanning via `BarcodeDetector` API where supported).

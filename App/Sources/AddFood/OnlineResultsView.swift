@@ -16,10 +16,14 @@ struct OnlineResultsView: View {
     var body: some View {
         if text.trimmingCharacters(in: .whitespacesAndNewlines).count < OnlineSearchModel.minimumQueryLength {
             EmptyStateView(
-                "Search online",
+                String(localized: "Search online"),
                 systemImage: "globe",
-                message: "Type at least \(OnlineSearchModel.minimumQueryLength) letters to search Open Food Facts"
-                    + (model.usdaStatus == .hidden ? "." : " and USDA FoodData Central."),
+                message: model.usdaStatus == .hidden
+                    ? String(localized: "Type at least \(OnlineSearchModel.minimumQueryLength) letters to search Open Food Facts.")
+                    : String(localized: """
+                    Type at least \(OnlineSearchModel.minimumQueryLength) letters to search Open Food Facts and USDA \
+                    FoodData Central.
+                    """),
             )
             .listRowBackground(Color.clear)
         } else {
@@ -35,8 +39,11 @@ struct OnlineResultsView: View {
                 }
             }
             if model.showsNoMatches {
-                EmptyStateView("No online matches", systemImage: "magnifyingglass", message: "Try another spelling or create the food.")
-                    .listRowBackground(Color.clear)
+                EmptyStateView(
+                    String(localized: "No online matches"), systemImage: "magnifyingglass",
+                    message: String(localized: "Try another spelling or create the food."),
+                )
+                .listRowBackground(Color.clear)
             }
             Section {
                 ForEach(model.results) { result in
@@ -92,11 +99,11 @@ struct OnlineSourceStatusRow: View {
         let name = name(source)
         return switch status {
         case .idle, .hidden: name
-        case .loading: "Searching \(name)…"
-        case let .loaded(count): count == 1 ? "1 result from \(name)" : "\(count) results from \(name)"
-        case .offline: "\(name): offline"
-        case let .paused(until): "\(name) paused until \(until.formatted(date: .omitted, time: .shortened)) (rate limit)"
-        case .busy: "\(name) is busy. Try again in a minute."
+        case .loading: String(localized: "Searching \(name)…")
+        case let .loaded(count): String(localized: "\(count) results from \(name)")
+        case .offline: String(localized: "\(name): offline")
+        case let .paused(until): String(localized: "\(name) paused until \(until.formatted(date: .omitted, time: .shortened)) (rate limit)")
+        case .busy: String(localized: "\(name) is busy. Try again in a minute.")
         case let .failed(message): message
         }
     }
@@ -146,8 +153,8 @@ struct OnlineFoodRow: View {
 
     private var basisLabel: String {
         switch result.draft.basis {
-        case .per100: result.draft.isLiquid ? "per 100 ml" : "per 100 g"
-        case .perServing: "per serving"
+        case .per100: result.draft.isLiquid ? String(localized: "per 100 ml") : String(localized: "per 100 g")
+        case .perServing: String(localized: "per serving")
         }
     }
 }

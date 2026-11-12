@@ -112,7 +112,7 @@ public struct CaffeineRepository: Sendable {
     ) throws -> CaffeineEntry {
         try Self.validate(mg: mg)
         if let ml {
-            guard ml > 0, ml.isFinite else { throw PersistenceError.validation("amount must be greater than zero") }
+            guard ml > 0, ml.isFinite else { throw PersistenceError.amountNotPositive }
             try EntryLimits.validate(amount: ml)
         }
         let volume = ml ?? drinkID.flatMap(CaffeineDrink.preset(id:))?.servingMl
@@ -225,7 +225,7 @@ public struct CaffeineRepository: Sendable {
     }
 
     static func validate(mg: Double) throws {
-        guard mg > 0, mg.isFinite else { throw PersistenceError.validation("amount must be greater than zero") }
+        guard mg > 0, mg.isFinite else { throw PersistenceError.amountNotPositive }
     }
 
     static func cleaned(_ name: String?) -> String? {

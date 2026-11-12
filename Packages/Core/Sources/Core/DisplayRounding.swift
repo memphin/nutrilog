@@ -39,9 +39,9 @@ public enum DisplayRounding {
         whole(value)
     }
 
-    /// "12", "4.5", "0" — trailing ".0" dropped.
-    public static func gramsText(_ value: Double) -> String {
-        NumberFormatting.compact(grams(value))
+    /// "12", "4.5", "0" — trailing ".0" dropped; the decimal separator follows `locale` ("4,5" in Croatian).
+    public static func gramsText(_ value: Double, locale: Locale = .current) -> String {
+        NumberFormatting.compact(grams(value), locale: locale)
     }
 }
 

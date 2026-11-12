@@ -369,7 +369,8 @@ struct TargetsModelTests {
         m.carbsG = "200"
         for text in ["12345678901234567890", "inf", "1e30", "2500", "-1"] {
             m.fatG = text
-            #expect(m.validationErrors.contains { $0.contains("2,000 g") })
+            // The limit is written in the user's locale ("2,000" in English, "2.000" in Croatian).
+            #expect(m.validationErrors.contains { $0.contains("\(2000.0.formatted()) g") })
             #expect(m.gramsEnergyMismatch == nil)
             #expect(m.makeTarget() == nil)
         }
@@ -380,7 +381,7 @@ struct TargetsModelTests {
         for text in ["99999999999999999999", "inf", "nan", "1e30", "-500", "499", "25000"] {
             m.manualKcal = text
             #expect(m.effectiveKcal == nil)
-            #expect(m.validationErrors.contains { $0.contains("between 500 and 20,000 kcal") })
+            #expect(m.validationErrors.contains { $0.contains("between 500 and \(20000.0.formatted()) kcal") })
             #expect(m.makeTarget() == nil)
         }
         m.manualKcal = ""
@@ -700,6 +701,11 @@ struct FormattingTests {
         #expect(Format.day(today.previous, today: today) == "Yesterday")
         #expect(Format.day(today.next, today: today) == "Tomorrow")
         #expect(!Format.day(today.adding(days: -5), today: today).isEmpty)
+        // Dates and numbers follow the locale: Croatian month abbreviations and the decimal comma.
+        let croatian = Locale(identifier: "hr_HR")
+        #expect(Format.day(today.adding(days: -5), today: today, locale: croatian).contains("stu"))
+        #expect(Format.field(12.5, locale: croatian) == "12,5")
+        #expect(Format.field(12.5, locale: Locale(identifier: "en_US")) == "12.5")
     }
 
     @Test func `source badges`() {

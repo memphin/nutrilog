@@ -12,8 +12,8 @@ public enum EntryLimits {
     /// Grams of a macro (or mg of sodium) in one entry or per 100 g of a food.
     public static let maxMacroGrams: Double = 100_000
 
-    static let tooLarge = "That amount is too large."
-    static let notANumber = "That amount is not a number."
+    static let tooLarge = String(localized: "That amount is too large.", bundle: .module)
+    static let notANumber = String(localized: "That amount is not a number.", bundle: .module)
 
     /// Throws unless `amount` is finite and at most ``maxAmount``. The "greater than zero" checks stay with the callers.
     static func validate(amount: Double) throws {

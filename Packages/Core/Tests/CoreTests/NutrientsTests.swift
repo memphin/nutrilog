@@ -134,8 +134,11 @@ struct NutrientsTests {
         #expect(r.sugarG == nil)
         #expect(r.satFatG == 12)
         #expect(r.sodiumMg == 4)
-        #expect(DisplayRounding.gramsText(4.0) == "4")
-        #expect(DisplayRounding.gramsText(4.46) == "4.5")
+        let en = Locale(identifier: "en_US")
+        #expect(DisplayRounding.gramsText(4.0, locale: en) == "4")
+        #expect(DisplayRounding.gramsText(4.46, locale: en) == "4.5")
+        #expect(DisplayRounding.gramsText(4.46, locale: Locale(identifier: "hr_HR")) == "4,5")
+        #expect(DisplayRounding.gramsText(1234.4, locale: Locale(identifier: "hr_HR")) == "1234")
         #expect(DisplayRounding.kcal(-0.4) == 0)
         #expect(DisplayRounding.milligrams(2.5) == 3)
     }
@@ -143,6 +146,8 @@ struct NutrientsTests {
 
 struct QuantityTests {
     let slice = ServingSize(label: "slice", amount: 25)
+    let en = Locale(identifier: "en_US")
+    let hr = Locale(identifier: "hr_HR")
 
     @Test func `base amount`() {
         #expect(Quantity.base(150).baseAmount == 150)
@@ -161,7 +166,11 @@ struct QuantityTests {
     @Test func `serving labels`() {
         #expect(Quantity.base(100).servingLabel == nil)
         #expect(Quantity.servings(count: 2, serving: slice).servingLabel == "2 × slice")
-        #expect(Quantity.servings(count: 0.5, serving: slice).servingLabel == "0.5 × slice")
+        #expect(Quantity.servings(count: 0.5, serving: slice).servingLabel(locale: en) == "0.5 × slice")
+        #expect(Quantity.servings(count: 0.5, serving: slice).servingLabel(locale: hr) == "0,5 × slice")
+        #expect(Quantity.base(100).servingLabel(locale: hr) == nil)
+        let current = Quantity.servings(count: 1.5, serving: slice)
+        #expect(current.servingLabel == current.servingLabel(locale: .current))
     }
 
     @Test func `compact numbers`() {
@@ -172,6 +181,15 @@ struct QuantityTests {
         #expect(NumberFormatting.compact(0.1 + 0.2) == "0.3")
         #expect(NumberFormatting.compact(-2.5) == "-2.5")
         #expect(NumberFormatting.compact(0) == "0")
+    }
+
+    @Test func `compact numbers for display follow the locale`() {
+        #expect(NumberFormatting.compact(1.5, locale: en) == "1.5")
+        #expect(NumberFormatting.compact(1.5, locale: hr) == "1,5")
+        #expect(NumberFormatting.compact(-0.25, locale: hr) == "-0,25")
+        #expect(NumberFormatting.compact(1500, locale: hr) == "1500") // no grouping, like the machine form
+        #expect(NumberFormatting.compact(.infinity, locale: hr) == "∞")
+        #expect(NumberFormatting.compact(1e20, locale: hr) == "100000000000000000000")
     }
 
     @Test func `compact never traps on huge or non-finite values`() {

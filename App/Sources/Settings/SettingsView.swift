@@ -44,11 +44,11 @@ struct SettingsView: View {
                 } header: {
                     Text("Daily goals")
                 } footer: {
-                    Text(
-                        "Steps and sleep are green on a day that reached the goal, orange close below it (sleep: up to an "
-                            + "hour short) and red further away. Hydration turns green at the goal and orange when you fall "
-                            + "behind pace or go too long without a drink.",
-                    )
+                    Text("""
+                    Steps and sleep are green on a day that reached the goal, orange close below it (sleep: up to an \
+                    hour short) and red further away. Hydration turns green at the goal and orange when you fall \
+                    behind pace or go too long without a drink.
+                    """)
                 }
 
                 Section {
@@ -58,10 +58,10 @@ struct SettingsView: View {
                 } header: {
                     Text("Your data")
                 } footer: {
-                    Text(
-                        "Everything is stored only on this iPhone. A backup is kept on it every week; export regularly to "
-                            + "have a copy somewhere else too.",
-                    )
+                    Text("""
+                    Everything is stored only on this iPhone. A backup is kept on it every week; export regularly to \
+                    have a copy somewhere else too.
+                    """)
                 }
 
                 Section {
@@ -100,11 +100,11 @@ struct SettingsView: View {
     /// "USDA API key": a secure field with Save, or the saved key's status with Remove.
     @ViewBuilder private var usdaKeyRows: some View {
         if environment.usdaKeySource == .keychain {
-            LabeledContent("USDA API key", value: "Saved")
+            LabeledContent("USDA API key", value: String(localized: "Saved", comment: "State of the USDA API key"))
             Button("Remove USDA API key", role: .destructive) { removeUSDAKey() }
         } else if environment.usdaKeychainUnreadable {
             // A key may be stored but can't be read yet: don't offer an empty field that looks like "no key".
-            LabeledContent("USDA API key", value: "Keychain locked")
+            LabeledContent("USDA API key", value: String(localized: "Keychain locked"))
         } else {
             SecureField("USDA API key", text: $usdaKeyDraft)
                 .textInputAutocapitalization(.never)
@@ -118,16 +118,20 @@ struct SettingsView: View {
 
     private var usdaKeyFooter: String {
         if environment.usdaKeySource != .keychain, environment.usdaKeychainUnreadable {
-            return "If you saved a USDA API key, it can't be read until this iPhone is unlocked. It then loads automatically."
+            return String(
+                localized: "If you saved a USDA API key, it can't be read until this iPhone is unlocked. It then loads automatically.",
+            )
         }
         return switch environment.usdaKeySource {
         case .keychain:
-            "Online USDA FoodData Central search uses your key, stored in this iPhone's Keychain."
+            String(localized: "Online USDA FoodData Central search uses your key, stored in this iPhone's Keychain.")
         case .buildConfig:
-            "Online USDA FoodData Central search uses the key built into this version. Save your own to use it instead."
+            String(localized: "Online USDA FoodData Central search uses the key built into this version. Save your own to use it instead.")
         case .none:
-            "Optional. With a free key from api.data.gov you can also search USDA FoodData Central online. "
-                + "It's stored only in this iPhone's Keychain."
+            String(localized: """
+            Optional. With a free key from api.data.gov you can also search USDA FoodData Central online. \
+            It's stored only in this iPhone's Keychain.
+            """)
         }
     }
 
@@ -136,7 +140,7 @@ struct SettingsView: View {
             try environment.saveUSDAKey(usdaKeyDraft)
             usdaKeyDraft = ""
         } catch {
-            errorMessage = "Couldn't save the USDA API key: \(error.localizedDescription)"
+            errorMessage = String(localized: "Couldn't save the USDA API key: \(error.localizedDescription)")
         }
     }
 
@@ -144,7 +148,7 @@ struct SettingsView: View {
         do {
             try environment.removeUSDAKey()
         } catch {
-            errorMessage = "Couldn't remove the USDA API key: \(error.localizedDescription)"
+            errorMessage = String(localized: "Couldn't remove the USDA API key: \(error.localizedDescription)")
         }
     }
 
@@ -153,7 +157,7 @@ struct SettingsView: View {
             do {
                 try environment.setEnergyUnit(unit)
             } catch {
-                errorMessage = "Couldn't save the energy unit: \(error.localizedDescription)"
+                errorMessage = String(localized: "Couldn't save the energy unit: \(error.localizedDescription)")
             }
         })
     }
@@ -163,7 +167,7 @@ struct SettingsView: View {
         do {
             try StepGoal.save(stepGoal, to: profiles)
         } catch {
-            errorMessage = "Couldn't save the step goal: \(error.localizedDescription)"
+            errorMessage = String(localized: "Couldn't save the step goal: \(error.localizedDescription)")
         }
     }
 
@@ -172,7 +176,7 @@ struct SettingsView: View {
         do {
             try SleepGoal.save(sleepGoal, to: profiles)
         } catch {
-            errorMessage = "Couldn't save the sleep goal: \(error.localizedDescription)"
+            errorMessage = String(localized: "Couldn't save the sleep goal: \(error.localizedDescription)")
         }
     }
 }
@@ -182,6 +186,9 @@ struct SettingsView: View {
 struct MealSlotsEditor: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var slots: [MealSlot] = []
+    /// Seed slots (still named "Breakfast" …) by id, with the stored name: the editor shows them translated and
+    /// writes the stored name back unless the user changed the text, so opening it never renames a slot.
+    @State private var seedNames: [String: (stored: String, shown: String)] = [:]
     @State private var loaded = false
     @State private var errorMessage: String?
 
@@ -203,7 +210,7 @@ struct MealSlotsEditor: View {
                 }
                 .onMove { slots.move(fromOffsets: $0, toOffset: $1) }
                 Button("Add meal slot", systemImage: "plus") {
-                    slots.append(MealSlot(name: "New meal", sortOrder: slots.count))
+                    slots.append(MealSlot(name: String(localized: "New meal"), sortOrder: slots.count))
                 }
             } footer: {
                 Text("Drag to reorder. Inactive slots are hidden but keep their past entries.")
@@ -220,7 +227,7 @@ struct MealSlotsEditor: View {
         // Once: coming back to the screen (another tab and back) must not overwrite edits with the stored slots.
         .task {
             guard !loaded else { return }
-            slots = (try? environment.diary?.mealSlots(includeInactive: true)) ?? []
+            show((try? environment.diary?.mealSlots(includeInactive: true)) ?? [])
             loaded = true
         }
         // Like every other settings screen, leaving keeps the changes — when they can be saved.
@@ -238,16 +245,30 @@ struct MealSlotsEditor: View {
         } message: { Text(errorMessage ?? "") }
     }
 
+    private func show(_ stored: [MealSlot]) {
+        seedNames = [:]
+        slots = stored.map { slot in
+            guard slot.hasSeedName else { return slot }
+            seedNames[slot.id] = (stored: slot.name, shown: slot.displayName)
+            var shown = slot
+            shown.name = slot.displayName
+            return shown
+        }
+    }
+
     private func save() {
         do {
             let trimmed = slots.map { slot -> MealSlot in
                 var copy = slot
                 copy.name = slot.name.trimmingCharacters(in: .whitespaces)
+                if let seed = seedNames[slot.id], copy.name == seed.shown {
+                    copy.name = seed.stored
+                }
                 return copy
             }
             // The array order becomes `sortOrder`, so reordering is saved too.
             try environment.profiles?.saveMealSlots(trimmed)
-            slots = try (environment.diary?.mealSlots(includeInactive: true)) ?? trimmed
+            try show((environment.diary?.mealSlots(includeInactive: true)) ?? trimmed)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -359,29 +380,36 @@ struct DataSettingsView: View {
             try environment.backups?.backupNow()
         } catch {
             guard mode == .merge else {
-                message = "Nothing was imported: the backup of your current data couldn't be written. \(error.localizedDescription)"
+                message =
+                    String(
+                        localized: "Nothing was imported: the backup of your current data couldn't be written. \(error.localizedDescription)",
+                    )
                 return
             }
             backupFailure = error.localizedDescription
         }
         do {
             let summary = try portability.importJSON(data, mode: mode)
-            message = "Imported: \(summary.inserted) new, \(summary.updated) updated, \(summary.skipped) unchanged."
-            if let backupFailure {
-                message = (message ?? "") + " No backup of the previous data was made: \(backupFailure)"
+            message = if let backupFailure {
+                String(localized: """
+                Imported: \(summary.inserted) new, \(summary.updated) updated, \(summary.skipped) unchanged. \
+                No backup of the previous data was made: \(backupFailure)
+                """)
+            } else {
+                String(localized: "Imported: \(summary.inserted) new, \(summary.updated) updated, \(summary.skipped) unchanged.")
             }
             do {
                 // Settings cached in memory and pending undo actions may not match the imported data.
                 try environment.dataDidChangeExternally()
             } catch {
-                message = "Imported, but the settings couldn't be reloaded: \(error.localizedDescription)"
+                message = String(localized: "Imported, but the settings couldn't be reloaded: \(error.localizedDescription)")
             }
         } catch DataPortability.ImportError.newerSchema {
-            message = "This file was made by a newer version of Vitalion. Update the app first."
+            message = String(localized: "This file was made by a newer version of Vitalion. Update the app first.")
         } catch DataPortability.ImportError.notAnExport {
-            message = "This isn't a Vitalion export file."
+            message = String(localized: "This isn't a Vitalion export file.")
         } catch DataPortability.ImportError.incompleteBackup {
-            message = "This file is incomplete (no profile or meal slots), so nothing was replaced. Try Merge instead."
+            message = String(localized: "This file is incomplete (no profile or meal slots), so nothing was replaced. Try Merge instead.")
         } catch {
             message = error.localizedDescription
         }
@@ -397,31 +425,38 @@ struct NetworkInfoView: View {
         let sent: String
     }
 
-    /// Every request the app makes (PRIVACY.md "What leaves the device").
-    static let hosts: [Host] = [
-        Host(
-            host: "world.openfoodfacts.org",
-            requests: [
-                ("/api/v2/product/{barcode}.json", "Product lookup when a barcode isn't in the local cache"),
-                ("/cgi/search.pl", "Packaged-food search in Add Food → Online"),
-            ],
-            sent: "The barcode or the search text, and a User-Agent naming the app (Vitalion and its version). No account.",
-        ),
-        Host(
-            host: "images.openfoodfacts.org",
-            requests: [
-                ("/images/products/…", "Product photo on the scanned product's card"),
-            ],
-            sent: "The image address only (it names the product's barcode).",
-        ),
-        Host(
-            host: "api.nal.usda.gov",
-            requests: [
-                ("/fdc/v1/foods/search", "Generic and branded food search in Add Food → Online — only with a USDA API key"),
-            ],
-            sent: "The search text and your API key (in a request header, never stored in a cache).",
-        ),
-    ]
+    /// Every request the app makes (PRIVACY.md "What leaves the device"). Computed, so the texts follow the language.
+    static var hosts: [Host] {
+        [
+            Host(
+                host: "world.openfoodfacts.org",
+                requests: [
+                    ("/api/v2/product/{barcode}.json", String(localized: "Product lookup when a barcode isn't in the local cache")),
+                    ("/cgi/search.pl", String(localized: "Packaged-food search in Add Food → Online")),
+                ],
+                sent: String(
+                    localized: "The barcode or the search text, and a User-Agent naming the app (Vitalion and its version). No account.",
+                ),
+            ),
+            Host(
+                host: "images.openfoodfacts.org",
+                requests: [
+                    ("/images/products/…", String(localized: "Product photo on the scanned product's card")),
+                ],
+                sent: String(localized: "The image address only (it names the product's barcode)."),
+            ),
+            Host(
+                host: "api.nal.usda.gov",
+                requests: [
+                    (
+                        "/fdc/v1/foods/search",
+                        String(localized: "Generic and branded food search in Add Food → Online — only with a USDA API key"),
+                    ),
+                ],
+                sent: String(localized: "The search text and your API key (in a request header, never stored in a cache)."),
+            ),
+        ]
+    }
 
     var body: some View {
         List {
@@ -442,10 +477,10 @@ struct NetworkInfoView: View {
             Section {
                 EmptyView()
             } footer: {
-                Text(
-                    "These are the only hosts Vitalion contacts, and only when you scan a barcode or search online. "
-                        + "No analytics, no tracking, no accounts.",
-                )
+                Text("""
+                These are the only hosts Vitalion contacts, and only when you scan a barcode or search online. \
+                No analytics, no tracking, no accounts.
+                """)
             }
         }
         .navigationTitle("Network access")
@@ -453,8 +488,19 @@ struct NetworkInfoView: View {
 }
 
 struct AboutView: View {
-    static let offAttribution = "Contains information from Open Food Facts, contributed by Open Food Facts contributors, which is made available here under the Open Database License (ODbL)."
-    static let usdaAttribution = "U.S. Department of Agriculture, Agricultural Research Service. FoodData Central. fdc.nal.usda.gov — public domain (CC0 1.0)."
+    static var offAttribution: String {
+        String(localized: """
+        Contains information from Open Food Facts, contributed by Open Food Facts contributors, which is made available \
+        here under the Open Database License (ODbL).
+        """)
+    }
+
+    static var usdaAttribution: String {
+        String(localized: """
+        U.S. Department of Agriculture, Agricultural Research Service. FoodData Central. fdc.nal.usda.gov — public \
+        domain (CC0 1.0).
+        """)
+    }
 
     var body: some View {
         List {

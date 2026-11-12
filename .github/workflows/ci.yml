@@ -28,6 +28,21 @@ jobs:
             | tar -xz -C /usr/local/bin gitleaks
           gitleaks git --no-banner --redact -v .
 
+  translations:
+    name: Croatian translations complete
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      # Catalogs pick up new English keys when built in Xcode (or with `xcodebuild -exportLocalizations`); a key
+      # without a Croatian value would show English in the Croatian app. Lists every one and fails.
+      - name: Check every String Catalog has Croatian
+        run: |
+          status=0
+          for catalog in $(git ls-files '*.xcstrings'); do
+            missing=$(python3 tools/apply_translations.py "$catalog" --check) || { status=1; echo "::error file=$catalog::Strings without Croatian:"; echo "$missing"; }
+          done
+          exit $status
+
   packages:
     name: Swift packages — build & test (${{ matrix.group.name }})
     runs-on: macos-26

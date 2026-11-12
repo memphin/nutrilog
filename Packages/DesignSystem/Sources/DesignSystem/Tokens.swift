@@ -59,17 +59,17 @@ public enum Macro: String, CaseIterable, Sendable, Identifiable {
 
     public var title: String {
         switch self {
-        case .protein: "Protein"
-        case .carbs: "Carbs"
-        case .fat: "Fat"
+        case .protein: String(localized: "Protein", bundle: .module)
+        case .carbs: String(localized: "Carbs", bundle: .module)
+        case .fat: String(localized: "Fat", bundle: .module, comment: "The macronutrient")
         }
     }
 
     public var shortTitle: String {
         switch self {
-        case .protein: "P"
-        case .carbs: "C"
-        case .fat: "F"
+        case .protein: String(localized: "P", bundle: .module, comment: "One-letter abbreviation of Protein")
+        case .carbs: String(localized: "C", bundle: .module, comment: "One-letter abbreviation of Carbs")
+        case .fat: String(localized: "F", bundle: .module, comment: "One-letter abbreviation of Fat (the macronutrient)")
         }
     }
 

@@ -93,8 +93,11 @@ struct ScanView: View {
             }
             if model.loggedCount > 0 {
                 Button { showSessionLog = true } label: {
-                    Label("\(model.loggedCount) \(target.planned ? "planned" : "logged")", systemImage: "checkmark.circle.fill")
-                        .monospacedDigit()
+                    Label(
+                        target.planned ? "\(model.loggedCount) planned" : "\(model.loggedCount) logged",
+                        systemImage: "checkmark.circle.fill",
+                    )
+                    .monospacedDigit()
                 }
                 .buttonStyle(.glass)
                 // Not during a lookup: its result sheet couldn't present over the session log.

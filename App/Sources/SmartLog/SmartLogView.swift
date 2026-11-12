@@ -71,7 +71,7 @@ struct SmartLogView: View {
                     if let data = try? await item.loadTransferable(type: Data.self), let image = UIImage(data: data) {
                         model.jpeg = MealPhoto.jpeg(from: image)
                     } else {
-                        model.errorMessage = "That photo couldn't be opened."
+                        model.errorMessage = String(localized: "That photo couldn't be opened.")
                     }
                     pickedPhoto = nil
                 }
@@ -139,13 +139,17 @@ struct SmartLogView: View {
     private var engineNote: String {
         let estimator = environment.mealEstimator
         if !estimator.isAvailable {
-            return "Apple Intelligence isn't available on this iPhone (or is turned off), so the text or photo is matched "
-                + "to foods already on it. Nothing is sent anywhere."
+            return String(localized: """
+            Apple Intelligence isn't available on this iPhone (or is turned off), so the text or photo is matched to \
+            foods already on it. Nothing is sent anywhere.
+            """)
         }
         return estimator.supportsPhotos
-            ? "Apple Intelligence estimates the foods, amounts and calories on this iPhone. Nothing is sent anywhere."
-            : "Apple Intelligence estimates a description on this iPhone; estimating from a photo needs iOS 27. "
-            + "Nothing is sent anywhere."
+            ? String(localized: "Apple Intelligence estimates the foods, amounts and calories on this iPhone. Nothing is sent anywhere.")
+            : String(localized: """
+            Apple Intelligence estimates a description on this iPhone; estimating from a photo needs iOS 27. Nothing is \
+            sent anywhere.
+            """)
     }
 
     private var working: some View {
@@ -185,11 +189,11 @@ struct SmartLogView: View {
 
             Section {
                 Picker("Meal", selection: $slotID) {
-                    ForEach((try? environment.diary?.mealSlots()) ?? []) { Text($0.name).tag($0.id) }
+                    ForEach((try? environment.diary?.mealSlots()) ?? []) { Text($0.displayName).tag($0.id) }
                 }
                 NutrientRow(
-                    "Energy", value: environment.energyUnit.display(model.totals.kcal), unit: environment.energyUnit.symbol,
-                    emphasized: true,
+                    String(localized: "Energy"), value: environment.energyUnit.display(model.totals.kcal),
+                    unit: environment.energyUnit.symbol, emphasized: true,
                 )
                 MacroLine(protein: model.totals.proteinG, carbs: model.totals.carbsG, fat: model.totals.fatG)
             }

@@ -6,11 +6,17 @@ straight into the user database with source='bundled'.
 
 Usage: see tools/README.md. Phase 0 skeleton — nutrient ID mapping is complete,
 allowlist filtering is simple substring matching; refine as needed.
+
+Croatian names come from food_names_hr.csv (fdc_id,name_hr) and are applied on every build. The raw USDA dumps
+aren't kept in the repo, so `--apply-names-hr <sqlite>` applies the CSV to an already built index in place.
 """
 from __future__ import annotations
-import argparse, sqlite3, uuid, sys
+import argparse, csv, sqlite3, uuid, sys
 from pathlib import Path
-import pandas as pd
+
+# pandas is only needed to build from the raw dumps; it is imported in __main__ so --apply-names-hr runs without it.
+
+DEFAULT_NAMES_HR = Path(__file__).resolve().parent / "food_names_hr.csv"
 
 # FDC nutrient ids (nutrient.csv) → our columns. Energy: 1008 kcal (fallback 2047/2048 Atwater).
 NUTRIENTS = {
@@ -83,7 +89,7 @@ def apply_allowlist(df: pd.DataFrame, allowlist: Path | None):
         mask |= df.description.str.lower().str.contains(t, regex=False)
     return df[mask]
 
-def write(df: pd.DataFrame, out: Path):
+def write(df: pd.DataFrame, out: Path, names_hr: dict[str, str]):
     out.parent.mkdir(parents=True, exist_ok=True)
     if out.exists():
         out.unlink()
@@ -93,10 +99,8 @@ def write(df: pd.DataFrame, out: Path):
             id TEXT PRIMARY KEY, source_id TEXT NOT NULL, name TEXT NOT NULL,
             kcal_100 REAL NOT NULL, protein_g_100 REAL NOT NULL, carbs_g_100 REAL NOT NULL, fat_g_100 REAL NOT NULL,
             fiber_g_100 REAL, sugar_g_100 REAL, sat_fat_g_100 REAL, sodium_mg_100 REAL,
-            caffeine_mg_100 REAL
+            caffeine_mg_100 REAL, name_hr TEXT
         );
-        CREATE VIRTUAL TABLE bundled_food_fts USING fts5(name, content='bundled_food', content_rowid='rowid',
-            tokenize="unicode61 remove_diacritics 2");
     """)
     rows = []
     for r in df.itertuples(index=False):
@@ -106,19 +110,74 @@ def write(df: pd.DataFrame, out: Path):
                      r.kcal_100, r.protein_g_100, r.carbs_g_100, r.fat_g_100,
                      *(None if pd.isna(getattr(r, c)) else float(getattr(r, c))
                        for c in ("fiber_g_100", "sugar_g_100", "sat_fat_g_100", "sodium_mg_100", "caffeine_mg_100"))))
-    con.executemany("INSERT INTO bundled_food VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", rows)
-    con.execute("INSERT INTO bundled_food_fts(bundled_food_fts) VALUES ('rebuild')")
-    con.commit(); con.close()
+    con.executemany("INSERT INTO bundled_food VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NULL)", rows)
     print(f"wrote {len(rows)} foods → {out}")
+    apply_names_hr(con, names_hr)
+    con.close()
+
+def load_names_hr(path: Path) -> dict[str, str]:
+    """fdc_id → Croatian name. Blank names are skipped (reported as missing); duplicate ids are an error."""
+    names: dict[str, str] = {}
+    with path.open(encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        if reader.fieldnames != ["fdc_id", "name_hr"]:
+            sys.exit(f"{path}: expected header 'fdc_id,name_hr', got {reader.fieldnames}")
+        for row in reader:
+            fdc_id, name = row["fdc_id"].strip(), (row["name_hr"] or "").strip()
+            if fdc_id in names:
+                sys.exit(f"{path}: duplicate fdc_id {fdc_id}")
+            if name:
+                names[fdc_id] = name
+    return names
+
+def apply_names_hr(con: sqlite3.Connection, names: dict[str, str]):
+    """Writes `name_hr` (adding the column to older indexes) and rebuilds the FTS table over name + name_hr, so
+    both the English and the Croatian name are searchable. Fails on CSV ids the index doesn't have."""
+    known = {r[0] for r in con.execute("SELECT source_id FROM bundled_food")}
+    unknown = sorted(set(names) - known)
+    if unknown:
+        sys.exit(f"Croatian names CSV: {len(unknown)} fdc_id(s) not in the index: {', '.join(unknown)}")
+    columns = {r[1] for r in con.execute("PRAGMA table_info(bundled_food)")}
+    if "name_hr" not in columns:
+        con.execute("ALTER TABLE bundled_food ADD COLUMN name_hr TEXT")
+    con.execute("UPDATE bundled_food SET name_hr = NULL")
+    con.executemany("UPDATE bundled_food SET name_hr = ? WHERE source_id = ?", [(n, i) for i, n in names.items()])
+    con.executescript("""
+        DROP TABLE IF EXISTS bundled_food_fts;
+        CREATE VIRTUAL TABLE bundled_food_fts USING fts5(name, name_hr, content='bundled_food', content_rowid='rowid',
+            tokenize="unicode61 remove_diacritics 2");
+        INSERT INTO bundled_food_fts(bundled_food_fts) VALUES ('rebuild');
+    """)
+    con.commit()
+    con.execute("VACUUM")
+    missing = con.execute("SELECT source_id, name FROM bundled_food WHERE name_hr IS NULL ORDER BY name").fetchall()
+    print(f"Croatian names: {len(known) - len(missing)}/{len(known)} foods")
+    if missing:
+        print(f"{len(missing)} food(s) without a Croatian name (add them to the Croatian names CSV):")
+        for fdc_id, name in missing:
+            print(f"  {fdc_id},{name}")
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--raw", type=Path, nargs="+", required=True, help="one or more unzipped FDC CSV folders")
+    ap.add_argument("--raw", type=Path, nargs="+", help="one or more unzipped FDC CSV folders")
     ap.add_argument("--allowlist", type=Path)
-    ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--out", type=Path)
+    ap.add_argument("--names-hr", type=Path, default=DEFAULT_NAMES_HR,
+                    help="CSV fdc_id,name_hr with the Croatian names (default: tools/food_names_hr.csv)")
+    ap.add_argument("--apply-names-hr", type=Path, metavar="SQLITE",
+                    help="only apply --names-hr to this already built index, in place (no raw data needed)")
     a = ap.parse_args()
+    names_hr = load_names_hr(a.names_hr)
+    if a.apply_names_hr:
+        if not a.apply_names_hr.exists():
+            sys.exit(f"no index at {a.apply_names_hr}")
+        apply_names_hr(sqlite3.connect(a.apply_names_hr), names_hr)
+        sys.exit(0)
+    if not a.raw or not a.out:
+        ap.error("--raw and --out are required to build (or use --apply-names-hr)")
+    import pandas as pd
     df = load(a.raw)
     df = apply_allowlist(df, a.allowlist)
     if df.empty:
         sys.exit("no foods matched")
-    write(df, a.out)
+    write(df, a.out, names_hr)

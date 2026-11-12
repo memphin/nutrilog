@@ -147,7 +147,9 @@ struct TotalEnergyTests {
         #expect(burned?.totalKcal == 2070)
         #expect(burned?.breakdown(.kcal) == "Active \(EnergyUnit.kcal.format(420)) · Resting \(EnergyUnit.kcal.format(1650))")
         #expect(snapshot.state(of: .totalEnergy, access: .requested, isFirstSync: false) == .ready)
-        #expect(snapshot.accessibilityLabel(of: .totalEnergy, state: .ready) == "Total energy, 2,070 calories, active 420, resting 1,650")
+        #expect(snapshot
+            .accessibilityLabel(of: .totalEnergy, state: .ready, locale: .dashboardEnglish) ==
+            "Total energy, 2,070 calories, active 420, resting 1,650")
     }
 
     @Test func `with one part known it is shown under its own name, never as the total`() {
@@ -156,12 +158,12 @@ struct TotalEnergyTests {
         #expect(activeOnly.energyBurned?.activeKcal == 420)
         #expect(activeOnly.state(of: .totalEnergy, access: .requested, isFirstSync: false) == .ready)
         #expect(activeOnly.energyBurned?.breakdown(.kcal) == "Active \(EnergyUnit.kcal.format(420)) · Resting unknown")
-        #expect(activeOnly.accessibilityLabel(of: .totalEnergy, state: .ready)
+        #expect(activeOnly.accessibilityLabel(of: .totalEnergy, state: .ready, locale: .dashboardEnglish)
             == "Total energy, active 420 calories, resting energy unknown, no total yet")
 
         let restingOnly = snapshot(active: nil, basal: 1650)
         #expect(restingOnly.energyBurned?.totalKcal == nil)
-        #expect(restingOnly.accessibilityLabel(of: .totalEnergy, state: .ready)
+        #expect(restingOnly.accessibilityLabel(of: .totalEnergy, state: .ready, locale: .dashboardEnglish)
             == "Total energy, active energy unknown, resting 1,650 calories, no total yet")
     }
 

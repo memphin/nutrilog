@@ -90,7 +90,7 @@ struct RemoteFoodCopyTests {
         let tablet = ServingSize(label: "1 tablet (500 mg)", amount: 0.5)
         let detail = FoodDetail(draft: draft(basis: .perServing, serving: tablet, servingDescription: "1 tablet (500 mg)"))
         #expect(detail.food.notes == FoodDetail.perServingUnusableWeightNote(tablet, isLiquid: false))
-        #expect(detail.food.notes?.contains("(0.5 g)") == true)
+        #expect(detail.food.notes?.contains("(\(NumberFormatting.compact(0.5, locale: .current)) g)") == true)
         #expect(detail.isPerServingPlaceholder)
         #expect(detail.servings.first?.label == "1 tablet (500 mg)")
     }

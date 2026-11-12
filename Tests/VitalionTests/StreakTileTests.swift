@@ -101,9 +101,9 @@ struct StreakTileTests {
         var data = DashboardData(today: today)
         data.stepGoal = 5000
         data.metrics = [record(0, steps: 6000), record(1, steps: 6000)]
-        let label = DashboardSnapshot(data).accessibilityLabel(of: .steps, state: .ready)
+        let label = DashboardSnapshot(data).accessibilityLabel(of: .steps, state: .ready, locale: .dashboardEnglish)
         #expect(label.hasSuffix(", 2-day streak"))
         data.metrics = [record(0, steps: 100)]
-        #expect(!DashboardSnapshot(data).accessibilityLabel(of: .steps, state: .ready).contains("streak"))
+        #expect(!DashboardSnapshot(data).accessibilityLabel(of: .steps, state: .ready, locale: .dashboardEnglish).contains("streak"))
     }
 }

@@ -38,10 +38,12 @@ private struct FoodsListContent: View {
         List {
             if model.foods.isEmpty, model.meals.isEmpty {
                 EmptyStateView(
-                    "No foods yet",
+                    String(localized: "No foods yet"),
                     systemImage: "fork.knife",
-                    message: "Create foods for things you eat often — local specialties, home cooking, packaged products — "
-                        + "and combine foods into meals.",
+                    message: String(localized: """
+                    Create foods for things you eat often — local specialties, home cooking, packaged products — and \
+                    combine foods into meals.
+                    """),
                 )
                 .listRowBackground(Color.clear)
             }
@@ -126,11 +128,11 @@ private struct FoodsListContent: View {
         Menu("Meal from today", systemImage: "calendar.badge.plus") {
             ForEach(model.todaySlots) { item in
                 Button {
-                    mealName = item.slot.name
+                    mealName = item.slot.displayName
                     savingSlot = item.slot
                 } label: {
-                    Text(item.slot.name)
-                    Text(item.foodCount == 0 ? "Nothing logged" : "\(item.foodCount) \(item.foodCount == 1 ? "food" : "foods")")
+                    Text(item.slot.displayName)
+                    Text(item.foodCount == 0 ? "Nothing logged" : "\(item.foodCount) foods")
                 }
                 .disabled(item.foodCount == 0)
             }

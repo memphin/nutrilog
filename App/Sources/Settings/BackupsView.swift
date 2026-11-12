@@ -15,11 +15,11 @@ struct BackupsView: View {
                 Button("Back up now", systemImage: "externaldrive.badge.plus") { backUpNow() }
                     .disabled(environment.backups == nil)
             } footer: {
-                Text(
-                    "Vitalion saves a full backup on this iPhone about once a week and keeps the newest \(LocalBackups.keep). "
-                        + "They protect against a bad import or a mistake — not against losing the phone. For that, share a "
-                        + "backup or use Export & import.",
-                )
+                Text("""
+                Vitalion saves a full backup on this iPhone about once a week and keeps the newest \(LocalBackups.keep). \
+                They protect against a bad import or a mistake — not against losing the phone. For that, share a \
+                backup or use Export & import.
+                """)
             }
             Section("Backups on this iPhone") {
                 if backups.isEmpty {
@@ -60,11 +60,11 @@ struct BackupsView: View {
             Button("Replace all my data", role: .destructive) { restore() }
             Button("Cancel", role: .cancel) { restoring = nil }
         } message: {
-            Text(
-                "Everything on this iPhone is replaced with the backup from "
-                    + "\(restoring?.createdAt.formatted(date: .abbreviated, time: .shortened) ?? "then"). "
-                    + "A backup of the current data is made first.",
-            )
+            if let date = restoring?.createdAt.formatted(date: .abbreviated, time: .shortened) {
+                Text("Everything on this iPhone is replaced with the backup from \(date). A backup of the current data is made first.")
+            } else {
+                Text("Everything on this iPhone is replaced with the backup from then. A backup of the current data is made first.")
+            }
         }
         .alert("Backups", isPresented: Binding(get: { message != nil }, set: {
             if !$0 {
@@ -84,7 +84,7 @@ struct BackupsView: View {
             try environment.backups?.backupNow()
             reload()
         } catch {
-            message = "Couldn't write the backup: \(error.localizedDescription)"
+            message = String(localized: "Couldn't write the backup: \(error.localizedDescription)")
         }
     }
 
@@ -106,11 +106,11 @@ struct BackupsView: View {
             let summary = try store.restoreKeepingCurrent(backup).summary
             try environment.dataDidChangeExternally()
             environment.refreshStoredWeightTrend()
-            message = "Restored \(summary.inserted) records. The data it replaced is the newest backup in the list."
+            message = String(localized: "Restored \(summary.inserted) records. The data it replaced is the newest backup in the list.")
         } catch DataPortability.ImportError.newerSchema {
-            message = "This backup was made by a newer version of Vitalion. Update the app first."
+            message = String(localized: "This backup was made by a newer version of Vitalion. Update the app first.")
         } catch {
-            message = "Couldn't restore: \(error.localizedDescription)"
+            message = String(localized: "Couldn't restore: \(error.localizedDescription)")
         }
         reload()
     }

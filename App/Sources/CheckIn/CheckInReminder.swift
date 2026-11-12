@@ -54,8 +54,8 @@ struct LocalNotificationCheckInReminder: CheckInReminderScheduling {
         let center = UNUserNotificationCenter.current()
         center.removePendingNotificationRequests(withIdentifiers: [Self.identifier])
         let content = UNMutableNotificationContent()
-        content.title = "Weekly check-in"
-        content.body = "See how your weight moved this week and review your calorie target."
+        content.title = String(localized: "Weekly check-in")
+        content.body = String(localized: "See how your weight moved this week and review your calorie target.")
         content.sound = .default
         let trigger = UNCalendarNotificationTrigger(dateMatching: Self.components(weekday: weekday, hour: hour), repeats: true)
         try await center.add(UNNotificationRequest(identifier: Self.identifier, content: content, trigger: trigger))

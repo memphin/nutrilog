@@ -16,6 +16,15 @@ python build_food_index.py --raw data/raw/foundation data/raw/sr_legacy \
   --allowlist allowlist.txt --out ../Resources/FoodIndex/bundled_foods.sqlite
 ```
 
+Croatian names: `food_names_hr.csv` (`fdc_id,name_hr`, one row per bundled food) is the source of truth for the
+`name_hr` column. The build applies it (`--names-hr`, default `tools/food_names_hr.csv`), fails on an `fdc_id` that
+isn't in the index and lists foods without a Croatian name. The raw USDA dumps aren't kept, so after editing the CSV
+apply it to the committed index in place (needs no pandas):
+
+```bash
+python3 tools/build_food_index.py --apply-names-hr Resources/FoodIndex/bundled_foods.sqlite
+```
+
 The allowlist is a plain text file, one FDC description substring or exact `fdc_id` per line. Start small (~300 foods) and grow it from real usage ("not found" logs).
 
 Filtering rules (in the script): SR Legacy brand-name items (CAPS brands) and regional variants are dropped unless

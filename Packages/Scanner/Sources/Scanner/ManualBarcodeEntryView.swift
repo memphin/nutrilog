@@ -18,7 +18,7 @@
         public var body: some View {
             Form {
                 Section {
-                    TextField("Barcode digits", text: $text)
+                    TextField(String(localized: "Barcode digits", bundle: .module), text: $text)
                         .keyboardType(.numberPad)
                         .textContentType(.none)
                         .autocorrectionDisabled()
@@ -30,16 +30,16 @@
                     if let message = validation.message {
                         Text(message).foregroundStyle(.red)
                     } else {
-                        Text("Type the 8, 12, 13 or 14 digits printed under the barcode.")
+                        Text("Type the 8, 12, 13 or 14 digits printed under the barcode.", bundle: .module)
                     }
                 }
                 Section {
-                    Button("Use Barcode", action: submit)
+                    Button(String(localized: "Use Barcode", bundle: .module), action: submit)
                         .disabled(validation.barcode == nil)
                         .accessibilityIdentifier("manualBarcodeSubmit")
                 }
             }
-            .navigationTitle("Enter Barcode")
+            .navigationTitle(Text("Enter Barcode", bundle: .module))
             .onAppear { isFocused = true }
         }
 

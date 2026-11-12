@@ -88,7 +88,8 @@ struct HealthSettingsView: View {
                 } else {
                     LabeledContent(
                         "Last updated",
-                        value: environment.healthSync?.lastSyncedAt?.formatted(date: .abbreviated, time: .shortened) ?? "Never",
+                        value: environment.healthSync?.lastSyncedAt?.formatted(date: .abbreviated, time: .shortened)
+                            ?? String(localized: "Never"),
                     )
                 }
                 Button("Update now") {
@@ -113,7 +114,7 @@ struct HealthSettingsView: View {
                 LabeledContent(type.title) {
                     switch model.statuses[type] {
                     case let .found(source):
-                        Text(source ?? "Found")
+                        Text(source ?? String(localized: "Found", comment: "Apple Health has data of this type (no source app known)."))
                     case .noData:
                         Text(HealthKitClient.noDataMessage).multilineTextAlignment(.trailing)
                     case nil:
@@ -124,10 +125,10 @@ struct HealthSettingsView: View {
         } header: {
             Text("Last 90 days")
         } footer: {
-            Text(
-                "Apple Health doesn't tell apps whether you allowed reading a type, "
-                    + "so a type without data may simply not be shared with Vitalion.",
-            )
+            Text("""
+            Apple Health doesn't tell apps whether you allowed reading a type, so a type without data may simply not be \
+            shared with Vitalion.
+            """)
         }
     }
 
@@ -169,11 +170,15 @@ struct HealthWriteSection: View {
         }
     }
 
-    static let onFooter = "Nutrients of each diary entry and the water you log are written to Apple Health "
-        + "and kept up to date when you edit or delete them."
-    static let offFooter = "Nothing is written to Apple Health; samples written earlier stay there, and entries you "
-        + "change now keep their old values in Health. When you turn this back on, new changes are written again and "
-        + "samples of entries deleted meanwhile are removed."
+    static let onFooter = String(localized: """
+    Nutrients of each diary entry and the water you log are written to Apple Health and kept up to date when you edit \
+    or delete them.
+    """)
+    static let offFooter = String(localized: """
+    Nothing is written to Apple Health; samples written earlier stay there, and entries you change now keep their old \
+    values in Health. When you turn this back on, new changes are written again and samples of entries deleted \
+    meanwhile are removed.
+    """)
 
     private func retry() {
         Task { @MainActor in

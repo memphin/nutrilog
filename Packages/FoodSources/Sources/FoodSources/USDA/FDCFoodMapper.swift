@@ -80,8 +80,9 @@ public enum FDCFoodMapper {
             missingNutrients: values.missing,
             isLiquid: isLiquid,
             serving: serving.map { serving in
+                // A label of our own (no household text) is display text: the number follows the user's locale.
                 ServingSize(
-                    label: household ?? "\(NumberFormatting.compact(serving.amount)) \(serving.unit.symbol)",
+                    label: household ?? "\(NumberFormatting.compact(serving.amount, locale: .current)) \(serving.unit.symbol)",
                     amount: serving.amount,
                 )
             },

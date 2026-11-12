@@ -51,11 +51,11 @@ private struct DashboardContent: View {
                     }
                     if model.layout.visible.isEmpty {
                         EmptyStateView(
-                            "All tiles are hidden",
+                            String(localized: "All tiles are hidden"),
                             systemImage: "square.grid.2x2",
                             message: model.isEditing
-                                ? "Tap + on a hidden tile below to show it again."
-                                : "Edit Today to show them again, or use Settings → Dashboard.",
+                                ? String(localized: "Tap + on a hidden tile below to show it again.")
+                                : String(localized: "Edit Today to show them again, or use Settings → Dashboard."),
                         )
                         if !model.isEditing {
                             Button("Edit Today") { model.isEditing = true }
@@ -158,7 +158,7 @@ struct DashboardTileView: View {
     }
 
     private var detailHint: String {
-        tile == .caffeine ? "Shows the caffeine curve and today's drinks" : "Shows the last 14 days"
+        tile == .caffeine ? String(localized: "Shows the caffeine curve and today's drinks") : String(localized: "Shows the last 14 days")
     }
 
     @ViewBuilder private func card(now: Date) -> some View {
@@ -270,7 +270,7 @@ private struct TileContent: View {
         case .steps:
             // The goal itself is not written on the tile; the colour says how the day compares with it.
             ValueText(
-                snapshot.steps.map { $0.formatted() } ?? "—", unit: "steps",
+                snapshot.steps.map { $0.formatted() } ?? "—", unit: String(localized: "steps", comment: "Unit under the step count"),
                 color: snapshot.steps.map { GoalColor.steps(Double($0), goal: snapshot.stepGoal) } ?? .primary,
             )
         case .sleep:
@@ -365,9 +365,11 @@ private struct TotalEnergyContent: View {
                 }
             } else {
                 if let active = burned.activeKcal {
-                    ValueText(number(active), unit: "\(unit.symbol) active")
+                    let caption = String(localized: "\(unit.symbol) active", comment: "Energy unit, e.g. “kcal active”")
+                    ValueText(number(active), unit: caption)
                 } else if let resting = burned.restingKcal {
-                    ValueText(number(resting), unit: "\(unit.symbol) resting")
+                    let caption = String(localized: "\(unit.symbol) resting", comment: "Energy unit, e.g. “kcal resting”")
+                    ValueText(number(resting), unit: caption)
                 }
                 Text(burned.activeKcal == nil ? "No active energy yet — no total" : "No resting energy yet — no total")
                     .font(.footnote).foregroundStyle(.secondary)
@@ -405,7 +407,10 @@ private struct SleepTileContent: View {
         if let asleep = sleep?.asleepMin {
             ValueText(DashboardFormat.duration(asleep), unit: "", color: GoalColor.sleep(minutes: Double(asleep), goal: goalMin))
         } else if let inBed = sleep?.inBedMin {
-            ValueText(DashboardFormat.duration(inBed), unit: "in bed", color: GoalColor.sleep(minutes: Double(inBed), goal: goalMin))
+            ValueText(
+                DashboardFormat.duration(inBed), unit: String(localized: "in bed"),
+                color: GoalColor.sleep(minutes: Double(inBed), goal: goalMin),
+            )
         }
     }
 }
@@ -425,7 +430,7 @@ private struct BaselineContent: View {
                 Text("7-day avg \(comparison.average7.formatted(.number.precision(.fractionLength(0)))) \(unit)")
                     .font(.footnote).foregroundStyle(.secondary)
                 if showsDeviation {
-                    Text(comparison.deviationText ?? "30-day average after a week of data")
+                    Text(comparison.deviationText ?? String(localized: "30-day average after a week of data"))
                         .font(.footnote).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }

@@ -52,6 +52,9 @@ struct DiaryRepositoryTests {
         #expect(quick.isQuickAdd)
         #expect(quick.foodID == nil)
         #expect(quick.displayName == "Quick add")
+        #expect(QuickAddName.isDefault(quick.displayName))
+        #expect(QuickAddName.isDefault("Quick add")) // stored in English before a language change
+        #expect(!QuickAddName.isDefault("Late snack"))
 
         let diary = try f.diary.diary(for: d)
         #expect(diary.sections.map(\.slot.id) == ["breakfast", "lunch", "dinner", "snacks"])
@@ -101,7 +104,8 @@ struct DiaryRepositoryTests {
         let updated = try #require(try f.diary.entry(id: e.id))
         #expect(updated.grams == 150)
         #expect(updated.kcal == 525)
-        #expect(updated.servingLabel == "1.5 × plate")
+        // The count is written in the user's locale ("1.5" / "1,5").
+        #expect(updated.servingLabel == "\(NumberFormatting.compact(1.5, locale: .current)) × plate")
     }
 
     @Test func `zero or negative amounts are rejected`() throws {

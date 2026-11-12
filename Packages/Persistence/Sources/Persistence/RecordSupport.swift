@@ -106,22 +106,38 @@ public enum PersistenceError: Error, Equatable, Sendable {
     case validation(String)
 }
 
+extension PersistenceError {
+    /// Validation errors thrown from several repositories. Messages are written lowercase without a period, like every
+    /// `validation` message: ``errorDescription`` makes a sentence of them.
+    static var amountNotPositive: PersistenceError {
+        .validation(String(localized: "amount must be greater than zero", bundle: .module))
+    }
+
+    static var quickAddHasNoQuantity: PersistenceError {
+        .validation(String(localized: "quick-add entries have no quantity", bundle: .module))
+    }
+
+    static var nothingToScale: PersistenceError {
+        .validation(String(localized: "entry has no amount to scale", bundle: .module))
+    }
+}
+
 /// Alerts show `localizedDescription`; without this they read "The operation couldn't be completed. (… error 3.)".
 extension PersistenceError: LocalizedError {
     public var errorDescription: String? {
         switch self {
-        case .notFound: "That item no longer exists."
-        case .invalidBarcode: "That barcode isn't valid."
-        case .barcodeInUse: "That barcode is already used by another food."
+        case .notFound: String(localized: "That item no longer exists.", bundle: .module)
+        case .invalidBarcode: String(localized: "That barcode isn't valid.", bundle: .module)
+        case .barcodeInUse: String(localized: "That barcode is already used by another food.", bundle: .module)
         case let .validation(message): Self.sentence(message)
         }
     }
 
-    /// The authored message, capitalized and ending in a period ("amount must be greater than zero" reads
-    /// "Amount must be greater than zero.").
+    /// The authored message (localized where it is thrown), capitalized and ending in a period ("amount must be
+    /// greater than zero" reads "Amount must be greater than zero.").
     private static func sentence(_ message: String) -> String {
         let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let first = trimmed.first else { return "That isn't valid." }
+        guard let first = trimmed.first else { return String(localized: "That isn't valid.", bundle: .module) }
         let capitalized = first.uppercased() + trimmed.dropFirst()
         return capitalized.last.map { ".!?".contains($0) } == true ? capitalized : capitalized + "."
     }

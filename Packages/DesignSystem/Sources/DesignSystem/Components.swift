@@ -34,13 +34,18 @@ public struct EnergyRing: View {
                         .font(NL.Typography.number)
                         .foregroundStyle(remaining < 0 ? NL.Palette.over : .primary)
                         .contentTransition(.numericText())
-                    Text(remaining < 0 ? "\(unit) over" : "\(unit) left")
-                        .font(NL.Typography.caption)
-                        .foregroundStyle(.secondary)
+                    Text(
+                        remaining < 0
+                            ? String(localized: "\(unit) over", bundle: .module, comment: "Energy ring caption, e.g. “kcal over”")
+                            : String(localized: "\(unit) left", bundle: .module, comment: "Energy ring caption, e.g. “kcal left”"),
+                    )
+                    .font(NL.Typography.caption)
+                    .foregroundStyle(.secondary)
                 } else {
                     Text(consumed.formatted(.number.precision(.fractionLength(0))))
                         .font(NL.Typography.number)
-                    Text("\(unit) eaten").font(NL.Typography.caption).foregroundStyle(.secondary)
+                    Text(String(localized: "\(unit) eaten", bundle: .module, comment: "Energy ring caption, e.g. “kcal eaten”"))
+                        .font(NL.Typography.caption).foregroundStyle(.secondary)
                 }
             }
             .minimumScaleFactor(0.6)
@@ -82,9 +87,9 @@ public struct MacroBar: View {
                 Spacer(minLength: NL.Spacing.xs)
                 Group {
                     if let target {
-                        Text("\(Self.text(value)) / \(Self.text(target)) \(unit)")
+                        Text(verbatim: "\(Self.text(value)) / \(Self.text(target)) \(unit)")
                     } else {
-                        Text("\(Self.text(value)) \(unit)")
+                        Text(verbatim: "\(Self.text(value)) \(unit)")
                     }
                 }
                 .font(NL.Typography.smallNumber)
@@ -165,7 +170,7 @@ public struct SourceBadge: View {
 
         public var title: String {
             switch self {
-            case .custom: "Mine"
+            case .custom: String(localized: "Mine", bundle: .module, comment: "Source badge on the user's own foods")
             case .bundled: "USDA"
             case .off: "OFF"
             case .usda: "USDA"
@@ -174,7 +179,7 @@ public struct SourceBadge: View {
 
         public var accessibilityTitle: String {
             switch self {
-            case .custom: "Your food"
+            case .custom: String(localized: "Your food", bundle: .module)
             case .bundled, .usda: "USDA FoodData Central"
             case .off: "Open Food Facts"
             }
@@ -229,13 +234,13 @@ public struct MacroLine: View {
         .font(NL.Typography.caption)
         .monospacedDigit()
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Protein \(A11y.format(protein)) grams, carbs \(A11y.format(carbs)) grams, fat \(A11y.format(fat)) grams")
+        .accessibilityLabel(A11y.macros(protein: protein, carbs: carbs, fat: fat))
     }
 
     private func item(_ macro: Macro, _ value: Double) -> some View {
         HStack(spacing: NL.Spacing.xxs) {
             Circle().fill(macro.color).frame(width: 6, height: 6)
-            Text("\(macro.shortTitle) \(NutrientRow.format(value, unit: "g"))")
+            Text(verbatim: "\(macro.shortTitle) \(NutrientRow.format(value, unit: "g"))")
                 .foregroundStyle(.secondary)
         }
     }
@@ -276,12 +281,12 @@ public struct ErrorStateView: View {
 
     public var body: some View {
         ContentUnavailableView {
-            Label("Something went wrong", systemImage: "exclamationmark.triangle")
+            Label(String(localized: "Something went wrong", bundle: .module), systemImage: "exclamationmark.triangle")
         } description: {
             Text(message)
         } actions: {
             if let retry {
-                Button("Try again", action: retry).buttonStyle(.borderedProminent)
+                Button(String(localized: "Try again", bundle: .module), action: retry).buttonStyle(.borderedProminent)
             }
         }
     }

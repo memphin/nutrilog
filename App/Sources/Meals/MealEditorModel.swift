@@ -116,19 +116,19 @@ final class MealEditorModel {
     var validationErrors: [String] {
         var errors: [String] = []
         if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors.append("Give the meal a name.")
+            errors.append(String(localized: "Give the meal a name."))
         }
         if rows.isEmpty {
-            errors.append("Add at least one food.")
+            errors.append(String(localized: "Add at least one food."))
         } else if let message = amountError {
             errors.append(message)
         }
         return errors
     }
 
-    static let missingAmountMessage = "Every food needs an amount greater than zero."
+    static let missingAmountMessage = String(localized: "Every food needs an amount greater than zero.")
     static var tooLargeAmountMessage: String {
-        "An amount can't be more than \(EntryLimits.maxAmount.formatted(.number.precision(.fractionLength(0))))."
+        String(localized: "An amount can't be more than \(EntryLimits.maxAmount.formatted(.number.precision(.fractionLength(0)))).")
     }
 
     /// Why the rows can't be saved; nil when every amount is valid. A missing or zero amount comes first: it is

@@ -50,7 +50,11 @@ struct SnapshotProvider: TimelineProvider {
     /// Now, and again just after midnight (a new, empty day). The app reloads the timeline whenever the data changes.
     func getTimeline(in _: Context, completion: @escaping (Timeline<SnapshotEntry>) -> Void) {
         let now = Date()
-        let midnight = Calendar.current.nextDate(after: now, matching: DateComponents(hour: 0, minute: 0, second: 5), matchingPolicy: .nextTime)
+        let midnight = Calendar.current.nextDate(
+            after: now,
+            matching: DateComponents(hour: 0, minute: 0, second: 5),
+            matchingPolicy: .nextTime,
+        )
             ?? now.addingTimeInterval(6 * 3600)
         completion(Timeline(entries: [entry(at: now), entry(at: midnight)], policy: .after(midnight.addingTimeInterval(60))))
     }
@@ -105,11 +109,29 @@ extension WidgetSnapshot {
     /// "640 kcal left", "120 kcal over", "1,380 kcal" without a target.
     var energyStatus: String {
         guard let remainingKcal else { return "\(energy(kcal)) \(energyUnit)" }
-        return remainingKcal >= 0 ? "\(energy(remainingKcal)) \(energyUnit) left" : "\(energy(-remainingKcal)) \(energyUnit) over"
+        if remainingKcal >= 0 {
+            let left = energy(remainingKcal)
+            return String(localized: "\(left) \(energyUnit) left", comment: "Energy left today, e.g. “640 kcal left”")
+        }
+        let over = energy(-remainingKcal)
+        return String(localized: "\(over) \(energyUnit) over", comment: "Energy over the target, e.g. “120 kcal over”")
     }
 
+    /// "7 h 05": hours and two-digit minutes, digits in the user's locale.
     var sleepText: String? {
-        sleepMin.map { "\($0 / 60) h \(String(format: "%02d", $0 % 60))" }
+        sleepMin.map { minutes in
+            let hours = minutes / 60
+            let rest = (minutes % 60).formatted(.number.precision(.integerLength(2)).grouping(.never))
+            return String(localized: "\(hours) h \(rest)", comment: "Sleep duration, hours and two-digit minutes, e.g. “7 h 05”")
+        }
+    }
+
+    /// The caption under the ring: the unit alone without a target, else "kcal left" / "kcal over".
+    var energyCaption: String {
+        guard remainingKcal != nil else { return energyUnit }
+        return isOverTarget
+            ? String(localized: "\(energyUnit) over", comment: "Caption under the remaining energy, e.g. “kcal over”")
+            : String(localized: "\(energyUnit) left", comment: "Caption under the remaining energy, e.g. “kcal left”")
     }
 }
 
@@ -165,7 +187,7 @@ struct CaloriesWidgetView: View {
                         Text(snapshot.energy(abs(snapshot.remainingKcal ?? snapshot.kcal)))
                             .font(.system(.title2, design: .rounded).weight(.bold))
                             .minimumScaleFactor(0.6)
-                        Text(snapshot.remainingKcal == nil ? snapshot.energyUnit : snapshot.isOverTarget ? "\(snapshot.energyUnit) over" : "\(snapshot.energyUnit) left")
+                        Text(snapshot.energyCaption)
                             .font(.caption2).foregroundStyle(.secondary)
                     }
                     .padding(14)
@@ -182,7 +204,7 @@ struct CaloriesWidgetView: View {
 }
 
 struct MacroBarView: View {
-    let title: String
+    let title: LocalizedStringKey
     let value: Double
     let target: Double?
     let color: Color
@@ -204,7 +226,7 @@ struct MacroBarView: View {
             .frame(height: 6)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(title)
+        .accessibilityLabel(Text(title))
         .accessibilityValue(target.map { "\(wholeNumber(value)) of \(wholeNumber($0)) grams" } ?? "\(wholeNumber(value)) grams")
     }
 
@@ -225,8 +247,12 @@ struct MacrosWidgetView: View {
                     VStack(spacing: 0) {
                         Text(snapshot.energy(abs(snapshot.remainingKcal ?? snapshot.kcal)))
                             .font(.system(.title3, design: .rounded).weight(.bold)).minimumScaleFactor(0.6)
-                        Text(snapshot.remainingKcal == nil ? snapshot.energyUnit : snapshot.isOverTarget ? "over" : "left")
-                            .font(.caption2).foregroundStyle(.secondary)
+                        Text(
+                            snapshot.remainingKcal == nil ? snapshot.energyUnit
+                                : snapshot.isOverTarget ? String(localized: "over", comment: "Energy over the target (widget caption)")
+                                : String(localized: "left", comment: "Energy left today (widget caption)"),
+                        )
+                        .font(.caption2).foregroundStyle(.secondary)
                     }
                     .padding(12)
                 }
@@ -256,7 +282,7 @@ struct MetricsWidgetView: View {
                 VStack(alignment: .leading, spacing: 1) {
                     Label(snapshot.energyStatus, systemImage: "flame").font(.headline)
                     Text([
-                        snapshot.steps.map { "\($0.formatted()) steps" },
+                        snapshot.steps.map { String(localized: "\($0) steps") },
                         snapshot.weightKg.map { "\($0.formatted(.number.precision(.fractionLength(1)))) kg" },
                     ].compactMap(\.self).joined(separator: " · "))
                     Text("Hydration \(wholeNumber(snapshot.waterMl)) / \(wholeNumber(snapshot.waterGoalMl)) ml")
@@ -271,10 +297,16 @@ struct MetricsWidgetView: View {
                     }
                     GridRow {
                         metric("bed.double", "Sleep", snapshot.sleepText ?? "—")
-                        metric("scalemass", "Weight", snapshot.weightKg.map { "\($0.formatted(.number.precision(.fractionLength(1)))) kg" } ?? "—")
+                        metric(
+                            "scalemass",
+                            "Weight",
+                            snapshot.weightKg.map { "\($0.formatted(.number.precision(.fractionLength(1)))) kg" } ?? "—",
+                        )
                     }
                     GridRow {
-                        metric("drop", "Hydration", "\(wholeNumber(snapshot.waterMl)) / \(wholeNumber(snapshot.waterGoalMl)) ml")
+                        let water = wholeNumber(snapshot.waterMl).formatted()
+                        let goal = wholeNumber(snapshot.waterGoalMl).formatted()
+                        metric("drop", "Hydration", "\(water) / \(goal) ml")
                             .gridCellColumns(2)
                     }
                 }
@@ -284,7 +316,7 @@ struct MetricsWidgetView: View {
         }
     }
 
-    private func metric(_ image: String, _ title: String, _ value: String) -> some View {
+    private func metric(_ image: String, _ title: LocalizedStringKey, _ value: String) -> some View {
         HStack(spacing: 6) {
             Image(systemName: image).foregroundStyle(.secondary).frame(width: 18)
             VStack(alignment: .leading, spacing: 0) {

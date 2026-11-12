@@ -26,7 +26,7 @@ struct ServingWeightPrompt: View {
     @FocusState private var focused: Bool
 
     private var servingLabel: String {
-        detail.servings.first { $0.id == detail.food.defaultServingID }?.label ?? "1 serving"
+        detail.servings.first { $0.id == detail.food.defaultServingID }?.label ?? String(localized: "1 serving")
     }
 
     var body: some View {
@@ -43,10 +43,10 @@ struct ServingWeightPrompt: View {
                 } header: {
                     Text("How much does “\(servingLabel)” weigh?")
                 } footer: {
-                    Text(
-                        "\(detail.food.name) only lists nutrition per serving. With the weight, Vitalion stores values "
-                            + "per 100 \(detail.food.baseUnit.symbol) so you can log any amount. Skip to log by servings only.",
-                    )
+                    Text("""
+                    \(detail.food.name) only lists nutrition per serving. With the weight, Vitalion stores values \
+                    per 100 \(detail.food.baseUnit.symbol) so you can log any amount. Skip to log by servings only.
+                    """)
                 }
                 if let errorMessage {
                     Section {

@@ -54,7 +54,8 @@ struct TrendsView: View {
                 case let .success(estimate):
                     Button {
                         explaining = CheckInFact(
-                            kind: .estimate, title: "Estimated maintenance", value: environment.energyUnit.format(estimate.kcal),
+                            kind: .estimate, title: String(localized: "Estimated maintenance"),
+                            value: environment.energyUnit.format(estimate.kcal),
                             explanation: CheckInModel.estimateExplanation(estimate, unit: environment.energyUnit),
                         )
                     } label: {
@@ -67,10 +68,14 @@ struct TrendsView: View {
                         Text("Not enough data yet").font(NL.Typography.number)
                         Text(reason.explanation).font(.footnote).foregroundStyle(.secondary)
                         if let baseline = snapshot.baselineKcal {
-                            Text(
-                                "\(snapshot.baselineIsMeasured ? "Health energy average" : "Formula estimate") meanwhile: "
-                                    + environment.energyUnit.format(baseline),
-                            )
+                            let baselineText = environment.energyUnit.format(baseline)
+                            Group {
+                                if snapshot.baselineIsMeasured {
+                                    Text("Health energy average meanwhile: \(baselineText)")
+                                } else {
+                                    Text("Formula estimate meanwhile: \(baselineText)")
+                                }
+                            }
                             .font(.footnote).foregroundStyle(.secondary)
                         }
                     }
@@ -127,12 +132,11 @@ struct MaintenanceCard: View {
     /// (`TDEEEstimate.resolvedWeightMethod`, explained in full by `TDEEWeightMethod.explanation` in the sheet):
     /// "weigh-ins −0.3 kg / week" when it comes from a straight line through the weigh-ins.
     static func summary(_ estimate: TDEEEstimate) -> String {
-        let source = switch estimate.resolvedWeightMethod {
-        case .trend: "trend"
-        case .weighInLine: "weigh-ins"
+        let change = DashboardFormat.kgChange(estimate.weeklyChangeKg)
+        return switch estimate.resolvedWeightMethod {
+        case .trend: String(localized: "\(estimate.loggedDays) of \(estimate.windowDays) days logged · trend \(change) / week")
+        case .weighInLine: String(localized: "\(estimate.loggedDays) of \(estimate.windowDays) days logged · weigh-ins \(change) / week")
         }
-        return "\(estimate.loggedDays) of \(estimate.windowDays) days logged · \(source) "
-            + "\(DashboardFormat.kgChange(estimate.weeklyChangeKg)) / week"
     }
 }
 

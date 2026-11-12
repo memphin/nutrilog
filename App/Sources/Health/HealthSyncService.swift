@@ -276,7 +276,7 @@ final class HealthSyncService {
             lastSyncedAt = finished
             phase = .idle
         } catch {
-            phase = .failed("Couldn't read Apple Health: \(error.localizedDescription)")
+            phase = .failed(String(localized: "Couldn't read Apple Health: \(error.localizedDescription)"))
         }
     }
 }

@@ -133,6 +133,7 @@ struct HydrationDetailView: View {
         } else {
             AnyShapeStyle(.tertiary)
         }
+        let none = String(localized: "none", comment: "No drinks that day (VoiceOver)")
         return LabeledContent(Format.day(row.day, today: model.data.today)) {
             HStack(spacing: NL.Spacing.xs) {
                 Text(row.value ?? "—").foregroundStyle(style)
@@ -142,15 +143,18 @@ struct HydrationDetailView: View {
             }
             .monospacedDigit()
         }
-        .accessibilityValue([row.value ?? "none", row.detail].compactMap(\.self).joined(separator: " "))
+        .accessibilityValue([row.value ?? none, row.detail].compactMap(\.self).joined(separator: " "))
     }
 
     /// "How this works": what counts, the pace line, the gaps.
     static func explanation(gapThreshold: TimeInterval) -> String {
-        "Every drink counts: water, drinks in your diary and caffeine drinks. Oils, and foods you switch off as a "
-            + "drink, don't. The pace line runs from when you woke up (from Apple Health sleep, or your wake-up time) "
-            + "to an hour before bedtime. A gap is a stretch of more than \(HydrationStrip.gapDuration(gapThreshold)) "
-            + "without a drink, as set in Hydration settings."
+        let gap = HydrationStrip.gapDuration(gapThreshold)
+        return String(localized: """
+        Every drink counts: water, drinks in your diary and caffeine drinks. Oils, and foods you switch off as a \
+        drink, don't. The pace line runs from when you woke up (from Apple Health sleep, or your wake-up time) \
+        to an hour before bedtime. A gap is a stretch of more than \(gap) without a drink, as set in Hydration \
+        settings.
+        """)
     }
 }
 
@@ -158,10 +162,10 @@ struct HydrationDetailView: View {
 enum HydrationStatusText {
     static func line(_ status: HydrationStatus, now: Date) -> String {
         switch status {
-        case .goalReached: "Goal reached"
-        case .onPace: "On pace"
-        case let .behind(byMl): "\(DashboardFormat.ml(byMl)) behind pace"
-        case let .inGap(since): "No drink for \(HydrationStrip.gapDuration(now.timeIntervalSince(since)))"
+        case .goalReached: String(localized: "Goal reached")
+        case .onPace: String(localized: "On pace")
+        case let .behind(byMl): String(localized: "\(DashboardFormat.ml(byMl)) behind pace")
+        case let .inGap(since): String(localized: "No drink for \(HydrationStrip.gapDuration(now.timeIntervalSince(since)))")
         }
     }
 }

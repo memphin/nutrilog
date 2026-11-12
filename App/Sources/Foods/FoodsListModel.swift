@@ -24,6 +24,7 @@ final class FoodsListModel {
             slot.id
         }
     }
+
     let undo = UndoCenter()
 
     private let environment: AppEnvironment
@@ -59,7 +60,10 @@ final class FoodsListModel {
             let favorites = try repo.favorites().filter { fav in !mine.contains { $0.id == fav.id } }
             foods = (mine + favorites).sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
             todaySlots = try (environment.diary?.diary(for: environment.today).sections ?? []).map { section in
-                TodaySlot(slot: section.slot, foodCount: section.entries.count(where: { !$0.isQuickAdd && $0.foodID != nil && $0.grams > 0 }))
+                TodaySlot(
+                    slot: section.slot,
+                    foodCount: section.entries.count(where: { !$0.isQuickAdd && $0.foodID != nil && $0.grams > 0 }),
+                )
             }
         } catch {
             errorMessage = error.localizedDescription
@@ -70,7 +74,7 @@ final class FoodsListModel {
     func detail(for food: Food) -> FoodDetail? {
         do {
             guard let detail = try environment.foods?.detail(id: food.id) else {
-                errorMessage = "\(food.name) is no longer available."
+                errorMessage = String(localized: "\(food.name) is no longer available.")
                 reload()
                 return nil
             }
@@ -92,7 +96,7 @@ final class FoodsListModel {
             try repo.softDelete(id: food.id)
             reload()
             let generation = environment.dataGeneration
-            undo.offer("Deleted \(food.name)") { [weak self] in
+            undo.offer(String(localized: "Deleted \(food.name)")) { [weak self] in
                 guard let self, environment.dataGeneration == generation else { return }
                 restore(before)
             }
@@ -105,7 +109,11 @@ final class FoodsListModel {
     func saveMeal(from slot: MealSlot, name: String) {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         do {
-            try environment.meals?.createFromDiary(day: environment.today, slotID: slot.id, name: trimmed.isEmpty ? slot.name : trimmed)
+            try environment.meals?.createFromDiary(
+                day: environment.today,
+                slotID: slot.id,
+                name: trimmed.isEmpty ? slot.displayName : trimmed,
+            )
             reload()
         } catch {
             errorMessage = error.localizedDescription
@@ -126,7 +134,7 @@ final class FoodsListModel {
     func mealWasDeleted(_ meal: MealTemplateDetail) {
         reload()
         let generation = environment.dataGeneration
-        undo.offer("Deleted \(meal.template.name)") { [weak self] in
+        undo.offer(String(localized: "Deleted \(meal.template.name)")) { [weak self] in
             guard let self, environment.dataGeneration == generation else { return }
             do {
                 try environment.meals?.restore(id: meal.id)
@@ -157,7 +165,7 @@ final class FoodsListModel {
             try environment.foods?.save(detail) // the saved copy has no `deletedAt`, so this undeletes it
             reload()
         } catch let PersistenceError.barcodeInUse(code, _) {
-            errorMessage = "Couldn't restore \(detail.food.name): barcode \(code) now belongs to another food."
+            errorMessage = String(localized: "Couldn't restore \(detail.food.name): barcode \(code) now belongs to another food.")
         } catch {
             errorMessage = error.localizedDescription
         }

@@ -44,6 +44,20 @@ public struct DiaryDaySummary: Hashable, Sendable {
     }
 }
 
+/// The name a quick-add entry (diary or plan) gets when the user gives none. It is stored with the entry in the
+/// app's language at log time, so entries from before a language change keep the English (or other) name.
+public enum QuickAddName {
+    /// The default name in the app's current language.
+    public static var `default`: String {
+        String(localized: "Quick add", bundle: .module, comment: "Name of a quick-add entry the user didn't name")
+    }
+
+    /// Whether `name` is a default name (English or the current language) rather than one the user typed.
+    public static func isDefault(_ name: String) -> Bool {
+        name == "Quick add" || name == self.default
+    }
+}
+
 /// Diary entries: logging with nutrient snapshots, edits, moves, soft deletes, copy meal/day
 /// and day notes (backlog #3, #10, #12).
 public struct DiaryRepository: Sendable {
@@ -173,7 +187,7 @@ public struct DiaryRepository: Sendable {
     public func log(
         food: Food, quantity: Quantity, servingID: String? = nil, slotID: String, day: LocalDay,
     ) throws -> DiaryEntry {
-        guard quantity.baseAmount > 0 else { throw PersistenceError.validation("amount must be greater than zero") }
+        guard quantity.baseAmount > 0 else { throw PersistenceError.amountNotPositive }
         try EntryLimits.validate(amount: quantity.baseAmount)
         let now = clock.now()
         return try database.writer.write { db in
@@ -198,7 +212,7 @@ public struct DiaryRepository: Sendable {
     @discardableResult
     public func logAll(_ items: [LogItem], slotID: String, day: LocalDay) throws -> [DiaryEntry] {
         guard items.allSatisfy({ $0.quantity.baseAmount > 0 }) else {
-            throw PersistenceError.validation("amount must be greater than zero")
+            throw PersistenceError.amountNotPositive
         }
         for item in items {
             try EntryLimits.validate(amount: item.quantity.baseAmount)
@@ -270,7 +284,7 @@ public struct DiaryRepository: Sendable {
         return try database.writer.write { db in
             let entry = try DiaryEntry(
                 day: day, mealSlotID: slotID, foodID: nil,
-                displayName: (title?.isEmpty ?? true) ? "Quick add" : title!,
+                displayName: (title?.isEmpty ?? true) ? QuickAddName.default : title!,
                 grams: 0, servingLabel: nil, isQuickAdd: true, nutrients: nutrients, loggedAt: now,
                 sortOrder: Self.nextSortOrder(db, day: day, slotID: slotID),
             )
@@ -285,16 +299,16 @@ public struct DiaryRepository: Sendable {
     /// Changes the amount of a food entry. The existing snapshot (nutrients and fluid) is scaled, so later edits to
     /// the food never leak into history (NFR-4).
     public func updateQuantity(entryID: String, quantity: Quantity) throws {
-        guard quantity.baseAmount > 0 else { throw PersistenceError.validation("amount must be greater than zero") }
+        guard quantity.baseAmount > 0 else { throw PersistenceError.amountNotPositive }
         try EntryLimits.validate(amount: quantity.baseAmount)
         let now = clock.now()
         try database.writer.write { db in
             guard var entry = try DiaryEntry.fetchOne(db, key: entryID) else { throw PersistenceError.notFound(entryID) }
-            guard !entry.isQuickAdd else { throw PersistenceError.validation("quick-add entries have no quantity") }
+            guard !entry.isQuickAdd else { throw PersistenceError.quickAddHasNoQuantity }
             let newAmount = quantity.baseAmount
             // A 0 g entry (legacy or imported) has no ratio to scale; re-reading the food would leak later edits
             // into history (NFR-4), so it can't be resized — log it again instead.
-            guard entry.grams > 0 else { throw PersistenceError.validation("entry has no amount to scale") }
+            guard entry.grams > 0 else { throw PersistenceError.nothingToScale }
             entry.nutrients = entry.nutrients.scaled(by: newAmount / entry.grams)
             entry.fluidMl = entry.fluidMl.map { $0 * newAmount / entry.grams }
             entry.grams = newAmount
@@ -311,9 +325,9 @@ public struct DiaryRepository: Sendable {
         let now = clock.now()
         try database.writer.write { db in
             guard var entry = try DiaryEntry.fetchOne(db, key: entryID) else { throw PersistenceError.notFound(entryID) }
-            guard entry.isQuickAdd else { throw PersistenceError.validation("not a quick-add entry") }
+            guard entry.isQuickAdd else { throw PersistenceError.validation(String(localized: "not a quick-add entry", bundle: .module)) }
             let title = name?.trimmingCharacters(in: .whitespacesAndNewlines)
-            entry.displayName = (title?.isEmpty ?? true) ? "Quick add" : title!
+            entry.displayName = (title?.isEmpty ?? true) ? QuickAddName.default : title!
             entry.nutrients = nutrients
             entry.stampUpdated(now)
             try entry.update(db)

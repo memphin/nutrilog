@@ -136,7 +136,9 @@ private struct DiaryContent: View {
                         } label: {
                             Label(model.isFuture ? "Plan food" : "Add food", systemImage: "plus")
                         }
-                        .accessibilityLabel("\(model.isFuture ? "Plan food for" : "Add food to") \(section.slot.name)")
+                        .accessibilityLabel(model.isFuture
+                            ? String(localized: "Plan food for \(section.slot.displayName)")
+                            : String(localized: "Add food to \(section.slot.displayName)"))
                     } header: {
                         sectionHeader(section)
                     }
@@ -212,7 +214,10 @@ private struct DiaryContent: View {
             EditEntryView(entry: entry)
         }
         .sheet(item: $copyRequest) { request in
-            CopyFromDateSheet(defaultDay: model.day.previous, title: request.slotID == nil ? "Copy whole day" : "Copy meal") { source in
+            CopyFromDateSheet(
+                defaultDay: model.day.previous,
+                title: request.slotID == nil ? String(localized: "Copy whole day") : String(localized: "Copy meal"),
+            ) { source in
                 model.copy(from: source, slotID: request.slotID)
             }
         }
@@ -222,7 +227,7 @@ private struct DiaryContent: View {
             }
         }
         .confirmationDialog(
-            plannedAction?.displayName ?? "Planned",
+            plannedAction?.displayName ?? String(localized: "Planned"),
             isPresented: Binding(get: { plannedAction != nil }, set: {
                 if !$0 {
                     plannedAction = nil
@@ -240,7 +245,8 @@ private struct DiaryContent: View {
         }
         .sheet(item: $movingPlanned) { planned in
             MoveToDateSheet(
-                title: "Move \(planned.displayName)", day: planned.day, slotID: planned.mealSlotID, slots: model.moveTargets(for: planned),
+                title: String(localized: "Move \(planned.displayName)"), day: planned.day, slotID: planned.mealSlotID,
+                slots: model.moveTargets(for: planned),
             ) { slotID, day in
                 model.movePlanned(planned, toSlot: slotID, day: day)
             }
@@ -278,7 +284,7 @@ private struct DiaryContent: View {
 
     private func sectionHeader(_ section: DiaryModel.MealSection) -> some View {
         HStack {
-            Text(section.slot.name)
+            Text(section.slot.displayName)
             Spacer()
             if !section.entries.isEmpty {
                 Text(model.energyUnit.format(section.totals.kcal))
@@ -307,12 +313,12 @@ private struct DiaryContent: View {
                     Button("Mark planned as eaten", systemImage: "checkmark.circle") { model.confirmAll(slotID: section.slot.id) }
                 }
                 Button("Plan for the next days…", systemImage: "calendar.badge.clock") {
-                    repeatRequest = RepeatRequest(slotID: section.slot.id, title: "Plan \(section.slot.name)")
+                    repeatRequest = RepeatRequest(slotID: section.slot.id, title: String(localized: "Plan \(section.slot.displayName)"))
                 }
                 .disabled(section.entries.isEmpty && model.planned(in: section.slot.id).isEmpty)
                 Divider()
                 Button("Save as meal…", systemImage: "square.and.arrow.down.on.square") {
-                    mealName = section.slot.name
+                    mealName = section.slot.displayName
                     savingMealSlot = section.slot
                 }
                 .disabled(!section.entries.contains { !$0.isQuickAdd })
@@ -323,7 +329,7 @@ private struct DiaryContent: View {
             } label: {
                 Image(systemName: "ellipsis.circle")
                     .imageScale(.large)
-                    .accessibilityLabel("\(section.slot.name) options")
+                    .accessibilityLabel("\(section.slot.displayName) options")
             }
         }
     }
@@ -333,7 +339,7 @@ private struct DiaryContent: View {
         Button("Edit", systemImage: "pencil") { editing = entry }
         Menu("Move to", systemImage: "arrow.right.square") {
             ForEach(model.slots.filter { $0.id != entry.mealSlotID }) { slot in
-                Button(slot.name) { model.move(entry, toSlot: slot.id) }
+                Button(slot.displayName) { model.move(entry, toSlot: slot.id) }
             }
             Divider()
             Button("Another day…", systemImage: "calendar") { movingEntry = entry }
@@ -357,7 +363,7 @@ private struct DiaryContent: View {
         }
         Menu("Move to", systemImage: "arrow.right.square") {
             ForEach(model.slots.filter { $0.id != planned.mealSlotID }) { slot in
-                Button(slot.name) { model.movePlanned(planned, toSlot: slot.id) }
+                Button(slot.displayName) { model.movePlanned(planned, toSlot: slot.id) }
             }
             Divider()
             Button("Another day…", systemImage: "calendar") { movingPlanned = planned }
@@ -394,7 +400,7 @@ private struct DiaryContent: View {
                     Button("Mark all planned as eaten", systemImage: "checkmark.circle") { model.confirmAll(slotID: nil) }
                 }
                 Button("Plan this day for the next days…", systemImage: "calendar.badge.clock") {
-                    repeatRequest = RepeatRequest(slotID: nil, title: "Plan whole day")
+                    repeatRequest = RepeatRequest(slotID: nil, title: String(localized: "Plan whole day"))
                 }
                 .disabled((model.diary?.entryCount ?? 0) == 0 && model.planned.isEmpty)
                 Divider()
@@ -493,7 +499,7 @@ struct DaySummaryHeader: View {
         }
     }
 
-    private func minor(_ title: String, _ value: Double?, _ unit: String, target: Double? = nil) -> some View {
+    private func minor(_ title: LocalizedStringKey, _ value: Double?, _ unit: String, target: Double? = nil) -> some View {
         VStack(alignment: .leading) {
             Text(title)
             Text(value

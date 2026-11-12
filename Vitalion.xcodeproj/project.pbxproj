@@ -40,6 +40,7 @@
 		36E347BA3711A2FDA9CCE0F6 /* HydrationStrip.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF5C1443D3C481089F5EB5B1 /* HydrationStrip.swift */; };
 		3A1F5417ABC547BE4E353C4D /* StubOpenFoodFactsSearchClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F442D68C2027C87F84FC6F0 /* StubOpenFoodFactsSearchClient.swift */; };
 		3A4FB3F3A1F282E55185103A /* DashboardSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50846937FB47D64F6C7FF29D /* DashboardSettingsView.swift */; };
+		3ABB524E4E3F01D5E84C2ECE /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 0E14387951485665908455D5 /* Localizable.xcstrings */; };
 		3D96B40690DBB4753FEC9D30 /* HydrationSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42D866798F0ED1775651F94E /* HydrationSettings.swift */; };
 		3ECFC0DA93A20EDA8A972387 /* Sparkline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01EE353FF2D90F6EFF2F3B3B /* Sparkline.swift */; };
 		421CEB7BA2BE3816DB3899C1 /* FoodEditorLookupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E2F70519A059DDAC9177C03 /* FoodEditorLookupTests.swift */; };
@@ -51,6 +52,7 @@
 		500A55BBB04F419C3FD99DD4 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85F339FF75258A4DD030AC2E /* WidgetSnapshot.swift */; };
 		505E17A0BABCDB042C4D3E87 /* USDAKeyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BB2D69D4FB95D1FA2E9F2EF /* USDAKeyStore.swift */; };
 		507C57C26A7F77EA28A17B7B /* HistoryCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8BD0F43DB2B86EA3164A4EF /* HistoryCalendarView.swift */; };
+		5B62336E924CE1E0E9E67FA3 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = AC9A872BA76B93DFA4D6A90A /* InfoPlist.xcstrings */; };
 		5D5A0BB2EC3F3E4B27330525 /* Streaks.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE614412E9B40CD14693CA20 /* Streaks.swift */; };
 		5EB6FD38A3E2CFB65AB558EE /* DashboardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDEB1244CC8F017910BEA427 /* DashboardTests.swift */; };
 		5F840E3018A414B035EDE468 /* ScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E06A37F87F80825C3EB8E826 /* ScanView.swift */; };
@@ -63,6 +65,7 @@
 		6AC867F76974E76ECAE836DD /* CaffeineTile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3181C2776D24E2128BB05805 /* CaffeineTile.swift */; };
 		6D194374FD4F19E37CBF2910 /* DuplicateFoodsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB96FF471284934C83435DA /* DuplicateFoodsView.swift */; };
 		6DBAC34FCD01C3ECED916F48 /* NotificationDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD5EADB32DB99D13A3D5328D /* NotificationDelegate.swift */; };
+		6E942C93EA8040F4CC119C84 /* AppShortcuts.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = EBC64ACFFB2D2F79FE0DD517 /* AppShortcuts.xcstrings */; };
 		70FB1EF9E4C1215967A03CE2 /* DashboardAccessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37EF81A77CEAC542C034074D /* DashboardAccessTests.swift */; };
 		74B2381D81030F4F1E7A5741 /* VitalionIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = C765BACA160F1ECF2058D539 /* VitalionIntents.swift */; };
 		790621B1B50CB4C7B4CB880D /* TestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = B676A848F8A4FD5E187A9F63 /* TestSupport.swift */; };
@@ -90,6 +93,7 @@
 		A62871BC5EADE61B26FA7058 /* VitalionApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 145A72571885772849F7177C /* VitalionApp.swift */; };
 		AD927069E95106E2C219841C /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E60E5672E7C562F57BC66FA /* AppConfig.swift */; };
 		B4615829B52B63295D15AA47 /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = B68B4221126F81E26762C323 /* DesignSystem */; };
+		B4C609351C0D47973A15304C /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = FE0B8A1199A91A6ACF17FB12 /* Localizable.xcstrings */; };
 		B6AB84B938F35F68C4F5AF1F /* DiarySheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85B4D360C226611E7D4CEC65 /* DiarySheets.swift */; };
 		BC3E09C8E5BF15FBA7B833EE /* StubOpenFoodFactsClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51D67B28981C0A28E21D725 /* StubOpenFoodFactsClient.swift */; };
 		C05C8B9A5A3AC01597866772 /* QuickAddView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55EC2E5E56394F5A6918F97A /* QuickAddView.swift */; };
@@ -123,6 +127,7 @@
 		F2AD53CFD77AE4DAD05E83F3 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = 508A134839066A2A33F7021E /* Persistence */; };
 		F54FE8A13339B259394123ED /* VitalionWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = F73C55816F89B0EF934D2D82 /* VitalionWidgets.swift */; };
 		F5A77DD86A2582A7256BE805 /* DashboardFeedbackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 751975B9265E5F9AECC45D73 /* DashboardFeedbackTests.swift */; };
+		F5EC9320F87217942DFD393B /* LocalizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2075A771264154EB85C56366 /* LocalizationTests.swift */; };
 		F5ED014BA3EE2EB0FE6DAA1D /* HydrationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E067E35D2053C35B6E3086B /* HydrationSettingsView.swift */; };
 		F6997FB68C7E9629093EAE46 /* ProductCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 233510B95C35C985722A7C17 /* ProductCardView.swift */; };
 		F72F9D54A6ABBA933BFB4D8D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 429A64C38EE3E8005CA79961 /* Assets.xcassets */; };
@@ -172,6 +177,7 @@
 		09BAC3A8F9E799BDA94D4974 /* HydrationTileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HydrationTileTests.swift; sourceTree = "<group>"; };
 		0A83FF24C8E676D75F22F754 /* VitalionWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = VitalionWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		0BAC2A50C1B94957AD9A02BB /* HydrationEntrySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HydrationEntrySheet.swift; sourceTree = "<group>"; };
+		0E14387951485665908455D5 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		0E2F70519A059DDAC9177C03 /* FoodEditorLookupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodEditorLookupTests.swift; sourceTree = "<group>"; };
 		0E7DC27A52B4580444E9532C /* FoodSources */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FoodSources; path = Packages/FoodSources; sourceTree = SOURCE_ROOT; };
 		112641AFE0BDBA2BF649E84E /* Core */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Core; path = Packages/Core; sourceTree = SOURCE_ROOT; };
@@ -182,6 +188,7 @@
 		1833E37492B23EEBE2FE79A6 /* OwnerFeedbackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OwnerFeedbackTests.swift; sourceTree = "<group>"; };
 		1A47272A21296D029D00872F /* Phase3Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Phase3Tests.swift; sourceTree = "<group>"; };
 		1E3AAC9A8782E4521AA9304F /* Scanner */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Scanner; path = Packages/Scanner; sourceTree = SOURCE_ROOT; };
+		2075A771264154EB85C56366 /* LocalizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizationTests.swift; sourceTree = "<group>"; };
 		2251AD561F7592E7581BA671 /* AppModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModelTests.swift; sourceTree = "<group>"; };
 		233510B95C35C985722A7C17 /* ProductCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductCardView.swift; sourceTree = "<group>"; };
 		2A6BBD67C5C882E7C4FF9E51 /* HydrationDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HydrationDetailView.swift; sourceTree = "<group>"; };
@@ -246,6 +253,7 @@
 		A3D1C9580AC14854A05181BB /* AppEnvironmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironmentTests.swift; sourceTree = "<group>"; };
 		A51D67B28981C0A28E21D725 /* StubOpenFoodFactsClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StubOpenFoodFactsClient.swift; sourceTree = "<group>"; };
 		AC84424AD8A575A259628DBB /* TrendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsView.swift; sourceTree = "<group>"; };
+		AC9A872BA76B93DFA4D6A90A /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		AD5EADB32DB99D13A3D5328D /* NotificationDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationDelegate.swift; sourceTree = "<group>"; };
 		AE614412E9B40CD14693CA20 /* Streaks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Streaks.swift; sourceTree = "<group>"; };
 		AEFCCA68F0A67ECF0B040E21 /* DashboardEditing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardEditing.swift; sourceTree = "<group>"; };
@@ -284,11 +292,13 @@
 		E8BD0F43DB2B86EA3164A4EF /* HistoryCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryCalendarView.swift; sourceTree = "<group>"; };
 		EA071653A47DC8AB30CF4395 /* Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formatting.swift; sourceTree = "<group>"; };
 		EAEA9B4600E43C70FAFDE929 /* HealthOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthOnboardingView.swift; sourceTree = "<group>"; };
+		EBC64ACFFB2D2F79FE0DD517 /* AppShortcuts.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = AppShortcuts.xcstrings; sourceTree = "<group>"; };
 		EBFC8A195B20CF85237483E9 /* OnlineResultsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnlineResultsView.swift; sourceTree = "<group>"; };
 		EDEB1244CC8F017910BEA427 /* DashboardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardTests.swift; sourceTree = "<group>"; };
 		F73C55816F89B0EF934D2D82 /* VitalionWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VitalionWidgets.swift; sourceTree = "<group>"; };
 		F8A212470BB71FD1A31EB4E0 /* AppleMealEstimator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleMealEstimator.swift; sourceTree = "<group>"; };
 		FB5B6EE728347650CA8871CD /* TileDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TileDetailView.swift; sourceTree = "<group>"; };
+		FE0B8A1199A91A6ACF17FB12 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		FE0D3099F76B1F620D7A791D /* FoodIndex */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FoodIndex; path = Resources/FoodIndex; sourceTree = SOURCE_ROOT; };
 		FF5C1443D3C481089F5EB5B1 /* HydrationStrip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HydrationStrip.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -425,7 +435,10 @@
 		798EE2244E0C70347FFACC80 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				EBC64ACFFB2D2F79FE0DD517 /* AppShortcuts.xcstrings */,
 				429A64C38EE3E8005CA79961 /* Assets.xcassets */,
+				AC9A872BA76B93DFA4D6A90A /* InfoPlist.xcstrings */,
+				FE0B8A1199A91A6ACF17FB12 /* Localizable.xcstrings */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -434,6 +447,7 @@
 			isa = PBXGroup;
 			children = (
 				D7C112271DD8E6E1BC1CBB87 /* Info.plist */,
+				0E14387951485665908455D5 /* Localizable.xcstrings */,
 				6BC0669B4BB9DD8FE9B279F7 /* VitalionWidgets.entitlements */,
 				F73C55816F89B0EF934D2D82 /* VitalionWidgets.swift */,
 			);
@@ -574,6 +588,7 @@
 				E6F0D8296D5F2D3CAA0C5F7B /* HydrationReminderServiceTests.swift */,
 				2A761CBEE8771B0186D02D01 /* HydrationSettingsTests.swift */,
 				09BAC3A8F9E799BDA94D4974 /* HydrationTileTests.swift */,
+				2075A771264154EB85C56366 /* LocalizationTests.swift */,
 				3F43367A7535A76FE70C2845 /* MealPlanTests.swift */,
 				6BA3CBA42FC3C42A0F41781B /* OnlineSearchTests.swift */,
 				1833E37492B23EEBE2FE79A6 /* OwnerFeedbackTests.swift */,
@@ -672,6 +687,7 @@
 			buildConfigurationList = 1AB14BD6828B08C45201E8E9 /* Build configuration list for PBXNativeTarget "VitalionWidgets" */;
 			buildPhases = (
 				F2FBC883271E3187976F9ECA /* Sources */,
+				1A08889E2CD00222A365F661 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -725,6 +741,7 @@
 			knownRegions = (
 				Base,
 				en,
+				hr,
 			);
 			mainGroup = CEA8AD6BF71E66FE8EB5BBC2;
 			minimizedProjectReferenceProxies = 1;
@@ -750,12 +767,23 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		1A08889E2CD00222A365F661 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3ABB524E4E3F01D5E84C2ECE /* Localizable.xcstrings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		D227B347D1C6BF6ED9C594EA /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6E942C93EA8040F4CC119C84 /* AppShortcuts.xcstrings in Resources */,
 				F72F9D54A6ABBA933BFB4D8D /* Assets.xcassets in Resources */,
 				2FBC98A3BC78A551B7B8B95E /* FoodIndex in Resources */,
+				5B62336E924CE1E0E9E67FA3 /* InfoPlist.xcstrings in Resources */,
+				B4C609351C0D47973A15304C /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -779,6 +807,7 @@
 				9DF6B5FCD905EBA320AD243C /* HydrationReminderServiceTests.swift in Sources */,
 				1DDAF77A67E857B98BD25391 /* HydrationSettingsTests.swift in Sources */,
 				DEA8A104E6F2AB33493C97C6 /* HydrationTileTests.swift in Sources */,
+				F5EC9320F87217942DFD393B /* LocalizationTests.swift in Sources */,
 				31A211C649A04D1145D678A2 /* MealPlanTests.swift in Sources */,
 				CB6221947B8992CA1EFEDC96 /* OnlineSearchTests.swift in Sources */,
 				FF4E877C3198F6122BBF6A49 /* OwnerFeedbackTests.swift in Sources */,
@@ -966,6 +995,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.1.5;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -973,6 +1003,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 6.0;
@@ -1101,12 +1132,14 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.1.5;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 6.0;

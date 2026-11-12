@@ -64,7 +64,7 @@ struct ProfileTargetsView: View {
         guard let profiles = environment.profiles else { return }
         do {
             guard try model.save(to: profiles) else { return }
-            savedMessage = "New targets apply from today. Past days keep the targets they had."
+            savedMessage = String(localized: "New targets apply from today. Past days keep the targets they had.")
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -133,7 +133,10 @@ private struct TargetsForm: View {
                 .pickerStyle(.segmented)
                 if model.goal != .maintain {
                     Stepper(value: $model.rateKgPerWeek, in: 0.1 ... 1.0, step: 0.05) {
-                        LabeledContent("Rate", value: "\(model.rateKgPerWeek.formatted(.number.precision(.fractionLength(2)))) kg/week")
+                        LabeledContent(
+                            "Rate",
+                            value: String(localized: "\(model.rateKgPerWeek.formatted(.number.precision(.fractionLength(2)))) kg/week"),
+                        )
                     }
                     LabeledContent(model.goal == .lose ? "Daily deficit" : "Daily surplus", value: unit.format(abs(model.dailyDelta)))
                 }
@@ -168,13 +171,19 @@ private struct TargetsForm: View {
             } header: {
                 Text("Calories")
             } footer: {
-                Text(model.measured == nil
-                    ? "Without at least \(Energy.measuredMinimumDays) days of active and resting energy in Apple Health, maintenance "
-                    + "is estimated from your activity level. The weekly check-in (Trends) refines this with your real intake and "
-                    + "weight trend."
-                    : "Maintenance is your average total energy burned (active + resting, Apple Health) over the last "
-                    + "\(Energy.measuredWindowDays) days. The weekly check-in (Trends) refines this with your real intake and "
-                    + "weight trend.")
+                if model.measured == nil {
+                    Text("""
+                    Without at least \(Energy.measuredMinimumDays) days of active and resting energy in Apple Health, maintenance \
+                    is estimated from your activity level. The weekly check-in (Trends) refines this with your real intake and \
+                    weight trend.
+                    """)
+                } else {
+                    Text("""
+                    Maintenance is your average total energy burned (active + resting, Apple Health) over the last \
+                    \(Energy.measuredWindowDays) days. The weekly check-in (Trends) refines this with your real intake and \
+                    weight trend.
+                    """)
+                }
             }
 
             Section {
@@ -197,10 +206,13 @@ private struct TargetsForm: View {
                     LabeledContent("Carbs") { trailingField($model.carbsG, "g") }
                     LabeledContent("Fat") { trailingField($model.fatG, "g") }
                     if let diff = model.gramsEnergyMismatch, abs(diff) > 50 {
-                        Text(
-                            "These macros add up to \(DisplayRounding.whole(abs(diff))) kcal \(diff > 0 ? "more" : "less") "
-                                + "than the calorie target.",
-                        )
+                        Group {
+                            if diff > 0 {
+                                Text("These macros add up to \(DisplayRounding.whole(abs(diff))) kcal more than the calorie target.")
+                            } else {
+                                Text("These macros add up to \(DisplayRounding.whole(abs(diff))) kcal less than the calorie target.")
+                            }
+                        }
                         .font(.footnote)
                         .foregroundStyle(.orange)
                     }
@@ -224,11 +236,19 @@ private struct TargetsForm: View {
         if let target = model.suggestedKcal {
             LabeledContent("Suggested target", value: unit.format(target)).bold()
             if model.suggestionRaisedToFloor, let formula = model.formulaKcal {
-                Text("\(model.dailyDelta < 0 ? "Maintenance minus your daily deficit" : "Maintenance") comes to "
-                    + "\(unit.format(formula)), below \(unit.format(AdaptiveTDEE.minimumTargetKcal)), the lowest target "
-                    + "the app suggests.")
-                    .font(.footnote)
-                    .foregroundStyle(.orange)
+                let minimum = unit.format(AdaptiveTDEE.minimumTargetKcal)
+                Group {
+                    if model.dailyDelta < 0 {
+                        Text("""
+                        Maintenance minus your daily deficit comes to \(unit.format(formula)), below \(minimum), the lowest \
+                        target the app suggests.
+                        """)
+                    } else {
+                        Text("Maintenance comes to \(unit.format(formula)), below \(minimum), the lowest target the app suggests.")
+                    }
+                }
+                .font(.footnote)
+                .foregroundStyle(.orange)
             }
         }
     }

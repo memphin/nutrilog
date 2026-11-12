@@ -228,30 +228,50 @@ struct CaffeineStatus: Equatable {
     /// "Sleep-safe now", "Below 50 mg by 21:40", "Above 50 mg at bedtime (23:00)".
     func outlookText(time: (Date) -> String = CaffeineStatus.time) -> String {
         let threshold = Self.mg(thresholdMg)
-        return switch outlook {
-        case .safeNow: "Sleep-safe now"
-        case let .belowBy(date): "Below \(threshold) by \(time(date))"
-        case let .aboveAtBedtime(bedtime, _): "Above \(threshold) at bedtime (\(time(bedtime)))"
+        switch outlook {
+        case .safeNow:
+            return String(localized: "Sleep-safe now")
+        case let .belowBy(date):
+            let at = time(date)
+            return String(localized: "Below \(threshold) by \(at)")
+        case let .aboveAtBedtime(bedtime, _):
+            let at = time(bedtime)
+            return String(localized: "Above \(threshold) at bedtime (\(at))")
         }
     }
 
     /// "Today 159 of 400 mg".
     var todayText: String {
-        "Today \(Self.mgNumber(todayTotalMg)) of \(Self.mg(dailyLimitMg))"
+        let total = Self.mgNumber(todayTotalMg)
+        let limit = Self.mg(dailyLimitMg)
+        return String(localized: "Today \(total) of \(limit)", comment: "Caffeine taken today against the daily limit")
     }
 
-    /// For VoiceOver: "85 milligrams now", "below 50 milligrams by 21:40", "159 of 400 milligrams today".
-    func accessibilityParts(time: (Date) -> String = CaffeineStatus.time) -> [String] {
-        let threshold = "\(Self.mgNumber(thresholdMg)) milligrams"
-        let outlookPart = switch outlook {
-        case .safeNow: "sleep-safe now, below \(threshold)"
-        case let .belowBy(date): "below \(threshold) by \(time(date))"
-        case let .aboveAtBedtime(bedtime, mg): "about \(Self.mgNumber(mg)) milligrams at bedtime, \(time(bedtime))"
+    /// For VoiceOver: "85 milligrams now", "below 50 milligrams by 21:40", "159 of 400 milligrams today". Whole
+    /// milligrams as integers in `locale`, so the catalog can pick the plural form.
+    func accessibilityParts(time: (Date) -> String = CaffeineStatus.time, locale: Locale = .current) -> [String] {
+        func whole(_ mg: Double) -> Int {
+            Int(max(mg, 0).rounded(.toNearestOrEven))
         }
-        var parts = ["\(Self.mgNumber(mgNow)) milligrams now", outlookPart,
-                     "\(Self.mgNumber(todayTotalMg)) of \(Self.mgNumber(dailyLimitMg)) milligrams today"]
+        let threshold = whole(thresholdMg)
+        let outlookPart = switch outlook {
+        case .safeNow:
+            String(localized: "sleep-safe now, below \(threshold) milligrams", locale: locale)
+        case let .belowBy(date):
+            String(localized: "below \(threshold) milligrams by \(time(date))", locale: locale)
+        case let .aboveAtBedtime(bedtime, mg):
+            String(localized: "about \(whole(mg)) milligrams at bedtime, \(time(bedtime))", locale: locale)
+        }
+        let now = whole(mgNow)
+        let total = whole(todayTotalMg)
+        let limit = whole(dailyLimitMg)
+        var parts = [
+            String(localized: "\(now) milligrams now", locale: locale),
+            outlookPart,
+            String(localized: "\(total) of \(limit) milligrams today", locale: locale),
+        ]
         if isOverDailyLimit {
-            parts.append("over the daily limit")
+            parts.append(String(localized: "over the daily limit", locale: locale))
         }
         return parts
     }
@@ -259,10 +279,11 @@ struct CaffeineStatus: Equatable {
     /// How the estimate works, with the half-life in use (the detail's footnote).
     static func explanation(halfLifeHours: Double) -> String {
         let hours = halfLifeHours.formatted(.number.precision(.fractionLength(0 ... 1)))
-        return "Estimated with a one-compartment model: each drink is absorbed over about 45 minutes, then cleared "
-            + "with a half-life of \(hours) h (from Settings → Caffeine). Below the sleep-safe line, caffeine is "
-            + "unlikely to keep you awake. People clear caffeine at very different speeds — this is an estimate, "
-            + "not medical advice."
+        return String(localized: """
+        Estimated with a one-compartment model: each drink is absorbed over about 45 minutes, then cleared with a half-life \
+        of \(hours) h (from Settings → Caffeine). Below the sleep-safe line, caffeine is unlikely to keep you awake. People \
+        clear caffeine at very different speeds — this is an estimate, not medical advice.
+        """)
     }
 
     // MARK: Curves
@@ -344,7 +365,7 @@ struct CaffeineIntakeRow: Equatable, Identifiable {
         let quick = intakes.quickAdds.filter { $0.day == day }.map { entry in
             CaffeineIntakeRow(
                 id: "q-\(entry.id)",
-                name: entry.name ?? entry.drinkID.flatMap(CaffeineDrink.preset(id:))?.name ?? "Caffeine",
+                name: entry.name ?? entry.drinkID.flatMap(CaffeineDrink.preset(id:))?.name ?? String(localized: "Caffeine"),
                 at: entry.loggedAt, mg: entry.mg, source: .quickAdd(entry),
             )
         }

@@ -60,7 +60,7 @@ struct CaffeineStatusTests {
         #expect(status.todayText == "Today 159 of 400 mg")
     }
 
-    @Test func `a morning coffee is below the line well before bedtime`() throws {
+    @Test func `a morning coffee is below the line well before bedtime`() {
         let status = status([dose(95, at: at(8))], now: at(9))
         #expect(status.band == .near) // ~85 mg: above 50, below 200
         guard case let .belowBy(date) = status.outlook else {
@@ -224,7 +224,12 @@ struct CaffeineDashboardTests {
         let today = try #require(LocalDay("2026-11-09"))
         let snapshot = DashboardSnapshot(DashboardData(today: today))
         #expect(snapshot.state(of: .caffeine, access: .unavailable, isFirstSync: false) == .ready)
-        let label = snapshot.accessibilityLabel(of: .caffeine, state: .ready, now: today.startDate().addingTimeInterval(10 * 3600))
+        let label = snapshot.accessibilityLabel(
+            of: .caffeine,
+            state: .ready,
+            now: today.startDate().addingTimeInterval(10 * 3600),
+            locale: .dashboardEnglish,
+        )
         #expect(label == "Caffeine, 0 milligrams now, sleep-safe now, below 50 milligrams, 0 of 400 milligrams today")
     }
 
@@ -259,7 +264,7 @@ struct CaffeineDashboardTests {
         #expect(await waitUntil { model.data.caffeine.quickAdds.count == 1 })
     }
 
-    @Test func `customCaffeineWithMlStoresMl`() async throws {
+    @Test func `customCaffeineWithMlStoresMl`() async {
         let env = AppEnvironment.preview(clock: ManualClock().appClock)
         let model = DashboardModel(environment: env)
         let task = Task { await model.observe() }
@@ -292,7 +297,7 @@ struct CaffeineDashboardTests {
         #expect(model.snapshot.caffeineSettings.quickAddDrinks == [.greenTea])
     }
 
-    @Test func `the detail history sums both sources per day`() async throws {
+    @Test func `the detail history sums both sources per day`() throws {
         let clock = ManualClock()
         let env = AppEnvironment.preview(clock: clock.appClock)
         let caffeine = try #require(env.caffeine)

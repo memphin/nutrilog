@@ -20,8 +20,8 @@ struct IngredientPicker: View {
                 if query.trimmingCharacters(in: .whitespaces).isEmpty {
                     if suggestions.isEmpty {
                         EmptyStateView(
-                            "Search for a food", systemImage: "magnifyingglass",
-                            message: "Your foods and the built-in food list are searched.",
+                            String(localized: "Search for a food"), systemImage: "magnifyingglass",
+                            message: String(localized: "Your foods and the built-in food list are searched."),
                         )
                         .listRowBackground(Color.clear)
                     }
@@ -32,9 +32,9 @@ struct IngredientPicker: View {
                 } else {
                     if results.isEmpty {
                         EmptyStateView(
-                            "No matches",
+                            String(localized: "No matches"),
                             systemImage: "magnifyingglass",
-                            message: "Create the food first in Foods, or scan it once.",
+                            message: String(localized: "Create the food first in Foods, or scan it once."),
                         )
                         .listRowBackground(Color.clear)
                     }

@@ -58,7 +58,7 @@ final class UndoCenter {
 
     /// "Deleted Oats. Undo available".
     static func announcement(for message: String) -> String {
-        "\(message). Undo available"
+        String(localized: "\(message). Undo available", comment: "VoiceOver announcement after an action that can be undone")
     }
 
     static func postAnnouncement(_ text: String) {

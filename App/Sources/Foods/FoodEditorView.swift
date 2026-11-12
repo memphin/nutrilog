@@ -70,7 +70,7 @@ struct FoodEditorView: View {
             }
             Button("Cancel", role: .cancel) { conflicts = [] }
         } message: { presented in
-            Text(FoodEditorModel.conflictMessage(presented) + "\n\nIt will be removed from the other food.")
+            Text(FoodEditorModel.conflictMessage(presented) + "\n\n" + String(localized: "It will be removed from the other food."))
         }
         .alert("Couldn't save", isPresented: Binding(get: { errorMessage != nil }, set: {
             if !$0 {
@@ -104,8 +104,11 @@ struct FoodEditorView: View {
             dismiss()
             onSaved(saved)
         } catch let PersistenceError.barcodeInUse(code, foodID) {
-            let owner = (try? foods.food(id: foodID))?.name ?? "another food"
-            errorMessage = "Barcode \(code) already belongs to \(owner)."
+            if let owner = (try? foods.food(id: foodID))?.name {
+                errorMessage = String(localized: "Barcode \(code) already belongs to \(owner).")
+            } else {
+                errorMessage = String(localized: "Barcode \(code) already belongs to another food.")
+            }
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -126,7 +129,7 @@ private struct FoodEditorForm: View {
         Form {
             Section {
                 TextField("Name", text: $model.name)
-                TextField("Local name (e.g. Croatian)", text: $model.nameLocal)
+                TextField("Name in another language", text: $model.nameLocal)
                 TextField("Brand", text: $model.brand)
                 Toggle("Liquid (measured in ml)", isOn: $model.isLiquid)
                 if !model.isEditing {
@@ -156,7 +159,7 @@ private struct FoodEditorForm: View {
 
             Section {
                 Picker("Values are", selection: $model.basis) {
-                    ForEach(FoodEditorModel.InputBasis.allCases) { Text($0.rawValue).tag($0) }
+                    ForEach(FoodEditorModel.InputBasis.allCases) { Text($0.title).tag($0) }
                 }
                 .pickerStyle(.segmented)
                 if model.basis == .perServing {
@@ -181,8 +184,10 @@ private struct FoodEditorForm: View {
                 if model.basis == .per100 {
                     Text("Copy the values from the label's per 100 \(model.unitSymbol) column.")
                 } else if model.isEditingPlaceholder {
-                    Text("Values are converted to per 100 \(model.unitSymbol) when saved, and the serving size becomes "
-                        + "the weight of one serving.")
+                    Text("""
+                    Values are converted to per 100 \(model.unitSymbol) when saved, and the serving size becomes the weight \
+                    of one serving.
+                    """)
                 } else {
                     Text("Values are converted to per 100 \(model.unitSymbol) when saved.")
                 }
@@ -219,8 +224,10 @@ private struct FoodEditorForm: View {
                 Text("Servings")
             } footer: {
                 if model.isEditingPlaceholder {
-                    Text("The values above are for one serving, whose weight is unknown (it counts as 100 \(model.unitSymbol)). "
-                        + "Enter the serving's real weight to convert them to per 100 \(model.unitSymbol).")
+                    Text("""
+                    The values above are for one serving, whose weight is unknown (it counts as 100 \(model.unitSymbol)). \
+                    Enter the serving's real weight to convert them to per 100 \(model.unitSymbol).
+                    """)
                 } else {
                     Text("Named portions like \"1 slice = 25 g\" make logging faster.")
                 }
@@ -266,16 +273,16 @@ private struct FoodEditorForm: View {
             BarcodeScanSheet { barcode in
                 switch model.insertScanned(candidates: barcode.candidates) {
                 case let .added(code):
-                    scanNotice = "Added \(code)."
+                    scanNotice = String(localized: "Added \(code).")
                     isScanning = false
                     lookUp(barcode.candidates, code: code)
                     return nil
                 case let .duplicate(code):
-                    scanNotice = "\(code) is already on this food."
+                    scanNotice = String(localized: "\(code) is already on this food.")
                     isScanning = false
                     return nil
                 case .invalid:
-                    return "\(barcode.payload) isn't a product barcode (EAN / UPC). Try another code."
+                    return String(localized: "\(barcode.payload) isn't a product barcode (EAN / UPC). Try another code.")
                 }
             }
         }
@@ -291,14 +298,14 @@ private struct FoodEditorForm: View {
             isLookingUp = false
             switch outcome {
             case let .filled(name):
-                filledNotice = "Filled in from Open Food Facts: \(name). Check the values against the label."
-                scanNotice = "Added \(code) — product found."
+                filledNotice = String(localized: "Filled in from Open Food Facts: \(name). Check the values against the label.")
+                scanNotice = String(localized: "Added \(code) — product found.")
             case let .existing(name):
-                scanNotice = "Added \(code). It is already on your food '\(name)'."
+                scanNotice = String(localized: "Added \(code). It is already on your food '\(name)'.")
             case .notFound:
-                scanNotice = "Added \(code). The product isn't on Open Food Facts — enter the values from the label."
+                scanNotice = String(localized: "Added \(code). The product isn't on Open Food Facts — enter the values from the label.")
             case .failed:
-                scanNotice = "Added \(code). Couldn't look the product up — enter the values from the label."
+                scanNotice = String(localized: "Added \(code). Couldn't look the product up — enter the values from the label.")
             case .skipped:
                 break
             }
@@ -306,7 +313,7 @@ private struct FoodEditorForm: View {
     }
 
     private func numberField(
-        _ title: String,
+        _ title: LocalizedStringKey,
         _ text: Binding<String>,
         unit: String,
         optional: Bool = false,

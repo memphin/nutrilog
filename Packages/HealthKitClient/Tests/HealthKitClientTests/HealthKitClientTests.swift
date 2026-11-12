@@ -44,6 +44,13 @@ struct HealthTypeCatalogTests {
             #expect(!type.title.isEmpty && type.explanation.count > 20, "\(type)")
         }
         #expect(HealthWriteType.dietaryProtein.explanation.hasPrefix("The protein of each diary entry"))
+        // Each nutrient has its own sentence (for translation); in English it names the nutrient in lowercase.
+        let nutrients: [HealthWriteType] = [
+            .dietaryProtein, .dietaryCarbohydrates, .dietaryFatTotal, .dietaryFiber, .dietarySugar, .dietarySodium,
+        ]
+        for type in nutrients {
+            #expect(type.explanation == "The \(type.title.lowercased()) of each diary entry, updated when you edit or delete it.")
+        }
         #expect(Set(HealthReadType.allCases.map(\.title)).count == 12)
     }
 

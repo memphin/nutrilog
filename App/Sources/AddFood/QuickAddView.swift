@@ -81,7 +81,7 @@ struct QuickAddView: View {
                     }
                     if case .create = mode {
                         Picker("Meal", selection: $slotID) {
-                            ForEach((try? environment.diary?.mealSlots()) ?? []) { Text($0.name).tag($0.id) }
+                            ForEach((try? environment.diary?.mealSlots()) ?? []) { Text($0.displayName).tag($0.id) }
                         }
                     }
                 }
@@ -125,7 +125,7 @@ struct QuickAddView: View {
         return false
     }
 
-    private func gramsField(_ title: String, _ text: Binding<String>) -> some View {
+    private func gramsField(_ title: LocalizedStringKey, _ text: Binding<String>) -> some View {
         LabeledContent(title) {
             HStack {
                 TextField("0", text: text)
@@ -141,7 +141,7 @@ struct QuickAddView: View {
         case let .create(slot, _, _):
             slotID = slot
         case let .edit(entry):
-            name = entry.displayName == "Quick add" ? "" : entry.displayName
+            name = QuickAddName.isDefault(entry.displayName) ? "" : entry.displayName
             energy = Format.field(environment.energyUnit.display(entry.kcal))
             protein = entry.proteinG > 0 ? Format.field(entry.proteinG) : ""
             carbs = entry.carbsG > 0 ? Format.field(entry.carbsG) : ""
