@@ -30,7 +30,7 @@ public struct TDEEDay: Hashable, Sendable, Codable {
     /// other days are treated as missing (SPEC §5.4.1 inputs). `AdaptiveTDEE.estimate` additionally leaves out logged
     /// days that look only partly logged (see `AdaptiveTDEE.partialDayFraction`).
     public var isLogged: Bool {
-        isComplete || entryCount >= AdaptiveTDEE.minimumEntries
+        AdaptiveTDEE.isLogged(entryCount: entryCount, isComplete: isComplete)
     }
 }
 
@@ -228,6 +228,13 @@ public enum AdaptiveTDEE {
     public static let minimumLoggedDays = 7
     /// A day with fewer entries and no "fully logged" mark is treated as missing.
     public static let minimumEntries = 3
+
+    /// The logged-day rule (SPEC §5.4.1 inputs): marked as fully logged, or at least `minimumEntries` entries. Shared by
+    /// the estimate (`TDEEDay.isLogged`) and everything else that must not count a half-logged day (`DayStats.isLogged`).
+    public static func isLogged(entryCount: Int, isComplete: Bool) -> Bool {
+        isComplete || entryCount >= minimumEntries
+    }
+
     /// Weigh-ins needed in the window: with fewer the trend is mostly carried forward and says nothing.
     public static let minimumWeighIns = 2
     /// The trend must cover at least this many days of the window.
