@@ -350,7 +350,8 @@ private struct ValueText: View {
 }
 
 /// Active + resting energy. With only one part known, that part is shown under its own name — never as the total.
-/// The active part is coloured by the active energy goal; the total is not (the resting part isn't up to you).
+/// The total is coloured by how its active part compares with the active energy goal (the resting part isn't up to
+/// you); the "Active …" line stays secondary.
 private struct TotalEnergyContent: View {
     let burned: EnergyBurned
     let activeGoalKcal: Int
@@ -367,10 +368,10 @@ private struct TotalEnergyContent: View {
     var body: some View {
         VStack(alignment: .leading, spacing: NL.Spacing.xxs) {
             if let total = burned.totalKcal {
-                ValueText(number(total), unit: unit.symbol)
+                ValueText(number(total), unit: unit.symbol, color: burned.activeKcal.map(activeColor) ?? .primary)
                 // Only the active part; the resting part is in the detail (owner feedback).
                 if let active = burned.activeKcal {
-                    Text("Active \(unit.format(active))").font(.footnote.weight(.semibold)).foregroundStyle(activeColor(active))
+                    Text("Active \(unit.format(active))").font(.footnote).foregroundStyle(.secondary)
                 }
             } else {
                 if let active = burned.activeKcal {

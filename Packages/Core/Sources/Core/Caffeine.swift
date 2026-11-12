@@ -274,6 +274,11 @@ public struct CaffeineDrink: Hashable, Sendable, Identifiable {
         id: "cola", name: String(localized: "Cola", bundle: .module),
         mg: 33, servingMl: 330, symbolName: "takeoutbag.and.cup.and.straw.fill",
     )
+    /// One can (330 ml): the same caffeine as regular cola.
+    public static let colaZero = CaffeineDrink(
+        id: "cola_zero", name: String(localized: "Cola Zero", bundle: .module),
+        mg: 33, servingMl: 330, symbolName: "takeoutbag.and.cup.and.straw.fill",
+    )
     /// One can (250 ml).
     public static let energyDrink = CaffeineDrink(
         id: "energy_drink", name: String(localized: "Energy drink", bundle: .module),
@@ -286,7 +291,7 @@ public struct CaffeineDrink: Hashable, Sendable, Identifiable {
     )
 
     /// Every preset, in display order.
-    public static let all: [CaffeineDrink] = [espresso, filterCoffee, blackTea, greenTea, cola, energyDrink, matcha]
+    public static let all: [CaffeineDrink] = [espresso, filterCoffee, blackTea, greenTea, cola, colaZero, energyDrink, matcha]
 
     /// The quick-add buttons shown until the user picks their own.
     public static let defaultQuickAddIDs: [String] = [espresso.id, filterCoffee.id, blackTea.id, energyDrink.id]

@@ -83,6 +83,16 @@
         }
       }
     },
+    "Cola Zero" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kola Zero"
+          }
+        }
+      }
+    },
     "Desk job, little or no exercise" : {
       "localizations" : {
         "hr" : {
