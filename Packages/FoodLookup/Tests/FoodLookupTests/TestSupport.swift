@@ -92,7 +92,7 @@ struct Fixture {
     }
 
     var lookup: BarcodeLookup {
-        BarcodeLookup(database: db, client: client, clock: clock.appClock)
+        BarcodeLookup(database: db, client: client, nameLanguage: .english, clock: clock.appClock)
     }
 
     var foods: FoodRepository {

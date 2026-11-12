@@ -133,7 +133,11 @@ final class OnlineSearchModel {
     /// one's results as they arrive. When cancelled (the query changed) it stops without publishing results.
     /// USDA is skipped — ``SourceStatus/hidden`` without a key, ``SourceStatus/paused(until:)`` during its
     /// rate-limit cool-down.
-    func search(_ text: String, offSearch: any OpenFoodFactsSearchClient, usda: any USDAClient) async {
+    /// `nameLanguage` is the food name language (Settings → Food names): Open Food Facts products with a Croatian
+    /// name are named in Croatian when it is Croatian.
+    func search(
+        _ text: String, offSearch: any OpenFoodFactsSearchClient, usda: any USDAClient, nameLanguage: FoodNameLanguage,
+    ) async {
         let query = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard query.count >= Self.minimumQueryLength else {
             reset(query: query, usda: usda)
@@ -170,7 +174,7 @@ final class OnlineSearchModel {
                 group.addTask {
                     do {
                         let drafts = switch origin {
-                        case .off: try await offSearch.search(query: query)
+                        case .off: try await offSearch.search(query: query, nameLanguage: nameLanguage)
                         case .usda: try await usda.search(query: query)
                         }
                         return (origin, .success(drafts.map(OnlineFoodResult.init)))

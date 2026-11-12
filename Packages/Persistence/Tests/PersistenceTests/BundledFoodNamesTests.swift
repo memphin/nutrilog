@@ -4,7 +4,8 @@ import GRDB
 import Testing
 @testable import Persistence
 
-/// Croatian names in the bundled index: searchable in any app language, shown in Croatian when the app runs in it.
+/// Croatian names in the bundled index: searchable in any language, shown in Croatian when the food name language
+/// is Croatian.
 struct BundledFoodNamesTests {
     private let rows: [(id: String, fdc: String, name: String, nameHR: String?)] = [
         ("b1", "175168", "Fish, salmon, Atlantic, farmed, cooked, dry heat", "Losos, atlantski, uzgojeni, pečen"),
@@ -14,32 +15,29 @@ struct BundledFoodNamesTests {
     ]
 
     @Test func `croatian query finds the food in an english app and vice versa`() throws {
-        let url = try makeBilingualIndexFile(rows: rows)
-        let english = try BundledFoodIndex(url: url, prefersCroatian: false)
-        #expect(try english.search("losos", limit: 5).map(\.name) == ["Fish, salmon, Atlantic, farmed, cooked, dry heat"])
-        #expect(try english.search("salmon", limit: 5).map(\.id) == ["b1"])
+        let index = try BundledFoodIndex(url: makeBilingualIndexFile(rows: rows))
+        #expect(try index.search("losos", limit: 5, language: .english).map(\.name) == ["Fish, salmon, Atlantic, farmed, cooked, dry heat"])
+        #expect(try index.search("salmon", limit: 5, language: .english).map(\.id) == ["b1"])
 
-        let croatian = try BundledFoodIndex(url: url, prefersCroatian: true)
-        #expect(try croatian.search("salmon", limit: 5).map(\.name) == ["Losos, atlantski, uzgojeni, pečen"])
-        #expect(try croatian.search("losos", limit: 5).map(\.id) == ["b1"])
+        #expect(try index.search("salmon", limit: 5, language: .croatian).map(\.name) == ["Losos, atlantski, uzgojeni, pečen"])
+        #expect(try index.search("losos", limit: 5, language: .croatian).map(\.id) == ["b1"])
     }
 
     @Test func `croatian query ignores diacritics including đ`() throws {
-        let index = try BundledFoodIndex(url: makeBilingualIndexFile(rows: rows), prefersCroatian: true)
+        let index = try BundledFoodIndex(url: makeBilingualIndexFile(rows: rows))
         for query in ["losos pecen", "LOSOS PEČEN", "pečen", "riza smeda", "riža smeđa", "smedja", "jetra goveda", "govedja"] {
-            #expect(try index.search(query, limit: 5).count == 1, "\(query)")
+            #expect(try index.search(query, limit: 5, language: .croatian).count == 1, "\(query)")
         }
-        #expect(try index.search("riza smeda", limit: 5).map(\.id) == ["b2"])
-        #expect(try index.search("govedja", limit: 5).map(\.id) == ["b3"])
+        #expect(try index.search("riza smeda", limit: 5, language: .croatian).map(\.id) == ["b2"])
+        #expect(try index.search("govedja", limit: 5, language: .croatian).map(\.id) == ["b3"])
         // English words with a "d" still match as before.
-        #expect(try index.search("dry heat", limit: 5).map(\.id) == ["b1"])
-        #expect(try index.search("brown cooked", limit: 5).map(\.id) == ["b2"])
+        #expect(try index.search("dry heat", limit: 5, language: .croatian).map(\.id) == ["b1"])
+        #expect(try index.search("brown cooked", limit: 5, language: .croatian).map(\.id) == ["b2"])
     }
 
     @Test func `shown name follows the language and falls back to english`() throws {
-        let url = try makeBilingualIndexFile(rows: rows)
-        let croatian = try BundledFoodIndex(url: url, prefersCroatian: true)
-        let salmon = try #require(try croatian.food(id: "b1"))
+        let index = try BundledFoodIndex(url: makeBilingualIndexFile(rows: rows))
+        let salmon = try #require(try index.food(id: "b1", language: .croatian))
         #expect(salmon.name == "Losos, atlantski, uzgojeni, pečen")
         #expect(salmon.englishName == "Fish, salmon, Atlantic, farmed, cooked, dry heat")
         #expect(salmon.croatianName == "Losos, atlantski, uzgojeni, pečen")
@@ -47,14 +45,13 @@ struct BundledFoodNamesTests {
         #expect(FoodSearchResult.bundled(salmon).names == salmon.names)
 
         // No Croatian name (NULL): English, in either language.
-        let banana = try #require(try croatian.food(id: "b4"))
+        let banana = try #require(try index.food(id: "b4", language: .croatian))
         #expect(banana.name == "Bananas, raw")
         #expect(banana.croatianName == nil)
         #expect(banana.names == ["Bananas, raw"])
-        #expect(try croatian.search("banana", limit: 5).map(\.name) == ["Bananas, raw"])
+        #expect(try index.search("banana", limit: 5, language: .croatian).map(\.name) == ["Bananas, raw"])
 
-        let english = try BundledFoodIndex(url: url, prefersCroatian: false)
-        let englishSalmon = try #require(try english.food(id: "b1"))
+        let englishSalmon = try #require(try index.food(id: "b1", language: .english))
         #expect(englishSalmon.name == "Fish, salmon, Atlantic, farmed, cooked, dry heat")
         #expect(englishSalmon.croatianName == "Losos, atlantski, uzgojeni, pečen")
         #expect(englishSalmon.names.first == englishSalmon.englishName)
@@ -84,16 +81,16 @@ struct BundledFoodNamesTests {
             """)
         }
         try queue.close()
-        let index = try BundledFoodIndex(url: url, prefersCroatian: true)
-        #expect(try index.search("bananas raw", limit: 5).map(\.name) == ["Bananas, raw"])
-        #expect(try index.food(id: "b1")?.croatianName == nil)
+        let index = try BundledFoodIndex(url: url)
+        #expect(try index.search("bananas raw", limit: 5, language: .croatian).map(\.name) == ["Bananas, raw"])
+        #expect(try index.food(id: "b1", language: .croatian)?.croatianName == nil)
+        #expect(try index.food(id: "b1", language: .croatian)?.name == "Bananas, raw")
     }
 
     @Test func `local copy takes the shown name`() throws {
-        let url = try makeBilingualIndexFile(rows: rows)
+        let index = try BundledFoodIndex(url: makeBilingualIndexFile(rows: rows))
         let croatianFixture = try Fixture()
-        let croatian = try BundledFoodIndex(url: url, prefersCroatian: true)
-        let copy = try croatianFixture.foods.localCopy(of: #require(try croatian.food(id: "b1")))
+        let copy = try croatianFixture.foods.localCopy(of: #require(try index.food(id: "b1", language: .croatian)))
         #expect(copy.name == "Losos, atlantski, uzgojeni, pečen")
         #expect(copy.nameLocal == "Fish, salmon, Atlantic, farmed, cooked, dry heat")
         #expect(copy.source == .bundled)
@@ -102,10 +99,9 @@ struct BundledFoodNamesTests {
         // Unified search in an English app: the Croatian query finds the bundled food; once copied, the copy (with
         // the English name, the Croatian one in `nameLocal`) stands for it under either name.
         let englishFixture = try Fixture()
-        let english = try BundledFoodIndex(url: url, prefersCroatian: false)
-        let search = FoodSearch(englishFixture.db, bundled: english)
+        let search = FoodSearch(englishFixture.db, bundled: index, nameLanguage: .english)
         #expect(try search.search("losos").map(\.id) == ["bundled:b1"])
-        let englishCopy = try englishFixture.foods.localCopy(of: #require(try english.food(id: "b1")))
+        let englishCopy = try englishFixture.foods.localCopy(of: #require(try index.food(id: "b1", language: .english)))
         #expect(englishCopy.name == "Fish, salmon, Atlantic, farmed, cooked, dry heat")
         #expect(englishCopy.nameLocal == "Losos, atlantski, uzgojeni, pečen")
         #expect(try search.search("salmon").map(\.id) == ["food:\(englishCopy.id)"])
@@ -143,8 +139,8 @@ struct BundledFoodNamesTests {
         #expect(total >= 300)
         #expect(missing.isEmpty, "foods without a Croatian name: \(missing)")
 
-        let index = try BundledFoodIndex(url: url, prefersCroatian: true)
-        #expect(try index.search("losos pecen", limit: 5).contains { $0.name == "Losos, atlantski, uzgojeni, pečen" })
-        #expect(try index.search("banana raw", limit: 5).contains { $0.englishName == "Bananas, raw" })
+        let index = try BundledFoodIndex(url: url)
+        #expect(try index.search("losos pecen", limit: 5, language: .croatian).contains { $0.name == "Losos, atlantski, uzgojeni, pečen" })
+        #expect(try index.search("banana raw", limit: 5, language: .croatian).contains { $0.englishName == "Bananas, raw" })
     }
 }

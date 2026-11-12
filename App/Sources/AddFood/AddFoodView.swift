@@ -169,7 +169,10 @@ struct AddFoodView: View {
             .task(id: query) { await runSearch() }
             .task(id: OnlineSearchKey(query: query.trimmingCharacters(in: .whitespacesAndNewlines), isOnline: scope == .online)) {
                 guard scope == .online else { return }
-                await online.search(query, offSearch: environment.offSearch, usda: environment.usda)
+                await online.search(
+                    query, offSearch: environment.offSearch, usda: environment.usda,
+                    nameLanguage: environment.foodNameLanguage,
+                )
             }
             .sheet(item: $servingPrompt) { pending in
                 ServingWeightPrompt(detail: pending.detail) { detail in

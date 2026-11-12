@@ -19,6 +19,13 @@ enum Fixture {
     }
 }
 
+extension OpenFoodFactsSearchHTTPClient {
+    /// English names, for tests that don't care about the food name language.
+    func search(query: String) async throws -> [FoodDraft] {
+        try await search(query: query, nameLanguage: .english)
+    }
+}
+
 /// True when `value` is within `tolerance` of `expected`. Keeps arithmetic out of `#expect` (CI type-checker limits).
 func isClose(_ value: Double?, _ expected: Double, tolerance: Double = 0.01) -> Bool {
     guard let value else { return false }

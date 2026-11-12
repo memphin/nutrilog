@@ -120,7 +120,7 @@ struct FoodSearchTests {
             .deletingLastPathComponent().deletingLastPathComponent()
             .appendingPathComponent("Resources/FoodIndex/bundled_foods.sqlite")
         guard FileManager.default.fileExists(atPath: url.path) else { return }
-        let index = try BundledFoodIndex(url: url, prefersCroatian: false)
+        let index = try BundledFoodIndex(url: url)
         #expect(try index.count() >= 300)
         #expect(try index.search("banana raw", limit: 5).contains { $0.name == "Bananas, raw" })
     }

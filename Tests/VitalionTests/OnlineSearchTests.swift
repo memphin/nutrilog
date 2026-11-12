@@ -48,6 +48,8 @@ private final class QueryRecorder: Sendable {
     private let recorded = Mutex<(queries: [String], cancelled: [String])>(([], []))
     /// What the stub reports as `rateLimitedUntil`.
     let pausedUntil = Mutex<Date?>(nil)
+    /// The food name language each Open Food Facts search was asked for.
+    let languages = Mutex<[FoodNameLanguage]>([])
     let handler: @Sendable (String) async throws -> [FoodDraft]
 
     init(_ handler: @escaping @Sendable (String) async throws -> [FoodDraft]) {
@@ -76,6 +78,11 @@ private final class QueryRecorder: Sendable {
 private struct StubOFFSearch: OpenFoodFactsSearchClient {
     let recorder: QueryRecorder
 
+    /// The food name language of every search, in order.
+    var languages: [FoodNameLanguage] {
+        recorder.languages.withLock { $0 }
+    }
+
     var rateLimitedUntil: Date? {
         recorder.pausedUntil.withLock { $0 }
     }
@@ -84,8 +91,16 @@ private struct StubOFFSearch: OpenFoodFactsSearchClient {
         recorder = QueryRecorder(handler)
     }
 
-    func search(query: String) async throws -> [FoodDraft] {
-        try await recorder.run(query)
+    func search(query: String, nameLanguage: FoodNameLanguage) async throws -> [FoodDraft] {
+        recorder.languages.withLock { $0.append(nameLanguage) }
+        return try await recorder.run(query)
+    }
+}
+
+private extension OnlineSearchModel {
+    /// English food names, for tests that don't care about the food name language.
+    func search(_ text: String, offSearch: any OpenFoodFactsSearchClient, usda: any USDAClient) async {
+        await search(text, offSearch: offSearch, usda: usda, nameLanguage: .english)
     }
 }
 
@@ -102,7 +117,7 @@ private final class PausingOFF: OpenFoodFactsSearchClient {
         paused.withLock { $0 } ? until : nil
     }
 
-    func search(query _: String) async throws -> [FoodDraft] {
+    func search(query _: String, nameLanguage _: FoodNameLanguage) async throws -> [FoodDraft] {
         paused.withLock { $0 = true }
         throw OpenFoodFactsError.rateLimited
     }
@@ -208,6 +223,13 @@ struct OnlineSearchModelTests {
         #expect(model.results.map(\.name) == ["Banana, raw", "Banana chips"])
         #expect(model.results.allSatisfy { $0.source == .usda })
         #expect(!model.isLoading)
+    }
+
+    @Test func `open food facts is searched in the food name language`() async {
+        let off = StubOFFSearch { _ in [draft(.off, "3850104012341", "Vegeta dodatak jelima")] }
+        let model = OnlineSearchModel(debounce: .zero)
+        await model.search("vegeta", offSearch: off, usda: StubUSDA(isAvailable: false), nameLanguage: .croatian)
+        #expect(off.languages == [.croatian])
     }
 
     @Test func `each source's results show as soon as they arrive`() async {

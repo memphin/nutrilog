@@ -27,7 +27,8 @@ public enum OFFFoodMapper {
         return amount
     }
 
-    public static func map(_ product: OFFProduct) -> FoodDraft {
+    /// - Parameter language: the food name language (Settings → Food names, resolved); see ``names(_:language:)``.
+    public static func map(_ product: OFFProduct, language: FoodNameLanguage = .english) -> FoodDraft {
         let isLiquid = isLiquid(product)
         let servingAmount = servingAmount(product)
         let servingDescription = clean(product.servingSize)
@@ -47,7 +48,7 @@ public enum OFFFoodMapper {
                 amount: amount,
             )
         }
-        let names = names(product)
+        let names = names(product, language: language)
         let code = product.code
 
         return FoodDraft(
@@ -75,7 +76,10 @@ public enum OFFFoodMapper {
 
     // MARK: - Names
 
-    static func names(_ product: OFFProduct) -> (name: String?, local: String?) {
+    /// The main name (`product_name`, else English, else Croatian, else the generic name) and the Croatian name as
+    /// the local one when it differs. In Croatian (`language`) the two swap: the Croatian name first, the main
+    /// name as the local one.
+    static func names(_ product: OFFProduct, language: FoodNameLanguage = .english) -> (name: String?, local: String?) {
         let name = clean(product.productName) ?? clean(product.productNameEN) ?? clean(product.productNameHR)
             ?? clean(product.genericName)
         guard let croatian = clean(product.productNameHR),
@@ -83,7 +87,7 @@ public enum OFFFoodMapper {
         else {
             return (name, nil)
         }
-        return (name, croatian)
+        return language == .croatian ? (croatian, name) : (name, croatian)
     }
 
     static func firstBrand(_ brands: String?) -> String? {
