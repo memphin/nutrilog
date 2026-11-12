@@ -1,0 +1,226 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "A barcode has 8, 12, 13 or 14 digits." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barkod ima 8, 12, 13 ili 14 znamenki."
+          }
+        }
+      }
+    },
+    "Barcode digits" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Znamenke barkoda"
+          }
+        }
+      }
+    },
+    "Camera Access Off" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pristup kameri isključen"
+          }
+        }
+      }
+    },
+    "Camera Restricted" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kamera ograničena"
+          }
+        }
+      }
+    },
+    "Camera Unavailable" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kamera nije dostupna"
+          }
+        }
+      }
+    },
+    "Camera access is restricted on this device, e.g. by Screen Time. You can type the barcode instead." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pristup kameri ograničen je na ovom uređaju, npr. putem Vremena uporabe zaslona. Barkod možeš i upisati."
+          }
+        }
+      }
+    },
+    "Cancel" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odustani"
+          }
+        }
+      }
+    },
+    "Enter Barcode" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unesi barkod"
+          }
+        }
+      }
+    },
+    "Enter Barcode Manually" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unesi barkod ručno"
+          }
+        }
+      }
+    },
+    "Enter Manually" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unesi ručno"
+          }
+        }
+      }
+    },
+    "Open Settings" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otvori Postavke"
+          }
+        }
+      }
+    },
+    "Scanning Not Available" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skeniranje nije dostupno"
+          }
+        }
+      }
+    },
+    "The camera can't be used right now, e.g. because another app is using it. You can type the barcode instead." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kamera se trenutačno ne može koristiti, npr. zato što je koristi druga aplikacija. Barkod možeš i upisati."
+          }
+        }
+      }
+    },
+    "The check digit doesn't match. Please re-check the number." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kontrolna znamenka ne odgovara. Ponovno provjeri broj."
+          }
+        }
+      }
+    },
+    "This device can't scan barcodes with the camera. You can type the barcode instead." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ovaj uređaj ne može skenirati barkodove kamerom. Barkod možeš i upisati."
+          }
+        }
+      }
+    },
+    "This is an outer-pack code. Type the 13 digits printed on the product itself." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ovo je kod vanjskog pakiranja. Upiši 13 znamenki otisnutih na samom proizvodu."
+          }
+        }
+      }
+    },
+    "Turn Torch Off" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Isključi svjetiljku"
+          }
+        }
+      }
+    },
+    "Turn Torch On" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uključi svjetiljku"
+          }
+        }
+      }
+    },
+    "Type the 8, 12, 13 or 14 digits printed under the barcode." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upiši 8, 12, 13 ili 14 znamenki otisnutih ispod barkoda."
+          }
+        }
+      }
+    },
+    "Use Barcode" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koristi barkod"
+          }
+        }
+      }
+    },
+    "Use digits only." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upiši samo znamenke."
+          }
+        }
+      }
+    },
+    "Vitalion needs the camera to scan product barcodes. Turn on Camera for Vitalion in Settings, or type the barcode instead." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vitalion treba kameru za skeniranje barkodova proizvoda. Uključi Kameru za Vitalion u Postavkama ili upiši barkod."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

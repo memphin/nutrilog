@@ -20,6 +20,7 @@ Log what you eat (barcode scan, search, saved meals) and see it next to how your
 
 - Fast food diary with meal slots, recents, favorites, quick-add, copy meal/day, and **saved meals** (a list of foods with amounts, built from scratch or from a logged meal; log it in one tap)
 - Snap or describe a meal: a photo or a sentence becomes foods with amounts and calories, estimated on the iPhone by Apple Intelligence (no account, nothing sent anywhere)
+- English and Croatian UI (follows the iOS language, incl. Settings → Vitalion → Language); bundled foods searchable by Croatian or English name
 - Barcode scanning (VisionKit) with Open Food Facts lookup and one-tap manual entry when a product is missing
 - Offline search over a bundled USDA FoodData Central subset + your own foods (SQLite FTS5, diacritic-insensitive); online search in Open Food Facts and USDA
 - Calorie and macro targets, **adaptive maintenance (TDEE) estimate** from your intake and smoothed weight trend, and a **weekly check-in** that proposes a target — every number explains how it was computed

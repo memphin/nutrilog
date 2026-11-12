@@ -1,0 +1,83 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "1 serving" : {
+      "comment" : "Name of a stand-in serving",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 porcija"
+          }
+        }
+      }
+    },
+    "Enter a weight above 0." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unesi težinu veću od 0."
+          }
+        }
+      }
+    },
+    "Enter a weight between %@ and %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Enter a weight between %1$@ and %2$@."
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unesi težinu između %1$@ i %2$@."
+          }
+        }
+      }
+    },
+    "Nutrition per serving; the serving weight given (%@) can't be used to work out values per 100, so 1 serving is counted as 100 g/ml." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nutritivne vrijednosti po porciji; navedena težina porcije (%@) ne može se upotrijebiti za izračun vrijednosti na 100, pa se 1 porcija računa kao 100 g/ml."
+          }
+        }
+      }
+    },
+    "Nutrition per serving; the serving weight is unknown, so 1 serving is counted as 100 g/ml." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nutritivne vrijednosti po porciji; težina porcije nije poznata, pa se 1 porcija računa kao 100 g/ml."
+          }
+        }
+      }
+    },
+    "That weight would mean %@ g of protein, carbs and fat per 100. Check the weight." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta bi težina značila %@ g proteina, ugljikohidrata i masti na 100. Provjeri težinu."
+          }
+        }
+      }
+    },
+    "That weight would mean %@ kcal per 100 — more than pure fat. Check the weight." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta bi težina značila %@ kcal na 100 — više nego čista mast. Provjeri težinu."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

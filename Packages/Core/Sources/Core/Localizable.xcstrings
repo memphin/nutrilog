@@ -1,0 +1,353 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%lld of the last %lld days are fully logged; the estimate needs at least %lld." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of the last %2$lld days are fully logged; the estimate needs at least %3$lld."
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Od posljednjih %2$lld dana potpuno je zapisano: %1$lld. Za procjenu treba barem %3$lld."
+          }
+        }
+      }
+    },
+    "%lld weigh-ins in the last %lld days; the estimate needs at least %lld." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld weigh-ins in the last %2$lld days; the estimate needs at least %3$lld."
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vaganja u posljednjih %2$lld dana: %1$lld. Za procjenu treba barem %3$lld."
+          }
+        }
+      }
+    },
+    "%lld%% above your 30-day average" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld %% iznad tvog prosjeka za 30 dana"
+          }
+        }
+      }
+    },
+    "%lld%% below your 30-day average" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld %% ispod tvog prosjeka za 30 dana"
+          }
+        }
+      }
+    },
+    "Black tea" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crni čaj"
+          }
+        }
+      }
+    },
+    "Close (within 15%)" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blizu (unutar 15 %)"
+          }
+        }
+      }
+    },
+    "Cola" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kola"
+          }
+        }
+      }
+    },
+    "Desk job, little or no exercise" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjedeći posao, malo ili nimalo vježbanja"
+          }
+        }
+      }
+    },
+    "Energy drink" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Energetsko piće"
+          }
+        }
+      }
+    },
+    "Espresso" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Espresso"
+          }
+        }
+      }
+    },
+    "Extremely active" : {
+      "comment" : "Activity level",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrlo visoka aktivnost"
+          }
+        }
+      }
+    },
+    "Filter coffee" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter kava"
+          }
+        }
+      }
+    },
+    "Green tea" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeleni čaj"
+          }
+        }
+      }
+    },
+    "Hard exercise 6–7 days a week" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Naporno vježbanje 6–7 dana tjedno"
+          }
+        }
+      }
+    },
+    "High confidence" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visoka pouzdanost"
+          }
+        }
+      }
+    },
+    "In line with your 30-day average" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "U skladu s tvojim prosjekom za 30 dana"
+          }
+        }
+      }
+    },
+    "Light exercise 1–3 days a week" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagano vježbanje 1–3 dana tjedno"
+          }
+        }
+      }
+    },
+    "Lightly active" : {
+      "comment" : "Activity level",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagana aktivnost"
+          }
+        }
+      }
+    },
+    "Logged, no target" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zapisano, bez cilja"
+          }
+        }
+      }
+    },
+    "Low confidence" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Niska pouzdanost"
+          }
+        }
+      }
+    },
+    "Matcha" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Matcha"
+          }
+        }
+      }
+    },
+    "Medium confidence" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Srednja pouzdanost"
+          }
+        }
+      }
+    },
+    "Moderate exercise 3–5 days a week" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Umjereno vježbanje 3–5 dana tjedno"
+          }
+        }
+      }
+    },
+    "Moderately active" : {
+      "comment" : "Activity level",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Umjerena aktivnost"
+          }
+        }
+      }
+    },
+    "Not logged" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nije zapisano"
+          }
+        }
+      }
+    },
+    "Off target" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Izvan cilja"
+          }
+        }
+      }
+    },
+    "On target (within 5%)" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Na cilju (unutar 5 %)"
+          }
+        }
+      }
+    },
+    "Physical job plus hard training" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fizički posao uz naporne treninge"
+          }
+        }
+      }
+    },
+    "Sedentary" : {
+      "comment" : "Activity level",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minimalna aktivnost"
+          }
+        }
+      }
+    },
+    "Very active" : {
+      "comment" : "Activity level",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visoka aktivnost"
+          }
+        }
+      }
+    },
+    "Weight change measured from your smoothed weight trend." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Promjena težine računa se iz tvog izglađenog trenda težine."
+          }
+        }
+      }
+    },
+    "Your weight history is too short. Keep weighing in for about a week." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tvoja povijest težine prekratka je. Nastavi se vagati još otprilike tjedan dana."
+          }
+        }
+      }
+    },
+    "Your weight trend is still young or your weigh-ins are sparse, so the change is measured with a straight line through this window's weigh-ins instead." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tvoj trend težine još je mlad ili su ti vaganja rijetka, pa se promjena umjesto toga mjeri ravnom linijom kroz vaganja u ovom razdoblju."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

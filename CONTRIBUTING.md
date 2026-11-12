@@ -21,6 +21,13 @@ Thanks for your interest. Vitalion is a personal, spare-time project — contrib
 - Prefer value types, `actor`s for shared mutable state, `async/await` for I/O.
 - Persisted models live in `Packages/Persistence`; domain logic in `Packages/Core` (pure Swift, no Foundation networking, no HealthKit).
 
+## Localization (English + Croatian)
+- The UI is English with a Croatian translation, in String Catalogs: `App/Resources/*.xcstrings`, `Widgets/Localizable.xcstrings` and `Packages/<Name>/Sources/<Name>/Localizable.xcstrings`. The language follows iOS (Settings → Vitalion → Language); there is no in-app switch.
+- SwiftUI literals (`Text("Save")`) are localized automatically. Any other `String` shown to the user goes through `String(localized: "…")` (in a package: `bundle: .module`). Counts are one interpolated `Int` (`String(localized: "\(count) foods")`) with plural forms in the catalog, never `count == 1 ? … : …`; Croatian has three forms (1, 2–4, 5+).
+- Numbers and dates on screen use the current locale (`FormatStyle`), never `String(format:)` or a fixed `en_US`.
+- New strings land in the catalogs when you build in Xcode, or run `xcodebuild -exportLocalizations -project Vitalion.xcodeproj -scheme Vitalion -localizationPath /tmp/loc -exportLanguage hr`. Add the Croatian (informal "ti") in Xcode's catalog editor, or write a JSON file and apply it with `tools/apply_translations.py <catalog> <translations.json>`. CI fails when a key has no Croatian.
+- Bundled food names: `tools/food_names_hr.csv` (see `tools/README.md`).
+
 ## Database changes
 - Never edit an existing migration. Add a new numbered file in `Packages/Persistence/Sources/Persistence/Migrations/` and register it in `Migrator.swift`.
 - Keep SQL portable (SQLite ⇄ Postgres): no SQLite-only column types, use `TEXT` ISO-8601 for dates, `TEXT` UUIDs, `INTEGER` 0/1 for booleans.

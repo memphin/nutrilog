@@ -1,0 +1,401 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@ %@ left" : {
+      "comment" : "Energy left today, e.g. “640 kcal left”",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@ left"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Još %1$@ %2$@"
+          }
+        }
+      }
+    },
+    "%@ %@ over" : {
+      "comment" : "Energy over the target, e.g. “120 kcal over”",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@ over"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ %2$@ previše"
+          }
+        }
+      }
+    },
+    "%@ left" : {
+      "comment" : "Caption under the remaining energy, e.g. “kcal left”",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ preostalo"
+          }
+        }
+      }
+    },
+    "%@ over" : {
+      "comment" : "Caption under the remaining energy, e.g. “kcal over”",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ previše"
+          }
+        }
+      }
+    },
+    "%lld / %lld g" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld / %2$lld g"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld / %2$lld g"
+          }
+        }
+      }
+    },
+    "%lld g" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld g"
+          }
+        }
+      }
+    },
+    "%lld grams" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld gram"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld grams"
+                }
+              }
+            }
+          }
+        },
+        "hr" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld grama"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld gram"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld grama"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld h %@" : {
+      "comment" : "Sleep duration, hours and two-digit minutes, e.g. “7 h 05”",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld h %2$@"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld h %2$@"
+          }
+        }
+      }
+    },
+    "%lld of %lld grams" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld grams"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld od %2$lld grama"
+          }
+        }
+      }
+    },
+    "%lld steps" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld step"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld steps"
+                }
+              }
+            }
+          }
+        },
+        "hr" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld koraka"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld korak"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld koraka"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Calories" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kalorije"
+          }
+        }
+      }
+    },
+    "Calories & macros" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kalorije i makronutrijenti"
+          }
+        }
+      }
+    },
+    "Calories left" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preostale kalorije"
+          }
+        }
+      }
+    },
+    "Calories left and today's protein, carbs and fat against your targets." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preostale kalorije te današnji proteini, ugljikohidrati i masti u odnosu na tvoje ciljeve."
+          }
+        }
+      }
+    },
+    "Calories, steps, sleep, weight and hydration for today." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kalorije, koraci, san, težina i hidracija za danas."
+          }
+        }
+      }
+    },
+    "Carbs" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ugljikohidrati"
+          }
+        }
+      }
+    },
+    "Fat" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masti"
+          }
+        }
+      }
+    },
+    "How much of today's calorie target is left." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koliko ti je još ostalo od današnjeg kalorijskog cilja."
+          }
+        }
+      }
+    },
+    "Hydration" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hidracija"
+          }
+        }
+      }
+    },
+    "Hydration %lld / %lld ml" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Hydration %1$lld / %2$lld ml"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voda %1$lld / %2$lld ml"
+          }
+        }
+      }
+    },
+    "Open Vitalion" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otvori Vitalion"
+          }
+        }
+      }
+    },
+    "Protein" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Proteini"
+          }
+        }
+      }
+    },
+    "Sleep" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "San"
+          }
+        }
+      }
+    },
+    "Steps" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koraci"
+          }
+        }
+      }
+    },
+    "Today" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Danas"
+          }
+        }
+      }
+    },
+    "Weight" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Težina"
+          }
+        }
+      }
+    },
+    "left" : {
+      "comment" : "Energy left today (widget caption)",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "preostalo"
+          }
+        }
+      }
+    },
+    "over" : {
+      "comment" : "Energy over the target (widget caption)",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "previše"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

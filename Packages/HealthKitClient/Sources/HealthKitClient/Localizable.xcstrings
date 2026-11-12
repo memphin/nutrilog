@@ -1,0 +1,439 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Active energy" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktivna energija"
+          }
+        }
+      }
+    },
+    "Body fat" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tjelesna mast"
+          }
+        }
+      }
+    },
+    "Body fat from your scale, shown alongside your weight." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tjelesna mast s tvoje vage, prikazana uz tvoju težinu."
+          }
+        }
+      }
+    },
+    "Calories burned through activity, shown next to what you eat." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kalorije potrošene aktivnošću, prikazane uz ono što jedeš."
+          }
+        }
+      }
+    },
+    "Calories your body burns at rest; with active energy it shows your total burn." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kalorije koje tvoje tijelo troši u mirovanju; uz aktivnu energiju pokazuju tvoju ukupnu potrošnju."
+          }
+        }
+      }
+    },
+    "Carbohydrates" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ugljikohidrati"
+          }
+        }
+      }
+    },
+    "Date of birth" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Datum rođenja"
+          }
+        }
+      }
+    },
+    "Energy consumed" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unesena energija"
+          }
+        }
+      }
+    },
+    "Fat" : {
+      "comment" : "The macronutrient",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masti"
+          }
+        }
+      }
+    },
+    "Fiber" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vlakna"
+          }
+        }
+      }
+    },
+    "Heart rate variability" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Varijabilnost otkucaja srca"
+          }
+        }
+      }
+    },
+    "Height" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visina"
+          }
+        }
+      }
+    },
+    "No data found — check Health permissions" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nema podataka — provjeri dopuštenja za Zdravlje"
+          }
+        }
+      }
+    },
+    "Only body fat you enter by hand with a weight in Vitalion. Values from your scale are never written back." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Samo tjelesna mast koju ručno uneseš uz težinu u Vitalionu. Vrijednosti s tvoje vage nikad se ne zapisuju natrag."
+          }
+        }
+      }
+    },
+    "Only weights you enter by hand in Vitalion. Weights from your scale are never written back." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Samo težine koje ručno uneseš u Vitalionu. Težine s tvoje vage nikad se ne zapisuju natrag."
+          }
+        }
+      }
+    },
+    "Protein" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Proteini"
+          }
+        }
+      }
+    },
+    "Recovery context from your Apple Watch. Informational only." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kontekst oporavka s tvojeg Apple Watcha. Samo informativno."
+          }
+        }
+      }
+    },
+    "Resting energy" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Energija u mirovanju"
+          }
+        }
+      }
+    },
+    "Resting heart rate" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Puls u mirovanju"
+          }
+        }
+      }
+    },
+    "Settings › Health › Data Access & Devices › Vitalion" : {
+      "comment" : "Path in the iOS Settings app; use the iOS menu names of the language",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Postavke › Zdravlje › Pristup podacima i uređaji › Vitalion"
+          }
+        }
+      }
+    },
+    "Sex" : {
+      "comment" : "Biological sex (Health data type)",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spol"
+          }
+        }
+      }
+    },
+    "Sleep" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spavanje"
+          }
+        }
+      }
+    },
+    "Sodium" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Natrij"
+          }
+        }
+      }
+    },
+    "Steps" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koraci"
+          }
+        }
+      }
+    },
+    "Sugar" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šećer"
+          }
+        }
+      }
+    },
+    "The calories of each diary entry, updated when you edit or delete it." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kalorije svakog unosa u dnevniku, ažurirane kad ga urediš ili obrišeš."
+          }
+        }
+      }
+    },
+    "The carbohydrates of each diary entry, updated when you edit or delete it." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ugljikohidrati svakog unosa u dnevniku, ažurirani kad ga urediš ili obrišeš."
+          }
+        }
+      }
+    },
+    "The fat of each diary entry, updated when you edit or delete it." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masti svakog unosa u dnevniku, ažurirane kad ga urediš ili obrišeš."
+          }
+        }
+      }
+    },
+    "The fiber of each diary entry, updated when you edit or delete it." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vlakna svakog unosa u dnevniku, ažurirana kad ga urediš ili obrišeš."
+          }
+        }
+      }
+    },
+    "The protein of each diary entry, updated when you edit or delete it." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Proteini svakog unosa u dnevniku, ažurirani kad ga urediš ili obrišeš."
+          }
+        }
+      }
+    },
+    "The sodium of each diary entry, updated when you edit or delete it." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Natrij svakog unosa u dnevniku, ažuriran kad ga urediš ili obrišeš."
+          }
+        }
+      }
+    },
+    "The sugar of each diary entry, updated when you edit or delete it." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šećer svakog unosa u dnevniku, ažuriran kad ga urediš ili obrišeš."
+          }
+        }
+      }
+    },
+    "Time asleep and in bed, with sleep stages, from your Apple Watch." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrijeme sna i vrijeme u krevetu, uz faze sna, s tvojeg Apple Watcha."
+          }
+        }
+      }
+    },
+    "Today's steps next to your diary. Steps from Apple Watch and iPhone are counted once." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Današnji koraci uz tvoj dnevnik. Koraci s Apple Watcha i iPhonea broje se samo jednom."
+          }
+        }
+      }
+    },
+    "Used by the calorie needs formula (Mifflin-St Jeor)." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koristi se u formuli za kalorijske potrebe (Mifflin-St Jeor)."
+          }
+        }
+      }
+    },
+    "Used with your age, sex and weight to estimate your calorie needs." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koristi se uz tvoju dob, spol i težinu za procjenu kalorijskih potreba."
+          }
+        }
+      }
+    },
+    "Water" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voda"
+          }
+        }
+      }
+    },
+    "Water logged in other apps also counts toward your daily water goal." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voda zapisana u drugim aplikacijama također se računa u tvoj dnevni cilj za vodu."
+          }
+        }
+      }
+    },
+    "Water you log in Vitalion." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voda koju zapišeš u Vitalionu."
+          }
+        }
+      }
+    },
+    "Weight" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Težina"
+          }
+        }
+      }
+    },
+    "Your age, for the calorie needs estimate." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tvoja dob, za procjenu kalorijskih potreba."
+          }
+        }
+      }
+    },
+    "Your morning weigh-in, for the weight trend and the adaptive calorie target." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tvoje jutarnje vaganje, za trend težine i prilagodljivi kalorijski cilj."
+          }
+        }
+      }
+    },
+    "Your overnight HRV average from Apple Watch, as recovery context. Informational only." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tvoj noćni prosjek HRV-a s Apple Watcha, kao kontekst oporavka. Samo informativno."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

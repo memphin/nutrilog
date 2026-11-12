@@ -1,0 +1,323 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ %2$@"
+          }
+        }
+      }
+    },
+    "%@ %@ %@" : {
+      "comment" : "Spoken progress without a target, e.g. “Protein 120 grams”",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@ %3$@"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ %2$@ %3$@"
+          }
+        }
+      }
+    },
+    "%@ %@ eaten, no target set" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@ eaten, no target set"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ %2$@ pojedeno, cilj nije postavljen"
+          }
+        }
+      }
+    },
+    "%@ %@ of %@ %@" : {
+      "comment" : "Spoken progress, e.g. “Protein 120 of 160 grams”",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@ of %3$@ %4$@"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ %2$@ od %3$@ %4$@"
+          }
+        }
+      }
+    },
+    "%@ %@ over target of %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@ over target of %3$@"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ %2$@ iznad cilja od %3$@"
+          }
+        }
+      }
+    },
+    "%@ %@ remaining of %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@ remaining of %3$@"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ %2$@ preostalo od %3$@"
+          }
+        }
+      }
+    },
+    "%@ eaten" : {
+      "comment" : "Energy ring caption, e.g. “kcal eaten”",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ pojedeno"
+          }
+        }
+      }
+    },
+    "%@ left" : {
+      "comment" : "Energy ring caption, e.g. “kcal left”",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ preostalo"
+          }
+        }
+      }
+    },
+    "%@ over" : {
+      "comment" : "Energy ring caption, e.g. “kcal over”",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ previše"
+          }
+        }
+      }
+    },
+    "C" : {
+      "comment" : "One-letter abbreviation of Carbs",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "U"
+          }
+        }
+      }
+    },
+    "Carbs" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ugljikohidrati"
+          }
+        }
+      }
+    },
+    "F" : {
+      "comment" : "One-letter abbreviation of Fat (the macronutrient)",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "M"
+          }
+        }
+      }
+    },
+    "Fat" : {
+      "comment" : "The macronutrient",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masti"
+          }
+        }
+      }
+    },
+    "Mine" : {
+      "comment" : "Source badge on the user's own foods",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moje"
+          }
+        }
+      }
+    },
+    "P" : {
+      "comment" : "One-letter abbreviation of Protein",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "P"
+          }
+        }
+      }
+    },
+    "Protein" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Proteini"
+          }
+        }
+      }
+    },
+    "Protein %@ grams, carbs %@ grams, fat %@ grams" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Protein %1$@ grams, carbs %2$@ grams, fat %3$@ grams"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Proteini %1$@ grama, ugljikohidrati %2$@ grama, masti %3$@ grama"
+          }
+        }
+      }
+    },
+    "Something went wrong" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nešto je pošlo po zlu"
+          }
+        }
+      }
+    },
+    "Try again" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pokušaj ponovno"
+          }
+        }
+      }
+    },
+    "Your food" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tvoja namirnica"
+          }
+        }
+      }
+    },
+    "calories" : {
+      "comment" : "Spoken unit after a number",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "kalorija"
+          }
+        }
+      }
+    },
+    "grams" : {
+      "comment" : "Spoken unit after a number",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "grama"
+          }
+        }
+      }
+    },
+    "kilojoules" : {
+      "comment" : "Spoken unit after a number",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "kilodžula"
+          }
+        }
+      }
+    },
+    "milligrams" : {
+      "comment" : "Spoken unit after a number",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "miligrama"
+          }
+        }
+      }
+    },
+    "millilitres" : {
+      "comment" : "Spoken unit after a number",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "mililitara"
+          }
+        }
+      }
+    },
+    "—" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "—"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}
