@@ -50,6 +50,12 @@ public struct DayStats: Hashable, Sendable {
         intake?.kcal
     }
 
+    /// The day's intake can be trusted as a whole day: the same rule as the maintenance estimate
+    /// (`AdaptiveTDEE.isLogged(entryCount:isComplete:)`), so a day with only breakfast logged is left out.
+    public var isLogged: Bool {
+        intake != nil && AdaptiveTDEE.isLogged(entryCount: entryCount, isComplete: isComplete)
+    }
+
     /// Active + resting energy burned; nil unless both are known (a partial value would read as a low day).
     public var totalBurnedKcal: Double? {
         guard let activeKcal, let basalKcal else { return nil }
