@@ -60,6 +60,17 @@ struct FoodNameLanguageTests {
         #expect(try env.mealPlan?.entry(id: planned.id)?.displayName == planned.displayName)
     }
 
+    @Test func `a launch rename started before a change can't undo it`() async throws {
+        let env = AppEnvironment.preview(appFoodNameLanguage: .english)
+        let copy = try #require(env.foods).localCopy(of: bundledSalmon(env))
+        let entry = try #require(env.diary).log(food: copy, quantity: .base(150), slotID: "dinner", day: env.today)
+        let launch = env.applyFoodNameLanguageInBackground() // started with English
+        try env.setFoodNamePreference(.croatian)
+        await launch?.value
+        #expect(try env.foods?.food(id: copy.id)?.name == Self.salmonHR)
+        #expect(try env.diary?.entry(id: entry.id)?.displayName == Self.salmonHR)
+    }
+
     @Test func `english in a croatian app shows english names`() throws {
         let env = AppEnvironment.preview(appFoodNameLanguage: .croatian)
         try env.setFoodNamePreference(.english)

@@ -17,10 +17,34 @@ public extension FoodRepository {
     /// Idempotent and cheap: run it when the setting changes and at every launch. Returns the number of rows changed.
     @discardableResult
     func applyBundledNames(_ language: FoodNameLanguage, from index: BundledFoodIndex) throws -> Int {
+        try applyBundledNames(from: index) { _ in language }.changes
+    }
+
+    /// Like ``applyBundledNames(_:from:)``, but reads Settings → Food names (the `setting` row `preferenceKey`)
+    /// inside the same write. Writes run one at a time, so whichever switch writes last applies the latest choice:
+    /// a switch started at launch can't undo a change made right after. Returns the language applied and the number
+    /// of rows changed.
+    @discardableResult
+    func applyBundledNames(
+        from index: BundledFoodIndex,
+        preferenceKey: String,
+        appLanguage: FoodNameLanguage,
+    ) throws -> (language: FoodNameLanguage, changes: Int) {
+        try applyBundledNames(from: index) { db in
+            let raw = try? ProfileRepository.setting(db, preferenceKey, as: String.self)
+            return (raw.flatMap(FoodNamePreference.init(rawValue:)) ?? .default).resolved(appLanguage: appLanguage)
+        }
+    }
+
+    private func applyBundledNames(
+        from index: BundledFoodIndex,
+        resolve: @escaping @Sendable (Database) throws -> FoodNameLanguage,
+    ) throws -> (language: FoodNameLanguage, changes: Int) {
         let names = try index.bilingualNames()
-        guard !names.isEmpty else { return 0 }
         let now = clock.now()
         return try database.writer.write { db in
+            let language = try resolve(db)
+            guard !names.isEmpty else { return (language, 0) }
             var changes = 0
             let copies = try Food
                 .filter([FoodSource.bundled, .usda].contains(Food.Columns.source) && Food.Columns.sourceID != nil)
@@ -52,7 +76,7 @@ public extension FoodRepository {
                     changes += 1
                 }
             }
-            return changes
+            return (language, changes)
         }
     }
 }
