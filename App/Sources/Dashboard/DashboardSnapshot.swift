@@ -30,6 +30,7 @@ struct DashboardData: Equatable {
     var hydrationSettings = HydrationSettings.default
     var stepGoal: Int = StepGoal.defaultSteps
     var sleepGoalMin: Int = SleepGoal.defaultMinutes
+    var activeEnergyGoalKcal: Int = ActiveEnergyGoal.defaultKcal
     /// The profile's goal (lose, maintain, gain): which way the weight should move.
     var goalMode: GoalMode = .maintain
     /// Caffeine of `caffeineWindow` (quick-adds and diary entries): last night's still counts this morning.
@@ -190,6 +191,7 @@ struct DashboardSnapshot: Equatable {
     let target: Target?
     let stepGoal: Int
     let sleepGoalMin: Int
+    let activeEnergyGoalKcal: Int
     let goalMode: GoalMode
     /// Mean weight / body fat of the 7 days before the latest value (`WeeklyBand.average`); nil with too few days.
     let weeklyWeightKg: Double?
@@ -234,6 +236,7 @@ struct DashboardSnapshot: Equatable {
         target = data.effectiveTarget
         stepGoal = data.stepGoal
         sleepGoalMin = data.sleepGoalMin
+        activeEnergyGoalKcal = data.activeEnergyGoalKcal
         goalMode = data.goalMode
         var kgByDay: [LocalDay: Double] = [:]
         var fatByDay: [LocalDay: Double] = [:]

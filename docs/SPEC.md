@@ -426,6 +426,7 @@ All blocking decisions are made (D1–D9). The following defaults may be changed
 ---
 
 *Change log*
+- 1.9 — owner request: the Total energy tile is coloured by an active energy goal (Settings → Daily goals, default 500 kcal, 100–3000 in steps of 50): only the active part is read, green at the goal, orange from 80 % of it, red below; on the tile the active line and on the sparkline the active part of each bar carry the colour, the resting part and the total stay uncoloured (2026-11-12)
 - 1.8 — owner request: training days (FR-32) raise that day's calorie target (as carbs) and hydration goal by a boost %; the sleep streak counts today once last night's sleep is recorded, so a short night hides the badge (2026-11-12)
 - 1.7 — owner request: a Caffeine tile on Today (FR-49), with caffeine as an optional nutrient of foods and diary entries (migration 010) and Settings → Caffeine (2026-11-11)
 - 1.6 — owner request: simpler logging with "Snap or describe a meal" (FR-8). Photo logging moves from "COULD, only if a free/local model is viable" (§3, §13 phase 5) to SHOULD, built on the free on-device Apple Intelligence model, with matching against local foods as the fallback. No new network destination (2026-11-10)

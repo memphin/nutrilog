@@ -89,6 +89,53 @@ struct DashboardFeedbackTests {
             == "Steps, 8.500 steps, close to the goal of 10.000")
     }
 
+    // MARK: Active energy goal
+
+    @Test func `active energy is banded by its goal`() {
+        #expect(ActiveEnergyGoal.band(kcal: 500, goal: 500) == .reached)
+        #expect(ActiveEnergyGoal.band(kcal: 800, goal: 500) == .reached)
+        #expect(ActiveEnergyGoal.band(kcal: 499, goal: 500) == .near)
+        #expect(ActiveEnergyGoal.band(kcal: 400, goal: 500) == .near)
+        #expect(ActiveEnergyGoal.band(kcal: 399, goal: 500) == .far)
+        #expect(ActiveEnergyGoal.band(kcal: 0, goal: 500) == .far)
+        #expect(GoalColor.activeEnergy(kcal: 600, goal: 500) == GoalColor.reached)
+        #expect(GoalColor.activeEnergy(kcal: 450, goal: 500) == GoalColor.near)
+        #expect(GoalColor.activeEnergy(kcal: 100, goal: 500) == GoalColor.missed)
+    }
+
+    @Test func `the active energy goal is saved, clamped and picked up by the dashboard`() throws {
+        let env = AppEnvironment.preview()
+        let profiles = try #require(env.profiles)
+        #expect(ActiveEnergyGoal.load(from: profiles) == 500)
+        try ActiveEnergyGoal.save(650, to: profiles)
+        #expect(ActiveEnergyGoal.load(from: profiles) == 650)
+        try ActiveEnergyGoal.save(10, to: profiles) // out of range: clamped
+        #expect(ActiveEnergyGoal.load(from: profiles) == ActiveEnergyGoal.validRange.lowerBound)
+        try ActiveEnergyGoal.save(700, to: profiles)
+        let model = DashboardModel(environment: env)
+        #expect(model.snapshot.activeEnergyGoalKcal == 700)
+        try ActiveEnergyGoal.save(300, to: profiles)
+        model.reloadSettings()
+        #expect(model.snapshot.activeEnergyGoalKcal == 300)
+    }
+
+    @Test func `total energy bars are coloured by the active part only`() throws {
+        var data = DashboardData(today: today)
+        data.activeEnergyGoalKcal = 400
+        data.metrics = [DailyMetricsRecord(DailyHealthMetrics(day: today, activeKcal: 300, basalKcal: 1700), fetchedAt: Date())]
+        let snapshot = DashboardSnapshot(data)
+        let point = try #require(snapshot.sparklines[.totalEnergy]?.points.last)
+        #expect(point.upper == 300)
+        // 2,000 kcal in total, but 300 active of a 400 goal: red, not green.
+        #expect(snapshot.goalColor(of: .totalEnergy, value: point.upper) == GoalColor.missed)
+        #expect(snapshot
+            .accessibilityLabel(of: .totalEnergy, state: .ready, locale: .dashboardEnglish) ==
+            "Total energy, 2,000 calories, active 300, below the active goal of 400, resting 1,700")
+        // In kilojoules the goal is spoken in kilojoules too.
+        #expect(snapshot.accessibilityLabel(of: .totalEnergy, state: .ready, energyUnit: .kilojoules, locale: .dashboardEnglish)
+            .contains("below the active goal of 1,674"))
+    }
+
     // MARK: Water (#64)
 
     @Test func `water is red far below its goal, orange close to it and green from it`() {
