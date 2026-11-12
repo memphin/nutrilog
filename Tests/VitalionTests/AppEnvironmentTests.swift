@@ -73,7 +73,7 @@ struct AppEnvironmentBehaviourTests {
         #expect(caffeine["173227"] == 20) // tea, black, brewed
         #expect(caffeine["174852"] == 9) // cola
         // Ids are stable across rebuilds (UUIDv5 of "fdc:<FDC id>").
-        #expect(try index.food(id: "ddd499e7-724f-5469-84c9-36311e1f25ac")?.sourceID == "171890")
+        #expect(try index.food(id: "ddd499e7-724f-5469-84c9-36311e1f25ac", language: .english)?.sourceID == "171890")
     }
 
     @Test func `sample data fills today`() throws {

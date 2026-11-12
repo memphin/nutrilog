@@ -718,7 +718,7 @@ struct FormattingTests {
         let bread = Food(name: "Bread", per100: Nutrients(kcal: 240, proteinG: 8, carbsG: 44, fatG: 3))
         #expect(FoodSearchResult.food(milk).isLiquid)
         #expect(!FoodSearchResult.food(bread).isLiquid)
-        let bundled = try #require(try BundledFoodIndex.inBundle(.main)?.search("rice", limit: 1).first)
+        let bundled = try #require(try BundledFoodIndex.inBundle(.main)?.search("rice", limit: 1, language: .english).first)
         #expect(!FoodSearchResult.bundled(bundled).isLiquid)
     }
 }

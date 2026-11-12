@@ -80,6 +80,25 @@ func day(_ string: String) -> LocalDay {
     LocalDay(string)!
 }
 
+extension BundledFoodIndex {
+    /// English names, for tests that don't care about the food name language.
+    func search(_ query: String, limit: Int) throws -> [BundledFood] {
+        try search(query, limit: limit, language: .english)
+    }
+
+    /// English names, for tests that don't care about the food name language.
+    func food(id: String) throws -> BundledFood? {
+        try food(id: id, language: .english)
+    }
+}
+
+extension FoodSearch {
+    /// English names, for tests that don't care about the food name language.
+    init(_ database: AppDatabase, bundled: BundledFoodIndex?) {
+        self.init(database, bundled: bundled, nameLanguage: .english)
+    }
+}
+
 /// Writes a small bundled index with the same schema as tools/build_food_index.py.
 func makeBundledIndex(rows: [(id: String, fdc: String, name: String, kcal: Double)]) throws -> BundledFoodIndex {
     let url = FileManager.default.temporaryDirectory.appendingPathComponent("bundled-\(UUID().uuidString).sqlite")

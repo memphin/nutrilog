@@ -4295,6 +4295,16 @@
         }
       }
     },
+    "Couldn't change the food names: %@" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Promjena naziva namirnica nije uspjela: %@"
+          }
+        }
+      }
+    },
     "Couldn't change the training day: %@" : {
       "localizations" : {
         "hr" : {
@@ -4748,6 +4758,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Napravljeno nakon neuspjele pretrage"
+          }
+        }
+      }
+    },
+    "Croatian" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hrvatski"
           }
         }
       }
@@ -5571,6 +5591,16 @@
         }
       }
     },
+    "English" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Engleski"
+          }
+        }
+      }
+    },
     "Enter a calorie target." : {
       "localizations" : {
         "hr" : {
@@ -6014,6 +6044,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Namirnica"
+          }
+        }
+      }
+    },
+    "Food names" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nazivi namirnica"
           }
         }
       }
@@ -7726,6 +7766,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Imenovane porcije poput „1 kriška = 25 g” ubrzavaju zapisivanje."
+          }
+        }
+      }
+    },
+    "Names of the built-in foods, also in your foods and diary, and of newly added Open Food Facts products. A name you edit stays as it is." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nazivi ugrađenih namirnica, i u tvojim namirnicama i dnevniku, te novododanih proizvoda s Open Food Facts. Naziv koji urediš ostaje kakav jest."
           }
         }
       }
@@ -10166,6 +10216,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sol (g)"
+          }
+        }
+      }
+    },
+    "Same as app" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kao aplikacija"
           }
         }
       }

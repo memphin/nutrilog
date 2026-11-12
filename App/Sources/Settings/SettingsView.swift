@@ -71,6 +71,19 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Picker("Food names", selection: foodNamePreference) {
+                        Text("Same as app").tag(FoodNamePreference.sameAsApp)
+                        Text("English").tag(FoodNamePreference.english)
+                        Text("Croatian").tag(FoodNamePreference.croatian)
+                    }
+                } footer: {
+                    Text("""
+                    Names of the built-in foods, also in your foods and diary, and of newly added Open Food Facts \
+                    products. A name you edit stays as it is.
+                    """)
+                }
+
+                Section {
                     usdaKeyRows
                     NavigationLink("Network access") { NetworkInfoView() }
                 } header: {
@@ -165,6 +178,16 @@ struct SettingsView: View {
                 try environment.setEnergyUnit(unit)
             } catch {
                 errorMessage = String(localized: "Couldn't save the energy unit: \(error.localizedDescription)")
+            }
+        })
+    }
+
+    private var foodNamePreference: Binding<FoodNamePreference> {
+        Binding(get: { environment.foodNamePreference }, set: { preference in
+            do {
+                try environment.setFoodNamePreference(preference)
+            } catch {
+                errorMessage = String(localized: "Couldn't change the food names: \(error.localizedDescription)")
             }
         })
     }

@@ -100,16 +100,21 @@ public struct BarcodeLookup: Sendable {
     let client: any OpenFoodFactsClient
     let policy: CachePolicy
     let clock: AppClock
+    /// The language products are named in (Settings → Food names, resolved): in Croatian, a product's Croatian name
+    /// comes first (``OFFFoodMapper``). Applies to new products only: a food already saved keeps its name.
+    let nameLanguage: FoodNameLanguage
 
     public init(
         database: AppDatabase,
         client: any OpenFoodFactsClient,
+        nameLanguage: FoodNameLanguage,
         policy: CachePolicy = .standard,
         clock: AppClock = .system,
     ) {
         foods = FoodRepository(database, clock: clock)
         cache = OFFProductCache(database, clock: clock)
         self.client = client
+        self.nameLanguage = nameLanguage
         self.policy = policy
         self.clock = clock
     }
@@ -218,7 +223,7 @@ public struct BarcodeLookup: Sendable {
     }
 
     private func remote(_ product: OFFProduct, key: String, fetchedAt: Date, origin: RemoteProduct.Origin) -> RemoteProduct {
-        var draft = OFFFoodMapper.map(product)
+        var draft = OFFFoodMapper.map(product, language: nameLanguage)
         draft.barcode = key // link the copy to the key it was found under, which may differ from OFF's code
         if draft.sourceID.isEmpty {
             draft.sourceID = key

@@ -1,3 +1,4 @@
+import Core
 import Foundation
 import Synchronization
 
@@ -7,12 +8,13 @@ public protocol OpenFoodFactsSearchClient: Sendable {
     /// End of the throttling cool-down while it lasts, else `nil` — for the "Open Food Facts paused" notice.
     var rateLimitedUntil: Date? { get }
 
-    /// Products matching `query`, mapped by ``OFFFoodMapper``, in OFF's order. Products without a code or without
-    /// any nutrition are left out. A blank query returns `[]` without a request.
+    /// Products matching `query`, mapped by ``OFFFoodMapper`` with names in `nameLanguage` (Settings → Food names,
+    /// resolved), in OFF's order. Products without a code or without any nutrition are left out. A blank query
+    /// returns `[]` without a request.
     ///
     /// Throws ``OpenFoodFactsError`` (never `.notFound` or `.invalidBarcode`; `.rateLimited` during the cool-down,
     /// without a request), or `CancellationError` when the task is cancelled.
-    func search(query: String) async throws -> [FoodDraft]
+    func search(query: String, nameLanguage: FoodNameLanguage) async throws -> [FoodDraft]
 }
 
 /// Client-side pacing for OFF search, shared by every copy of a client: at most one request per
@@ -139,7 +141,7 @@ public struct OpenFoodFactsSearchHTTPClient: OpenFoodFactsSearchClient {
         throttle.blockedUntil(now: now())
     }
 
-    public func search(query: String) async throws -> [FoodDraft] {
+    public func search(query: String, nameLanguage: FoodNameLanguage) async throws -> [FoodDraft] {
         let query = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return [] }
         try Task.checkCancellation()
@@ -177,7 +179,7 @@ public struct OpenFoodFactsSearchHTTPClient: OpenFoodFactsSearchClient {
         case 200 ..< 300:
             try Task.checkCancellation()
             guard let body = OFFSearchResponse.parse(data) else { throw OpenFoodFactsError.invalidResponse }
-            return body.products.compactMap(Self.draft)
+            return body.products.compactMap { Self.draft($0, language: nameLanguage) }
         case 429, 503:
             throttle.block(now: now())
             throw OpenFoodFactsError.rateLimited
@@ -212,9 +214,9 @@ public struct OpenFoodFactsSearchHTTPClient: OpenFoodFactsSearchClient {
 
     /// `product` as a draft, or `nil` when it can't be stored or logged: no code (the copy is keyed by it) or no
     /// nutrition at all.
-    static func draft(_ product: OFFProduct) -> FoodDraft? {
+    static func draft(_ product: OFFProduct, language: FoodNameLanguage = .english) -> FoodDraft? {
         guard !product.code.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
-        let draft = OFFFoodMapper.map(product)
+        let draft = OFFFoodMapper.map(product, language: language)
         guard draft.missingNutrients.count < FoodDraft.MandatoryNutrient.allCases.count else { return nil }
         return draft
     }

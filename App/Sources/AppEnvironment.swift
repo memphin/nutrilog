@@ -59,6 +59,17 @@ final class AppEnvironment {
     /// Display preference (Settings → Units); persisted in the `setting` table. Change it with `setEnergyUnit(_:)`.
     private(set) var energyUnit: EnergyUnit = .kcal
 
+    /// Settings → Food names; persisted in the `setting` table. Change it with `setFoodNamePreference(_:)`.
+    private(set) var foodNamePreference: FoodNamePreference = .default
+    /// The language iOS runs the app in, as a food name language: what *Same as app* means.
+    let appFoodNameLanguage: FoodNameLanguage
+
+    /// The language built-in food names are shown in: Settings → Food names, or the app language for *Same as app*.
+    /// Every reader of the bundled index (search, Smart log) and new Open Food Facts copies use it.
+    var foodNameLanguage: FoodNameLanguage {
+        foodNamePreference.resolved(appLanguage: appFoodNameLanguage)
+    }
+
     /// The current local day. Stored rather than computed so views re-render when it changes; `refreshToday()`
     /// updates it when the app becomes active or the system reports a significant time change (midnight).
     private(set) var today: LocalDay
@@ -108,7 +119,10 @@ final class AppEnvironment {
         // Where the prep list's ticks are kept across launches; nil keeps them in memory.
         prepTickDefaults: UserDefaults? = nil,
         backupsDirectory: URL? = nil,
+        // What *Same as app* resolves to; tests pass one to be independent of the simulator's language.
+        appFoodNameLanguage: FoodNameLanguage = FoodNameLanguage(localization: Bundle.main.preferredLocalizations.first),
     ) {
+        self.appFoodNameLanguage = appFoodNameLanguage
         prepTicks = PrepTickStore(defaults: prepTickDefaults)
         self.checkInReminder = checkInReminder
         self.hydrationReminder = hydrationReminder
@@ -177,8 +191,9 @@ final class AppEnvironment {
         db.map { ProfileRepository($0, clock: clock) }
     }
 
+    /// Built per use, so it always shows bundled foods in the current ``foodNameLanguage``.
     var search: FoodSearch? {
-        db.map { FoodSearch($0, bundled: bundledIndex) }
+        db.map { FoodSearch($0, bundled: bundledIndex, nameLanguage: foodNameLanguage) }
     }
 
     var portability: DataPortability? {
@@ -251,7 +266,7 @@ final class AppEnvironment {
 
     /// Barcode → local food / OFF product (backlog #19); nil when the database could not be opened.
     var barcodeLookup: BarcodeLookup? {
-        db.map { BarcodeLookup(database: $0, client: openFoodFacts, clock: clock) }
+        db.map { BarcodeLookup(database: $0, client: openFoodFacts, nameLanguage: foodNameLanguage, clock: clock) }
     }
 
     /// True once per install: Health is available, the user was never asked for access, and the onboarding
@@ -294,11 +309,55 @@ final class AppEnvironment {
         widgetDataDidChange() // the widgets show energy in this unit
     }
 
+    /// Persists Settings → Food names, then switches the names stored from built-in foods (their saved copies, diary
+    /// and planned entries) to the language it resolves to. On failure to persist, the previous choice stays.
+    func setFoodNamePreference(_ preference: FoodNamePreference) throws {
+        guard preference != foodNamePreference else { return }
+        try profiles?.setSetting(SettingKey.foodNames, preference.rawValue)
+        foodNamePreference = preference
+        try applyFoodNameLanguage()
+    }
+
+    /// Switches the names stored from built-in foods to ``foodNameLanguage`` (`FoodRepository.applyBundledNames`).
+    /// When any changed, screens reload as after an import, so none keeps showing an old name and no pending undo
+    /// brings one back. Returns the number of rows changed.
+    @discardableResult
+    func applyFoodNameLanguage() throws -> Int {
+        guard let foods, let bundledIndex else { return 0 }
+        let changes = try foods.applyBundledNames(foodNameLanguage, from: bundledIndex)
+        if changes > 0 {
+            foodNamesDidChange()
+        }
+        return changes
+    }
+
+    /// At launch, like filling the caffeine of bundled copies: ``applyFoodNameLanguage()`` off the main thread. It
+    /// catches up with whatever changed while the app wasn't running — the app language behind *Same as app*, a
+    /// restored backup, a new bundled index. Cheap and idempotent. Returns the work, for tests.
+    @discardableResult
+    func applyFoodNameLanguageInBackground() -> Task<Void, Never>? {
+        guard let db, let bundledIndex else { return nil }
+        let language = foodNameLanguage
+        let repository = FoodRepository(db, clock: clock)
+        return Task.detached(priority: .background) { [weak self] in
+            let changes = (try? repository.applyBundledNames(language, from: bundledIndex)) ?? 0
+            if changes > 0 {
+                await self?.foodNamesDidChange()
+            }
+        }
+    }
+
+    private func foodNamesDidChange() {
+        dataGeneration += 1
+    }
+
     /// Reloads the settings cached here from the database.
     func reloadSettings() throws {
         guard let profiles else { return }
         let raw = try profiles.setting(SettingKey.energyUnit, as: String.self)
         energyUnit = raw.flatMap(EnergyUnit.init(rawValue:)) ?? .kcal
+        let foodNames = try profiles.setting(SettingKey.foodNames, as: String.self)
+        foodNamePreference = foodNames.flatMap(FoodNamePreference.init(rawValue:)) ?? .default
     }
 
     /// Saves a user-entered USDA key in the Keychain; it then wins over the build-config key. Blank keys are ignored.
@@ -353,7 +412,8 @@ final class AppEnvironment {
     /// Call after an import replaced or merged data (synchronously, before the Health queue gets a chance to drain):
     /// invalidates pending undo actions, reloads cached settings — the energy unit and "Write to Apple Health", so the
     /// rows the import queued are written or discarded by the stored choice — reconciles the check-in and hydration
-    /// reminders with the stored settings and refreshes the widgets.
+    /// reminders with the stored settings, switches imported built-in food names to the food name language and
+    /// refreshes the widgets.
     func dataDidChangeExternally() throws {
         dataGeneration += 1
         healthWrites?.reloadStoredSetting()
@@ -361,6 +421,7 @@ final class AppEnvironment {
         refreshHydrationReminder()
         defer { widgetDataDidChange() }
         try reloadSettings()
+        try applyFoodNameLanguage()
     }
 
     /// Schedules or cancels the weekly check-in notification to match the stored toggle and weekday (they arrive with
@@ -411,7 +472,7 @@ final class AppEnvironment {
         }
         let health = LiveHealthDataSource()
         let config = AppConfig(bundle: bundle)
-        return AppEnvironment(
+        let environment = AppEnvironment(
             database: state,
             config: config,
             bundledIndex: bundledIndex,
@@ -432,6 +493,9 @@ final class AppEnvironment {
                 .url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
                 .appendingPathComponent("Backups", isDirectory: true),
         )
+        // Names stored from bundled foods follow Settings → Food names (and the app language behind "Same as app").
+        environment.applyFoodNameLanguageInBackground()
+        return environment
     }
 
     /// In-memory environment for tests and previews, optionally with sample data. Health is a fake: with sample
@@ -448,6 +512,7 @@ final class AppEnvironment {
         checkInReminder: (any CheckInReminderScheduling)? = nil,
         hydrationReminder: (any HydrationReminderScheduling)? = nil,
         backupsDirectory: URL? = nil,
+        appFoodNameLanguage: FoodNameLanguage? = nil,
     ) -> AppEnvironment {
         let state: DatabaseState
         do { state = try .ready(AppDatabase.inMemory()) } catch { state = .failed(String(describing: error)) }
@@ -468,6 +533,8 @@ final class AppEnvironment {
             checkInReminder: checkInReminder ?? NoCheckInReminder(),
             hydrationReminder: hydrationReminder ?? NoHydrationReminder(),
             backupsDirectory: backupsDirectory,
+            appFoodNameLanguage: appFoodNameLanguage
+                ?? FoodNameLanguage(localization: Bundle.main.preferredLocalizations.first),
         )
         if sampleData {
             env.insertSampleData()
@@ -619,6 +686,8 @@ enum USDAKeySource: Equatable {
 
 enum SettingKey {
     static let energyUnit = "energyUnit"
+    /// String: `FoodNamePreference` raw value (Settings → Food names); missing means *Same as app*.
+    static let foodNames = "foodNames"
     static let waterQuickAddSizes = "waterQuickAddSizes"
     /// Date: when the last Health sync finished successfully (backlog #24).
     static let healthLastSyncedAt = "healthLastSyncedAt"

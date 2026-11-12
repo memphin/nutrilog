@@ -1,3 +1,4 @@
+import Core
 import FoodSources
 import Foundation
 
@@ -7,7 +8,7 @@ struct StubOpenFoodFactsSearchClient: OpenFoodFactsSearchClient {
         nil
     }
 
-    func search(query _: String) async throws -> [FoodDraft] {
+    func search(query _: String, nameLanguage _: FoodNameLanguage) async throws -> [FoodDraft] {
         []
     }
 }

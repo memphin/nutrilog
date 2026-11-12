@@ -1,3 +1,4 @@
+import Core
 import Foundation
 
 /// Why an Open Food Facts lookup failed.
@@ -30,9 +31,9 @@ public protocol OpenFoodFactsClient: Sendable {
 }
 
 public extension OpenFoodFactsClient {
-    /// ``product(barcode:)`` mapped by ``OFFFoodMapper``.
-    func food(barcode: String) async throws -> FoodDraft {
-        try await OFFFoodMapper.map(product(barcode: barcode))
+    /// ``product(barcode:)`` mapped by ``OFFFoodMapper`` with names in `nameLanguage`.
+    func food(barcode: String, nameLanguage: FoodNameLanguage = .english) async throws -> FoodDraft {
+        try await OFFFoodMapper.map(product(barcode: barcode), language: nameLanguage)
     }
 }
 
