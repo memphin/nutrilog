@@ -341,6 +341,32 @@ public struct FoodRepository: Sendable {
         }
     }
 
+    /// Fills the caffeine of local copies of bundled foods that have none (`caffeine_mg_100` NULL) from `index`.
+    /// Copies made before the bundled index carried caffeine keep their values otherwise, so a coffee logged before
+    /// that would never count. A caffeine value on the copy — the index's or the user's own — is never changed, and
+    /// diary entries keep the caffeine they were logged with. Idempotent; cheap enough for every launch. Returns the
+    /// number of foods changed.
+    @discardableResult
+    public func fillBundledCaffeine(from index: BundledFoodIndex) throws -> Int {
+        let caffeine = try index.caffeineBySourceID()
+        guard !caffeine.isEmpty else { return 0 }
+        let now = clock.now()
+        return try database.writer.write { db in
+            var changes = 0
+            let copies = try Food
+                .filter(Food.Columns.source == FoodSource.bundled && Food.Columns.caffeineMg100 == nil)
+                .fetchAll(db)
+            for var food in copies {
+                guard let sourceID = food.sourceID, let mg = caffeine[sourceID] else { continue }
+                food.caffeineMg100 = mg
+                food.stampUpdated(now)
+                try food.update(db)
+                changes += 1
+            }
+            return changes
+        }
+    }
+
     // MARK: Copies of online foods
 
     /// Saves a copy of a food from an online source (Open Food Facts, USDA) unless one is already stored, in one

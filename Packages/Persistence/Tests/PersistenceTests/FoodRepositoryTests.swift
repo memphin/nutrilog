@@ -1,5 +1,6 @@
 import Core
 import Foundation
+import GRDB
 import Testing
 @testable import Persistence
 
@@ -239,6 +240,53 @@ struct FoodRepositoryTests {
         let revived = try f.foods.localCopy(of: bundled)
         #expect(revived.id == first.id)
         #expect(revived.deletedAt == nil)
+    }
+
+    @Test func `copies of bundled foods without caffeine get it from the index, once`() throws {
+        let f = try Fixture()
+        let url = try makeBilingualIndexFile(rows: [
+            ("b1", "171890", "Beverages, coffee, brewed", "Kava"),
+            ("b2", "173227", "Beverages, tea, black, brewed", "Čaj"),
+            ("b3", "173944", "Bananas, raw", nil),
+            ("b4", "174852", "Beverages, carbonated, cola", "Kola"),
+        ])
+        try DatabaseQueue(path: url.path).write { db in
+            try db.execute(sql: "UPDATE bundled_food SET caffeine_mg_100 = 40 WHERE source_id = '171890'")
+            try db.execute(sql: "UPDATE bundled_food SET caffeine_mg_100 = 20 WHERE source_id = '173227'")
+            try db.execute(sql: "UPDATE bundled_food SET caffeine_mg_100 = 9 WHERE source_id = '174852'")
+        }
+        let index = try BundledFoodIndex(url: url)
+        // Copies made before the index had caffeine.
+        let noCaffeine = Nutrients(kcal: 1, proteinG: 0, carbsG: 0, fatG: 0)
+        let coffee = try f.foods.localCopy(of: BundledFood(id: "b1", sourceID: "171890", name: "Coffee", per100: noCaffeine))
+        let banana = try f.foods.localCopy(of: BundledFood(id: "b3", sourceID: "173944", name: "Banana", per100: noCaffeine))
+        var tea = try f.foods.localCopy(of: BundledFood(id: "b2", sourceID: "173227", name: "Tea", per100: noCaffeine))
+        tea.caffeineMg100 = 35 // the user's own value
+        try f.foods.save(FoodDetail(food: tea))
+        var cola = try f.foods.localCopy(of: BundledFood(id: "b4", sourceID: "174852", name: "Cola", per100: noCaffeine))
+        try f.foods.softDelete(id: cola.id)
+        let custom = try f.makeFood("Home brew")
+
+        f.clock.advance(60)
+        #expect(try f.foods.fillBundledCaffeine(from: index) == 2)
+        let filled = try #require(try f.foods.food(id: coffee.id))
+        #expect(filled.caffeineMg100 == 40)
+        #expect(filled.revision == coffee.revision + 1)
+        #expect(filled.updatedAt == f.clock.now)
+        cola = try #require(try f.foods.food(id: cola.id))
+        #expect(cola.caffeineMg100 == 9) // a deleted copy too, so reviving it brings the caffeine back
+        #expect(try f.foods.food(id: tea.id)?.caffeineMg100 == 35)
+        #expect(try f.foods.food(id: banana.id)?.caffeineMg100 == nil) // nothing known
+        #expect(try f.foods.food(id: custom.id)?.caffeineMg100 == nil)
+        #expect(try f.foods.fillBundledCaffeine(from: index) == 0)
+    }
+
+    @Test func `an index without caffeine fills nothing`() throws {
+        let f = try Fixture()
+        let index = try makeBundledIndex(rows: [(id: "b1", fdc: "171890", name: "Beverages, coffee, brewed", kcal: 1)])
+        _ = try f.foods.localCopy(of: BundledFood(id: "b1", sourceID: "171890", name: "Coffee", per100: .zero))
+        #expect(try index.caffeineBySourceID().isEmpty)
+        #expect(try f.foods.fillBundledCaffeine(from: index) == 0)
     }
 
     @Test func `suggested quantity`() {

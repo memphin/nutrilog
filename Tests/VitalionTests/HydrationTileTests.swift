@@ -313,14 +313,32 @@ struct HydrationTileModelTests {
         #expect(try #require(env.dailyMetrics).metrics(on: today) == nil)
     }
 
-    @Test func `a stored trend wins over the weights; days before it use the weights`() throws {
+    @Test func `weights logged in Vitalion after Apple Health stopped syncing set the goal, not the stale stored trend`() throws {
         let env = AppEnvironment.preview(clock: ManualClock().appClock)
-        let today = env.today, yesterday = env.today.adding(days: -1)
-        try #require(env.weights).add(kg: 70, measuredAt: yesterday.startDate().addingTimeInterval(7 * 3600))
+        let today = env.today
         let metrics = try #require(env.dailyMetrics)
-        _ = try metrics.upsert([DailyHealthMetrics(day: today, weightKg: 90)])
-        _ = try metrics.setWeightTrends([today: 90])
-        let trends = HydrationGoalResolver.trendsKg(in: yesterday ... today, environment: env)
-        #expect(trends == [yesterday: 70, today: 90])
+        // Apple Health synced a 90 kg weight (and its stored trend) a month ago, then stopped syncing.
+        let lastSync = today.adding(days: -30)
+        _ = try metrics.upsert([DailyHealthMetrics(day: lastSync, weightKg: 90)])
+        _ = try metrics.setWeightTrends([lastSync: 90])
+        // Since then, 80 kg every day logged in Vitalion.
+        let weights = try #require(env.weights)
+        var day = lastSync.next
+        while day <= today {
+            try weights.add(kg: 80, measuredAt: day.startDate().addingTimeInterval(7 * 3600))
+            day = day.next
+        }
+
+        let trends = HydrationGoalResolver.trendsKg(in: today.adding(days: -1) ... today, environment: env)
+        let trendKg = try #require(trends[today])
+        // The trend computed from every weight, as the weight screens show it — close to 80, not the stale 90.
+        let expected = try WeightTrend.trendByDay(
+            WeightTrend.samples(StatsLoader.dayWeights(through: today, environment: env)), through: today,
+        )[today]
+        #expect(trendKg == expected)
+        #expect(trendKg < 81) // the stale trend would be 90 (a 2,700 ml goal)
+        let profile = try #require(env.profiles).profile()
+        #expect(HydrationGoalResolver.goalMl(on: today, profile: profile, trendKg: trendKg, training: .none) < 2430)
+        #expect(try (WaterProgress.read(on: today, environment: env)?.goalMl ?? 0) < 2430)
     }
 }

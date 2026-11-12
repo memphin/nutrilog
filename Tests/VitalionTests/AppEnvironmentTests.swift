@@ -66,6 +66,16 @@ struct AppEnvironmentBehaviourTests {
         #expect(try index.count() >= 300)
     }
 
+    @Test func `bundled coffee, tea and cola carry caffeine`() throws {
+        let index = try #require(BundledFoodIndex.inBundle(.main))
+        let caffeine = try index.caffeineBySourceID()
+        #expect(caffeine["171890"] == 40) // coffee, brewed
+        #expect(caffeine["173227"] == 20) // tea, black, brewed
+        #expect(caffeine["174852"] == 9) // cola
+        // Ids are stable across rebuilds (UUIDv5 of "fdc:<FDC id>").
+        #expect(try index.food(id: "ddd499e7-724f-5469-84c9-36311e1f25ac")?.sourceID == "171890")
+    }
+
     @Test func `sample data fills today`() throws {
         let env = AppEnvironment.preview(sampleData: true)
         let diary = try #require(try env.diary?.diary(for: env.today))

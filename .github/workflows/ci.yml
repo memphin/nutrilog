@@ -272,6 +272,14 @@ jobs:
           # The committed template has no team ID; add it to a copy.
           cp Config/ExportOptions.plist "$RUNNER_TEMP/ExportOptions.plist"
           plutil -insert teamID -string "$APPLE_TEAM_ID" "$RUNNER_TEMP/ExportOptions.plist"
+      - name: List development certificates before signing
+        # Automatic cloud signing creates a development certificate on every fresh runner; the last step revokes the
+        # ones that weren't here now (tools/asc_dev_certificates.py, docs/RELEASING.md). Never fails the job.
+        continue-on-error: true
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: python3 tools/asc_dev_certificates.py snapshot "$RUNNER_TEMP/dev-certificates.json"
       - name: Archive
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
@@ -314,6 +322,17 @@ jobs:
             -authenticationKeyID "$ASC_KEY_ID" \
             -authenticationKeyIssuerID "$ASC_ISSUER_ID"
           echo "Uploaded Vitalion $VERSION ($BUILD) to App Store Connect; it shows up in TestFlight after processing." >> "$GITHUB_STEP_SUMMARY"
+      - name: Revoke the development certificates this run created
+        if: always()
+        continue-on-error: true
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          # Skipped when the key was never written (the job stopped before that step).
+          if [ -n "$ASC_KEY_PATH" ] && [ -f "$ASC_KEY_PATH" ]; then
+            python3 tools/asc_dev_certificates.py revoke-new "$RUNNER_TEMP/dev-certificates.json"
+          fi
       - name: Remove the API key and build secrets
         if: always()
         run: rm -f "$RUNNER_TEMP"/AuthKey_*.p8 Config/Secrets.xcconfig

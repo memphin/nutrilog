@@ -1032,9 +1032,10 @@ struct WidgetAndBackupTests {
         _ = try #require(env.diary).log(food: cola, quantity: .base(330), slotID: "snacks", day: env.today)
         let metrics = try #require(env.dailyMetrics)
         try metrics.upsert([
-            DailyHealthMetrics(day: env.today.adding(days: -3), waterMl: 100), DailyHealthMetrics(day: env.today, waterMl: 250),
+            DailyHealthMetrics(day: env.today.adding(days: -3), weightKg: 80, waterMl: 100),
+            DailyHealthMetrics(day: env.today, waterMl: 250),
         ])
-        try metrics.setWeightTrends([env.today.adding(days: -3): 80]) // an older trend still sets today's goal
+        try metrics.setWeightTrends([env.today.adding(days: -3): 80]) // an older weight still sets today's goal
 
         WidgetSnapshotWriter.write(from: env, defaults: defaults)
         let snapshot = try #require(WidgetSnapshot.load(defaults: defaults))
