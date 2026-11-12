@@ -10,6 +10,8 @@ extension SettingKey {
     static let stepGoal = "stepGoal"
     /// The nightly sleep goal in minutes (`SleepGoal`, #72).
     static let sleepGoal = "sleepGoal"
+    /// The daily active energy goal in kcal (`ActiveEnergyGoal`).
+    static let activeEnergyGoal = "activeEnergyGoal"
 }
 
 extension AppEnvironment {
@@ -88,7 +90,8 @@ enum DashboardTile: String, CaseIterable, Codable, Identifiable, Hashable {
         case .totalEnergy:
             String(localized: """
             Total energy is resting plus active energy from Apple Health: resting is what your body burns just to keep going, active \
-            is what movement and exercise add. A day with only one of them has no total.
+            is what movement and exercise add. A day with only one of them has no total. The colour shows the active part \
+            against your active energy goal (Settings → Daily goals): you can't change the resting part.
             """)
         case .restingHeartRate:
             String(localized: """
@@ -381,6 +384,38 @@ enum SleepGoal {
 
     static func save(_ minutes: Int, to settings: ProfileRepository) throws {
         try settings.setSetting(SettingKey.sleepGoal, normalized(minutes))
+    }
+}
+
+// MARK: - Active energy goal
+
+/// The daily active energy goal and how a day's active energy compares with it. Only the active part is read: the
+/// resting part depends on body size and the time of day, not on what you did.
+enum ActiveEnergyGoal {
+    static let defaultKcal = 500
+    static let validRange = 100 ... 3000
+    static let step = 50
+    /// A day at or above this share of the goal is "near" it (as steps).
+    static let nearShare = 0.8
+
+    static func band(kcal: Double, goal: Int) -> GoalBand {
+        guard goal > 0 else { return .reached }
+        if kcal >= Double(goal) {
+            return .reached
+        }
+        return kcal >= Double(goal) * nearShare ? .near : .far
+    }
+
+    static func normalized(_ kcal: Int) -> Int {
+        min(max(kcal, validRange.lowerBound), validRange.upperBound)
+    }
+
+    static func load(from settings: ProfileRepository) -> Int {
+        normalized((try? settings.setting(SettingKey.activeEnergyGoal, as: Int.self)) ?? defaultKcal)
+    }
+
+    static func save(_ kcal: Int, to settings: ProfileRepository) throws {
+        try settings.setSetting(SettingKey.activeEnergyGoal, normalized(kcal))
     }
 }
 

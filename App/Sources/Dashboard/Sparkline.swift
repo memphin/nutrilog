@@ -38,6 +38,11 @@ struct Sparkline: Equatable {
         var id: Int {
             index
         }
+
+        /// The upper part of a stacked bar (Total energy: active), or the whole value of a single bar.
+        var upper: Double {
+            value - (base ?? 0)
+        }
     }
 
     static let days = 7
@@ -180,6 +185,11 @@ enum GoalColor {
         color(SleepGoal.band(minutes: minutes, goal: goal))
     }
 
+    /// Active energy: green at or above the goal, orange close below it, red far below.
+    static func activeEnergy(kcal: Double, goal: Int) -> Color {
+        color(ActiveEnergyGoal.band(kcal: kcal, goal: goal))
+    }
+
     /// A day's hydration total: green at or above the goal, orange close below it, red far below.
     static func water(_ ml: Double, goalMl: Double) -> Color {
         color(WaterGoal.band(ml: ml, goalMl: goalMl))
@@ -193,11 +203,13 @@ enum GoalColor {
 
 extension DashboardSnapshot {
     /// The colour of one day's bar on a tile's sparkline; nil for tiles without a goal (the tile's tint is used).
-    /// Hydration is read against `day`'s own goal (nil: today's).
+    /// Hydration is read against `day`'s own goal (nil: today's). Total energy: `value` is the active part (the
+    /// bar's upper part, `Sparkline.Point.upper`).
     func goalColor(of tile: DashboardTile, value: Double, day: LocalDay? = nil) -> Color? {
         switch tile {
         case .steps: GoalColor.steps(value, goal: stepGoal)
         case .sleep: GoalColor.sleep(minutes: value, goal: sleepGoalMin)
+        case .totalEnergy: GoalColor.activeEnergy(kcal: value, goal: activeEnergyGoalKcal)
         case .water: GoalColor.water(value, goalMl: day.flatMap { hydrationGoals[$0] } ?? water.goalMl)
         default: nil
         }
@@ -247,11 +259,11 @@ struct SparklineView: View {
                 let x = PlottableValue.value("Day", String(point.index))
                 let isToday = point.index == Sparkline.days - 1
                 if let base = point.base {
-                    // Stacked: the lower part lighter, the upper part full.
+                    // Stacked: the lower part lighter, the upper part full (in its goal colour, if any).
                     BarMark(x: x, y: .value("Value", base), width: .fixed(10))
                         .foregroundStyle(tint.opacity(isToday ? 0.5 : 0.25))
-                    BarMark(x: x, y: .value("Value", point.value - base), width: .fixed(10))
-                        .foregroundStyle(tint.opacity(isToday ? 1 : 0.6))
+                    BarMark(x: x, y: .value("Value", point.upper), width: .fixed(10))
+                        .foregroundStyle((color(point) ?? tint).opacity(isToday ? 1 : 0.6))
                 } else {
                     BarMark(x: x, y: .value("Value", point.value), width: .fixed(10))
                         .foregroundStyle((color(point) ?? tint).opacity(isToday ? 1 : color(point) == nil ? 0.45 : 0.6))

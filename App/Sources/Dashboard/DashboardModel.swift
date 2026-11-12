@@ -103,7 +103,7 @@ final class DashboardModel {
 
     // MARK: Loading
 
-    /// Re-reads the settings the dashboard caches (layout, water sizes, step and sleep goals, caffeine, hydration) —
+    /// Re-reads the settings the dashboard caches (layout, water sizes, step, sleep and active energy goals, caffeine, hydration) —
     /// they are edited in Settings.
     func reloadSettings() {
         guard let profiles = environment.profiles else { return }
@@ -116,6 +116,10 @@ final class DashboardModel {
         let sleepGoal = SleepGoal.load(from: profiles)
         if data.sleepGoalMin != sleepGoal {
             data.sleepGoalMin = sleepGoal
+        }
+        let activeEnergyGoal = ActiveEnergyGoal.load(from: profiles)
+        if data.activeEnergyGoalKcal != activeEnergyGoal {
+            data.activeEnergyGoalKcal = activeEnergyGoal
         }
         let caffeineSettings = CaffeineSettings.load(from: profiles)
         if data.caffeineSettings != caffeineSettings {
@@ -138,7 +142,7 @@ final class DashboardModel {
             data = DashboardData(
                 today: today, waterGoalMl: data.waterGoalMl, waterGoalMode: data.waterGoalMode,
                 hydrationSettings: data.hydrationSettings, stepGoal: data.stepGoal, sleepGoalMin: data.sleepGoalMin,
-                goalMode: data.goalMode, caffeineSettings: data.caffeineSettings,
+                activeEnergyGoalKcal: data.activeEnergyGoalKcal, goalMode: data.goalMode, caffeineSettings: data.caffeineSettings,
             )
         }
         await reloadAccess()

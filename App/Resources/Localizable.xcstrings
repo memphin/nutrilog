@@ -2381,6 +2381,16 @@
         }
       }
     },
+    "Active energy" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktivna energija"
+          }
+        }
+      }
+    },
     "Activity" : {
       "localizations" : {
         "hr" : {
@@ -4171,6 +4181,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Spremanje USDA API ključa nije uspjelo: %@"
+          }
+        }
+      }
+    },
+    "Couldn't save the active energy goal: %@" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spremanje cilja aktivne energije nije uspjelo: %@"
           }
         }
       }
@@ -10098,12 +10118,12 @@
         }
       }
     },
-    "Steps and sleep are green on a day that reached the goal, orange close below it (sleep: up to an hour short) and red further away. Hydration turns green at the goal and orange when you fall behind pace or go too long without a drink." : {
+    "Steps, sleep and active energy are green on a day that reached the goal, orange close below it (sleep: up to an hour short) and red further away. Hydration turns green at the goal and orange when you fall behind pace or go too long without a drink." : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Koraci i san zeleni su na dan kad je cilj dosegnut, narančasti malo ispod njega (san: do sat vremena manje) i crveni kad su dalje od njega. Hidracija postaje zelena kad dosegneš cilj, a narančasta kad zaostaješ za tempom ili kad predugo nema pića."
+            "value" : "Koraci, san i aktivna energija zeleni su na dan kad je cilj dosegnut, narančasti malo ispod njega (san: do sat vremena manje) i crveni kad su dalje od njega. Hidracija postaje zelena kad dosegneš cilj, a narančasta kad zaostaješ za tempom ili kad predugo nema pića."
           }
         }
       }
@@ -10859,12 +10879,12 @@
         }
       }
     },
-    "Total energy is resting plus active energy from Apple Health: resting is what your body burns just to keep going, active is what movement and exercise add. A day with only one of them has no total." : {
+    "Total energy is resting plus active energy from Apple Health: resting is what your body burns just to keep going, active is what movement and exercise add. A day with only one of them has no total. The colour shows the active part against your active energy goal (Settings → Daily goals): you can't change the resting part." : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ukupna energija zbroj je energije u mirovanju i aktivne energije iz aplikacije Zdravlje: energija u mirovanju je ono što tijelo troši samo da bi funkcioniralo, a aktivna je ono što dodaju kretanje i vježbanje. Dan sa samo jednom od njih nema ukupnu vrijednost."
+            "value" : "Ukupna energija zbroj je energije u mirovanju i aktivne energije iz aplikacije Zdravlje: energija u mirovanju je ono što tijelo troši samo da bi funkcioniralo, a aktivna je ono što dodaju kretanje i vježbanje. Dan sa samo jednom od njih nema ukupnu vrijednost. Boja prikazuje aktivni dio u odnosu na tvoj cilj aktivne energije (Postavke → Dnevni ciljevi): na dio u mirovanju ne možeš utjecati."
           }
         }
       }
@@ -12147,6 +12167,16 @@
         }
       }
     },
+    "active goal of %lld reached" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "aktivni cilj od %lld postignut"
+          }
+        }
+      }
+    },
     "addFood.tab.mine" : {
       "comment" : "Add food tab; keep to one short word",
       "extractionState" : "extracted_with_value",
@@ -12211,6 +12241,16 @@
         }
       }
     },
+    "below the active goal of %lld" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ispod aktivnog cilja od %lld"
+          }
+        }
+      }
+    },
     "below the goal of %@" : {
       "localizations" : {
         "hr" : {
@@ -12237,6 +12277,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ispod tjednog prosjeka"
+          }
+        }
+      }
+    },
+    "close to the active goal of %lld" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "blizu aktivnog cilja od %lld"
           }
         }
       }

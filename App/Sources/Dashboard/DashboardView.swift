@@ -176,7 +176,7 @@ struct DashboardTileView: View {
                 TileContent(tile: tile, model: model, now: now)
                 if let sparkline {
                     SparklineView(sparkline: sparkline, tint: tile == .totalEnergy ? .orange : NL.Palette.trend) {
-                        snapshot.goalColor(of: tile, value: $0.value, day: $0.day)
+                        snapshot.goalColor(of: tile, value: $0.upper, day: $0.day)
                     }
                 }
             } else {
@@ -304,7 +304,7 @@ private struct TileContent: View {
             }
         case .totalEnergy:
             if let burned = snapshot.energyBurned {
-                TotalEnergyContent(burned: burned, unit: model.energyUnit)
+                TotalEnergyContent(burned: burned, activeGoalKcal: snapshot.activeEnergyGoalKcal, unit: model.energyUnit)
             }
         case .restingHeartRate:
             BaselineContent(
@@ -350,9 +350,15 @@ private struct ValueText: View {
 }
 
 /// Active + resting energy. With only one part known, that part is shown under its own name — never as the total.
+/// The active part is coloured by the active energy goal; the total is not (the resting part isn't up to you).
 private struct TotalEnergyContent: View {
     let burned: EnergyBurned
+    let activeGoalKcal: Int
     let unit: EnergyUnit
+
+    private func activeColor(_ kcal: Double) -> Color {
+        GoalColor.activeEnergy(kcal: kcal, goal: activeGoalKcal)
+    }
 
     private func number(_ kcal: Double) -> String {
         unit.display(kcal).formatted(.number.precision(.fractionLength(0)))
@@ -364,12 +370,12 @@ private struct TotalEnergyContent: View {
                 ValueText(number(total), unit: unit.symbol)
                 // Only the active part; the resting part is in the detail (owner feedback).
                 if let active = burned.activeKcal {
-                    Text("Active \(unit.format(active))").font(.footnote).foregroundStyle(.secondary)
+                    Text("Active \(unit.format(active))").font(.footnote.weight(.semibold)).foregroundStyle(activeColor(active))
                 }
             } else {
                 if let active = burned.activeKcal {
                     let caption = String(localized: "\(unit.symbol) active", comment: "Energy unit, e.g. “kcal active”")
-                    ValueText(number(active), unit: caption)
+                    ValueText(number(active), unit: caption, color: activeColor(active))
                 } else if let resting = burned.restingKcal {
                     let caption = String(localized: "\(unit.symbol) resting", comment: "Energy unit, e.g. “kcal resting”")
                     ValueText(number(resting), unit: caption)

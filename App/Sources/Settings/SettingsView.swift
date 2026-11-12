@@ -9,6 +9,7 @@ struct SettingsView: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var stepGoal = StepGoal.defaultSteps
     @State private var sleepGoal = SleepGoal.defaultMinutes
+    @State private var activeEnergyGoal = ActiveEnergyGoal.defaultKcal
     @State private var errorMessage: String?
     @State private var usdaKeyDraft = ""
 
@@ -40,14 +41,18 @@ struct SettingsView: View {
                         LabeledContent("Sleep", value: DashboardFormat.duration(sleepGoal))
                     }
                     .onChange(of: sleepGoal) { saveSleepGoal() }
+                    Stepper(value: $activeEnergyGoal, in: ActiveEnergyGoal.validRange, step: ActiveEnergyGoal.step) {
+                        LabeledContent("Active energy", value: environment.energyUnit.format(Double(activeEnergyGoal)))
+                    }
+                    .onChange(of: activeEnergyGoal) { saveActiveEnergyGoal() }
                     NavigationLink("Hydration") { HydrationSettingsView() }
                     NavigationLink("Caffeine") { CaffeineSettingsView() }
                 } header: {
                     Text("Daily goals")
                 } footer: {
                     Text("""
-                    Steps and sleep are green on a day that reached the goal, orange close below it (sleep: up to an \
-                    hour short) and red further away. Hydration turns green at the goal and orange when you fall \
+                    Steps, sleep and active energy are green on a day that reached the goal, orange close below it \
+                    (sleep: up to an hour short) and red further away. Hydration turns green at the goal and orange when you fall \
                     behind pace or go too long without a drink.
                     """)
                 }
@@ -87,6 +92,7 @@ struct SettingsView: View {
             .task(id: environment.dataGeneration) {
                 stepGoal = environment.profiles.map(StepGoal.load(from:)) ?? StepGoal.defaultSteps
                 sleepGoal = environment.profiles.map(SleepGoal.load(from:)) ?? SleepGoal.defaultMinutes
+                activeEnergyGoal = environment.profiles.map(ActiveEnergyGoal.load(from:)) ?? ActiveEnergyGoal.defaultKcal
             }
             .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: {
                 if !$0 {
@@ -178,6 +184,15 @@ struct SettingsView: View {
             try SleepGoal.save(sleepGoal, to: profiles)
         } catch {
             errorMessage = String(localized: "Couldn't save the sleep goal: \(error.localizedDescription)")
+        }
+    }
+
+    private func saveActiveEnergyGoal() {
+        guard let profiles = environment.profiles, ActiveEnergyGoal.load(from: profiles) != activeEnergyGoal else { return }
+        do {
+            try ActiveEnergyGoal.save(activeEnergyGoal, to: profiles)
+        } catch {
+            errorMessage = String(localized: "Couldn't save the active energy goal: \(error.localizedDescription)")
         }
     }
 }

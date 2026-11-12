@@ -100,6 +100,7 @@ extension DashboardSnapshot {
                         ? String(localized: "\(totalValue) calories", locale: locale)
                         : String(localized: "\(totalValue) kilojoules", locale: locale),
                     String(localized: "active \(activeValue)", locale: locale),
+                    activeGoalPart(active, value: energy, locale: locale),
                     String(localized: "resting \(restingValue)", locale: locale),
                 ]
             }
@@ -116,7 +117,8 @@ extension DashboardSnapshot {
                     ? String(localized: "resting \(value) calories", locale: locale)
                     : String(localized: "resting \(value) kilojoules", locale: locale)
             } ?? String(localized: "resting energy unknown", locale: locale)
-            return [active, resting, String(localized: "no total yet", locale: locale)]
+            return [active, burned.activeKcal.map { activeGoalPart($0, value: energy, locale: locale) }, resting,
+                    String(localized: "no total yet", locale: locale)].compactMap(\.self)
         case .restingHeartRate, .hrv:
             guard let comparison = tile == .hrv ? hrv : restingHR else { return [] }
             let value = Self.count(comparison.value)
@@ -168,6 +170,16 @@ extension DashboardSnapshot {
         return difference < 0
             ? String(localized: "below the weekly average", locale: locale)
             : String(localized: "above the weekly average", locale: locale)
+    }
+
+    /// "close to the active goal of 500" — what the active part's colour is read against.
+    private func activeGoalPart(_ kcal: Double, value: (Double) -> Int, locale: Locale) -> String {
+        let goal = value(Double(activeEnergyGoalKcal))
+        return switch ActiveEnergyGoal.band(kcal: kcal, goal: activeEnergyGoalKcal) {
+        case .reached: String(localized: "active goal of \(goal) reached", locale: locale)
+        case .near: String(localized: "close to the active goal of \(goal)", locale: locale)
+        case .far: String(localized: "below the active goal of \(goal)", locale: locale)
+        }
     }
 
     /// "8,500 steps", "close to the goal of 10,000".
