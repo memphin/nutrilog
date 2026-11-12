@@ -89,6 +89,25 @@ struct FoodNameLanguageSwitchTests {
         #expect(riceBack.nameLocal == rice.nameLocal)
     }
 
+    @Test func `switching by the stored choice reads it when it writes`() throws {
+        let f = try Fixture()
+        let index = try index()
+        let copy = try f.foods.localCopy(of: #require(try index.food(id: "b1", language: .english)))
+        // Nothing stored: Same as app.
+        let none = try f.foods.applyBundledNames(from: index, preferenceKey: "foodNames", appLanguage: .english)
+        #expect(none.language == .english && none.changes == 0)
+        // The stored choice wins over the app language.
+        try f.profiles.setSetting("foodNames", FoodNamePreference.croatian.rawValue)
+        let croatian = try f.foods.applyBundledNames(from: index, preferenceKey: "foodNames", appLanguage: .english)
+        #expect(croatian.language == .croatian && croatian.changes == 1)
+        #expect(try f.foods.food(id: copy.id)?.name == Self.salmonHR)
+        // An unknown value counts as Same as app.
+        try f.profiles.setSetting("foodNames", "klingon")
+        let unknown = try f.foods.applyBundledNames(from: index, preferenceKey: "foodNames", appLanguage: .english)
+        #expect(unknown.language == .english && unknown.changes == 1)
+        #expect(try f.foods.food(id: copy.id)?.name == Self.salmonEN)
+    }
+
     @Test func `switching is idempotent`() throws {
         let f = try Fixture()
         let index = try index()

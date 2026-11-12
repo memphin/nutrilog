@@ -111,8 +111,12 @@ public struct ProfileRepository: Sendable {
     // MARK: Settings
 
     public func setting<T: Codable & Sendable>(_ key: String, as _: T.Type = T.self) throws -> T? {
-        let row = try database.reader.read { db in try SettingRow.fetchOne(db, key: key) }
-        guard let row else { return nil }
+        try database.reader.read { db in try Self.setting(db, key, as: T.self) }
+    }
+
+    /// Reads a setting inside a transaction the caller already holds.
+    static func setting<T: Codable & Sendable>(_ db: Database, _ key: String, as _: T.Type) throws -> T? {
+        guard let row = try SettingRow.fetchOne(db, key: key) else { return nil }
         return try JSONDecoder().decode(T.self, from: Data(row.value.utf8))
     }
 

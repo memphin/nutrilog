@@ -324,7 +324,9 @@ final class AppEnvironment {
     @discardableResult
     func applyFoodNameLanguage() throws -> Int {
         guard let foods, let bundledIndex else { return 0 }
-        let changes = try foods.applyBundledNames(foodNameLanguage, from: bundledIndex)
+        let changes = try foods.applyBundledNames(
+            from: bundledIndex, preferenceKey: SettingKey.foodNames, appLanguage: appFoodNameLanguage,
+        ).changes
         if changes > 0 {
             foodNamesDidChange()
         }
@@ -337,10 +339,13 @@ final class AppEnvironment {
     @discardableResult
     func applyFoodNameLanguageInBackground() -> Task<Void, Never>? {
         guard let db, let bundledIndex else { return nil }
-        let language = foodNameLanguage
+        // The choice is read inside the write, not here: a change made while this runs then wins (it writes after).
+        let appLanguage = appFoodNameLanguage
+        let key = SettingKey.foodNames
         let repository = FoodRepository(db, clock: clock)
         return Task.detached(priority: .background) { [weak self] in
-            let changes = (try? repository.applyBundledNames(language, from: bundledIndex)) ?? 0
+            let changes = (try? repository.applyBundledNames(from: bundledIndex, preferenceKey: key, appLanguage: appLanguage))?
+                .changes ?? 0
             if changes > 0 {
                 await self?.foodNamesDidChange()
             }
