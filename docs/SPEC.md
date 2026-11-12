@@ -176,7 +176,7 @@ Single user (the owner). Representative daily flows:
 ### 5.4 Targets & profile (MUST)
 - FR-30 Profile: height, date of birth, sex, activity level; weight read from Health (manual fallback).
 - FR-31 Calorie target: computed (maintenance ± goal rate) or manual override. Maintenance is the 30-day average of Health total energy (active + resting; at least 7 usable days, days below 60 % of the median dropped as partial wear); without it, Mifflin-St Jeor BMR × activity.
-- FR-32 Macro targets as grams or % with validation that % sum to 100; optional different targets per weekday (training vs. rest day) (SHOULD).
+- FR-32 Macro targets as grams or % with validation that % sum to 100; training days (SHOULD, done): default training weekdays and a boost % (default 10) in Settings → Training days, any day switched on or off in the diary, meal plan or calendar. On a training day the calorie target and the hydration goal go up by the boost; protein, fat and fiber stay, the extra calories are carbs. Changes apply from today; past days keep their training status and boost (migration 015).
 - FR-33 Goal modes: lose / maintain / gain with weekly rate; app shows implied deficit/surplus.
 - FR-34 (**MUST**, phase 3) **Adaptive expenditure**: estimate TDEE from logged intake and smoothed weight change; surface as "estimated maintenance" with a confidence indicator; weekly check-in proposes a new calorie target with one-tap apply. Algorithm in §5.4.1.
 
@@ -426,6 +426,7 @@ All blocking decisions are made (D1–D9). The following defaults may be changed
 ---
 
 *Change log*
+- 1.8 — owner request: training days (FR-32) raise that day's calorie target (as carbs) and hydration goal by a boost %; the sleep streak counts today once last night's sleep is recorded, so a short night hides the badge (2026-11-12)
 - 1.7 — owner request: a Caffeine tile on Today (FR-49), with caffeine as an optional nutrient of foods and diary entries (migration 010) and Settings → Caffeine (2026-11-11)
 - 1.6 — owner request: simpler logging with "Snap or describe a meal" (FR-8). Photo logging moves from "COULD, only if a free/local model is viable" (§3, §13 phase 5) to SHOULD, built on the free on-device Apple Intelligence model, with matching against local foods as the fallback. No new network destination (2026-11-10)
 - 1.3 — owner feedback (issues #62–#67, #69, #70): the sleep tile shows only time asleep (stages in its detail); a daily step goal colours step bars (green / orange / red) and the water goal colours water (red / green); Active energy is merged into one Total energy tile drawn as resting + active; profile weight is read-only (latest weigh-in); the dashboard is arranged in Settings → Dashboard and Today has no toolbar buttons. Supersedes the tile list of FR-41 where they differ (2026-11-10)

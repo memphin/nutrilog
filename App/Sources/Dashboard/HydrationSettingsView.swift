@@ -51,7 +51,10 @@ struct HydrationSettingsView: View {
             switch goalMode {
             case .weight:
                 if let trendKg {
-                    let goal = HydrationGoalResolver.goalMl(on: environment.today, mode: .weight, fixedMl: fixedGoalMl, trendKg: trendKg)
+                    // The base goal: a training day's boost is set in Settings → Training days.
+                    let goal = HydrationGoalResolver.goalMl(
+                        on: environment.today, mode: .weight, fixedMl: fixedGoalMl, trendKg: trendKg, training: .none,
+                    )
                     Text("\(Self.number(goal)) ml at \(trendKg.formatted(.number.precision(.fractionLength(1)))) kg")
                         .monospacedDigit()
                 } else {

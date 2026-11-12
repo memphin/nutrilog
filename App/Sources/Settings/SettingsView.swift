@@ -17,6 +17,7 @@ struct SettingsView: View {
             Form {
                 Section {
                     NavigationLink("Profile & targets") { ProfileTargetsView() }
+                    NavigationLink("Training days") { TrainingDaysSettingsView() }
                     NavigationLink("Dashboard") { DashboardSettingsView() }
                     NavigationLink("Meal slots") { MealSlotsEditor() }
                     NavigationLink("Apple Health") { HealthSettingsView() }

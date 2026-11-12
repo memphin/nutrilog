@@ -172,7 +172,10 @@ struct MealPlanView: View {
     @State private var tab = Tab.week
     @State private var planned: [PlannedEntry] = []
     @State private var eaten: [LocalDay: Double] = [:]
-    @State private var targets: [LocalDay: Double] = [:]
+    /// The target in effect on each day of the week, before a training day's boost.
+    @State private var targets: [LocalDay: Target] = [:]
+    /// The week's training days: they boost the day's target and fill the header's dumbbell.
+    @State private var training: TrainingDays = .none
     @State private var slots: [String: String] = [:]
     @State private var liquidFoodIDs: Set<String> = []
     @State private var prepDays = 7
@@ -227,6 +230,7 @@ struct MealPlanView: View {
             }
             .task(id: today) { await observePlan() }
             .task(id: today) { await observeEaten() }
+            .task(id: today) { await observeTraining() }
             .task(id: today) { loadTargetsAndSlots() }
             .alert("Meal plan", isPresented: Binding(get: { errorMessage != nil }, set: {
                 if !$0 {
@@ -282,12 +286,24 @@ struct MealPlanView: View {
     private func dayHeader(_ day: LocalDay, entries: [PlannedEntry]) -> some View {
         HStack {
             Text(Format.day(day, today: today))
+            TrainingDayButton(isOn: training.isTraining(day)) { toggleTraining(day) }
             Spacer()
             let total = entries.reduce(0) { $0 + $1.kcal } + (eaten[day] ?? 0)
             if total > 0 {
-                Text(targets[day].map { "\(DisplayRounding.whole(unit.display(total))) / \(unit.format($0))" } ?? unit.format(total))
+                let target = training.effectiveTarget(targets[day], on: day)?.kcal
+                Text(target.map { "\(DisplayRounding.whole(unit.display(total))) / \(unit.format($0))" } ?? unit.format(total))
                     .monospacedDigit()
             }
+        }
+    }
+
+    /// The header's dumbbell: makes `day` a training day or a rest day.
+    private func toggleTraining(_ day: LocalDay) {
+        guard let repo = environment.trainingDays else { return }
+        do {
+            try repo.toggleTraining(on: day)
+        } catch {
+            errorMessage = String(localized: "Couldn't change the training day: \(error.localizedDescription)")
         }
     }
 
@@ -431,11 +447,23 @@ struct MealPlanView: View {
         }
     }
 
+    /// The week's training days, live: a switch flipped here, in the diary or in Settings updates the headers.
+    private func observeTraining() async {
+        guard let repo = environment.trainingDays, let first = days.first, let last = days.last else { return }
+        await DiaryModel.resubscribing {
+            repo.observeTrainingDays(in: first ... last)
+        } onValue: { value in
+            training = value
+        } onError: { error in
+            errorMessage = error.localizedDescription
+        }
+    }
+
     private func loadTargetsAndSlots() {
-        var result: [LocalDay: Double] = [:]
+        var result: [LocalDay: Target] = [:]
         for day in days {
             if let target = try? environment.profiles?.target(on: day) {
-                result[day] = target.kcal
+                result[day] = target
             }
         }
         targets = result

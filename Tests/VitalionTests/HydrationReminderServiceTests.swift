@@ -96,6 +96,7 @@ struct HydrationReminderServiceTests {
             profiles: #require(env.profiles),
             water: #require(env.water),
             weights: #require(env.weights),
+            trainingDays: #require(env.trainingDays),
             scheduler: scheduler ?? self.scheduler,
             clock: clock.appClock,
             calendar: calendar,
@@ -167,6 +168,16 @@ struct HydrationReminderServiceTests {
         try drink(2500, at: at(11))
         try await makeService().recompute()
         #expect(scheduler.calls == [.cancel])
+    }
+
+    @Test func `a training day raises the goal the reminder plans for`() async throws {
+        try #require(env.trainingDays).setTraining(true, on: today)
+        // 2,500 ml reaches the base goal, not the training day's 2,750 ml.
+        try drink(2500, at: at(11))
+        try await makeService().recompute()
+        #expect(scheduler.calls == [.schedule(
+            at: at(14), title: "Time for a drink", body: "No drink since 11:00 · 2,500 of 2,750 ml", actionTitle: "+ 250 ml",
+        )])
     }
 
     @Test func `a reminder already due fires once, not on every recompute`() async throws {

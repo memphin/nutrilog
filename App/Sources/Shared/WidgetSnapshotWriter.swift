@@ -8,10 +8,11 @@ import WidgetKit
 enum WidgetSnapshotWriter {
     /// The snapshot of `environment.today`; nil when the database is not available.
     static func make(from environment: AppEnvironment) -> WidgetSnapshot? {
-        guard let diary = environment.diary, let profiles = environment.profiles else { return nil }
+        guard let diary = environment.diary, environment.profiles != nil else { return nil }
         let today = environment.today
         let totals = (try? diary.totals(for: today)) ?? .zero
-        let target = try? profiles.target(on: today)
+        // Boosted on a training day, as on the Today tile.
+        let target = try? environment.trainingDays?.effectiveTarget(on: today)
         let metrics = try? environment.dailyMetrics?.metrics(on: today)?.metrics
         // Hydration: every drink plus other apps' water against the day's goal, as on the Today tile.
         let hydration = try? WaterProgress.read(on: today, environment: environment)
@@ -41,8 +42,8 @@ enum WidgetSnapshotWriter {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
-    /// Keeps the snapshot current while the app runs: rewrites it whenever today's diary, drinks, target or Health
-    /// values change. Runs until cancelled.
+    /// Keeps the snapshot current while the app runs: rewrites it whenever today's diary, drinks, target, training
+    /// day or Health values change. Runs until cancelled.
     static func keepCurrent(environment: AppEnvironment) async {
         let today = environment.today
         write(from: environment)
@@ -50,6 +51,7 @@ enum WidgetSnapshotWriter {
             group.addTask { await followDiary(environment, today) }
             group.addTask { await followHydration(environment, today) }
             group.addTask { await followTarget(environment, today) }
+            group.addTask { await followTrainingDay(environment, today) }
             group.addTask { await followMetrics(environment, today) }
         }
     }
@@ -68,6 +70,14 @@ enum WidgetSnapshotWriter {
     private static func followTarget(_ environment: AppEnvironment, _ day: LocalDay) async {
         guard let repo = environment.profiles else { return }
         await DiaryModel.resubscribing { repo.observeTarget(on: day) } onValue: { _ in write(from: environment) } onError: { _ in }
+    }
+
+    /// A training day's boost raises the targets and the hydration goal.
+    private static func followTrainingDay(_ environment: AppEnvironment, _ day: LocalDay) async {
+        guard let repo = environment.trainingDays else { return }
+        await DiaryModel.resubscribing {
+            repo.observeTrainingDays(in: day ... day)
+        } onValue: { _ in write(from: environment) } onError: { _ in }
     }
 
     private static func followMetrics(_ environment: AppEnvironment, _ day: LocalDay) async {

@@ -55,6 +55,12 @@ final class DashboardModel {
         return false
     }
 
+    /// Today's boost in percent when today is a training day (Today's pill); nil otherwise. Read without building
+    /// the whole snapshot.
+    var trainingBoost: Int? {
+        data.trainingDays.boost(on: data.today)
+    }
+
     func state(of tile: DashboardTile) -> TileState {
         snapshot.state(of: tile, access: access, isFirstSync: isFirstSync)
     }
@@ -143,6 +149,7 @@ final class DashboardModel {
             group.addTask { await self.observeCaffeine() }
             group.addTask { await self.observeDiary(today) }
             group.addTask { await self.observeTarget(today) }
+            group.addTask { await self.observeTrainingDays() }
             group.addTask { await self.observeWaterGoal() }
         }
     }
@@ -200,6 +207,18 @@ final class DashboardModel {
     private func observeTarget(_ day: LocalDay) async {
         guard let repo = environment.profiles else { return }
         await DiaryModel.resubscribing { repo.observeTarget(on: day) } onValue: { data.target = $0 } onError: { report($0) }
+    }
+
+    /// The window's training days: today's boosts the energy target and the hydration goal, past days' their
+    /// hydration goals (sparkline, streak, history). Follows Settings and the diary's switch live.
+    private func observeTrainingDays() async {
+        guard let repo = environment.trainingDays else { return }
+        let window = data.window
+        await DiaryModel.resubscribing { repo.observeTrainingDays(in: window) } onValue: { training in
+            if data.trainingDays != training {
+                data.trainingDays = training
+            }
+        } onError: { report($0) }
     }
 
     private func observeWaterGoal() async {

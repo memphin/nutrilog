@@ -48,6 +48,10 @@ struct Fixture {
         CaffeineRepository(db, clock: clock.appClock)
     }
 
+    var trainingDays: TrainingDayRepository {
+        TrainingDayRepository(db, clock: clock.appClock)
+    }
+
     var healthLinks: HealthKitLinkRepository {
         HealthKitLinkRepository(db, clock: clock.appClock)
     }

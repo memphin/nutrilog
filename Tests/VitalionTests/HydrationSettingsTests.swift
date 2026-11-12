@@ -98,9 +98,9 @@ struct HydrationSettingsTests {
         var profile = try #require(AppEnvironment.preview().profiles).profile()
         profile.waterGoalMode = .weight
         profile.waterGoalMl = 3000
-        #expect(HydrationGoalResolver.goalMl(on: today, profile: profile, trendKg: 80) == 2400)
-        #expect(HydrationGoalResolver.goalMl(on: today, profile: profile, trendKg: nil) == HydrationGoal.fallbackMl)
+        #expect(HydrationGoalResolver.goalMl(on: today, profile: profile, trendKg: 80, training: .none) == 2400)
+        #expect(HydrationGoalResolver.goalMl(on: today, profile: profile, trendKg: nil, training: .none) == HydrationGoal.fallbackMl)
         profile.waterGoalMode = .fixed
-        #expect(HydrationGoalResolver.goalMl(on: today, profile: profile, trendKg: 80) == 3000)
+        #expect(HydrationGoalResolver.goalMl(on: today, profile: profile, trendKg: 80, training: .none) == 3000)
     }
 }

@@ -41,6 +41,9 @@ private struct DashboardContent: View {
         NavigationStack(path: $path) {
             ScrollView {
                 VStack(spacing: NL.Spacing.m) {
+                    if let boost = model.trainingBoost {
+                        TrainingDayPill(boostPercent: boost)
+                    }
                     ForEach(model.layout.rows, id: \.self) { row in
                         HStack(alignment: .top, spacing: NL.Spacing.m) {
                             ForEach(row) { tile in

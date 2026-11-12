@@ -206,6 +206,16 @@
         }
       }
     },
+    "boost must be between 0 and 100 percent" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "povećanje mora biti između 0 i 100 posto"
+          }
+        }
+      }
+    },
     "choose one food to keep and at least one other to merge into it" : {
       "localizations" : {
         "hr" : {
@@ -242,6 +252,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "brzi unosi nemaju količinu"
+          }
+        }
+      }
+    },
+    "weekday must be between 1 and 7" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dan u tjednu mora biti između 1 i 7"
           }
         }
       }

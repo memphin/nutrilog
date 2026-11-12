@@ -282,7 +282,10 @@ struct HydrationTileModelTests {
         let settingsTrendKg = HydrationGoalResolver.trendsKg(in: today ... today, environment: env)[today]
         #expect(settingsTrendKg == 80)
         let profile = try #require(env.profiles).profile()
-        #expect(HydrationGoalResolver.goalMl(on: today, profile: profile, trendKg: settingsTrendKg) == model.snapshot.water.goalMl)
+        #expect(
+            HydrationGoalResolver.goalMl(on: today, profile: profile, trendKg: settingsTrendKg, training: .none)
+                == model.snapshot.water.goalMl,
+        )
     }
 
     @Test func `a weight logged in Vitalion without Apple Health sets the goal, on the tile and in Settings`() async throws {
@@ -304,7 +307,7 @@ struct HydrationTileModelTests {
         let settingsTrendKg = HydrationGoalResolver.trendsKg(in: today ... today, environment: env)[today]
         #expect(settingsTrendKg == 80)
         let profile = try #require(env.profiles).profile()
-        #expect(HydrationGoalResolver.goalMl(on: today, profile: profile, trendKg: settingsTrendKg) == 2400)
+        #expect(HydrationGoalResolver.goalMl(on: today, profile: profile, trendKg: settingsTrendKg, training: .none) == 2400)
         #expect(try WaterProgress.read(on: today, environment: env)?.goalMl == 2400)
         // Nothing was written to daily_metrics.
         #expect(try #require(env.dailyMetrics).metrics(on: today) == nil)

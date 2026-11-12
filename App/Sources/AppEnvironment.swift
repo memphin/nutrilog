@@ -199,6 +199,12 @@ final class AppEnvironment {
         db.map { HydrationRepository($0) }
     }
 
+    /// Training weekdays and boost (history, like targets) and per-day overrides; `observeTrainingDays(in:)` gives
+    /// the Core `TrainingDays` resolver for boosting a day's calorie target and hydration goal.
+    var trainingDays: TrainingDayRepository? {
+        db.map { TrainingDayRepository($0, clock: clock) }
+    }
+
     // MARK: Health background work (backlog #26, #27)
 
     /// At launch (also a background launch for Health delivery): register the observer queries once the user has been

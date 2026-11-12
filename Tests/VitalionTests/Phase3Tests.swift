@@ -733,6 +733,7 @@ struct TrendsDataTests {
         let monday = try #require(LocalDay("2026-11-02"))
         let goals = ChartBuilder.hydrationGoals(
             in: monday ... monday.adding(days: 6), profile: profile, trendsKg: [monday.adding(days: 3): 80, monday.adding(days: 4): 90],
+            training: .none,
         )
         #expect(goals[monday] == HydrationGoal.fallbackMl && goals[monday.adding(days: 3)] == 2400)
         #expect(goals[monday.adding(days: 4)] == 2700)

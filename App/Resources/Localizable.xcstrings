@@ -3582,6 +3582,16 @@
         }
       }
     },
+    "Changes apply from today. Past days keep their training status." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Promjene vrijede od danas. Prošli dani zadržavaju svoj status treninga."
+          }
+        }
+      }
+    },
     "Changes here apply to this logging only; the saved meal stays as it is." : {
       "localizations" : {
         "hr" : {
@@ -3959,6 +3969,16 @@
         }
       }
     },
+    "Couldn't change the training day: %@" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Promjena dana treninga nije uspjela: %@"
+          }
+        }
+      }
+    },
     "Couldn't connect Apple Health: %@" : {
       "localizations" : {
         "hr" : {
@@ -4251,6 +4271,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Spremanje cilja koraka nije uspjelo: %@"
+          }
+        }
+      }
+    },
+    "Couldn't save the training days: %@" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spremanje dana treninga nije uspjelo: %@"
           }
         }
       }
@@ -5778,6 +5808,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cilj"
+          }
+        }
+      }
+    },
+    "Goal boost" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Povećanje ciljeva"
           }
         }
       }
@@ -7495,6 +7535,16 @@
         }
       }
     },
+    "Not a training day" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nije dan treninga"
+          }
+        }
+      }
+    },
     "Not available" : {
       "localizations" : {
         "hr" : {
@@ -7841,6 +7891,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Uključeno"
+          }
+        }
+      }
+    },
+    "On a training day your calorie target and hydration goal go up by this much. The extra calories are added as carbs." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Na dan treninga tvoj kalorijski cilj i cilj hidracije rastu za ovoliko. Dodatne kalorije dodaju se kao ugljikohidrati."
           }
         }
       }
@@ -8780,6 +8840,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "REM %@"
+          }
+        }
+      }
+    },
+    "Raises this day's calorie and hydration goals" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Povećava kalorijski cilj i cilj hidracije za ovaj dan"
           }
         }
       }
@@ -10799,6 +10869,46 @@
         }
       }
     },
+    "Training day" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dan treninga"
+          }
+        }
+      }
+    },
+    "Training day · %@" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dan treninga · %@"
+          }
+        }
+      }
+    },
+    "Training day, goals raised by %@" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dan treninga, ciljevi povećani za %@"
+          }
+        }
+      }
+    },
+    "Training days" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dani treninga"
+          }
+        }
+      }
+    },
     "Trend %@" : {
       "localizations" : {
         "hr" : {
@@ -11359,6 +11469,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tjedan od %@ · dnevni prosjek"
+          }
+        }
+      }
+    },
+    "Weekdays" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dani u tjednu"
           }
         }
       }
