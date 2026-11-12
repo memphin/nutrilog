@@ -1,5 +1,9 @@
 # tools
 
+## versions.py
+Prints which version is on the App Store, on TestFlight and on `main`, and what needs doing (see
+`docs/RELEASING.md`, "Which version is where"). Standard library only: `python3 tools/versions.py [--markdown]`.
+
 ## build_food_index.py
 Generates `Resources/FoodIndex/bundled_foods.sqlite` — the offline generic-food index (USDA FoodData Central *Foundation* + *SR Legacy*, filtered to a curated allowlist of common whole foods). CC0 data; the output is committed.
 
