@@ -131,7 +131,7 @@ struct CorrelationSpec: Hashable {
 
 /// The span of days the correlations look at.
 enum CorrelationPeriod: String, CaseIterable, Identifiable {
-    case threeMonths, sixMonths, year
+    case month, threeMonths, sixMonths
 
     var id: String {
         rawValue
@@ -139,25 +139,25 @@ enum CorrelationPeriod: String, CaseIterable, Identifiable {
 
     var dayCount: Int {
         switch self {
+        case .month: 30
         case .threeMonths: 90
         case .sixMonths: 182
-        case .year: 365
         }
     }
 
     var title: String {
         switch self {
+        case .month: String(localized: "1 month")
         case .threeMonths: String(localized: "3 months")
         case .sixMonths: String(localized: "6 months")
-        case .year: String(localized: "1 year")
         }
     }
 
     var spokenTitle: String {
         switch self {
+        case .month: String(localized: "last month")
         case .threeMonths: String(localized: "last 3 months")
         case .sixMonths: String(localized: "last 6 months")
-        case .year: String(localized: "last year")
         }
     }
 

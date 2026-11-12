@@ -158,8 +158,8 @@ public struct MacroSplit: Hashable, Sendable, Codable {
         self.fatPct = fatPct
     }
 
-    /// Default balanced split 30 / 40 / 30.
-    public static let balanced = MacroSplit(proteinPct: 30, carbsPct: 40, fatPct: 30)
+    /// Default balanced split 25 / 45 / 30.
+    public static let balanced = MacroSplit(proteinPct: 25, carbsPct: 45, fatPct: 30)
 
     /// Percentages must add up to 100 (±0.5 for rounding) and each be within 0…100.
     public var isValid: Bool {

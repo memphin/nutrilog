@@ -301,11 +301,11 @@ struct TargetsModelTests {
         let m = try model()
         m.overrideKcal = true
         m.manualKcal = "2000"
-        m.proteinPct = "40"
+        m.proteinPct = "35"
         #expect(m.percentSum == 110)
         #expect(m.makeTarget() == nil)
         #expect(m.validationErrors.first?.contains("100 %") == true)
-        m.carbsPct = "30"
+        m.carbsPct = "35"
         #expect(m.makeTarget() != nil)
     }
 
@@ -362,7 +362,7 @@ struct TargetsModelTests {
             #expect(m.validationErrors.contains { $0.contains("between 0 and 100") })
             #expect(m.makeTarget() == nil)
         }
-        m.proteinPct = "30"
+        m.proteinPct = "25"
         #expect(m.makeTarget() != nil)
         m.macroInput = .grams
         m.proteinG = "150"

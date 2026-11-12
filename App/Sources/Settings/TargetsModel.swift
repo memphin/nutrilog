@@ -34,8 +34,8 @@ final class TargetsModel {
     var overrideKcal = false
     var manualKcal = ""
     var macroInput: MacroInput = .percent
-    var proteinPct = "30"
-    var carbsPct = "40"
+    var proteinPct = "25"
+    var carbsPct = "45"
     var fatPct = "30"
     var proteinG = ""
     var carbsG = ""
