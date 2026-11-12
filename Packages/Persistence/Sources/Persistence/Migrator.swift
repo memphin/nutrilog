@@ -21,7 +21,8 @@ public enum Migrator {
         "012_food_merged_into",
         "013_hydration", // `013_hydration.sql` plus Swift-coded backfills, see `codedMigration`
         "014_caffeine_ml", // Swift-coded, see `codedMigration`
-        // "015_<description>",
+        "015_training_days",
+        // "016_<description>",
     ]
 
     /// `deviceCalendar`: the calendar the device uses now, which migration 011 needs to tell which calendar the

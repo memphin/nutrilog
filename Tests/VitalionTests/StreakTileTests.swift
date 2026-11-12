@@ -36,6 +36,20 @@ struct StreakTileTests {
         #expect(DashboardSnapshot(data).streak(for: .sleep) == Streak(days: 2, includesToday: true, isAtLimit: false))
     }
 
+    @Test func `a short night recorded today ends the sleep streak`() {
+        var data = DashboardData(today: today)
+        data.sleepGoalMin = 420
+        data.metrics = [record(0, sleep: 300), record(1, sleep: 450), record(2, sleep: 480)]
+        #expect(DashboardSnapshot(data).streak(for: .sleep) == Streak.none)
+    }
+
+    @Test func `no sleep recorded today keeps the sleep streak up to yesterday`() {
+        var data = DashboardData(today: today)
+        data.sleepGoalMin = 420
+        data.metrics = [record(0, steps: 1000), record(1, sleep: 450), record(2, inBed: 480)]
+        #expect(DashboardSnapshot(data).streak(for: .sleep) == Streak(days: 2, includesToday: false, isAtLimit: false))
+    }
+
     func intake(_ ml: Double, _ offset: Int, source: FluidIntake.Source = .water) -> FluidIntake {
         let at = today.adding(days: -offset).startDate(calendar: .current).addingTimeInterval(12 * 3600)
         return FluidIntake(

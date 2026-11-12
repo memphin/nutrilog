@@ -113,8 +113,10 @@ struct HydrationSettings: Equatable {
 // MARK: - Goal
 
 /// The day's hydration goal (spec §1): 30 ml/kg of the latest weight trend on or before the day, however old (weight
-/// mode), or the fixed amount. The one goal lookup: Today's tile and detail, Settings, the reminders, the widget, Siri
-/// and Trends all read the weight with `trendsKg` and the goal with `goalMl`, so they always agree.
+/// mode), or the fixed amount — raised by the day's boost on a training day (`TrainingBoost.waterMl`). The one goal
+/// lookup: Today's tile and detail, the streak, the reminders, the widget, Siri and Trends all read the weight with
+/// `trendsKg`, the training days with `trainingDays` and the goal with `goalMl`, so they always agree. Settings shows
+/// the base goal (`TrainingDays.none`).
 enum HydrationGoalResolver {
     /// The weight each day's goal uses: the latest stored trend on or before the day, also one from before `days`
     /// (`DailyMetricsRepository.weightTrends(in:)`, kept on Apple Health's rows). A day without a stored trend — e.g.
@@ -149,13 +151,25 @@ enum HydrationGoalResolver {
         trendsKg(in: days, metrics: environment.dailyMetrics, weights: environment.weights)
     }
 
-    /// `trendKg` is the weight trend on or before `day` (nil when none is known: the fallback goal).
-    static func goalMl(on day: LocalDay, profile: Profile, trendKg: Double?) -> Double {
-        goalMl(on: day, mode: profile.waterGoalMode, fixedMl: profile.waterGoalMl, trendKg: trendKg)
+    /// The training days of `days` (overrides outside them are not loaded); none when they can't be read, so the
+    /// goals fall back to the base goal.
+    @MainActor
+    static func trainingDays(in days: ClosedRange<LocalDay>, environment: AppEnvironment) -> TrainingDays {
+        (try? environment.trainingDays?.trainingDays(in: days)) ?? .none
+    }
+
+    /// `trendKg` is the weight trend on or before `day` (nil when none is known: the fallback goal); `training` must
+    /// cover `day` (`TrainingDayRepository.trainingDays(in:)`).
+    static func goalMl(on day: LocalDay, profile: Profile, trendKg: Double?, training: TrainingDays) -> Double {
+        goalMl(on: day, mode: profile.waterGoalMode, fixedMl: profile.waterGoalMl, trendKg: trendKg, training: training)
     }
 
     /// The same, with the profile's goal mode and fixed amount given separately.
-    static func goalMl(on _: LocalDay, mode: HydrationGoalMode, fixedMl: Double, trendKg: Double?) -> Double {
-        HydrationGoal.ml(weightKg: trendKg, mode: mode, fixedMl: fixedMl)
+    static func goalMl(
+        on day: LocalDay, mode: HydrationGoalMode, fixedMl: Double, trendKg: Double?, training: TrainingDays,
+    ) -> Double {
+        let base = HydrationGoal.ml(weightKg: trendKg, mode: mode, fixedMl: fixedMl)
+        guard let boost = training.boost(on: day) else { return base }
+        return TrainingBoost.waterMl(base, percent: boost)
     }
 }

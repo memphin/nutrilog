@@ -6,9 +6,10 @@ import Persistence
 /// `HydrationReminder.next(day:tomorrowWake:)` on the same `HydrationDay` the Today tile shows
 /// (`HydrationDayBuilder`, `HydrationGoalResolver`), and schedules or cancels it.
 ///
-/// Recomputes when today's drinks, today's Health row (other apps' water, wake-up time, weight trend), the weigh-ins
-/// or the profile (goal) change while `start()`ed; `AppEnvironment` also asks after launch, foreground, imports, day changes and
-/// settings changes, which nothing here observes. Cancels when reminders are off or notifications are not allowed.
+/// Recomputes when today's drinks, today's Health row (other apps' water, wake-up time, weight trend), the weigh-ins,
+/// the profile (goal) or the training days (a training day's boost) change while `start()`ed; `AppEnvironment` also
+/// asks after launch, foreground, imports, day changes and settings changes, which nothing here observes. Cancels when
+/// reminders are off or notifications are not allowed.
 @MainActor
 final class HydrationReminderService {
     /// The last reminder scheduled and the stretch without a drink it is about (the day and its last drink). Kept
@@ -27,6 +28,7 @@ final class HydrationReminderService {
     private let profiles: ProfileRepository
     private let water: WaterRepository
     private let weights: WeightRepository
+    private let trainingDays: TrainingDayRepository
     private let scheduler: any HydrationReminderScheduling
     private let clock: AppClock
     private let calendar: Calendar
@@ -46,6 +48,7 @@ final class HydrationReminderService {
         profiles: ProfileRepository,
         water: WaterRepository,
         weights: WeightRepository,
+        trainingDays: TrainingDayRepository,
         scheduler: any HydrationReminderScheduling,
         clock: AppClock,
         calendar: Calendar = .autoupdatingCurrent,
@@ -57,6 +60,7 @@ final class HydrationReminderService {
         self.profiles = profiles
         self.water = water
         self.weights = weights
+        self.trainingDays = trainingDays
         self.scheduler = scheduler
         self.clock = clock
         self.calendar = calendar
@@ -76,10 +80,10 @@ final class HydrationReminderService {
 
     // MARK: Observing
 
-    /// Recomputes whenever today's drinks, Health row, weigh-ins or profile change. Tomorrow's drinks and Health row
-    /// are watched too: a suspended app that wakes up after midnight for a Health sync sees the new day's row (its wake-up time)
-    /// written, and the recompute then moves the observation to the new day. Call again after the day changed: it
-    /// then observes the new day (and recomputes for it); otherwise it does nothing.
+    /// Recomputes whenever today's drinks, Health row, weigh-ins, profile or training days change. Tomorrow's drinks
+    /// and Health row are watched too: a suspended app that wakes up after midnight for a Health sync sees the new
+    /// day's row (its wake-up time) written, and the recompute then moves the observation to the new day. Call again
+    /// after the day changed: it then observes the new day (and recomputes for it); otherwise it does nothing.
     func start() {
         let day = LocalDay(clock.now(), calendar: calendar)
         guard observation == nil || observedDay != day else { return }
@@ -89,6 +93,7 @@ final class HydrationReminderService {
         let metrics = metrics
         let profiles = profiles
         let weights = weights
+        let trainingDays = trainingDays
         let changed: @MainActor @Sendable () -> Void = { [weak self] in self?.enqueueRecompute() }
         observation = Task {
             await withDiscardingTaskGroup { group in
@@ -96,6 +101,7 @@ final class HydrationReminderService {
                 group.addTask { await Self.follow({ metrics.observeMetrics(in: day ... day.next) }, changed: changed) }
                 group.addTask { await Self.follow({ profiles.observeProfile() }, changed: changed) }
                 group.addTask { await Self.follow({ weights.observeAllEntries() }, changed: changed) }
+                group.addTask { await Self.follow({ trainingDays.observeTrainingDays(in: day ... day.next) }, changed: changed) }
             }
         }
     }
@@ -197,7 +203,8 @@ final class HydrationReminderService {
             let record = try metrics.metrics(on: today)
             let profile = try profiles.profile()
             let trends = HydrationGoalResolver.trendsKg(in: today ... today.next, metrics: metrics, weights: weights, calendar: calendar)
-            let goalMl = HydrationGoalResolver.goalMl(on: today, profile: profile, trendKg: trends[today])
+            let training = try trainingDays.trainingDays(in: today ... today.next)
+            let goalMl = HydrationGoalResolver.goalMl(on: today, profile: profile, trendKg: trends[today], training: training)
             let day = HydrationDayBuilder.make(
                 day: today, intakes: intakes, otherAppsMl: record?.waterMl ?? 0, wokeAt: record?.wokeAt,
                 settings: settings, goalMl: goalMl, now: now, calendar: calendar,
@@ -210,7 +217,7 @@ final class HydrationReminderService {
             let isTomorrow = LocalDay(reminder.date, calendar: calendar) != today
             let totalMl = isTomorrow ? 0 : day.totalMl
             let planGoalMl = isTomorrow
-                ? HydrationGoalResolver.goalMl(on: today.next, profile: profile, trendKg: trends[today.next])
+                ? HydrationGoalResolver.goalMl(on: today.next, profile: profile, trendKg: trends[today.next], training: training)
                 : goalMl
             return Plan(
                 reminder: reminder,
@@ -249,6 +256,7 @@ extension HydrationReminderService {
             profiles: ProfileRepository(database, clock: clock),
             water: WaterRepository(database, clock: clock),
             weights: WeightRepository(database, clock: clock),
+            trainingDays: TrainingDayRepository(database, clock: clock),
             scheduler: scheduler,
             clock: clock,
             defaults: defaults,

@@ -73,7 +73,8 @@ struct MetricChartView: View {
         dayGoals = [:]
         if metric == .water, let profile = try? environment.profiles?.profile() {
             let trends = HydrationGoalResolver.trendsKg(in: days, environment: environment)
-            dayGoals = ChartBuilder.hydrationGoals(in: days, profile: profile, trendsKg: trends)
+            let training = HydrationGoalResolver.trainingDays(in: days, environment: environment)
+            dayGoals = ChartBuilder.hydrationGoals(in: days, profile: profile, trendsKg: trends, training: training)
             goal = dayGoals[environment.today]
         }
         let stats = (try? StatsLoader.load(days, environment: environment)) ?? []

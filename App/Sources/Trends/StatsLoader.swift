@@ -10,6 +10,8 @@ enum StatsBuilder {
     /// - Parameters:
     ///   - summaries: diary rows of the range (`DiaryRepository.daySummaries`).
     ///   - targets: every target by its first day.
+    ///   - training: the training days of the range: a training day is judged against its boosted target
+    ///     (`TrainingDays.effectiveTarget(_:on:)`).
     ///   - metrics: Health values of the range.
     ///   - dayWeights: reconciled weights from the first weigh-in on (not only the range), so the trend is right.
     ///   - loggedFluidMl: every drink logged in Vitalion per day (water, diary drinks, caffeine drinks); other apps'
@@ -18,6 +20,7 @@ enum StatsBuilder {
         range: ClosedRange<LocalDay>,
         summaries: [DiaryDaySummary],
         targets: EffectiveTimeline<Target>,
+        training: TrainingDays = .none,
         metrics: [DailyHealthMetrics],
         dayWeights: [DayWeight],
         loggedFluidMl: [LocalDay: Double],
@@ -38,7 +41,7 @@ enum StatsBuilder {
                 intake: summary.flatMap { $0.entryCount > 0 || $0.isComplete ? $0.totals : nil },
                 entryCount: summary?.entryCount ?? 0,
                 isComplete: summary?.isComplete ?? false,
-                targetKcal: targets.value(on: day)?.kcal,
+                targetKcal: training.effectiveTarget(targets.value(on: day), on: day)?.kcal,
                 steps: health?.steps,
                 sleepMin: health?.sleepAsleepMin ?? health?.sleepInBedMin,
                 activeKcal: health?.activeKcal,
@@ -70,6 +73,7 @@ enum StatsLoader {
             range: range,
             summaries: diary.daySummaries(in: range),
             targets: profiles.targetTimeline(),
+            training: environment.trainingDays?.trainingDays(in: range) ?? .none,
             metrics: dailyMetrics.metrics(in: range).map(\.metrics),
             dayWeights: dayWeights(through: range.upperBound, environment: environment, calendar: calendar),
             loggedFluidMl: HydrationTotals.loggedMl(hydration.intakes(in: range)),

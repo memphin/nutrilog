@@ -97,12 +97,13 @@ struct IntentActions {
         return String(localized: "Logged \(Int(ml.rounded())) ml of water. \(total) of \(goal) ml today.", locale: locale)
     }
 
-    /// Today's remaining energy against the target; `remainingKcal` is nil without a target.
+    /// Today's remaining energy against the target (boosted on a training day); `remainingKcal` is nil without a
+    /// target.
     func remaining() throws -> (remainingKcal: Double?, consumedKcal: Double, targetKcal: Double?) {
         environment.refreshToday()
-        guard let diary = environment.diary, let profiles = environment.profiles else { throw Failure.databaseUnavailable }
+        guard let diary = environment.diary, let trainingDays = environment.trainingDays else { throw Failure.databaseUnavailable }
         let consumed = try diary.totals(for: environment.today).kcal
-        let target = try profiles.target(on: environment.today)?.kcal
+        let target = try trainingDays.effectiveTarget(on: environment.today)?.kcal
         return (target.map { $0 - consumed }, consumed, target)
     }
 

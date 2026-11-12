@@ -67,6 +67,13 @@ public struct EffectiveTimeline<Value: Sendable>: Sendable {
     }
 }
 
+extension EffectiveTimeline: Equatable where Value: Equatable {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.entries.count == rhs.entries.count
+            && zip(lhs.entries, rhs.entries).allSatisfy { $0.from == $1.from && $0.value == $1.value }
+    }
+}
+
 public extension LocalDay {
     /// The first day of the week containing this day, for weeks starting on `firstWeekday`
     /// (1 = Sunday … 7 = Saturday, as `Calendar.firstWeekday`).

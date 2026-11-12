@@ -81,6 +81,9 @@ private struct DiaryContent: View {
                 DaySummaryHeader(totals: model.diary?.totals ?? .zero, target: model.target, unit: model.energyUnit)
                     .listRowInsets(EdgeInsets(top: NL.Spacing.m, leading: NL.Spacing.l, bottom: NL.Spacing.m, trailing: NL.Spacing.l))
                     .gesture(daySwipe)
+                TrainingDayToggle(isOn: model.isTrainingDay, boostPercent: model.trainingBoostPercent) {
+                    model.toggleTrainingDay()
+                }
                 if !model.planned.isEmpty {
                     PlannedSummaryRow(
                         planned: model.plannedTotals, eaten: model.diary?.totals ?? .zero, target: model.target,
@@ -178,6 +181,7 @@ private struct DiaryContent: View {
         .toolbar { toolbar }
         .task(id: model.day) { await model.observeDiary() }
         .task(id: model.day) { await model.observeTarget() }
+        .task(id: model.day) { await model.observeTraining() }
         .task(id: model.day) { await model.observePlan() }
         .task(id: model.day) { model.reloadEstimate() }
         .onChange(of: environment.dataGeneration) { model.dataDidChangeExternally() }

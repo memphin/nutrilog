@@ -20,7 +20,10 @@ final class DiaryModel {
     private(set) var diary: DayDiary?
     /// The day's meal plan that is not eaten yet.
     private(set) var planned: [PlannedEntry] = []
-    private(set) var target: Target?
+    /// The target in effect on the day, before a training day's boost (`target`).
+    private(set) var baseTarget: Target?
+    /// The day's training status and boost (schedule and the day's override).
+    private(set) var training: TrainingDays = .none
     /// Foods in the current day (entries and plan) measured in ml (entries only store the amount).
     private(set) var liquidFoodIDs: Set<String> = []
     var errorMessage: String?
@@ -150,9 +153,50 @@ final class DiaryModel {
         await Self.resubscribing {
             repo.observeTarget(on: day)
         } onValue: { value in
-            target = value
+            baseTarget = value
         } onError: { error in
             errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Streams whether the day is a training day (Settings → Training days, the day's switch here or elsewhere).
+    func observeTraining() async {
+        guard let repo = environment.trainingDays else { return }
+        let day = day
+        await Self.resubscribing {
+            repo.observeTrainingDays(in: day ... day)
+        } onValue: { value in
+            if training != value {
+                training = value
+            }
+        } onError: { error in
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    // MARK: Training day
+
+    /// The day's calorie and macro target: `baseTarget`, boosted on a training day.
+    var target: Target? {
+        training.effectiveTarget(baseTarget, on: day)
+    }
+
+    var isTrainingDay: Bool {
+        training.isTraining(day)
+    }
+
+    /// The boost a training day gets on this day (whether or not it is one), in percent.
+    var trainingBoostPercent: Int {
+        training.boostPercent(on: day)
+    }
+
+    /// The day's training switch: makes it a training day or a rest day (`TrainingDayRepository.toggleTraining`).
+    func toggleTrainingDay() {
+        guard let repo = environment.trainingDays else { return }
+        do {
+            try repo.toggleTraining(on: day)
+        } catch {
+            errorMessage = String(localized: "Couldn't change the training day: \(error.localizedDescription)")
         }
     }
 

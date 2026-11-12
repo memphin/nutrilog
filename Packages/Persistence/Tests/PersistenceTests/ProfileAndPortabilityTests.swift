@@ -121,6 +121,10 @@ struct DataPortabilityTests {
             origin: .formula,
         ))
         try f.profiles.setSetting("showKJ", false)
+        try f.trainingDays.setSchedule(weekdays: [2, 4, 6], boostPercent: 15, effectiveFrom: day("2026-11-01"))
+        try f.trainingDays.setTraining(true, on: day("2026-11-08"))
+        try f.trainingDays.setTraining(false, on: day("2026-11-04"))
+        try f.trainingDays.clearOverride(on: day("2026-11-04")) // tombstone must be exported too
         return f
     }
 
@@ -138,6 +142,11 @@ struct DataPortabilityTests {
         // FTS index is rebuilt by triggers on import.
         #expect(try FoodSearch(target.db, bundled: nil).search("domaci").count == 1)
         #expect(try target.diary.diary(for: day("2026-11-08")).totals.kcal == 150 + 285.5)
+        let training = try target.trainingDays.trainingDays(in: day("2026-11-01") ... day("2026-11-30"))
+        #expect(training == (try source.trainingDays.trainingDays(in: day("2026-11-01") ... day("2026-11-30"))))
+        #expect(training.isTraining(day("2026-11-08"))) // a Sunday, switched on
+        #expect(training.isTraining(day("2026-11-04"))) // override cleared: back to its Wednesday
+        #expect(training.boost(on: day("2026-11-02")) == 15)
     }
 
     @Test func `export contains tombstones and schema version`() throws {

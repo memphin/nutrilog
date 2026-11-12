@@ -10,6 +10,7 @@ struct HistoryMonth: Identifiable, Equatable {
         var adherence: Adherence
         var kcal: Double?
         var isFuture: Bool
+        var isTraining = false
 
         var id: LocalDay {
             day
@@ -31,11 +32,13 @@ enum HistoryCalendar {
     static let months = 24
 
     /// `months` months ending with the month of `today`, oldest first. Each day gets the adherence band of its
-    /// energy against the target in effect on that day.
+    /// energy against the target in effect on that day, boosted on a training day (`training` must cover the days
+    /// shown, `days(today:months:)`).
     static func build(
         today: LocalDay,
         summaries: [DiaryDaySummary],
         targets: EffectiveTimeline<Target>,
+        training: TrainingDays = .none,
         firstWeekday: Int,
         months: Int = months,
     ) -> [HistoryMonth] {
@@ -48,10 +51,11 @@ enum HistoryCalendar {
                 let kcal = summary.flatMap { $0.entryCount > 0 || $0.isComplete ? $0.totals.kcal : nil }
                 // Today is judged once it is over (or marked as fully logged): a morning's breakfast is not "off target".
                 let isOpen = day == today && summary?.isComplete != true
+                let targetKcal = training.effectiveTarget(targets.value(on: day), on: day)?.kcal
                 return HistoryMonth.Day(
                     day: day,
-                    adherence: isOpen ? .notLogged : Adherence.band(kcal: kcal, targetKcal: targets.value(on: day)?.kcal),
-                    kcal: kcal, isFuture: day > today,
+                    adherence: isOpen ? .notLogged : Adherence.band(kcal: kcal, targetKcal: targetKcal),
+                    kcal: kcal, isFuture: day > today, isTraining: training.isTraining(day),
                 )
             }
             return HistoryMonth(start: start, leadingBlanks: (start.weekday - firstWeekday + 7) % 7, days: days)
@@ -61,6 +65,11 @@ enum HistoryCalendar {
     /// The first day shown.
     static func firstDay(today: LocalDay, months: Int = months) -> LocalDay {
         today.addingMonths(-(months - 1))
+    }
+
+    /// Every day shown: from `firstDay` to the end of today's month.
+    static func days(today: LocalDay, months: Int = months) -> ClosedRange<LocalDay> {
+        firstDay(today: today, months: months) ... today.addingMonths(1).previous
     }
 }
 
@@ -99,8 +108,9 @@ struct HistoryCalendarView: View {
         .defaultScrollAnchor(.bottom) // open on the current month; older months are above
         .navigationTitle("History")
         .navigationBarTitleDisplayMode(.inline)
-        // Rebuilt when the day changes too, so a calendar left open overnight moves "today" along.
-        .task(id: CalendarKey(today: environment.today, generation: environment.dataGeneration)) { load() }
+        // Rebuilt when the day changes too, so a calendar left open overnight moves "today" along; and whenever the
+        // training days change (a day's switch here or in the diary, Settings).
+        .task(id: CalendarKey(today: environment.today, generation: environment.dataGeneration)) { await observe() }
         .alert("History", isPresented: Binding(get: { errorMessage != nil }, set: {
             if !$0 {
                 errorMessage = nil
@@ -125,9 +135,11 @@ struct HistoryCalendarView: View {
                     Color.clear.frame(height: 40)
                 }
                 ForEach(month.days) { day in
-                    DayCell(day: day, isToday: day.day == environment.today, unit: environment.energyUnit) {
-                        environment.openDiary(on: day.day)
-                    }
+                    DayCell(
+                        day: day, isToday: day.day == environment.today, unit: environment.energyUnit,
+                        open: { environment.openDiary(on: day.day) },
+                        toggleTraining: { toggleTraining(day.day) },
+                    )
                 }
             }
         }
@@ -141,13 +153,37 @@ struct HistoryCalendarView: View {
                     Text(band.title).font(.caption).foregroundStyle(.secondary)
                 }
             }
+            HStack(spacing: NL.Spacing.s) {
+                Image(systemName: TrainingDayFormat.symbol(isTraining: true))
+                    .font(.caption2)
+                    .frame(width: 16, height: 16)
+                    .accessibilityHidden(true)
+                Text("Training day").font(.caption)
+            }
+            .foregroundStyle(.secondary)
             Text("Each day is compared with the calorie target that applied on that day.")
                 .font(.caption).foregroundStyle(.secondary)
         }
         .accessibilityElement(children: .combine)
     }
 
-    private func load() {
+    /// Builds the months now and again after every change to the training days.
+    private func observe() async {
+        let today = environment.today
+        guard let repo = environment.trainingDays else {
+            load(training: .none)
+            return
+        }
+        await DiaryModel.resubscribing {
+            repo.observeTrainingDays(in: HistoryCalendar.days(today: today))
+        } onValue: { training in
+            load(training: training)
+        } onError: { error in
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func load(training: TrainingDays) {
         guard let diary = environment.diary, let profiles = environment.profiles else { return }
         do {
             let today = environment.today
@@ -155,10 +191,21 @@ struct HistoryCalendarView: View {
                 today: today,
                 summaries: diary.daySummaries(in: HistoryCalendar.firstDay(today: today) ... today),
                 targets: profiles.targetTimeline(),
+                training: training,
                 firstWeekday: Calendar.current.firstWeekday,
             )
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+
+    /// A day's "Training day" / "Not a training day": the observation rebuilds the months.
+    private func toggleTraining(_ day: LocalDay) {
+        guard let repo = environment.trainingDays else { return }
+        do {
+            try repo.toggleTraining(on: day)
+        } catch {
+            errorMessage = String(localized: "Couldn't change the training day: \(error.localizedDescription)")
         }
     }
 }
@@ -168,6 +215,7 @@ private struct DayCell: View {
     let isToday: Bool
     let unit: EnergyUnit
     let open: () -> Void
+    let toggleTraining: () -> Void
 
     var body: some View {
         Button(action: open) {
@@ -180,6 +228,15 @@ private struct DayCell: View {
                     day.isFuture ? Color.clear : day.adherence.color.opacity(day.adherence == .notLogged ? 1 : 0.55),
                     in: RoundedRectangle(cornerRadius: NL.Radius.s),
                 )
+                .overlay(alignment: .topTrailing) {
+                    if day.isTraining {
+                        Image(systemName: TrainingDayFormat.symbol(isTraining: true))
+                            .font(.caption2)
+                            .imageScale(.small)
+                            .foregroundStyle(day.isFuture ? .tertiary : .secondary)
+                            .padding(NL.Spacing.xxs)
+                    }
+                }
                 .overlay {
                     if isToday {
                         RoundedRectangle(cornerRadius: NL.Radius.s).strokeBorder(Color.primary, lineWidth: 1.5)
@@ -188,14 +245,34 @@ private struct DayCell: View {
         }
         .buttonStyle(.plain)
         .disabled(day.isFuture)
+        .contextMenu {
+            if !day.isFuture {
+                trainingButton
+            }
+        }
         .accessibilityLabel(label)
         .accessibilityHint("Opens the day in the diary")
+        .accessibilityActions {
+            if !day.isFuture {
+                trainingButton
+            }
+        }
+    }
+
+    /// Switches the day: "Not a training day" on a training day, "Training day" on a rest day.
+    @ViewBuilder private var trainingButton: some View {
+        if day.isTraining {
+            Button("Not a training day", systemImage: TrainingDayFormat.symbol(isTraining: false), action: toggleTraining)
+        } else {
+            Button("Training day", systemImage: TrainingDayFormat.symbol(isTraining: true), action: toggleTraining)
+        }
     }
 
     private var label: String {
         let date = day.day.startDate().formatted(.dateTime.weekday(.wide).day().month(.wide))
-        guard let kcal = day.kcal else { return "\(date), \(day.adherence.title)" }
+        let training = day.isTraining ? ", \(String(localized: "Training day"))" : ""
+        guard let kcal = day.kcal else { return "\(date), \(day.adherence.title)\(training)" }
         let state = isToday && day.adherence == .notLogged ? String(localized: "in progress") : day.adherence.title
-        return "\(date), \(unit.format(kcal)), \(state)"
+        return "\(date), \(unit.format(kcal)), \(state)\(training)"
     }
 }

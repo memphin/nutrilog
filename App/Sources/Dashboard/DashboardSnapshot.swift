@@ -17,7 +17,10 @@ struct DashboardData: Equatable {
     var hydrationIntakes: [LocalDay: [FluidIntake]] = [:]
     /// Today's diary totals.
     var totals: Nutrients = .zero
+    /// The target in effect today, before a training day's boost (`effectiveTarget`).
     var target: Target?
+    /// Training days of the history window: today's boosts the calorie target, each day's its hydration goal.
+    var trainingDays: TrainingDays = .none
     /// The weight each day of the history window's hydration goal uses: the latest weight trend on or before the
     /// day, however old (`HydrationGoalResolver.trendsKg(in:environment:)`).
     var weightTrends: [LocalDay: Double] = [:]
@@ -52,9 +55,16 @@ struct DashboardData: Equatable {
         DateInterval(start: window.lowerBound.startDate(calendar: calendar), end: today.next.startDate(calendar: calendar))
     }
 
-    /// The hydration goal of `day` (`HydrationGoalResolver`).
+    /// The hydration goal of `day` (`HydrationGoalResolver`), boosted on a training day.
     func hydrationGoalMl(on day: LocalDay) -> Double {
-        HydrationGoalResolver.goalMl(on: day, mode: waterGoalMode, fixedMl: waterGoalMl, trendKg: weightTrends[day])
+        HydrationGoalResolver.goalMl(
+            on: day, mode: waterGoalMode, fixedMl: waterGoalMl, trendKg: weightTrends[day], training: trainingDays,
+        )
+    }
+
+    /// Today's calorie and macro target: `target`, boosted on a training day.
+    var effectiveTarget: Target? {
+        trainingDays.effectiveTarget(target, on: today)
     }
 }
 
@@ -78,7 +88,8 @@ struct WaterProgress: Equatable {
         let logged = try HydrationTotals.loggedMl(hydration.intakes(in: day ... day))[day] ?? 0
         let other = (try? environment.dailyMetrics?.metrics(on: day)?.waterMl) ?? 0
         let trends = HydrationGoalResolver.trendsKg(in: day ... day, environment: environment)
-        let goal = try HydrationGoalResolver.goalMl(on: day, profile: profiles.profile(), trendKg: trends[day])
+        let training = HydrationGoalResolver.trainingDays(in: day ... day, environment: environment)
+        let goal = try HydrationGoalResolver.goalMl(on: day, profile: profiles.profile(), trendKg: trends[day], training: training)
         return WaterProgress(loggedMl: logged, otherAppsMl: other, goalMl: goal)
     }
 }
@@ -175,6 +186,7 @@ struct DashboardSnapshot: Equatable {
     /// The hydration goal of each sparkline day, from that day's weight trend.
     let hydrationGoals: [LocalDay: Double]
     let totals: Nutrients
+    /// Today's target, boosted on a training day (`DashboardData.effectiveTarget`).
     let target: Target?
     let stepGoal: Int
     let sleepGoalMin: Int
@@ -219,7 +231,7 @@ struct DashboardSnapshot: Equatable {
             return (day, data.hydrationGoalMl(on: day))
         })
         totals = data.totals
-        target = data.target
+        target = data.effectiveTarget
         stepGoal = data.stepGoal
         sleepGoalMin = data.sleepGoalMin
         goalMode = data.goalMode
