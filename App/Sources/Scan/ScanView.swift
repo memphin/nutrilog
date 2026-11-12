@@ -7,9 +7,34 @@ import SwiftUI
 /// card, not-found and error screens open in a sheet over it. With "Keep scanning" on, logging returns to the
 /// camera and the logged foods are counted (shopping-list style).
 struct ScanView: View {
-    let target: AddTarget
-    /// Close the scanner and Add Food (a food was logged and continuous mode is off).
+    /// What a scanned food is for: logging it to the diary, or handing it back (e.g. to add it to a saved meal).
+    enum Destination {
+        case log(AddTarget)
+        /// The scanned food, saved as a local food; the scanner closes after it is picked.
+        case pick((FoodDetail) -> Void)
+
+        var target: AddTarget? {
+            if case let .log(target) = self {
+                return target
+            }
+            return nil
+        }
+    }
+
+    let destination: Destination
+    /// Close the scanner and Add Food (a food was logged and continuous mode is off, or a food was picked).
     let onFinished: () -> Void
+
+    init(target: AddTarget, onFinished: @escaping () -> Void) {
+        destination = .log(target)
+        self.onFinished = onFinished
+    }
+
+    /// Scans a food and hands it to `onPick` instead of logging it.
+    init(onPick: @escaping (FoodDetail) -> Void, onFinished: @escaping () -> Void) {
+        destination = .pick(onPick)
+        self.onFinished = onFinished
+    }
 
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.dismiss) private var dismiss
@@ -32,7 +57,7 @@ struct ScanView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button((model?.loggedCount ?? 0) > 0 ? "Done" : "Close") { close() }
                 }
-                if let model {
+                if let model, destination.target != nil {
                     ToolbarItem(placement: .primaryAction) {
                         Toggle(isOn: Binding(get: { model.keepScanning }, set: { model.keepScanning = $0 })) {
                             Label("Keep scanning", systemImage: "repeat")
@@ -64,11 +89,11 @@ struct ScanView: View {
                 }
             },
         )) {
-            ScanResultView(model: model, target: target, onFinished: finish)
+            ScanResultView(model: model, destination: destination, onFinished: finish)
                 .environment(environment)
         }
         .sheet(isPresented: $showSessionLog) {
-            SessionLogView(items: model.sessionLog, isPlanned: target.planned)
+            SessionLogView(items: model.sessionLog, isPlanned: destination.target?.planned ?? false)
         }
     }
 
@@ -94,7 +119,7 @@ struct ScanView: View {
             if model.loggedCount > 0 {
                 Button { showSessionLog = true } label: {
                     Label(
-                        target.planned ? "\(model.loggedCount) planned" : "\(model.loggedCount) logged",
+                        destination.target?.planned == true ? "\(model.loggedCount) planned" : "\(model.loggedCount) logged",
                         systemImage: "checkmark.circle.fill",
                     )
                     .monospacedDigit()
@@ -143,7 +168,7 @@ private struct SessionLogView: View {
 /// Sheet content over the camera: product card → quantity, not found, or lookup failure.
 struct ScanResultView: View {
     let model: ScanFlowModel
-    let target: AddTarget
+    let destination: ScanView.Destination
     let onFinished: () -> Void
 
     @Environment(AppEnvironment.self) private var environment
@@ -169,8 +194,10 @@ struct ScanResultView: View {
                     }
                 }
                 .navigationDestination(for: FoodDetail.self) { detail in
-                    QuantitySheet(detail: detail, mode: .log(slotID: target.slotID, day: target.day, planned: target.planned)) {
-                        loggedFood(detail)
+                    if let target = destination.target {
+                        QuantitySheet(detail: detail, mode: .log(slotID: target.slotID, day: target.day, planned: target.planned)) {
+                            loggedFood(detail)
+                        }
                     }
                 }
                 // The food was created but its label photo couldn't be stored: say so, and offer to try again (the
@@ -215,6 +242,7 @@ struct ScanResultView: View {
                 product: product,
                 energyUnit: environment.energyUnit,
                 labelPhoto: labelPhoto?.foodID == product.food.id ? labelPhoto?.data : nil,
+                actionTitle: destination.target == nil ? "Add to meal" : "Log",
                 onLog: log,
                 onCompleteNutrition: completeNutrition,
                 onSetServingWeight: setServingWeight,
@@ -258,7 +286,14 @@ struct ScanResultView: View {
 
     private func log() {
         do {
-            try path.append(model.foodForLogging())
+            let detail = try model.foodForLogging()
+            switch destination {
+            case .log:
+                path.append(detail)
+            case let .pick(onPick):
+                onPick(detail)
+                onFinished()
+            }
         } catch {
             errorMessage = error.localizedDescription
         }

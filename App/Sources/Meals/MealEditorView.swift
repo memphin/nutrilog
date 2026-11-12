@@ -44,7 +44,7 @@ struct MealEditorView: View {
                 }
             }
             .sheet(isPresented: $showPicker) {
-                IngredientPicker { food in model?.add(food) }
+                IngredientPicker { food, quantity, servingID in model?.add(food, quantity: quantity, servingID: servingID) }
             }
             .confirmationDialog("Delete this meal?", isPresented: $confirmDelete, titleVisibility: .visible) {
                 Button("Delete meal", role: .destructive) { delete() }
@@ -132,7 +132,8 @@ private struct MealForm: View {
                             TextField("0", text: $row.amountText)
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
-                                .frame(maxWidth: 80)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(maxWidth: 90)
                                 .accessibilityLabel("Amount of \(row.food.name) in \(row.food.baseUnit.symbol)")
                             Text(row.food.baseUnit.symbol).foregroundStyle(.secondary)
                         }
@@ -148,7 +149,7 @@ private struct MealForm: View {
             } header: {
                 Text("Foods")
             } footer: {
-                Text("A meal always uses the current values of its foods. Swipe to remove a food, hold and drag to reorder.")
+                Text("A meal always uses the current values of its foods. Tap an amount to change it, swipe to remove a food, hold and drag to reorder.")
             }
 
             if !model.rows.isEmpty {

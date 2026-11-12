@@ -3,9 +3,10 @@ import DesignSystem
 import Persistence
 import SwiftUI
 
-/// Search your foods and the bundled index for a food to add to a meal.
+/// Find a food for a meal — search your foods and the bundled index, scan a barcode, or create a food — then choose
+/// how much of it goes in.
 struct IngredientPicker: View {
-    let onPick: (Food) -> Void
+    let onPick: (Food, Quantity, _ servingID: String?) -> Void
 
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.dismiss) private var dismiss
@@ -13,9 +14,14 @@ struct IngredientPicker: View {
     @State private var results: [FoodSearchResult] = []
     @State private var suggestions: [Food] = []
     @State private var errorMessage: String?
+    @State private var path: [FoodDetail] = []
+    @State private var showScanner = false
+    @State private var showCreate = false
+    /// A food picked in the scanner, opened for its amount once the scanner has closed.
+    @State private var scanned: FoodDetail?
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             List {
                 if query.trimmingCharacters(in: .whitespaces).isEmpty {
                     if suggestions.isEmpty {
@@ -34,7 +40,7 @@ struct IngredientPicker: View {
                         EmptyStateView(
                             String(localized: "No matches"),
                             systemImage: "magnifyingglass",
-                            message: String(localized: "Create the food first in Foods, or scan it once."),
+                            message: String(localized: "Create the food with its nutrition, or scan its barcode."),
                         )
                         .listRowBackground(Color.clear)
                     }
@@ -49,6 +55,21 @@ struct IngredientPicker: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItemGroup(placement: .primaryAction) {
+                    Button("Scan barcode", systemImage: "barcode.viewfinder") { showScanner = true }
+                    Button("Create food", systemImage: "plus") { showCreate = true }
+                }
+            }
+            .navigationDestination(for: FoodDetail.self) { detail in
+                QuantitySheet(detail: detail, mode: .addToMeal { quantity, servingID in
+                    onPick(detail.food, quantity, servingID)
+                }) { dismiss() }
+            }
+            .sheet(isPresented: $showCreate) {
+                FoodEditorView(initialName: query) { saved in path.append(saved) }
+            }
+            .fullScreenCover(isPresented: $showScanner, onDismiss: openScanned) {
+                ScanView(onPick: { scanned = $0 }, onFinished: { showScanner = false })
             }
             .task {
                 let recents = (try? environment.foods?.recents(slotID: nil)) ?? []
@@ -81,9 +102,23 @@ struct IngredientPicker: View {
         FoodRow(name: name, brand: brand, per100: per100, source: source, unit: environment.energyUnit, isLiquid: isLiquid)
     }
 
+    /// Opens the food's amount step.
     private func pick(_ food: Food) {
-        onPick(food)
-        dismiss()
+        do {
+            guard let detail = try environment.foods?.detail(id: food.id) else {
+                errorMessage = String(localized: "\(food.name) is no longer available.")
+                return
+            }
+            path.append(detail)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func openScanned() {
+        guard let detail = scanned else { return }
+        scanned = nil
+        path.append(detail)
     }
 
     private func pick(_ result: FoodSearchResult) {

@@ -2426,11 +2426,22 @@
       }
     },
     "A meal always uses the current values of its foods. Swipe to remove a food, hold and drag to reorder." : {
+      "extractionState" : "stale",
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Obrok uvijek koristi trenutačne vrijednosti svojih namirnica. Povuci prstom za uklanjanje namirnice, zadrži i povuci za promjenu redoslijeda."
+          }
+        }
+      }
+    },
+    "A meal always uses the current values of its foods. Tap an amount to change it, swipe to remove a food, hold and drag to reorder." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obrok uvijek koristi trenutačne vrijednosti svojih namirnica. Dodirni količinu da je promijeniš, povuci prstom za uklanjanje namirnice, zadrži i povuci za promjenu redoslijeda."
           }
         }
       }
@@ -2802,6 +2813,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dodaj u omiljene"
+          }
+        }
+      }
+    },
+    "Add to meal" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dodaj u obrok"
           }
         }
       }
@@ -4691,6 +4712,7 @@
       }
     },
     "Create the food first in Foods, or scan it once." : {
+      "extractionState" : "stale",
       "localizations" : {
         "hr" : {
           "stringUnit" : {
@@ -4706,6 +4728,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Napravi namirnicu da je odmah zapišeš ili pretraži na internetu."
+          }
+        }
+      }
+    },
+    "Create the food with its nutrition, or scan its barcode." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Napravi namirnicu s njezinim nutritivnim vrijednostima ili skeniraj njezin barkod."
           }
         }
       }

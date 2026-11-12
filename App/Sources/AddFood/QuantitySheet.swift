@@ -11,6 +11,8 @@ struct QuantitySheet: View {
         case edit(DiaryEntry)
         /// Changes the amount of a planned food.
         case editPlanned(PlannedEntry)
+        /// Chooses an amount for a food being added to a saved meal; nothing is logged.
+        case addToMeal(add: (Quantity, _ servingID: String?) -> Void)
     }
 
     let detail: FoodDetail
@@ -148,7 +150,7 @@ struct QuantitySheet: View {
                 }
             }
         }
-        .navigationTitle(isEditing ? (isPlanEdit ? "Edit planned amount" : "Edit amount") : (isPlanning ? "Plan food" : "Log food"))
+        .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if isEditing {
@@ -163,7 +165,7 @@ struct QuantitySheet: View {
                 }
             }
             ToolbarItem(placement: .confirmationAction) {
-                Button(isEditing ? "Save" : (isPlanning ? "Plan" : "Log")) { commit() }
+                Button(confirmTitle) { commit() }
                     .disabled(quantity == nil || (quantity?.baseAmount ?? 0) <= 0)
             }
         }
@@ -180,8 +182,35 @@ struct QuantitySheet: View {
     private var isEditing: Bool {
         switch mode {
         case .edit, .editPlanned: true
-        case .log: false
+        case .log, .addToMeal: false
         }
+    }
+
+    private var isAddingToMeal: Bool {
+        if case .addToMeal = mode {
+            return true
+        }
+        return false
+    }
+
+    private var title: LocalizedStringKey {
+        if isAddingToMeal {
+            return "Add to meal"
+        }
+        if isEditing {
+            return isPlanEdit ? "Edit planned amount" : "Edit amount"
+        }
+        return isPlanning ? "Plan food" : "Log food"
+    }
+
+    private var confirmTitle: LocalizedStringKey {
+        if isAddingToMeal {
+            return "Add"
+        }
+        if isEditing {
+            return "Save"
+        }
+        return isPlanning ? "Plan" : "Log"
     }
 
     private var isPlanning: Bool {
@@ -213,6 +242,9 @@ struct QuantitySheet: View {
             restore(slotID: entry.mealSlotID, grams: entry.grams, servingLabel: entry.servingLabel)
         case let .editPlanned(entry):
             restore(slotID: entry.mealSlotID, grams: entry.grams, servingLabel: entry.servingLabel)
+        case .addToMeal:
+            let initial = Self.initialLogQuantity(detail)
+            apply(initial.quantity, servingID: initial.servingID)
         }
         amountFocused = true
     }
@@ -250,7 +282,13 @@ struct QuantitySheet: View {
     }
 
     private func commit() {
-        guard let quantity, let diary = environment.diary else { return }
+        guard let quantity else { return }
+        if case let .addToMeal(add) = mode {
+            add(quantity, selectedServing?.id)
+            onDone()
+            return
+        }
+        guard let diary = environment.diary else { return }
         do {
             switch mode {
             case let .log(_, day, planned):
@@ -264,6 +302,8 @@ struct QuantitySheet: View {
                 try diary.updateQuantity(entryID: entry.id, quantity: quantity)
             case let .editPlanned(entry):
                 try environment.mealPlan?.updateQuantity(plannedID: entry.id, quantity: quantity)
+            case .addToMeal:
+                break
             }
             onDone()
         } catch {

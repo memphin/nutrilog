@@ -88,6 +88,13 @@ final class MealEditorModel {
         rows.append(Row(food: food, amount: amount > 0 ? amount : 100))
     }
 
+    /// Adds `food` with the amount chosen for it (base unit or a serving). The serving is kept while the amount stays
+    /// unchanged, like a saved item's.
+    func add(_ food: Food, quantity: Quantity, servingID: String? = nil) {
+        let grams = quantity.baseAmount
+        rows.append(Row(food: food, amount: grams, servingID: servingID, isSaved: servingID != nil))
+    }
+
     func remove(atOffsets offsets: IndexSet) {
         rows.remove(atOffsets: offsets)
     }
