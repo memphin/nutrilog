@@ -13,7 +13,7 @@ settings:
     SWIFT_STRICT_CONCURRENCY: complete
     # Local builds only: the TestFlight job overrides both from the tag (v0.2.0 → 0.2.0) and the commit count.
     # Keep MARKETING_VERSION at the version being released next (docs/RELEASING.md).
-    MARKETING_VERSION: "1.1.5"
+    MARKETING_VERSION: "1.1.6"
     CURRENT_PROJECT_VERSION: "1"
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     # Localization (FR-74): English source, Croatian translation, in String Catalogs (.xcstrings) next to the code.
