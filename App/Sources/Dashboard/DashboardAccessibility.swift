@@ -4,79 +4,129 @@ import Foundation
 /// VoiceOver labels of the dashboard tiles (FR-73), pure so they are unit-tested.
 extension DashboardSnapshot {
     /// The spoken label of a tile, e.g. "Weight, 81.4 kilograms" or
-    /// "Steps, no data. No data found — check Health permissions".
+    /// "Steps, no data. No data found — check Health permissions". Whole phrases from the string catalog, numbers in
+    /// `locale` (whole counts as integers so the catalog can pick the plural form).
     /// - Parameter now: the moment caffeine and hydration are read at (the caffeine amount and the hydration status
     ///   change by the minute).
     func accessibilityLabel(
         of tile: DashboardTile, state: TileState, energyUnit: EnergyUnit = .kcal, now: Date = Date(), calendar: Calendar = .current,
+        locale: Locale = .current,
     ) -> String {
         guard state == .ready else {
-            return "\(tile.title), no data. \(state.message ?? "")"
+            return String(localized: "\(tile.title), no data. \(state.message ?? "")", locale: locale)
         }
         if tile == .caffeine {
-            return ([tile.title] + caffeineStatus(now: now, calendar: calendar).accessibilityParts()).joined(separator: ", ")
+            return ([tile.title] + caffeineStatus(now: now, calendar: calendar).accessibilityParts(locale: locale)).joined(separator: ", ")
         }
-        let spokenStreak = streak(for: tile).flatMap(StreakBadge.spoken)
+        let spokenStreak = streak(for: tile).flatMap { StreakBadge.spoken($0, locale: locale) }
         if tile == .water {
-            let parts = hydrationParts(hydrationDay(now: now, calendar: calendar))
+            let parts = hydrationParts(hydrationDay(now: now, calendar: calendar), locale: locale)
             return ([tile.title] + parts + [spokenStreak].compactMap(\.self)).joined(separator: ", ")
         }
-        let parts = accessibilityParts(of: tile, energyUnit: energyUnit)
-        return ([tile.title] + (parts.isEmpty ? ["no data"] : parts) + [spokenStreak].compactMap(\.self)).joined(separator: ", ")
+        let parts = accessibilityParts(of: tile, energyUnit: energyUnit, locale: locale)
+        let noData = String(localized: "no data", locale: locale)
+        return ([tile.title] + (parts.isEmpty ? [noData] : parts) + [spokenStreak].compactMap(\.self)).joined(separator: ", ")
     }
 
-    private func accessibilityParts(of tile: DashboardTile, energyUnit: EnergyUnit) -> [String] {
-        let spokenEnergy = energyUnit == .kcal ? "calories" : "kilojoules"
-        func number(_ value: Double, digits: Int = 0) -> String {
-            value.formatted(.number.precision(.fractionLength(digits)).locale(Locale(identifier: "en_US")))
+    /// A whole number to speak, rounded like `.number.precision(.fractionLength(0))` (half to even), as an `Int` so
+    /// the localized phrase can pick its plural form.
+    private static func count(_ value: Double) -> Int {
+        guard value.isFinite else { return 0 }
+        return Int(value.rounded(.toNearestOrEven))
+    }
+
+    private func accessibilityParts(of tile: DashboardTile, energyUnit: EnergyUnit, locale: Locale) -> [String] {
+        let isKcal = energyUnit == .kcal
+        func energy(_ kcal: Double) -> Int {
+            Self.count(energyUnit.display(kcal))
+        }
+        func decimal(_ value: Double) -> String {
+            value.formatted(.number.precision(.fractionLength(1)).locale(locale))
         }
         func measured(_ value: LocalDay) -> String? {
-            value == today ? nil : "measured \(Format.day(value, today: today))"
+            value == today ? nil
+                : String(localized: "measured \(Format.day(value, today: today, locale: locale))", locale: locale)
         }
         switch tile {
         case .energy:
             var parts: [String] = []
             if let target {
                 let remaining = target.kcal - totals.kcal
-                parts.append(remaining >= 0
-                    ? "\(number(energyUnit.display(remaining))) \(spokenEnergy) left of \(number(energyUnit.display(target.kcal)))"
-                    : "\(number(energyUnit.display(-remaining))) \(spokenEnergy) over target")
+                if remaining >= 0 {
+                    let left = energy(remaining)
+                    let goal = energy(target.kcal)
+                    parts.append(isKcal
+                        ? String(localized: "\(left) calories left of \(goal)", locale: locale)
+                        : String(localized: "\(left) kilojoules left of \(goal)", locale: locale))
+                } else {
+                    let over = energy(-remaining)
+                    parts.append(isKcal
+                        ? String(localized: "\(over) calories over target", locale: locale)
+                        : String(localized: "\(over) kilojoules over target", locale: locale))
+                }
             } else {
-                parts.append("\(number(energyUnit.display(totals.kcal))) \(spokenEnergy) eaten")
+                let eaten = energy(totals.kcal)
+                parts.append(isKcal
+                    ? String(localized: "\(eaten) calories eaten", locale: locale)
+                    : String(localized: "\(eaten) kilojoules eaten", locale: locale))
             }
-            parts.append("protein \(number(totals.proteinG)) grams, carbs \(number(totals.carbsG)) grams, fat \(number(totals.fatG)) grams")
+            let protein = Self.count(totals.proteinG)
+            let carbs = Self.count(totals.carbsG)
+            let fat = Self.count(totals.fatG)
+            parts.append(String(localized: "protein \(protein) grams, carbs \(carbs) grams, fat \(fat) grams", locale: locale))
             return parts
         case .steps:
-            return stepsParts(number)
+            return stepsParts(locale: locale)
         case .sleep:
-            return sleepParts
+            return sleepParts(locale: locale)
         case .weight:
             guard let weight else { return [] }
             // Like the tile: the weight only (#73); the trend is in the detail.
-            return ["\(number(weight.latestKg, digits: 1)) kilograms"]
-                + [weeklyParts(weight.latestKg, average: weeklyWeightKg), measured(weight.latest.day)].compactMap(\.self)
+            return [String(localized: "\(decimal(weight.latestKg)) kilograms", locale: locale)]
+                + [weeklyParts(weight.latestKg, average: weeklyWeightKg, locale: locale), measured(weight.latest.day)]
+                .compactMap(\.self)
         case .bodyFat:
             guard let bodyFat else { return [] }
-            return ["\(number(bodyFat.pct, digits: 1)) percent"]
-                + [weeklyParts(bodyFat.pct, average: weeklyBodyFatPct), measured(bodyFat.day)].compactMap(\.self)
+            return [String(localized: "\(decimal(bodyFat.pct)) percent", locale: locale)]
+                + [weeklyParts(bodyFat.pct, average: weeklyBodyFatPct, locale: locale), measured(bodyFat.day)].compactMap(\.self)
         case .totalEnergy:
             guard let burned = energyBurned else { return [] }
             if let total = burned.totalKcal, let active = burned.activeKcal, let resting = burned.restingKcal {
+                let totalValue = energy(total)
+                let activeValue = energy(active)
+                let restingValue = energy(resting)
                 return [
-                    "\(number(energyUnit.display(total))) \(spokenEnergy)",
-                    "active \(number(energyUnit.display(active)))",
-                    "resting \(number(energyUnit.display(resting)))",
+                    isKcal
+                        ? String(localized: "\(totalValue) calories", locale: locale)
+                        : String(localized: "\(totalValue) kilojoules", locale: locale),
+                    String(localized: "active \(activeValue)", locale: locale),
+                    String(localized: "resting \(restingValue)", locale: locale),
                 ]
             }
             // Only one part is known: say which, and that there is no total.
-            func part(_ value: Double?, _ name: String) -> String {
-                value.map { "\(name) \(number(energyUnit.display($0))) \(spokenEnergy)" } ?? "\(name) energy unknown"
-            }
-            return [part(burned.activeKcal, "active"), part(burned.restingKcal, "resting"), "no total yet"]
+            let active = burned.activeKcal.map { kcal in
+                let value = energy(kcal)
+                return isKcal
+                    ? String(localized: "active \(value) calories", locale: locale)
+                    : String(localized: "active \(value) kilojoules", locale: locale)
+            } ?? String(localized: "active energy unknown", locale: locale)
+            let resting = burned.restingKcal.map { kcal in
+                let value = energy(kcal)
+                return isKcal
+                    ? String(localized: "resting \(value) calories", locale: locale)
+                    : String(localized: "resting \(value) kilojoules", locale: locale)
+            } ?? String(localized: "resting energy unknown", locale: locale)
+            return [active, resting, String(localized: "no total yet", locale: locale)]
         case .restingHeartRate, .hrv:
             guard let comparison = tile == .hrv ? hrv : restingHR else { return [] }
-            let unit = tile == .hrv ? "milliseconds" : "beats per minute"
-            var parts = ["\(number(comparison.value)) \(unit)", "7-day average \(number(comparison.average7))"]
+            let value = Self.count(comparison.value)
+            let average = Self.count(comparison.average7)
+            var parts = [
+                tile == .hrv
+                    ? String(localized: "\(value) milliseconds", locale: locale)
+                    : String(localized: "\(value) beats per minute", locale: locale),
+                String(localized: "7-day average \(average)", locale: locale),
+            ]
             // The value's colour is read against the 30-day average (#74), so say where it stands.
             if let deviation = comparison.deviationText {
                 parts.append(deviation)
@@ -89,48 +139,62 @@ extension DashboardSnapshot {
     }
 
     /// "1,840 of 2,400 millilitres" and where the day stands, which is what the tile's colour shows.
-    private func hydrationParts(_ day: HydrationDay) -> [String] {
-        func number(_ value: Double) -> String {
-            value.formatted(.number.precision(.fractionLength(0)).locale(Locale(identifier: "en_US")))
+    private func hydrationParts(_ day: HydrationDay, locale: Locale) -> [String] {
+        func time(_ date: Date) -> String {
+            date.formatted(Date.FormatStyle(date: .omitted, time: .shortened, locale: locale))
         }
         let status = switch day.status {
-        case .goalReached: "goal reached"
-        case .onPace: "on pace"
-        case let .behind(byMl): "\(number(byMl)) millilitres behind pace"
-        case let .inGap(since): "no drink since \(since.formatted(date: .omitted, time: .shortened))"
+        case .goalReached:
+            String(localized: "goal reached", locale: locale)
+        case .onPace:
+            String(localized: "on pace", locale: locale)
+        case let .behind(byMl):
+            String(localized: "\(Self.count(byMl)) millilitres behind pace", locale: locale)
+        case let .inGap(since):
+            String(localized: "no drink since \(time(since))", locale: locale)
         }
-        return ["\(number(day.totalMl)) of \(number(day.goalMl)) millilitres", status]
+        let total = Self.count(day.totalMl)
+        let goal = Self.count(day.goalMl)
+        return [String(localized: "\(total) of \(goal) millilitres", locale: locale), status]
     }
 
     /// "above the weekly average" — what the value's colour is read against; nil without a weekly average.
-    private func weeklyParts(_ value: Double, average: Double?) -> String? {
+    private func weeklyParts(_ value: Double, average: Double?, locale: Locale) -> String? {
         guard let average else { return nil }
         let difference = ((value - average) * 10).rounded() / 10
-        return difference == 0 ? "at the weekly average" : "\(difference < 0 ? "below" : "above") the weekly average"
+        if difference == 0 {
+            return String(localized: "at the weekly average", locale: locale)
+        }
+        return difference < 0
+            ? String(localized: "below the weekly average", locale: locale)
+            : String(localized: "above the weekly average", locale: locale)
     }
 
     /// "8,500 steps", "close to the goal of 10,000".
-    private func stepsParts(_ number: (Double, Int) -> String) -> [String] {
+    private func stepsParts(locale: Locale) -> [String] {
         guard let steps else { return [] }
-        let goalText = number(Double(stepGoal), 0)
         let goal = switch StepGoal.band(steps: Double(steps), goal: stepGoal) {
-        case .reached: "goal of \(goalText) reached"
-        case .near: "close to the goal of \(goalText)"
-        case .far: "below the goal of \(goalText)"
+        case .reached: String(localized: "goal of \(stepGoal) reached", locale: locale)
+        case .near: String(localized: "close to the goal of \(stepGoal)", locale: locale)
+        case .far: String(localized: "below the goal of \(stepGoal)", locale: locale)
         }
-        return ["\(number(Double(steps), 0)) steps", goal]
+        return [String(localized: "\(steps) steps", locale: locale), goal]
     }
 
     /// Like the tile: time asleep only; time in bed when that is all Health has. Stages are in the detail (#62).
-    private var sleepParts: [String] {
+    private func sleepParts(locale: Locale) -> [String] {
         guard let minutes = sleepMinutes else { return [] }
-        let goalText = Self.spokenDuration(sleepGoalMin)
+        let goalText = Self.spokenDuration(sleepGoalMin, locale: locale)
         let goal = switch SleepGoal.band(minutes: Double(minutes), goal: sleepGoalMin) {
-        case .reached: "goal of \(goalText) reached"
-        case .near: "close to the goal of \(goalText)"
-        case .far: "below the goal of \(goalText)"
+        case .reached: String(localized: "goal of \(goalText) reached", locale: locale)
+        case .near: String(localized: "close to the goal of \(goalText)", locale: locale)
+        case .far: String(localized: "below the goal of \(goalText)", locale: locale)
         }
-        return ["\(Self.spokenDuration(minutes)) \(sleep?.asleepMin == nil ? "in bed" : "asleep")", goal]
+        let duration = Self.spokenDuration(minutes, locale: locale)
+        let value = sleep?.asleepMin == nil
+            ? String(localized: "\(duration) in bed", locale: locale)
+            : String(localized: "\(duration) asleep", locale: locale)
+        return [value, goal]
     }
 
     /// The tile's 7-day trend for VoiceOver ("up over 7 days"), spoken as the tile's value; nil without a chart or
@@ -140,15 +204,16 @@ extension DashboardSnapshot {
         return sparkline(for: tile)?.accessibilitySummary
     }
 
-    /// "7 hours 5 minutes", "45 minutes".
-    static func spokenDuration(_ minutes: Int) -> String {
+    /// "7 hours 5 minutes", "1 hour", "45 minutes": one phrase with integer counts, so the catalog holds the plural
+    /// forms of both units.
+    static func spokenDuration(_ minutes: Int, locale: Locale = .current) -> String {
         let hours = minutes / 60
         let rest = minutes % 60
-        let hourText = hours == 1 ? "1 hour" : "\(hours) hours"
-        let minuteText = rest == 1 ? "1 minute" : "\(rest) minutes"
         if hours == 0 {
-            return minuteText
+            return String(localized: "\(rest) minutes", locale: locale)
         }
-        return rest == 0 ? hourText : "\(hourText) \(minuteText)"
+        return rest == 0
+            ? String(localized: "\(hours) hours", locale: locale)
+            : String(localized: "\(hours) hours \(rest) minutes", locale: locale)
     }
 }

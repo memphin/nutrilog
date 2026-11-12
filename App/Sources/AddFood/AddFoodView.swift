@@ -14,6 +14,18 @@ struct AddFoodView: View {
         var id: String {
             rawValue
         }
+
+        var title: LocalizedStringResource {
+            switch self {
+            case .recents: "Recents"
+            case .favorites: "Favorites"
+            // Its own key: a segment has room for about one word in Croatian, the "My foods" screen title has more.
+            case .mine: LocalizedStringResource(
+                    "addFood.tab.mine", defaultValue: "My foods", comment: "Add food tab; keep to one short word",
+                )
+            case .meals: "Meals"
+            }
+        }
     }
 
     @State private var tab: Tab = .recents
@@ -44,6 +56,13 @@ struct AddFoodView: View {
         var id: String {
             rawValue
         }
+
+        var title: LocalizedStringKey {
+            switch self {
+            case .local: "On this iPhone"
+            case .online: "Online"
+            }
+        }
     }
 
     struct Lists {
@@ -61,7 +80,7 @@ struct AddFoodView: View {
                     }
 
                     Picker("List", selection: $tab) {
-                        ForEach(Tab.allCases) { Text($0.rawValue).tag($0) }
+                        ForEach(Tab.allCases) { Text($0.title).tag($0) }
                     }
                     .pickerStyle(.segmented)
                     .listRowBackground(Color.clear)
@@ -103,7 +122,7 @@ struct AddFoodView: View {
                     }
                 } else {
                     Picker("Search in", selection: $scope) {
-                        ForEach(SearchScope.allCases) { Text($0.rawValue).tag($0) }
+                        ForEach(SearchScope.allCases) { Text($0.title).tag($0) }
                     }
                     .pickerStyle(.segmented)
                     .listRowBackground(Color.clear)
@@ -114,9 +133,9 @@ struct AddFoodView: View {
                     } else {
                         if results.isEmpty, !searchFailed {
                             EmptyStateView(
-                                "No matches",
+                                String(localized: "No matches"),
                                 systemImage: "magnifyingglass",
-                                message: "Create the food to log it now, or search online.",
+                                message: String(localized: "Create the food to log it now, or search online."),
                             )
                             .listRowBackground(Color.clear)
                         }
@@ -202,8 +221,8 @@ struct AddFoodView: View {
 
     private var slotName: String {
         let slots = (try? environment.diary?.mealSlots(includeInactive: true)) ?? []
-        let name = slots.first { $0.id == target.slotID }?.name ?? "meal"
-        return target.planned ? "Plan \(name)" : "Add to \(name)"
+        let name = slots.first { $0.id == target.slotID }?.displayName ?? String(localized: "meal", comment: "Fallback meal slot name")
+        return target.planned ? String(localized: "Plan \(name)") : String(localized: "Add to \(name)")
     }
 
     private var currentList: [Food] {
@@ -217,19 +236,20 @@ struct AddFoodView: View {
 
     private var emptyTitle: String {
         switch tab {
-        case .recents: "Nothing logged yet"
-        case .favorites: "No favorites"
-        case .mine: "No custom foods"
-        case .meals: "No saved meals"
+        case .recents: String(localized: "Nothing logged yet")
+        case .favorites: String(localized: "No favorites")
+        case .mine: String(localized: "No custom foods")
+        case .meals: String(localized: "No saved meals")
         }
     }
 
     private var emptyMessage: String {
         switch tab {
-        case .recents: "Search above or create a food — it shows up here after you log it."
-        case .favorites: "Tap the star on a food to keep it here."
-        case .mine: "Foods you create appear here."
-        case .meals: "Create a meal from foods in the Foods tab, or open a meal's menu in the diary and choose “Save as meal”."
+        case .recents: String(localized: "Search above or create a food — it shows up here after you log it.")
+        case .favorites: String(localized: "Tap the star on a food to keep it here.")
+        case .mine: String(localized: "Foods you create appear here.")
+        case .meals:
+            String(localized: "Create a meal from foods in the Foods tab, or open a meal's menu in the diary and choose “Save as meal”.")
         }
     }
 
@@ -247,7 +267,7 @@ struct AddFoodView: View {
         reloadLists()
         let env = environment
         let generation = env.dataGeneration
-        undo.offer("Deleted \(meal.template.name)") {
+        undo.offer(String(localized: "Deleted \(meal.template.name)")) {
             // Skipped when the data was replaced since (JSON import).
             guard env.dataGeneration == generation else { return }
             do {
@@ -300,14 +320,14 @@ struct AddFoodView: View {
         } catch {
             results = []
             searchFailed = true // don't claim "No matches" when the search didn't run
-            errorMessage = "Search failed: \(error.localizedDescription)"
+            errorMessage = String(localized: "Search failed: \(error.localizedDescription)")
         }
     }
 
     private func open(_ food: Food) {
         do {
             guard let detail = try environment.foods?.detail(id: food.id) else {
-                errorMessage = "\(food.name) is no longer available."
+                errorMessage = String(localized: "\(food.name) is no longer available.")
                 return
             }
             path.append(detail)

@@ -301,6 +301,29 @@ public struct MealSlot: Codable, Hashable, Identifiable, Sendable, SyncedRecord 
         updatedAt = createdAt
         revision = 1
     }
+
+    /// The name to show. The four slots the database starts with are stored with English names (001_initial.sql);
+    /// while one still has its seed name it shows in the app language, so a Croatian app reads "Doručak". A name the
+    /// user typed is shown as typed.
+    public var displayName: String {
+        Self.seedDisplayName(id: id, storedName: name) ?? name
+    }
+
+    /// Whether `name` is this slot's untouched seed name — the meal slots editor writes the seed name back when the
+    /// user left the shown translation unchanged, so opening the editor never renames a slot.
+    public var hasSeedName: Bool {
+        Self.seedDisplayName(id: id, storedName: name) != nil
+    }
+
+    private static func seedDisplayName(id: String, storedName: String) -> String? {
+        switch (id, storedName) {
+        case ("breakfast", "Breakfast"): String(localized: "Breakfast", bundle: .module, comment: "Meal slot")
+        case ("lunch", "Lunch"): String(localized: "Lunch", bundle: .module, comment: "Meal slot")
+        case ("dinner", "Dinner"): String(localized: "Dinner", bundle: .module, comment: "Meal slot")
+        case ("snacks", "Snacks"): String(localized: "Snacks", bundle: .module, comment: "Meal slot")
+        default: nil
+        }
+    }
 }
 
 public struct DiaryEntry: Codable, Hashable, Identifiable, Sendable, SyncedRecord {

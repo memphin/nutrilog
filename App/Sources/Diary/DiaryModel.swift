@@ -208,7 +208,8 @@ final class DiaryModel {
     func delete(_ entries: [DiaryEntry]) {
         let ids = entries.map(\.id)
         guard !ids.isEmpty, perform({ try $0.softDelete(entryIDs: ids) }) else { return }
-        let message = entries.count == 1 ? "Deleted \(entries[0].displayName)" : "Deleted \(entries.count) entries"
+        let message = entries.count == 1
+            ? String(localized: "Deleted \(entries[0].displayName)") : String(localized: "Deleted \(entries.count) entries")
         offerUndo(message) { try $0.restore(entryIDs: ids) }
     }
 
@@ -220,7 +221,7 @@ final class DiaryModel {
     func move(_ entry: DiaryEntry, toSlot slotID: String, day targetDay: LocalDay? = nil) {
         let target = targetDay ?? entry.day
         guard target <= today || target <= entry.day else {
-            errorMessage = "Eaten food can't move to a future day. To have it then, plan it on that day."
+            errorMessage = String(localized: "Eaten food can't move to a future day. To have it then, plan it on that day.")
             return
         }
         perform { try $0.move(entryID: entry.id, toSlot: slotID, day: target) }
@@ -249,7 +250,8 @@ final class DiaryModel {
         do {
             let ids = try repo.confirm(plannedIDs: entries.map(\.id))
             guard !ids.isEmpty else { return ids }
-            let message = entries.count == 1 ? "Logged \(entries[0].displayName)" : "Logged \(ids.count) planned entries"
+            let message = entries.count == 1
+                ? String(localized: "Logged \(entries[0].displayName)") : String(localized: "Logged \(ids.count) planned entries")
             // Deleting the logged entries puts them back in the plan.
             offerUndo(message) { try $0.softDelete(entryIDs: ids) }
             return ids
@@ -273,7 +275,9 @@ final class DiaryModel {
     func deletePlanned(_ entries: [PlannedEntry]) {
         let ids = entries.map(\.id)
         guard !ids.isEmpty, performPlan({ try $0.softDelete(plannedIDs: ids) }) else { return }
-        let message = entries.count == 1 ? "Removed \(entries[0].displayName) from the plan" : "Removed \(entries.count) planned entries"
+        let message = entries.count == 1
+            ? String(localized: "Removed \(entries[0].displayName) from the plan")
+            : String(localized: "Removed \(entries.count) planned entries")
         let generation = environment.dataGeneration
         undo.offer(message) { [weak self] in
             guard let self, environment.dataGeneration == generation else { return }
@@ -293,11 +297,13 @@ final class DiaryModel {
         do {
             let ids = try repo.copyToPlan(from: day, slotID: slotID, to: targets)
             guard !ids.isEmpty else {
-                errorMessage = "Nothing to plan — this \(slotID == nil ? "day" : "meal") is empty."
+                errorMessage = slotID == nil
+                    ? String(localized: "Nothing to plan — this day is empty.")
+                    : String(localized: "Nothing to plan — this meal is empty.")
                 return
             }
             let generation = environment.dataGeneration
-            let message = "Planned \(ids.count) \(ids.count == 1 ? "entry" : "entries") over \(days) \(days == 1 ? "day" : "days")"
+            let message = String(localized: "Planned \(ids.count) entries over \(days) days")
             undo.offer(message) { [weak self] in
                 guard let self, environment.dataGeneration == generation else { return }
                 performPlan { try $0.softDelete(plannedIDs: ids) }
@@ -323,7 +329,7 @@ final class DiaryModel {
                 errorMessage = Self.nothingToCopy(source, today: today, slotID: slotID)
                 return
             }
-            offerUndo("Copied \(ids.count) \(ids.count == 1 ? "entry" : "entries")") { try $0.softDelete(entryIDs: ids) }
+            offerUndo(String(localized: "Copied \(ids.count) entries")) { try $0.softDelete(entryIDs: ids) }
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -338,7 +344,7 @@ final class DiaryModel {
                 return
             }
             let generation = environment.dataGeneration
-            undo.offer("Planned \(ids.count) \(ids.count == 1 ? "entry" : "entries")") { [weak self] in
+            undo.offer(String(localized: "Planned \(ids.count) entries")) { [weak self] in
                 guard let self, environment.dataGeneration == generation else { return }
                 performPlan { try $0.softDelete(plannedIDs: ids) }
             }
@@ -348,7 +354,10 @@ final class DiaryModel {
     }
 
     private static func nothingToCopy(_ source: LocalDay, today: LocalDay, slotID: String?) -> String {
-        "Nothing to copy — \(Format.day(source, today: today)) has no entries\(slotID == nil ? "" : " in that meal")."
+        let day = Format.day(source, today: today)
+        return slotID == nil
+            ? String(localized: "Nothing to copy — \(day) has no entries.")
+            : String(localized: "Nothing to copy — \(day) has no entries in that meal.")
     }
 
     // MARK: Saved meals (backlog #32)
@@ -359,7 +368,7 @@ final class DiaryModel {
         guard let meals = environment.meals else { return false }
         do {
             let meal = try meals.createFromDiary(day: day, slotID: slotID, name: name)
-            undo.offer("Saved meal “\(meal.template.name)”") { [weak self] in
+            undo.offer(String(localized: "Saved meal “\(meal.template.name)”")) { [weak self] in
                 do {
                     try meals.softDelete(id: meal.id)
                 } catch {
@@ -454,12 +463,16 @@ enum DiaryHints {
         // Today is still being logged; a day marked complete is trusted as it is; an empty day says nothing.
         guard day < today, !isComplete, entryCount > 0 else { return nil }
         if AdaptiveTDEE.looksUnderLogged(dayKcal: kcal, isComplete: isComplete, estimateKcal: estimateKcal), let estimateKcal {
-            return "\(unit.format(kcal)) is less than half of your estimated \(unit.format(estimateKcal)) a day. "
-                + "If something is missing, add it. If this really was everything, mark the day as fully logged."
+            return String(localized: """
+            \(unit.format(kcal)) is less than half of your estimated \(unit.format(estimateKcal)) a day. \
+            If something is missing, add it. If this really was everything, mark the day as fully logged.
+            """)
         }
         if entryCount < AdaptiveTDEE.minimumEntries {
-            return "Days with fewer than \(AdaptiveTDEE.minimumEntries) entries are left out of the maintenance estimate. "
-                + "Mark the day as fully logged if this was everything you ate."
+            return String(localized: """
+            Days with fewer than \(AdaptiveTDEE.minimumEntries) entries are left out of the maintenance estimate. \
+            Mark the day as fully logged if this was everything you ate.
+            """)
         }
         return nil
     }

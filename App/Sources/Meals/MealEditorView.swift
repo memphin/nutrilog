@@ -70,7 +70,7 @@ struct MealEditorView: View {
         }
         do {
             guard let meal = try environment.meals?.detail(id: mealID), meal.template.deletedAt == nil else {
-                errorMessage = "This meal is no longer available."
+                errorMessage = String(localized: "This meal is no longer available.")
                 model = MealEditorModel()
                 return
             }
@@ -153,7 +153,7 @@ private struct MealForm: View {
 
             if !model.rows.isEmpty {
                 Section("Whole meal") {
-                    NutrientRow("Energy", value: unit.display(model.totals.kcal), unit: unit.symbol, emphasized: true)
+                    NutrientRow(String(localized: "Energy"), value: unit.display(model.totals.kcal), unit: unit.symbol, emphasized: true)
                     MacroLine(protein: model.totals.proteinG, carbs: model.totals.carbsG, fat: model.totals.fatG)
                 }
             }

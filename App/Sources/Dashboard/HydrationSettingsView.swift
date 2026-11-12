@@ -117,7 +117,8 @@ struct HydrationSettingsView: View {
 
     /// "3 h", "1.5 h".
     static func hours(_ minutes: Int) -> String {
-        "\((Double(minutes) / 60).formatted(.number.precision(.fractionLength(0 ... 1)))) h"
+        let number = (Double(minutes) / 60).formatted(.number.precision(.fractionLength(0 ... 1)))
+        return String(localized: "\(number) h", comment: "A duration in hours, e.g. “1.5 h”")
     }
 
     // MARK: Bindings
@@ -180,7 +181,7 @@ struct HydrationSettingsView: View {
             fixedGoalMl = fixedMl
             environment.widgetDataDidChange() // the water widget shows the goal
         } catch {
-            errorMessage = "Couldn't save the hydration goal: \(error.localizedDescription)"
+            errorMessage = String(localized: "Couldn't save the hydration goal: \(error.localizedDescription)")
         }
     }
 
@@ -212,7 +213,7 @@ struct HydrationSettingsView: View {
             settings = try updated.save(to: profiles)
             environment.refreshHydrationReminder()
         } catch {
-            errorMessage = "Couldn't save the hydration settings: \(error.localizedDescription)"
+            errorMessage = String(localized: "Couldn't save the hydration settings: \(error.localizedDescription)")
         }
     }
 }
@@ -314,7 +315,7 @@ private struct WaterQuickAddSizesSection: View {
             environment.refreshHydrationReminder() // the reminder's action adds the smallest size
             return saved
         } catch {
-            errorMessage = "Couldn't save the sizes: \(error.localizedDescription)"
+            errorMessage = String(localized: "Couldn't save the sizes: \(error.localizedDescription)")
             return nil
         }
     }

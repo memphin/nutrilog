@@ -184,25 +184,25 @@ final class FoodEditorModel {
     var validationErrors: [String] {
         var errors: [String] = []
         if name.trimmingCharacters(in: .whitespaces).isEmpty {
-            errors.append("Enter a name.")
+            errors.append(String(localized: "Enter a name."))
         }
         if basis == .perServing, (Self.value(basisServingAmount) ?? 0) <= 0 {
-            errors.append("Enter the serving size.")
+            errors.append(String(localized: "Enter the serving size."))
         }
         if per100 == nil {
-            errors.append("Enter energy, protein, carbs and fat (numbers ≥ 0).")
+            errors.append(String(localized: "Enter energy, protein, carbs and fat (numbers ≥ 0)."))
         }
         if let placeholderServingError {
             errors.append(placeholderServingError)
         }
         for serving in servings where !serving.label.isEmpty || !serving.amount.isEmpty {
             if serving.label.trimmingCharacters(in: .whitespaces).isEmpty || (Self.value(serving.amount) ?? 0) <= 0 {
-                errors.append("Each serving needs a name and an amount.")
+                errors.append(String(localized: "Each serving needs a name and an amount."))
                 break
             }
         }
         for code in barcodes where !code.trimmingCharacters(in: .whitespaces).isEmpty && Barcode.normalize(code) == nil {
-            errors.append("Barcode \(code) is not valid.")
+            errors.append(String(localized: "Barcode \(code) is not valid."))
         }
         return errors
     }
@@ -212,17 +212,17 @@ final class FoodEditorModel {
         guard let n = per100 else { return [] }
         var result: [String] = []
         if n.hasImplausibleEnergy() {
-            let estimate = DisplayRounding.whole(n.kcalFromMacros) // never traps, however many digits were typed
-            result.append("Energy differs from protein/carbs/fat (≈ \(estimate) kcal per 100). Double-check the label.")
+            let kcal = DisplayRounding.whole(n.kcalFromMacros) // never traps, however many digits were typed
+            result.append(String(localized: "Energy differs from protein/carbs/fat (≈ \(kcal) kcal per 100). Double-check the label."))
         }
         if n.proteinG + n.carbsG + n.fatG > 100.5 {
-            result.append("Protein + carbs + fat exceed 100 g per 100 g.")
+            result.append(String(localized: "Protein + carbs + fat exceed 100 g per 100 g."))
         }
         if let sugar = n.sugarG, sugar > n.carbsG + 0.05 {
-            result.append("Sugars are higher than carbohydrates.")
+            result.append(String(localized: "Sugars are higher than carbohydrates."))
         }
         if let sat = n.satFatG, sat > n.fatG + 0.05 {
-            result.append("Saturated fat is higher than total fat.")
+            result.append(String(localized: "Saturated fat is higher than total fat."))
         }
         return result
     }
@@ -421,10 +421,10 @@ final class FoodEditorModel {
     /// "This barcode is on 'Nutella' — move it here?"; one line per food when there are several.
     static func conflictMessage(_ conflicts: [BarcodeConflict]) -> String {
         if conflicts.count == 1, let conflict = conflicts.first {
-            return "This barcode is on '\(conflict.foodName)' — move it here?"
+            return String(localized: "This barcode is on '\(conflict.foodName)' — move it here?")
         }
-        let lines = conflicts.map { "\($0.barcode) is on '\($0.foodName)'" }
-        return "These barcodes are on other foods — move them here?\n" + lines.joined(separator: "\n")
+        let lines = conflicts.map { String(localized: "\($0.barcode) is on '\($0.foodName)'") }
+        return String(localized: "These barcodes are on other foods — move them here?") + "\n" + lines.joined(separator: "\n")
     }
 
     /// What "Move here" passes to `save(to:movingBarcodes:)`: each stored code with the food the user agreed to take
@@ -574,7 +574,9 @@ extension FoodEditorModel {
               !servings.contains(where: { $0.id == standInID && !$0.label.trimmingCharacters(in: .whitespaces).isEmpty }),
               basis == .per100
         else { return nil } // "Per serving" without a valid size is reported as "Enter the serving size."
-        return "These values are for one serving. Keep its serving, or choose \"Per serving\" and enter the serving size."
+        return String(
+            localized: "These values are for one serving. Keep its serving, or choose \"Per serving\" and enter the serving size.",
+        )
     }
 
     /// `detail` (from ``makeDetail()``) converted to real per-100 values when the user gave a placeholder's stand-in
@@ -627,6 +629,16 @@ extension FoodEditorModel {
 
     /// The Automatic option of "Counts as a drink", saying what the rule decides for the food as edited.
     var automaticCountsAsDrinkLabel: String {
-        countsAsDrinkAutomatically ? "Automatic (counts)" : "Automatic (doesn't count)"
+        countsAsDrinkAutomatically ? String(localized: "Automatic (counts)") : String(localized: "Automatic (doesn't count)")
+    }
+}
+
+extension FoodEditorModel.InputBasis {
+    /// The picker label; `rawValue` stays the stable English id.
+    var title: LocalizedStringResource {
+        switch self {
+        case .per100: "Per 100 g/ml"
+        case .perServing: "Per serving"
+        }
     }
 }

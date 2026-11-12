@@ -52,10 +52,13 @@ struct StreakBadge: View {
         streak.isAtLimit ? "\(streak.days)+" : "\(streak.days)"
     }
 
-    /// "5-day streak"; nil without a streak.
-    nonisolated static func spoken(_ streak: Streak) -> String? {
-        guard streak.days > 0 else { return nil }
-        return "\(streak.days)-day streak" + (streak.isAtLimit ? " or more" : "")
+    /// "5-day streak", "60-day streak or more"; nil without a streak.
+    nonisolated static func spoken(_ streak: Streak, locale: Locale = .current) -> String? {
+        let days = streak.days
+        guard days > 0 else { return nil }
+        return streak.isAtLimit
+            ? String(localized: "\(days)-day streak or more", locale: locale)
+            : String(localized: "\(days)-day streak", locale: locale)
     }
 
     var body: some View {

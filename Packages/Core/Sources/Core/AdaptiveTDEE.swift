@@ -51,9 +51,9 @@ public enum TDEEConfidence: String, Sendable, Codable, CaseIterable, Comparable 
 
     public var title: String {
         switch self {
-        case .low: "Low confidence"
-        case .medium: "Medium confidence"
-        case .high: "High confidence"
+        case .low: String(localized: "Low confidence", bundle: .module)
+        case .medium: String(localized: "Medium confidence", bundle: .module)
+        case .high: String(localized: "High confidence", bundle: .module)
         }
     }
 }
@@ -73,10 +73,15 @@ public enum TDEEWeightMethod: String, Hashable, Sendable, Codable, CaseIterable 
     public var explanation: String {
         switch self {
         case .trend:
-            "Weight change measured from your smoothed weight trend."
+            String(localized: "Weight change measured from your smoothed weight trend.", bundle: .module)
         case .weighInLine:
-            "Your weight trend is still young or your weigh-ins are sparse, so the change is measured with a straight "
-                + "line through this window's weigh-ins instead."
+            String(
+                localized: """
+                Your weight trend is still young or your weigh-ins are sparse, so the change is measured with a \
+                straight line through this window's weigh-ins instead.
+                """,
+                bundle: .module,
+            )
         }
     }
 }
@@ -93,13 +98,24 @@ public enum TDEEUnavailable: Error, Hashable, Sendable {
     public var explanation: String {
         switch self {
         case let .notEnoughLoggedDays(count):
-            "\(count) of the last \(AdaptiveTDEE.windowDays) days are fully logged; "
-                + "the estimate needs at least \(AdaptiveTDEE.minimumLoggedDays)."
+            String(
+                localized: """
+                \(count) of the last \(AdaptiveTDEE.windowDays) days are fully logged; the estimate needs at least \
+                \(AdaptiveTDEE.minimumLoggedDays).
+                """,
+                bundle: .module,
+            )
         case let .notEnoughWeighIns(count):
-            "\(count) weigh-in\(count == 1 ? "" : "s") in the last \(AdaptiveTDEE.windowDays) days; "
-                + "the estimate needs at least \(AdaptiveTDEE.minimumWeighIns)."
+            // One string with integer arguments so the catalog can hold the plural forms ("1 weigh-in").
+            String(
+                localized: """
+                \(count) weigh-ins in the last \(AdaptiveTDEE.windowDays) days; the estimate needs at least \
+                \(AdaptiveTDEE.minimumWeighIns).
+                """,
+                bundle: .module,
+            )
         case .trendTooShort:
-            "Your weight history is too short. Keep weighing in for about a week."
+            String(localized: "Your weight history is too short. Keep weighing in for about a week.", bundle: .module)
         }
     }
 }

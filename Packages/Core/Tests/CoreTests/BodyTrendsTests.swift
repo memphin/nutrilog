@@ -194,7 +194,8 @@ struct MetricBaselineTests {
         let huge = BaselineComparison(day: today, value: 1e300, average7: 1e300, average30: 1e-300) // deviation = ∞
         #expect(huge.deviationText == nil)
         let large = BaselineComparison(day: today, value: 1e30, average7: 1e30, average30: 1)
-        #expect(large.deviationText?.hasPrefix("\(Int.max)% above") == true)
+        // Localized integers are written with the user's grouping ("9,223,…" / "9.223,…").
+        #expect(large.deviationText?.hasPrefix("\(Int.max.formatted())% above") == true)
     }
 
     @Test func `uses the latest recent day and ignores stale or future values`() throws {

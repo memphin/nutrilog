@@ -55,6 +55,23 @@ struct PlaceholderConversionTests {
         #expect(try mine.convertingPerServingPlaceholder(servingWeight: 40).food.notes == "Bought at Konzum")
     }
 
+    @Test func `notes are recognized whatever language and number format they were stored in`() {
+        let tablet = ServingSize(label: "1 tablet", amount: 0.5)
+        let en = FoodDetail.perServingUnusableWeightNote(tablet, isLiquid: false, locale: Locale(identifier: "en_US"))
+        let hr = FoodDetail.perServingUnusableWeightNote(tablet, isLiquid: true, locale: Locale(identifier: "hr_HR"))
+        #expect(en.contains("(0.5 g)"))
+        #expect(hr.contains("(0,5 ml)"))
+        #expect(FoodDetail.isPerServingPlaceholderNote(en))
+        #expect(FoodDetail.isPerServingPlaceholderNote(hr))
+        #expect(FoodDetail.isPerServingPlaceholderNote(FoodDetail.perServingUnknownWeightNote))
+        // Stored in English by an earlier version.
+        #expect(FoodDetail.isPerServingPlaceholderNote(
+            "Nutrition per serving; the serving weight is unknown, so 1 serving is counted as 100 g/ml.",
+        ))
+        #expect(!FoodDetail.isPerServingPlaceholderNote("Nutrition per serving"))
+        #expect(!FoodDetail.isPerServingPlaceholderNote(nil))
+    }
+
     @Test func `implausible weights are rejected`() {
         let detail = placeholder()
         #expect(throws: ServingWeightError.notPositive) { try detail.convertingPerServingPlaceholder(servingWeight: 0) }
@@ -94,5 +111,13 @@ struct PlaceholderConversionTests {
         }
         #expect(ServingWeightError.implausibleEnergy(kcalPer100: 2100).errorDescription?.contains("kcal per 100") == true)
         #expect(ServingWeightError.implausibleEnergy(kcalPer100: .infinity).errorDescription?.contains("∞ kcal") == true)
+    }
+
+    @Test func `numbers in error messages follow the locale`() {
+        #expect(ServingWeightError.number(0.1, fractionDigits: 1, locale: Locale(identifier: "en_US")) == "0.1")
+        #expect(ServingWeightError.number(0.1, fractionDigits: 1, locale: Locale(identifier: "hr_HR")) == "0,1")
+        #expect(ServingWeightError.number(100_000, locale: Locale(identifier: "en_US")) == "100,000")
+        #expect(ServingWeightError.number(100_000, locale: Locale(identifier: "hr_HR")) == "100.000")
+        #expect(ServingWeightError.number(.infinity, locale: Locale(identifier: "hr_HR")) == "∞")
     }
 }

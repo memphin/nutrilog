@@ -163,7 +163,7 @@ public struct MealPlanRepository: Sendable {
     @discardableResult
     public func planAll(_ items: [DiaryRepository.LogItem], slotID: String, day: LocalDay) throws -> [PlannedEntry] {
         guard !items.isEmpty, items.allSatisfy({ $0.quantity.baseAmount > 0 }) else {
-            throw PersistenceError.validation("amount must be greater than zero")
+            throw PersistenceError.amountNotPositive
         }
         for item in items {
             try EntryLimits.validate(amount: item.quantity.baseAmount)
@@ -192,7 +192,7 @@ public struct MealPlanRepository: Sendable {
         let title = name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return try database.writer.write { db in
             let entry = try PlannedEntry(
-                day: day, mealSlotID: slotID, foodID: nil, displayName: title.isEmpty ? "Quick add" : title,
+                day: day, mealSlotID: slotID, foodID: nil, displayName: title.isEmpty ? QuickAddName.default : title,
                 grams: 0, servingLabel: nil, isQuickAdd: true, nutrients: nutrients,
                 sortOrder: Self.nextSortOrder(db, day: day, slotID: slotID), now: now,
             )
@@ -203,12 +203,12 @@ public struct MealPlanRepository: Sendable {
 
     /// Changes the planned amount of a food; the estimate is scaled like a diary entry's snapshot.
     public func updateQuantity(plannedID: String, quantity: Quantity) throws {
-        guard quantity.baseAmount > 0 else { throw PersistenceError.validation("amount must be greater than zero") }
+        guard quantity.baseAmount > 0 else { throw PersistenceError.amountNotPositive }
         try EntryLimits.validate(amount: quantity.baseAmount)
         let now = clock.now()
         try database.writer.write { db in
             guard var entry = try PlannedEntry.fetchOne(db, key: plannedID) else { throw PersistenceError.notFound(plannedID) }
-            guard !entry.isQuickAdd else { throw PersistenceError.validation("quick-add entries have no quantity") }
+            guard !entry.isQuickAdd else { throw PersistenceError.quickAddHasNoQuantity }
             if entry.grams > 0 {
                 entry.nutrients = entry.nutrients.scaled(by: quantity.baseAmount / entry.grams)
             } else if let foodID = entry.foodID, let food = try Food.fetchOne(db, key: foodID) {
@@ -216,7 +216,7 @@ public struct MealPlanRepository: Sendable {
                 try EntryLimits.validateFinite(nutrients)
                 entry.nutrients = nutrients
             } else {
-                throw PersistenceError.validation("entry has no amount to scale")
+                throw PersistenceError.nothingToScale
             }
             entry.grams = quantity.baseAmount
             entry.servingLabel = quantity.servingLabel

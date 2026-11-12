@@ -16,23 +16,25 @@ extension FoodSource {
 }
 
 enum Format {
-    /// "150 g", "250 ml", "2 × slice (50 g)".
-    static func amount(grams: Double, unit: BaseUnit, servingLabel: String?) -> String {
-        let base = "\(NutrientRow.format(grams, unit: unit.symbol)) \(unit.symbol)"
+    /// "150 g", "250 ml", "2 × slice (50 g)"; the number in `locale` ("1,5 g" in Croatian).
+    static func amount(grams: Double, unit: BaseUnit, servingLabel: String?, locale: Locale = .current) -> String {
+        let base = "\(NutrientRow.format(grams, unit: unit.symbol, locale: locale)) \(unit.symbol)"
         guard let servingLabel else { return base }
         return "\(servingLabel) (\(base))"
     }
 
-    static func day(_ day: LocalDay, today: LocalDay) -> String {
+    /// "Today", "Yesterday", "Tomorrow", else the date in `locale` ("Thu, Nov 12"; "čet, 12. stu" in Croatian).
+    static func day(_ day: LocalDay, today: LocalDay, locale: Locale = .current) -> String {
         switch today.days(until: day) {
-        case 0: return "Today"
-        case -1: return "Yesterday"
-        case 1: return "Tomorrow"
+        case 0: return String(localized: "Today")
+        case -1: return String(localized: "Yesterday")
+        case 1: return String(localized: "Tomorrow")
         default:
             let date = day.startDate()
             let sameYear = day.year == today.year
-            return date.formatted(sameYear ? .dateTime.weekday(.abbreviated).day().month(.abbreviated)
-                : .dateTime.day().month(.abbreviated).year())
+            let style: Date.FormatStyle = sameYear ? .dateTime.weekday(.abbreviated).day().month(.abbreviated)
+                : .dateTime.day().month(.abbreviated).year()
+            return date.formatted(style.locale(locale))
         }
     }
 
@@ -49,8 +51,8 @@ enum Format {
     }
 
     /// Value → text for editable fields ("12.5", "" for nil); uses the user's decimal separator.
-    static func field(_ value: Double?) -> String {
+    static func field(_ value: Double?, locale: Locale = .current) -> String {
         guard let value else { return "" }
-        return value.formatted(.number.precision(.fractionLength(0 ... 2)).grouping(.never))
+        return value.formatted(.number.precision(.fractionLength(0 ... 2)).grouping(.never).locale(locale))
     }
 }

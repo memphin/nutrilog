@@ -89,8 +89,11 @@ public extension HealthFetchPlan {
 /// Shared texts and constants of the Health integration.
 public enum HealthKitClient {
     /// Shown wherever a Health value is missing: read access is opaque, so missing data may mean a denied type.
-    public static let noDataMessage = "No data found — check Health permissions"
+    public static let noDataMessage = String(localized: "No data found — check Health permissions", bundle: .module)
 
     /// Where the user changes Health permissions for the app.
-    public static let permissionsPath = "Settings › Health › Data Access & Devices › Vitalion"
+    public static let permissionsPath = String(
+        localized: "Settings › Health › Data Access & Devices › Vitalion", bundle: .module,
+        comment: "Path in the iOS Settings app; use the iOS menu names of the language",
+    )
 }

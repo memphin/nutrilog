@@ -42,14 +42,20 @@ public enum Quantity: Hashable, Sendable, Codable {
         }
     }
 
-    /// Human label stored as `diary_entry.serving_label`, e.g. "2 slices", "150 g". `nil` for base amounts
-    /// (the base amount is shown from `grams` directly).
+    /// Human label stored as `diary_entry.serving_label`, e.g. "2 × slice", "1.5 × plate" (in the user's locale:
+    /// "1,5 × plate" in Croatian). `nil` for base amounts (the base amount is shown from `grams` directly).
     public var servingLabel: String? {
+        servingLabel(locale: .current)
+    }
+
+    /// ``servingLabel`` with the count written for `locale`. Only the text after "× " is ever matched back to a
+    /// serving, so the decimal separator doesn't matter to readers of stored labels.
+    public func servingLabel(locale: Locale) -> String? {
         switch self {
         case .base:
             nil
         case let .servings(count, serving):
-            "\(NumberFormatting.compact(count)) × \(serving.label)"
+            "\(NumberFormatting.compact(count, locale: locale)) × \(serving.label)"
         }
     }
 
@@ -60,7 +66,8 @@ public enum Quantity: Hashable, Sendable, Codable {
 }
 
 public enum NumberFormatting {
-    /// "1", "1.5", "0.25" — no trailing zeros, up to 2 decimals, locale-independent.
+    /// "1", "1.5", "0.25" — no trailing zeros, up to 2 decimals, locale-independent: for machine text (CSV export).
+    /// Text shown to the user goes through ``compact(_:locale:)``.
     /// Total for every `Double`: NaN reads "NaN", infinities "∞" / "-∞", and whole numbers beyond `Int`'s range
     /// are written out as plain digits (never in scientific notation).
     public static func compact(_ value: Double) -> String {
@@ -86,5 +93,13 @@ public enum NumberFormatting {
             text.removeLast()
         }
         return text
+    }
+
+    /// ``compact(_:)`` for display: the same digits with `locale`'s decimal separator ("1,5" in Croatian) and, like
+    /// ``compact(_:)``, no grouping, so the text also reads back in a number field (which accepts "," and ".").
+    public static func compact(_ value: Double, locale: Locale) -> String {
+        let text = compact(value)
+        guard let separator = locale.decimalSeparator, separator != "." else { return text }
+        return text.replacingOccurrences(of: ".", with: separator)
     }
 }

@@ -12,16 +12,16 @@ enum ChartMetric: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .weight: "Weight"
-        case .bodyFat: "Body fat"
-        case .energy: "Calories vs target"
-        case .macros: "Macros"
-        case .steps: "Steps"
-        case .sleep: "Sleep"
-        case .restingHeartRate: "Resting heart rate"
-        case .hrv: "HRV"
-        case .water: "Hydration"
-        case .totalEnergy: "Total energy"
+        case .weight: String(localized: "Weight")
+        case .bodyFat: String(localized: "Body fat")
+        case .energy: String(localized: "Calories vs target")
+        case .macros: String(localized: "Macros")
+        case .steps: String(localized: "Steps")
+        case .sleep: String(localized: "Sleep")
+        case .restingHeartRate: String(localized: "Resting heart rate")
+        case .hrv: String(localized: "HRV")
+        case .water: String(localized: "Hydration")
+        case .totalEnergy: String(localized: "Total energy")
         }
     }
 
@@ -72,6 +72,16 @@ enum ChartRange: String, CaseIterable, Identifiable {
         rawValue
     }
 
+    /// The segment label ("1W", …); the language may abbreviate differently.
+    var title: String {
+        switch self {
+        case .week: String(localized: "1W", comment: "Chart range: one week")
+        case .month: String(localized: "1M", comment: "Chart range: one month")
+        case .quarter: String(localized: "3M", comment: "Chart range: three months")
+        case .year: String(localized: "1Y", comment: "Chart range: one year")
+        }
+    }
+
     var days: Int {
         switch self {
         case .week: 7
@@ -83,10 +93,10 @@ enum ChartRange: String, CaseIterable, Identifiable {
 
     var spokenTitle: String {
         switch self {
-        case .week: "last 7 days"
-        case .month: "last 30 days"
-        case .quarter: "last 3 months"
-        case .year: "last year"
+        case .week: String(localized: "last 7 days")
+        case .month: String(localized: "last 30 days")
+        case .quarter: String(localized: "last 3 months")
+        case .year: String(localized: "last year")
         }
     }
 
@@ -172,7 +182,7 @@ enum ChartBuilder {
         case .bodyFat: "%"
         case .energy, .totalEnergy: unit.symbol
         case .macros: "g"
-        case .steps: "steps"
+        case .steps: String(localized: "steps", comment: "Unit after a number of steps (\"8,412 steps\")")
         case .sleep: "h"
         case .restingHeartRate: "bpm"
         case .hrv: "ms"
@@ -286,18 +296,25 @@ enum ChartBuilder {
     /// A spoken summary of the chart for VoiceOver and the caption under it.
     static func summary(_ series: ChartSeries, unit: EnergyUnit) -> String {
         let name = series.metric.title
-        guard let average = series.average else { return "\(name), \(series.range.spokenTitle): no data." }
+        let range = series.range.spokenTitle
+        guard let average = series.average else { return String(localized: "\(name), \(range): no data.") }
         let values = series.points.compactMap(\.value)
-        var text = "\(name), \(series.range.spokenTitle): average \(format(average, series.metric, unit: unit))"
+        let mean = format(average, series.metric, unit: unit)
+        // Whole sentences, so a language can reorder them.
+        var sentences: [String]
         if let low = values.min(), let high = values.max(), values.count > 1 {
-            let per = series.bucketDays == 7 ? " (weekly averages)" : ""
-            text += ", from \(format(low, series.metric, unit: unit)) to \(format(high, series.metric, unit: unit))\(per)"
+            let from = format(low, series.metric, unit: unit), to = format(high, series.metric, unit: unit)
+            sentences = [series.bucketDays == 7
+                ? String(localized: "\(name), \(range): average \(mean), from \(from) to \(to) (weekly averages).")
+                : String(localized: "\(name), \(range): average \(mean), from \(from) to \(to).")]
+        } else {
+            sentences = [String(localized: "\(name), \(range): average \(mean).")]
         }
-        text += ". \(series.daysWithData) of \(series.range.days) days have data."
+        sentences.append(String(localized: "\(series.daysWithData) of \(series.range.days) days have data."))
         let trend = series.points.compactMap(\.reference)
         if series.metric == .weight, let first = trend.first, let last = trend.last {
-            text += " Trend \(DashboardFormat.kgChange(last - first)) over the period."
+            sentences.append(String(localized: "Trend \(DashboardFormat.kgChange(last - first)) over the period."))
         }
-        return text
+        return sentences.joined(separator: " ")
     }
 }

@@ -93,9 +93,9 @@ struct Sparkline: Equatable {
     /// Spoken after the tile's value, e.g. "up over 7 days"; nil without a chart.
     var accessibilitySummary: String? {
         switch direction {
-        case .up: "up over \(Self.days) days"
-        case .down: "down over \(Self.days) days"
-        case .steady: "steady over \(Self.days) days"
+        case .up: String(localized: "up over \(Self.days) days")
+        case .down: String(localized: "down over \(Self.days) days")
+        case .steady: String(localized: "steady over \(Self.days) days")
         case nil: nil
         }
     }

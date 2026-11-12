@@ -55,7 +55,9 @@ public extension FoodRepository {
             }
         }
         guard !ids.isEmpty, !ids.contains(keepID) else {
-            throw PersistenceError.validation("choose one food to keep and at least one other to merge into it")
+            throw PersistenceError.validation(
+                String(localized: "choose one food to keep and at least one other to merge into it", bundle: .module),
+            )
         }
         let now = clock.now()
         return try database.writer.write { db in

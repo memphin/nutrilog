@@ -91,7 +91,7 @@ final class DashboardModel {
             try updated.save(to: profiles)
             layout = updated
         } catch {
-            errorMessage = "Couldn't save the dashboard layout: \(error.localizedDescription)"
+            errorMessage = String(localized: "Couldn't save the dashboard layout: \(error.localizedDescription)")
         }
     }
 
@@ -228,7 +228,7 @@ final class DashboardModel {
         do {
             try await environment.connectHealth()
         } catch {
-            errorMessage = "Couldn't connect Apple Health: \(error.localizedDescription)"
+            errorMessage = String(localized: "Couldn't connect Apple Health: \(error.localizedDescription)")
         }
         environment.markHealthOnboardingShown()
         await reloadAccess()
@@ -248,9 +248,9 @@ final class DashboardModel {
         do {
             let day = loggedAt.map { LocalDay($0, calendar: calendar) } ?? environment.today
             let entry = try water.add(ml: Double(ml), day: day, loggedAt: loggedAt)
-            offerUndo("Added \(ml) ml water") { try water.softDelete(ids: [entry.id]) }
+            offerUndo(String(localized: "Added \(ml) ml water")) { try water.softDelete(ids: [entry.id]) }
         } catch {
-            errorMessage = "Couldn't log water: \(error.localizedDescription)"
+            errorMessage = String(localized: "Couldn't log water: \(error.localizedDescription)")
         }
     }
 
@@ -262,17 +262,17 @@ final class DashboardModel {
             guard let water = environment.water else { return }
             do {
                 try water.softDelete(ids: [intake.id])
-                offerUndo("Removed \(DashboardFormat.ml(intake.ml)) water") { try water.restore(ids: [intake.id]) }
+                offerUndo(String(localized: "Removed \(DashboardFormat.ml(intake.ml)) water")) { try water.restore(ids: [intake.id]) }
             } catch {
-                errorMessage = "Couldn't remove water: \(error.localizedDescription)"
+                errorMessage = String(localized: "Couldn't remove water: \(error.localizedDescription)")
             }
         case .caffeine:
             guard let caffeine = environment.caffeine else { return }
             do {
                 try caffeine.softDelete(ids: [intake.id])
-                offerUndo("Removed \(intake.name)") { try caffeine.restore(ids: [intake.id]) }
+                offerUndo(String(localized: "Removed \(intake.name)")) { try caffeine.restore(ids: [intake.id]) }
             } catch {
-                errorMessage = "Couldn't remove the drink: \(error.localizedDescription)"
+                errorMessage = String(localized: "Couldn't remove the drink: \(error.localizedDescription)")
             }
         case .diary:
             return
@@ -285,7 +285,7 @@ final class DashboardModel {
         let diaryIntakes = intakes.filter { $0.source == .diary }
         guard let diary = environment.diary, !diaryIntakes.isEmpty,
               let slots = try? diary.mealSlots(includeInactive: true) else { return [:] }
-        let slotNames = Dictionary(slots.map { ($0.id, $0.name) }) { first, _ in first }
+        let slotNames = Dictionary(slots.map { ($0.id, $0.displayName) }) { first, _ in first }
         var names: [String: String] = [:]
         for intake in diaryIntakes {
             if let slotID = (try? diary.entry(id: intake.id))??.mealSlotID, let name = slotNames[slotID] {
@@ -323,10 +323,11 @@ final class DashboardModel {
         do {
             let day = at.map { LocalDay($0, calendar: calendar) } ?? environment.today
             let entry = try caffeine.add(mg: mg, day: day, loggedAt: at, drinkID: drinkID, name: name, ml: ml)
-            let what = name.map { "\($0) (\(CaffeineStatus.mg(mg)))" } ?? "\(CaffeineStatus.mg(mg)) caffeine"
-            offerUndo("Added \(what)") { try caffeine.softDelete(ids: [entry.id]) }
+            let amount = CaffeineStatus.mg(mg)
+            let message = name.map { String(localized: "Added \($0) (\(amount))") } ?? String(localized: "Added \(amount) caffeine")
+            offerUndo(message) { try caffeine.softDelete(ids: [entry.id]) }
         } catch {
-            errorMessage = "Couldn't log caffeine: \(error.localizedDescription)"
+            errorMessage = String(localized: "Couldn't log caffeine: \(error.localizedDescription)")
         }
     }
 
@@ -335,11 +336,14 @@ final class DashboardModel {
         guard let caffeine = environment.caffeine else { return }
         do {
             try caffeine.softDelete(ids: [entry.id])
-            offerUndo("Removed \(entry.name ?? "caffeine") (\(CaffeineStatus.mg(entry.mg)))") {
+            let amount = CaffeineStatus.mg(entry.mg)
+            let message = entry.name.map { String(localized: "Removed \($0) (\(amount))") }
+                ?? String(localized: "Removed caffeine (\(amount))")
+            offerUndo(message) {
                 try caffeine.restore(ids: [entry.id])
             }
         } catch {
-            errorMessage = "Couldn't remove caffeine: \(error.localizedDescription)"
+            errorMessage = String(localized: "Couldn't remove caffeine: \(error.localizedDescription)")
         }
     }
 
@@ -367,7 +371,7 @@ final class DashboardModel {
             environment.widgetDataDidChange()
             return true
         } catch {
-            errorMessage = "Couldn't save the weight: \(error.localizedDescription)"
+            errorMessage = String(localized: "Couldn't save the weight: \(error.localizedDescription)")
             return false
         }
     }
@@ -378,13 +382,13 @@ final class DashboardModel {
             try weights.softDelete(ids: [entry.id])
             environment.refreshStoredWeightTrend()
             environment.widgetDataDidChange()
-            offerUndo("Deleted \(DashboardFormat.kg(entry.kg))") { [environment] in
+            offerUndo(String(localized: "Deleted \(DashboardFormat.kg(entry.kg))")) { [environment] in
                 try weights.restore(ids: [entry.id])
                 environment.refreshStoredWeightTrend()
                 environment.widgetDataDidChange()
             }
         } catch {
-            errorMessage = "Couldn't delete the weight: \(error.localizedDescription)"
+            errorMessage = String(localized: "Couldn't delete the weight: \(error.localizedDescription)")
         }
     }
 

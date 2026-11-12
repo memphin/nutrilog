@@ -60,18 +60,18 @@ public enum HealthReadType: String, CaseIterable, Sendable, Identifiable {
 
     public var title: String {
         switch self {
-        case .stepCount: "Steps"
-        case .activeEnergyBurned: "Active energy"
-        case .basalEnergyBurned: "Resting energy"
-        case .sleepAnalysis: "Sleep"
-        case .bodyMass: "Weight"
-        case .bodyFatPercentage: "Body fat"
-        case .restingHeartRate: "Resting heart rate"
-        case .heartRateVariabilitySDNN: "Heart rate variability"
-        case .dietaryWater: "Water"
-        case .height: "Height"
-        case .dateOfBirth: "Date of birth"
-        case .biologicalSex: "Sex"
+        case .stepCount: String(localized: "Steps", bundle: .module)
+        case .activeEnergyBurned: String(localized: "Active energy", bundle: .module)
+        case .basalEnergyBurned: String(localized: "Resting energy", bundle: .module)
+        case .sleepAnalysis: String(localized: "Sleep", bundle: .module)
+        case .bodyMass: String(localized: "Weight", bundle: .module)
+        case .bodyFatPercentage: String(localized: "Body fat", bundle: .module)
+        case .restingHeartRate: String(localized: "Resting heart rate", bundle: .module)
+        case .heartRateVariabilitySDNN: String(localized: "Heart rate variability", bundle: .module)
+        case .dietaryWater: String(localized: "Water", bundle: .module)
+        case .height: String(localized: "Height", bundle: .module)
+        case .dateOfBirth: String(localized: "Date of birth", bundle: .module)
+        case .biologicalSex: String(localized: "Sex", bundle: .module, comment: "Biological sex (Health data type)")
         }
     }
 
@@ -79,29 +79,29 @@ public enum HealthReadType: String, CaseIterable, Sendable, Identifiable {
     public var explanation: String {
         switch self {
         case .stepCount:
-            "Today's steps next to your diary. Steps from Apple Watch and iPhone are counted once."
+            String(localized: "Today's steps next to your diary. Steps from Apple Watch and iPhone are counted once.", bundle: .module)
         case .activeEnergyBurned:
-            "Calories burned through activity, shown next to what you eat."
+            String(localized: "Calories burned through activity, shown next to what you eat.", bundle: .module)
         case .basalEnergyBurned:
-            "Calories your body burns at rest; with active energy it shows your total burn."
+            String(localized: "Calories your body burns at rest; with active energy it shows your total burn.", bundle: .module)
         case .sleepAnalysis:
-            "Time asleep and in bed, with sleep stages, from your Apple Watch."
+            String(localized: "Time asleep and in bed, with sleep stages, from your Apple Watch.", bundle: .module)
         case .bodyMass:
-            "Your morning weigh-in, for the weight trend and the adaptive calorie target."
+            String(localized: "Your morning weigh-in, for the weight trend and the adaptive calorie target.", bundle: .module)
         case .bodyFatPercentage:
-            "Body fat from your scale, shown alongside your weight."
+            String(localized: "Body fat from your scale, shown alongside your weight.", bundle: .module)
         case .restingHeartRate:
-            "Recovery context from your Apple Watch. Informational only."
+            String(localized: "Recovery context from your Apple Watch. Informational only.", bundle: .module)
         case .heartRateVariabilitySDNN:
-            "Your overnight HRV average from Apple Watch, as recovery context. Informational only."
+            String(localized: "Your overnight HRV average from Apple Watch, as recovery context. Informational only.", bundle: .module)
         case .dietaryWater:
-            "Water logged in other apps also counts toward your daily water goal."
+            String(localized: "Water logged in other apps also counts toward your daily water goal.", bundle: .module)
         case .height:
-            "Used with your age, sex and weight to estimate your calorie needs."
+            String(localized: "Used with your age, sex and weight to estimate your calorie needs.", bundle: .module)
         case .dateOfBirth:
-            "Your age, for the calorie needs estimate."
+            String(localized: "Your age, for the calorie needs estimate.", bundle: .module)
         case .biologicalSex:
-            "Used by the calorie needs formula (Mifflin-St Jeor)."
+            String(localized: "Used by the calorie needs formula (Mifflin-St Jeor).", bundle: .module)
         }
     }
 }
@@ -130,16 +130,16 @@ public enum HealthWriteType: String, CaseIterable, Sendable, Identifiable {
 
     public var title: String {
         switch self {
-        case .dietaryEnergyConsumed: "Energy consumed"
-        case .dietaryProtein: "Protein"
-        case .dietaryCarbohydrates: "Carbohydrates"
-        case .dietaryFatTotal: "Fat"
-        case .dietaryFiber: "Fiber"
-        case .dietarySugar: "Sugar"
-        case .dietarySodium: "Sodium"
-        case .dietaryWater: "Water"
-        case .bodyMass: "Weight"
-        case .bodyFatPercentage: "Body fat"
+        case .dietaryEnergyConsumed: String(localized: "Energy consumed", bundle: .module)
+        case .dietaryProtein: String(localized: "Protein", bundle: .module)
+        case .dietaryCarbohydrates: String(localized: "Carbohydrates", bundle: .module)
+        case .dietaryFatTotal: String(localized: "Fat", bundle: .module, comment: "The macronutrient")
+        case .dietaryFiber: String(localized: "Fiber", bundle: .module)
+        case .dietarySugar: String(localized: "Sugar", bundle: .module)
+        case .dietarySodium: String(localized: "Sodium", bundle: .module)
+        case .dietaryWater: String(localized: "Water", bundle: .module)
+        case .bodyMass: String(localized: "Weight", bundle: .module)
+        case .bodyFatPercentage: String(localized: "Body fat", bundle: .module)
         }
     }
 
@@ -147,15 +147,32 @@ public enum HealthWriteType: String, CaseIterable, Sendable, Identifiable {
     public var explanation: String {
         switch self {
         case .dietaryEnergyConsumed:
-            "The calories of each diary entry, updated when you edit or delete it."
-        case .dietaryProtein, .dietaryCarbohydrates, .dietaryFatTotal, .dietaryFiber, .dietarySugar, .dietarySodium:
-            "The \(title.lowercased()) of each diary entry, updated when you edit or delete it."
+            String(localized: "The calories of each diary entry, updated when you edit or delete it.", bundle: .module)
+        // One whole sentence per nutrient, so translations needn't fit a lowercased title into a fixed sentence.
+        case .dietaryProtein:
+            String(localized: "The protein of each diary entry, updated when you edit or delete it.", bundle: .module)
+        case .dietaryCarbohydrates:
+            String(localized: "The carbohydrates of each diary entry, updated when you edit or delete it.", bundle: .module)
+        case .dietaryFatTotal:
+            String(localized: "The fat of each diary entry, updated when you edit or delete it.", bundle: .module)
+        case .dietaryFiber:
+            String(localized: "The fiber of each diary entry, updated when you edit or delete it.", bundle: .module)
+        case .dietarySugar:
+            String(localized: "The sugar of each diary entry, updated when you edit or delete it.", bundle: .module)
+        case .dietarySodium:
+            String(localized: "The sodium of each diary entry, updated when you edit or delete it.", bundle: .module)
         case .dietaryWater:
-            "Water you log in Vitalion."
+            String(localized: "Water you log in Vitalion.", bundle: .module)
         case .bodyMass:
-            "Only weights you enter by hand in Vitalion. Weights from your scale are never written back."
+            String(
+                localized: "Only weights you enter by hand in Vitalion. Weights from your scale are never written back.",
+                bundle: .module,
+            )
         case .bodyFatPercentage:
-            "Only body fat you enter by hand with a weight in Vitalion. Values from your scale are never written back."
+            String(
+                localized: "Only body fat you enter by hand with a weight in Vitalion. Values from your scale are never written back.",
+                bundle: .module,
+            )
         }
     }
 }

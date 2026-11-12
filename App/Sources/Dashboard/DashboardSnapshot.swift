@@ -103,7 +103,9 @@ enum HydrationTileText {
 
     /// "1,300 water · 540 drinks".
     static func breakdown(_ day: HydrationDay, locale: Locale = .autoupdatingCurrent) -> String {
-        "\(number(day.waterMl + day.otherAppsMl, locale)) water · \(number(day.otherDrinksMl, locale)) drinks"
+        let water = number(day.waterMl + day.otherAppsMl, locale)
+        let drinks = number(day.otherDrinksMl, locale)
+        return String(localized: "\(water) water · \(drinks) drinks", locale: locale)
     }
 
     private static func number(_ ml: Double, _ locale: Locale) -> String {
@@ -142,10 +144,10 @@ struct EnergyBurned: Equatable {
 
     /// "Active 420 kcal · Resting 1,650 kcal"; a missing part says so.
     func breakdown(_ unit: EnergyUnit) -> String {
-        [
-            "Active \(activeKcal.map { unit.format($0) } ?? "unknown")",
-            "Resting \(restingKcal.map { unit.format($0) } ?? "unknown")",
-        ].joined(separator: " · ")
+        let unknown = String(localized: "unknown", comment: "An energy value Apple Health has no data for")
+        let active = activeKcal.map { unit.format($0) } ?? unknown
+        let resting = restingKcal.map { unit.format($0) } ?? unknown
+        return [String(localized: "Active \(active)"), String(localized: "Resting \(resting)")].joined(separator: " · ")
     }
 }
 
@@ -363,7 +365,7 @@ enum TileHistory {
                 let kcal = kcalByDay[day]
                 return TileHistoryRow(day: day, value: kcal.map { energyUnit.format($0) })
             case .steps:
-                return TileHistoryRow(day: day, value: row?.steps.map { "\($0.formatted()) steps" })
+                return TileHistoryRow(day: day, value: row?.steps.map { String(localized: "\($0) steps") })
             case .sleep:
                 let asleep = row?.sleepAsleepMin ?? row?.sleepInBedMin
                 return TileHistoryRow(day: day, value: asleep.map(DashboardFormat.duration), detail: row.flatMap(DashboardFormat.stages))
@@ -374,8 +376,8 @@ enum TileHistory {
                     day: day,
                     value: kg.map(DashboardFormat.kg),
                     detail: kg == nil ? nil : [
-                        trend[day].map { "Trend \(DashboardFormat.kg($0))" },
-                        weight?.isManual == true ? "Entered in Vitalion" : nil,
+                        trend[day].map { String(localized: "Trend \(DashboardFormat.kg($0))") },
+                        weight?.isManual == true ? String(localized: "Entered in Vitalion") : nil,
                     ].compactMap(\.self).joined(separator: " · "),
                 )
             case .bodyFat:
@@ -399,7 +401,7 @@ enum TileHistory {
                     day: day,
                     value: mg > 0 ? CaffeineStatus.mg(mg) : nil,
                     detail: CaffeineLevel.isOverLimit(totalMg: mg, limitMg: data.caffeineSettings.dailyLimitMg)
-                        ? "Over the daily \(CaffeineStatus.mg(data.caffeineSettings.dailyLimitMg))" : nil,
+                        ? String(localized: "Over the daily \(CaffeineStatus.mg(data.caffeineSettings.dailyLimitMg))") : nil,
                 )
             }
         }
@@ -410,7 +412,8 @@ enum TileHistory {
         guard totalMl > 0 else { return TileHistoryRow(day: day) }
         let goal = data.hydrationGoalMl(on: day)
         return TileHistoryRow(
-            day: day, value: DashboardFormat.ml(totalMl), detail: "of \(DashboardFormat.ml(goal))", amountMl: totalMl, goalMl: goal,
+            day: day, value: DashboardFormat.ml(totalMl), detail: String(localized: "of \(DashboardFormat.ml(goal))"),
+            amountMl: totalMl, goalMl: goal,
         )
     }
 }
@@ -418,20 +421,26 @@ enum TileHistory {
 // MARK: - Formatting
 
 enum DashboardFormat {
-    /// "7h 5min", "8h", "45min" (#72).
+    /// "7h 5min", "8h", "45min" (#72); the unit abbreviations come from the string catalog.
     static func duration(_ minutes: Int) -> String {
         let hours = minutes / 60
         let rest = minutes % 60
-        guard hours > 0 else { return "\(rest)min" }
-        return rest == 0 ? "\(hours)h" : "\(hours)h \(rest)min"
+        guard hours > 0 else { return String(localized: "\(rest)min", comment: "Short duration in minutes") }
+        return rest == 0
+            ? String(localized: "\(hours)h", comment: "Short duration in hours")
+            : String(localized: "\(hours)h \(rest)min", comment: "Short duration in hours and minutes")
     }
 
     /// "Core 3h 30min · Deep 1h 15min · REM 1h 40min · Awake 10min"; nil without stages.
     static func stages(_ metrics: DailyHealthMetrics) -> String? {
-        let parts: [(String, Int?)] = [
-            ("Core", metrics.sleepCoreMin), ("Deep", metrics.sleepDeepMin), ("REM", metrics.sleepRemMin), ("Awake", metrics.sleepAwakeMin),
+        // Whole phrases per sleep stage, so a translation can reorder name and duration.
+        let parts: [(Int?, (String) -> String)] = [
+            (metrics.sleepCoreMin, { String(localized: "Core \($0)", comment: "Sleep stage and its duration") }),
+            (metrics.sleepDeepMin, { String(localized: "Deep \($0)", comment: "Sleep stage and its duration") }),
+            (metrics.sleepRemMin, { String(localized: "REM \($0)", comment: "Sleep stage and its duration") }),
+            (metrics.sleepAwakeMin, { String(localized: "Awake \($0)", comment: "Sleep stage and its duration") }),
         ]
-        let text = parts.compactMap { name, minutes in minutes.map { "\(name) \(duration($0))" } }
+        let text = parts.compactMap { minutes, phrase in minutes.map { phrase(duration($0)) } }
         return text.isEmpty ? nil : text.joined(separator: " · ")
     }
 

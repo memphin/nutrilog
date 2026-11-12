@@ -101,30 +101,31 @@ struct BarcodeResolutionView: View {
     static func summary(_ stats: BarcodeResolutionStats) -> String {
         let target = BarcodeResolutionStats.target.formatted(.percent.precision(.fractionLength(0)))
         switch stats.meetsTarget {
-        case true?: return "On target: at least \(target) of regularly bought products resolve."
-        case false?: return "Below the \(target) target for regularly bought products."
-        case nil: return "Scan products you buy more than once to measure the \(target) target."
+        case true?: return String(localized: "On target: at least \(target) of regularly bought products resolve.")
+        case false?: return String(localized: "Below the \(target) target for regularly bought products.")
+        case nil: return String(localized: "Scan products you buy more than once to measure the \(target) target.")
         }
     }
 
     static func label(_ outcome: ScanOutcome) -> String {
         switch outcome {
-        case .local: "On this iPhone"
+        case .local: String(localized: "On this iPhone")
         case .offNetwork: "Open Food Facts"
-        case .offCache: "Open Food Facts (cached)"
-        case .offStaleCache: "Open Food Facts (outdated cache)"
-        case .notFound: "Not found"
-        case .offline: "Offline"
-        case .unavailable: "Open Food Facts unavailable"
-        case .created: "Created after not found"
+        case .offCache: String(localized: "Open Food Facts (cached)")
+        case .offStaleCache: String(localized: "Open Food Facts (outdated cache)")
+        case .notFound: String(localized: "Not found")
+        case .offline: String(localized: "Offline")
+        case .unavailable: String(localized: "Open Food Facts unavailable")
+        case .created: String(localized: "Created after not found")
         }
     }
 
+    /// Lowercase: it follows "Open Food Facts, " in a row title.
     static func qualityLabel(_ raw: String) -> String {
         switch DataQuality(rawValue: raw) {
-        case .complete?: "complete"
-        case .partialMacros?: "partial macros"
-        case .energyOnly?: "energy only"
+        case .complete?: String(localized: "complete", comment: "Data quality of a food's nutrition values")
+        case .partialMacros?: String(localized: "partial macros")
+        case .energyOnly?: String(localized: "energy only")
         case nil: raw
         }
     }

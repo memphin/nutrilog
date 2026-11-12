@@ -55,7 +55,7 @@ struct ProductCardView: View {
             }
 
             if let per100 = product.per100 {
-                nutrientSection("Per 100 \(unit)", per100)
+                nutrientSection(String(localized: "Per 100 \(unit)"), per100)
             }
             if let serving = product.serving {
                 nutrientSection(Self.servingTitle(label: serving.label, amount: serving.amount, unit: unit), serving.nutrients)
@@ -94,11 +94,10 @@ struct ProductCardView: View {
     /// ("30 g", "1 portion (30g)", "2 biscuits 25,5 g"), so it doesn't read "Per 30 g (30 g)". When the label's
     /// amount can't be matched, the weight is appended: a repeat is better than hiding the only weight.
     static func servingTitle(label: String, amount: Double?, unit: String) -> String {
-        guard let amount else { return "Per \(label)" }
-        if labelStates(amount, unit: unit, in: label) {
-            return "Per \(label)"
+        guard let amount, !labelStates(amount, unit: unit, in: label) else {
+            return String(localized: "Per \(label)", comment: "Nutrition values per serving; the serving's label")
         }
-        return "Per \(label) (\(NutrientRow.format(amount, unit: unit)) \(unit))"
+        return String(localized: "Per \(label) (\(NutrientRow.format(amount, unit: unit)) \(unit))")
     }
 
     /// Amounts with a unit written in serving labels, e.g. "30 g", "30g", "25,5 ml", "33 cl".
@@ -180,43 +179,45 @@ struct ProductCardView: View {
         } header: {
             Text("Serving weight unknown")
         } footer: {
-            Text("This product only lists values per serving. Enter the serving weight from the pack to log it in \(unit) "
-                + "too; until then it can be logged by servings only.")
+            Text("""
+            This product only lists values per serving. Enter the serving weight from the pack to log it in \(unit) \
+            too; until then it can be logged by servings only.
+            """)
         }
     }
 
     private var qualityWarning: String {
         switch food.dataQuality {
-        case .energyOnly: "Only the energy is known for this product."
-        case .partialMacros, .complete: "Some nutrients are missing for this product."
+        case .energyOnly: String(localized: "Only the energy is known for this product.")
+        case .partialMacros, .complete: String(localized: "Some nutrients are missing for this product.")
         }
     }
 
     private func nutrientSection(_ title: String, _ n: Nutrients) -> some View {
         Section(title) {
             NutrientRow(
-                "Energy",
+                String(localized: "Energy"),
                 value: product.isMissing(.energy) ? nil : energyUnit.display(n.kcal),
                 unit: energyUnit.symbol,
                 emphasized: true,
             )
-            NutrientRow("Protein", value: product.isMissing(.protein) ? nil : n.proteinG)
-            NutrientRow("Carbohydrates", value: product.isMissing(.carbs) ? nil : n.carbsG)
+            NutrientRow(String(localized: "Protein"), value: product.isMissing(.protein) ? nil : n.proteinG)
+            NutrientRow(String(localized: "Carbohydrates"), value: product.isMissing(.carbs) ? nil : n.carbsG)
             if let sugar = n.sugarG {
-                NutrientRow("of which sugars", value: sugar, indent: true)
+                NutrientRow(String(localized: "of which sugars"), value: sugar, indent: true)
             }
             if let fiber = n.fiberG {
-                NutrientRow("Fiber", value: fiber)
+                NutrientRow(String(localized: "Fiber"), value: fiber)
             }
-            NutrientRow("Fat", value: product.isMissing(.fat) ? nil : n.fatG)
+            NutrientRow(String(localized: "Fat", comment: "The macronutrient"), value: product.isMissing(.fat) ? nil : n.fatG)
             if let sat = n.satFatG {
-                NutrientRow("of which saturated", value: sat, indent: true)
+                NutrientRow(String(localized: "of which saturated"), value: sat, indent: true)
             }
             if let sodium = n.sodiumMg {
-                NutrientRow("Salt", value: Salt.saltG(fromSodiumMg: sodium))
+                NutrientRow(String(localized: "Salt"), value: Salt.saltG(fromSodiumMg: sodium))
             }
             if let caffeine = n.caffeineMg {
-                NutrientRow("Caffeine", value: caffeine, unit: "mg")
+                NutrientRow(String(localized: "Caffeine"), value: caffeine, unit: "mg")
             }
         }
     }
@@ -260,8 +261,10 @@ struct NotFoundView: View {
                 ContentUnavailableView {
                     Label("Product not found", systemImage: "barcode")
                 } description: {
-                    Text("\(barcode) isn't in your foods or on Open Food Facts. Create it from the label: next time this "
-                        + "barcode is scanned it is found instantly, even offline.")
+                    Text("""
+                    \(barcode) isn't in your foods or on Open Food Facts. Create it from the label: next time this \
+                    barcode is scanned it is found instantly, even offline.
+                    """)
                 } actions: {
                     Button("Create food", systemImage: "plus", action: onCreate)
                         .buttonStyle(.glassProminent)
@@ -360,7 +363,7 @@ struct LabelPhotoSection: View {
                     process { data }
                 } catch {
                     isProcessing = false
-                    loadError = "Couldn't load that photo: \(error.localizedDescription)"
+                    loadError = String(localized: "Couldn't load that photo: \(error.localizedDescription)")
                 }
             }
         }
@@ -378,7 +381,7 @@ struct LabelPhotoSection: View {
             if let jpeg {
                 photo = jpeg
             } else {
-                loadError = "Couldn't read that photo. Try another one."
+                loadError = String(localized: "Couldn't read that photo. Try another one.")
             }
         }
     }

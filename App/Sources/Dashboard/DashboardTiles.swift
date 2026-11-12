@@ -41,16 +41,16 @@ enum DashboardTile: String, CaseIterable, Codable, Identifiable, Hashable {
 
     var title: String {
         switch self {
-        case .energy: "Calories"
-        case .steps: "Steps"
-        case .sleep: "Sleep"
-        case .weight: "Weight"
-        case .bodyFat: "Body fat"
-        case .totalEnergy: "Total energy"
-        case .restingHeartRate: "Resting heart rate"
-        case .hrv: "HRV"
-        case .water: "Hydration"
-        case .caffeine: "Caffeine"
+        case .energy: String(localized: "Calories")
+        case .steps: String(localized: "Steps")
+        case .sleep: String(localized: "Sleep")
+        case .weight: String(localized: "Weight")
+        case .bodyFat: String(localized: "Body fat")
+        case .totalEnergy: String(localized: "Total energy")
+        case .restingHeartRate: String(localized: "Resting heart rate")
+        case .hrv: String(localized: "HRV", comment: "Heart rate variability, tile title")
+        case .water: String(localized: "Hydration")
+        case .caffeine: String(localized: "Caffeine")
         }
     }
 
@@ -86,22 +86,27 @@ enum DashboardTile: String, CaseIterable, Codable, Identifiable, Hashable {
         case .caffeine:
             CaffeineStatus.explanation(halfLifeHours: CaffeineMetabolism.baseHalfLifeHours)
         case .totalEnergy:
-            "Total energy is resting plus active energy from Apple Health: resting is what your body burns just to "
-                + "keep going, active is what movement and exercise add. A day with only one of them has no total."
+            String(localized: """
+            Total energy is resting plus active energy from Apple Health: resting is what your body burns just to keep going, active \
+            is what movement and exercise add. A day with only one of them has no total.
+            """)
         case .restingHeartRate:
-            "Resting heart rate is how many times your heart beats per minute while you are awake, calm and haven't "
-                + "moved for a while. A lower value usually goes with better fitness; a value clearly above your own "
-                + "average can be a sign of stress, poor sleep, alcohol or an illness coming on. Compare it with "
-                + "your own baseline rather than with other people. The value is green at or below your 30-day "
-                + "average, orange slightly above it and red more than 5% above."
+            String(localized: """
+            Resting heart rate is how many times your heart beats per minute while you are awake, calm and haven't moved for a \
+            while. A lower value usually goes with better fitness; a value clearly above your own average can be a sign of stress, \
+            poor sleep, alcohol or an illness coming on. Compare it with your own baseline rather than with other people. The value \
+            is green at or below your 30-day average, orange slightly above it and red more than 5% above.
+            """)
         case .hrv:
-            "Heart rate variability (HRV) is how much the time between heartbeats varies, in milliseconds (SDNN), "
-                + "measured mostly while you sleep. A higher value than your usual generally means you are well "
-                + "recovered; a lower one can follow hard training, stress, short sleep, alcohol or illness. HRV is "
-                + "very individual, so compare it with your own 7- and 30-day averages, not with other people. The value is green at or above "
-                + "your 30-day average, orange slightly below it and red more than 10% below."
+            String(localized: """
+            Heart rate variability (HRV) is how much the time between heartbeats varies, in milliseconds (SDNN), measured mostly \
+            while you sleep. A higher value than your usual generally means you are well recovered; a lower one can follow hard \
+            training, stress, short sleep, alcohol or illness. HRV is very individual, so compare it with your own 7- and 30-day \
+            averages, not with other people. The value is green at or above your 30-day average, orange slightly below it and red \
+            more than 10% below.
+            """)
         case .steps, .sleep, .weight, .bodyFat:
-            "Days without a value had no data in Apple Health — or Vitalion may not have permission to read it."
+            String(localized: "Days without a value had no data in Apple Health — or Vitalion may not have permission to read it.")
         }
     }
 
@@ -515,8 +520,8 @@ enum TileState: Equatable {
     /// The tile has a value.
     case ready
 
-    static let unavailableMessage = "Apple Health isn't available on this device"
-    static let needsAccessMessage = "Connect Apple Health to see this"
+    static let unavailableMessage = String(localized: "Apple Health isn't available on this device")
+    static let needsAccessMessage = String(localized: "Connect Apple Health to see this")
 
     /// A value always shows. Without one: no Health → unavailable; not asked → needs access; first sync running →
     /// loading; otherwise "No data found — check Health permissions" (denied and empty look the same).
@@ -534,7 +539,7 @@ enum TileState: Equatable {
 
     var message: String? {
         switch self {
-        case .loading: "Reading Apple Health…"
+        case .loading: String(localized: "Reading Apple Health…")
         case .needsAccess: Self.needsAccessMessage
         case .unavailable: Self.unavailableMessage
         case let .noData(message): message

@@ -94,7 +94,7 @@ struct HydrationTileTests {
 
         // VoiceOver says what the colour says.
         let snapshot = DashboardSnapshot(data([water(300, at: at(14))], trendKg: 80), calendar: calendar)
-        #expect(snapshot.accessibilityLabel(of: .water, state: .ready, now: at(14, 30), calendar: calendar)
+        #expect(snapshot.accessibilityLabel(of: .water, state: .ready, now: at(14, 30), calendar: calendar, locale: .dashboardEnglish)
             == "Hydration, 300 of 2,400 millilitres, 900 millilitres behind pace")
     }
 

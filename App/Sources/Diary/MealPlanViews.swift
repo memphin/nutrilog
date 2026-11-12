@@ -15,8 +15,9 @@ struct PlannedRow: View {
     let onConfirm: () -> Void
 
     private var caption: String {
-        guard !entry.isQuickAdd else { return "Planned" }
-        return "Planned · " + Format.amount(grams: entry.grams, unit: BaseUnit(isLiquid: isLiquid), servingLabel: entry.servingLabel)
+        guard !entry.isQuickAdd else { return String(localized: "Planned") }
+        let amount = Format.amount(grams: entry.grams, unit: BaseUnit(isLiquid: isLiquid), servingLabel: entry.servingLabel)
+        return String(localized: "Planned · \(amount)")
     }
 
     var body: some View {
@@ -79,14 +80,19 @@ struct PlannedSummaryRow: View {
     }
 
     private var detail: String {
-        let total = planned.kcal + eaten.kcal
-        var text = eaten.kcal > 0 ? "With eaten ≈ \(unit.format(total))" : "≈ \(unit.format(total))"
-        if let target {
-            text += " of \(unit.format(target.kcal))"
+        let total = unit.format(planned.kcal + eaten.kcal)
+        let text = switch (eaten.kcal > 0, target.map { unit.format($0.kcal) }) {
+        case let (true, goal?): String(localized: "With eaten ≈ \(total) of \(goal)")
+        case (true, nil): String(localized: "With eaten ≈ \(total)")
+        case let (false, goal?): String(localized: "≈ \(total) of \(goal)")
+        case (false, nil): "≈ \(total)"
         }
-        let macros = [("P", planned.proteinG), ("C", planned.carbsG), ("F", planned.fatG)]
-            .map { "\($0.0) \(DisplayRounding.whole($0.1)) g" }
-        return ([text] + macros).joined(separator: " · ")
+        let grams = [planned.proteinG, planned.carbsG, planned.fatG].map(DisplayRounding.whole)
+        let macros = String(
+            localized: "P \(grams[0]) g · C \(grams[1]) g · F \(grams[2]) g",
+            comment: "Protein, carbs and fat in grams, abbreviated",
+        )
+        return "\(text) · \(macros)"
     }
 }
 
@@ -126,10 +132,12 @@ struct RepeatPlanSheet: View {
         NavigationStack {
             Form {
                 Section {
-                    Stepper("Next \(days) \(days == 1 ? "day" : "days")", value: $days, in: 1 ... 13)
+                    Stepper("Next \(days) days", value: $days, in: 1 ... 13)
                 } footer: {
-                    Text("Adds it to the plan from \(Self.label(from.next)) to \(Self.label(from.adding(days: days))). "
-                        + "Nothing is logged until you mark it as eaten on the day.")
+                    Text("""
+                    Adds it to the plan from \(Self.label(from.next)) to \(Self.label(from.adding(days: days))). \
+                    Nothing is logged until you mark it as eaten on the day.
+                    """)
                 }
             }
             .navigationTitle(title)
@@ -264,8 +272,10 @@ struct MealPlanView: View {
             }
         }
         Section {} footer: {
-            Text("Plan a day by opening it in the diary and adding food. To prep the same meal for several days, "
-                + "use “Plan for the next days…” in a meal's menu. Planned food counts only once you mark it as eaten.")
+            Text("""
+            Plan a day by opening it in the diary and adding food. To prep the same meal for several days, \
+            use “Plan for the next days…” in a meal's menu. Planned food counts only once you mark it as eaten.
+            """)
         }
     }
 
@@ -311,11 +321,13 @@ struct MealPlanView: View {
     @ViewBuilder
     private var prep: some View {
         Section {
-            Stepper("\(prepDays) \(prepDays == 1 ? "day" : "days")", value: $prepDays, in: 1 ... Self.horizon)
+            Stepper("\(prepDays) days", value: $prepDays, in: 1 ... Self.horizon)
             Toggle("Start tomorrow", isOn: $prepFromTomorrow)
         } footer: {
-            Text("\(RepeatPlanSheet.label(prepRange.lowerBound)) – \(RepeatPlanSheet.label(prepRange.upperBound)). "
-                + "Sums up planned food that isn't eaten yet.")
+            Text("""
+            \(RepeatPlanSheet.label(prepRange.lowerBound)) – \(RepeatPlanSheet.label(prepRange.upperBound)). \
+            Sums up planned food that isn't eaten yet.
+            """)
         }
         let items = prepItems
         if items.isEmpty {
@@ -352,7 +364,7 @@ struct MealPlanView: View {
             VStack(alignment: .leading, spacing: NL.Spacing.xxs) {
                 Text(item.name)
                     .strikethrough(done)
-                Text("\(item.portions) \(item.portions == 1 ? "portion" : "portions") · \(dayList(item.days))")
+                Text("\(item.portions) portions · \(dayList(item.days))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -378,7 +390,9 @@ struct MealPlanView: View {
 
     /// Plain text for the share sheet (notes, reminders, a shopping list).
     private var prepText: String {
-        let header = "Meal prep \(RepeatPlanSheet.label(prepRange.lowerBound)) – \(RepeatPlanSheet.label(prepRange.upperBound))"
+        let header = String(
+            localized: "Meal prep \(RepeatPlanSheet.label(prepRange.lowerBound)) – \(RepeatPlanSheet.label(prepRange.upperBound))",
+        )
         let lines = prepItems.map { "• \($0.name): \(totalAmount($0)) (\($0.portions)×)" }
         return ([header] + lines).joined(separator: "\n")
     }
@@ -426,6 +440,6 @@ struct MealPlanView: View {
         }
         targets = result
         let all = (try? environment.diary?.mealSlots(includeInactive: true)) ?? []
-        slots = Dictionary(all.map { ($0.id, $0.name) }, uniquingKeysWith: { $1 })
+        slots = Dictionary(all.map { ($0.id, $0.displayName) }, uniquingKeysWith: { $1 })
     }
 }

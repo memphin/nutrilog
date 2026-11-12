@@ -25,21 +25,21 @@ public enum ActivityLevel: String, Sendable, Codable, CaseIterable {
 
     public var title: String {
         switch self {
-        case .sedentary: "Sedentary"
-        case .light: "Lightly active"
-        case .moderate: "Moderately active"
-        case .active: "Very active"
-        case .veryActive: "Extremely active"
+        case .sedentary: String(localized: "Sedentary", bundle: .module, comment: "Activity level")
+        case .light: String(localized: "Lightly active", bundle: .module, comment: "Activity level")
+        case .moderate: String(localized: "Moderately active", bundle: .module, comment: "Activity level")
+        case .active: String(localized: "Very active", bundle: .module, comment: "Activity level")
+        case .veryActive: String(localized: "Extremely active", bundle: .module, comment: "Activity level")
         }
     }
 
     public var explanation: String {
         switch self {
-        case .sedentary: "Desk job, little or no exercise"
-        case .light: "Light exercise 1–3 days a week"
-        case .moderate: "Moderate exercise 3–5 days a week"
-        case .active: "Hard exercise 6–7 days a week"
-        case .veryActive: "Physical job plus hard training"
+        case .sedentary: String(localized: "Desk job, little or no exercise", bundle: .module)
+        case .light: String(localized: "Light exercise 1–3 days a week", bundle: .module)
+        case .moderate: String(localized: "Moderate exercise 3–5 days a week", bundle: .module)
+        case .active: String(localized: "Hard exercise 6–7 days a week", bundle: .module)
+        case .veryActive: String(localized: "Physical job plus hard training", bundle: .module)
         }
     }
 }

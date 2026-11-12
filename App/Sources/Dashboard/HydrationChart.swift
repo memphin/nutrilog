@@ -131,18 +131,20 @@ struct HydrationChart: View {
 
     /// "1,200 ml of 2,400 so far, the pace line is at 1,400 now."
     private static func accessibilityValue(_ day: HydrationDay) -> String {
-        func number(_ value: Double) -> String {
-            value.formatted(.number.precision(.fractionLength(0)))
+        /// Whole millilitres as integers, so the catalog can pick the plural form.
+        func whole(_ value: Double) -> Int {
+            Int(value.rounded(.toNearestOrEven))
         }
-        let timed = day.steps.last?.totalMl ?? 0
-        var text = "\(number(timed)) of \(number(day.goalMl)) millilitres with a time so far"
-        if let pace = day.pace(at: day.now) {
-            text += ", the pace line is at \(number(pace)) now"
+        let timed = whole(day.steps.last?.totalMl ?? 0)
+        let goal = whole(day.goalMl)
+        var parts = [String(localized: "\(timed) of \(goal) millilitres with a time so far")]
+        if let pace = day.pace(at: day.now).map(whole) {
+            parts.append(String(localized: "the pace line is at \(pace) now"))
         }
         if !day.gaps.isEmpty {
-            text += ", \(HydrationStrip.accessibilityLabel(day))"
+            parts.append(HydrationStrip.accessibilityLabel(day))
         }
-        return text + "."
+        return parts.joined(separator: ", ") + "."
     }
 }
 

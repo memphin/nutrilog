@@ -25,6 +25,8 @@ struct IntentActions {
 
     let environment: AppEnvironment
     var calendar: Calendar = .current
+    /// Formats the numbers of the replies (tests pin it).
+    var locale: Locale = .current
 
     /// The meal slot for the current time of day (the same suggestion the app uses).
     func currentSlot() throws -> MealSlot {
@@ -57,7 +59,8 @@ struct IntentActions {
         let entry = try diary.log(food: detail.food, quantity: quantity, servingID: servingID, slotID: slot.id, day: environment.today)
         await finishWrite()
         let amountText = Format.amount(grams: entry.grams, unit: detail.food.baseUnit, servingLabel: entry.servingLabel)
-        return "Logged \(detail.food.name), \(amountText), \(environment.energyUnit.format(entry.kcal)), to \(slot.name)."
+        let energyText = environment.energyUnit.format(entry.kcal)
+        return String(localized: "Logged \(detail.food.name), \(amountText), \(energyText), to \(slot.displayName).")
     }
 
     /// Quick-adds `kcal` (no macros) to the current meal.
@@ -73,7 +76,8 @@ struct IntentActions {
             day: environment.today,
         )
         await finishWrite()
-        return try "Added \(Int(kcal.rounded())) kcal to \(slot.name). \(remainingSentence())"
+        let remaining = try remainingSentence()
+        return String(localized: "Added \(Int(kcal.rounded())) kcal to \(slot.displayName). \(remaining)")
     }
 
     /// Logs plain water (ml) for today; the reply gives today's hydration (every drink) against the hydration goal.
@@ -89,7 +93,8 @@ struct IntentActions {
             throw Failure.databaseUnavailable
         }
         let total = Int(progress.totalMl.rounded()), goal = Int(progress.goalMl.rounded())
-        return "Logged \(Int(ml.rounded())) ml of water. \(total) of \(goal) ml today."
+        // Integers through the catalog: grouped for the user's locale ("2,500"; "2.500" in Croatian).
+        return String(localized: "Logged \(Int(ml.rounded())) ml of water. \(total) of \(goal) ml today.", locale: locale)
     }
 
     /// Today's remaining energy against the target; `remainingKcal` is nil without a target.
@@ -106,11 +111,12 @@ struct IntentActions {
         let unit = environment.energyUnit
         let status = try remaining()
         guard let left = status.remainingKcal else {
-            return "You've had \(unit.format(status.consumedKcal)) today. Set a calorie target in Vitalion to see what's left."
+            let consumed = unit.format(status.consumedKcal)
+            return String(localized: "You've had \(consumed) today. Set a calorie target in Vitalion to see what's left.")
         }
         return left >= 0
-            ? "You have \(unit.format(left)) left today."
-            : "You are \(unit.format(-left)) over your target today."
+            ? String(localized: "You have \(unit.format(left)) left today.")
+            : String(localized: "You are \(unit.format(-left)) over your target today.")
     }
 
     /// Favorites for the Shortcuts food picker.

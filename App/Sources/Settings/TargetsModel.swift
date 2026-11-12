@@ -201,40 +201,45 @@ final class TargetsModel {
         // Non-empty text that doesn't parse ("1e30", 25 digits, "inf": `Format.number` rejects those) gets the range
         // message, like a number that parses but is out of range; only an empty field asks for a value.
         if !Self.isBlank(heightCm), !Self.inRange(heightCm, Self.heightRange) {
-            errors.append("Enter a height between 50 and 300 cm.")
+            errors.append(String(localized: "Enter a height between 50 and 300 cm."))
         }
         if effectiveKcal == nil {
             if overrideKcal {
+                let lowest = Self.kcalRange.lowerBound.formatted(), highest = Self.kcalRange.upperBound.formatted()
                 errors.append(Self.isBlank(manualKcal)
-                    ? "Enter a calorie target."
-                    : "Enter a daily target between 500 and 20,000 kcal.")
+                    ? String(localized: "Enter a calorie target.")
+                    : String(localized: "Enter a daily target between \(lowest) and \(highest) kcal."))
             } else if suggestedKcal != nil {
-                errors.append("The suggested target is above 20,000 kcal. Check your height, or set calories manually.")
+                let highest = Self.kcalRange.upperBound.formatted()
+                errors.append(String(localized: """
+                The suggested target is above \(highest) kcal. Check your height, or set calories manually.
+                """))
             } else {
                 errors.append(weightKg == nil
-                    ? "Add a weight (Today → Weight) and fill in height, birth date and sex — or set calories manually."
-                    : "Fill in height, birth date and sex — or set calories manually.")
+                    ? String(localized: "Add a weight (Today → Weight) and fill in height, birth date and sex — or set calories manually.")
+                    : String(localized: "Fill in height, birth date and sex — or set calories manually."))
             }
         }
         switch macroInput {
         case .percent:
             let filled = [proteinPct, carbsPct, fatPct].filter { !Self.isBlank($0) }
             if !filled.allSatisfy({ Self.inRange($0, 0 ... 100) }) {
-                errors.append("Each macro percentage must be between 0 and 100.")
+                errors.append(String(localized: "Each macro percentage must be between 0 and 100."))
             } else if split?.isValid != true {
-                errors.append("Macro percentages must add up to 100 % (now \(DisplayRounding.whole(percentSum)) %).")
+                errors.append(String(localized: "Macro percentages must add up to 100 % (now \(DisplayRounding.whole(percentSum)) %)."))
             }
         case .grams:
             let fields = [proteinG, carbsG, fatG]
             if fields.contains(where: Self.isBlank) {
-                errors.append("Enter protein, carbs and fat in grams.")
+                errors.append(String(localized: "Enter protein, carbs and fat in grams."))
             } else if !fields.allSatisfy({ Self.inRange($0, Self.gramRange) }) {
-                errors.append("Protein, carbs and fat must each be between 0 and 2,000 g.")
+                let highest = Self.gramRange.upperBound.formatted()
+                errors.append(String(localized: "Protein, carbs and fat must each be between 0 and \(highest) g."))
             }
         }
         // Fiber is optional and ≤ 0 means none; text that doesn't parse would otherwise be dropped silently.
         if fiberG != loadedFiber, !Self.isBlank(fiberG), Format.number(fiberG).map({ $0 > Self.gramRange.upperBound }) ?? true {
-            errors.append("Fiber must be a number up to 2,000 g.")
+            errors.append(String(localized: "Fiber must be a number up to \(Self.gramRange.upperBound.formatted()) g."))
         }
         return errors
     }

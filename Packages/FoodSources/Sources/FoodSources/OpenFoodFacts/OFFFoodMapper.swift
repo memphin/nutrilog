@@ -39,9 +39,11 @@ public enum OFFFoodMapper {
             && (per100.isEmpty || perServing.missing.count < per100.missing.count)
         let values = useServing ? perServing : per100
 
+        // Without the source's text, the label is ours: display text, so the number follows the user's locale.
         let serving = servingAmount.map { amount in
             ServingSize(
-                label: servingDescription ?? "\(NumberFormatting.compact(amount)) \(BaseUnit(isLiquid: isLiquid).symbol)",
+                label: servingDescription
+                    ?? "\(NumberFormatting.compact(amount, locale: .current)) \(BaseUnit(isLiquid: isLiquid).symbol)",
                 amount: amount,
             )
         }

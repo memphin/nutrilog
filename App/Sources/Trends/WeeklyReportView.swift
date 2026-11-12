@@ -107,12 +107,13 @@ struct WeeklyReportView: View {
         }
     }
 
-    /// "2 – 8 Nov 2026".
+    /// "2 – 8 Nov 2026" ("2. – 8. stu 2026." in Croatian).
     static func title(_ week: LocalDay) -> String {
         let end = week.adding(days: 6)
         let last = end.startDate().formatted(.dateTime.day().month(.abbreviated).year())
+        // The day alone still in the locale's style (Croatian writes "2.").
         let first = week.month == end.month
-            ? "\(week.day)"
+            ? week.startDate().formatted(.dateTime.day())
             : week.startDate().formatted(.dateTime.day().month(.abbreviated))
         return "\(first) – \(last)"
     }
@@ -166,9 +167,16 @@ struct WeeklyReportCard: View {
             }
             section("Intake") {
                 if let intake = report.averageIntake {
-                    row("Average", unit.format(intake.kcal), detail: report.averageTargetKcal.map { "target \(unit.format($0))" })
+                    row(
+                        "Average",
+                        unit.format(intake.kcal),
+                        detail: report.averageTargetKcal.map { String(localized: "target \(unit.format($0))") },
+                    )
                     row("Protein · Carbs · Fat", "\(grams(intake.proteinG)) · \(grams(intake.carbsG)) · \(grams(intake.fatG))")
-                    row("Days logged", "\(report.loggedDays) of \(report.days.count)")
+                    row(
+                        "Days logged",
+                        String(localized: "\(report.loggedDays) of \(report.days.count)", comment: "Days logged out of the week's days"),
+                    )
                 } else {
                     Text("Nothing logged this week.").foregroundStyle(.secondary)
                 }
@@ -188,13 +196,17 @@ struct WeeklyReportCard: View {
                 if let expenditure = report.expenditureKcal {
                     row("Estimated expenditure", unit.format(expenditure))
                     if let balance = report.balanceKcal {
-                        row(balance < 0 ? "Average deficit" : "Average surplus", unit.format(abs(balance)), detail: "per day")
+                        row(
+                            balance < 0 ? "Average deficit" : "Average surplus",
+                            unit.format(abs(balance)),
+                            detail: String(localized: "per day"),
+                        )
                     }
                 } else {
                     Text("No expenditure estimate yet.").foregroundStyle(.secondary)
                 }
                 if let change = report.trendChangeKg, let end = report.trendEndKg {
-                    row("Weight trend", DashboardFormat.kgChange(change), detail: "now \(DashboardFormat.kg(end))")
+                    row("Weight trend", DashboardFormat.kgChange(change), detail: String(localized: "now \(DashboardFormat.kg(end))"))
                 } else {
                     row("Weight trend", "—")
                 }
@@ -202,13 +214,13 @@ struct WeeklyReportCard: View {
             if report.averageSteps != nil || report.averageSleepMin != nil || report.averageWaterMl != nil {
                 section("Activity & recovery") {
                     if let steps = report.averageSteps {
-                        row("Steps", "\(steps.formatted(.number.precision(.fractionLength(0))))", detail: "per day")
+                        row("Steps", steps.formatted(.number.precision(.fractionLength(0))), detail: String(localized: "per day"))
                     }
                     if let sleep = report.averageSleepMin {
-                        row("Sleep", DashboardFormat.duration(DisplayRounding.whole(sleep)), detail: "per night")
+                        row("Sleep", DashboardFormat.duration(DisplayRounding.whole(sleep)), detail: String(localized: "per night"))
                     }
                     if let water = report.averageWaterMl {
-                        row("Hydration", DashboardFormat.ml(water), detail: "per day")
+                        row("Hydration", DashboardFormat.ml(water), detail: String(localized: "per day"))
                     }
                 }
             }
@@ -231,7 +243,7 @@ struct WeeklyReportCard: View {
         .accessibilityLabel("Days on target: \(report.days.count(where: { $0.adherence == .onTarget })) of \(report.days.count)")
     }
 
-    private func section(_ title: String, @ViewBuilder content: () -> some View) -> some View {
+    private func section(_ title: LocalizedStringKey, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: NL.Spacing.s) {
             Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
                 .accessibilityAddTraits(.isHeader)
@@ -242,7 +254,7 @@ struct WeeklyReportCard: View {
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: NL.Radius.m))
     }
 
-    private func row(_ title: String, _ value: String, detail: String? = nil) -> some View {
+    private func row(_ title: LocalizedStringKey, _ value: String, detail: String? = nil) -> some View {
         HStack(alignment: .firstTextBaseline) {
             Text(title)
             Spacer()
@@ -266,6 +278,9 @@ struct WeeklyReportCard: View {
 
     private func difference(_ day: WeeklyReport.RankedDay) -> String {
         let value = unit.format(abs(day.difference))
-        return abs(day.difference) < 0.5 ? "on target" : "\(value) \(day.difference < 0 ? "under" : "over")"
+        if abs(day.difference) < 0.5 {
+            return String(localized: "on target")
+        }
+        return day.difference < 0 ? String(localized: "\(value) under") : String(localized: "\(value) over")
     }
 }

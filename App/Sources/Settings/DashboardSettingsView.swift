@@ -80,7 +80,7 @@ struct DashboardSettingsView: View {
             try updated.save(to: profiles)
             layout = updated
         } catch {
-            errorMessage = "Couldn't save the dashboard layout: \(error.localizedDescription)"
+            errorMessage = String(localized: "Couldn't save the dashboard layout: \(error.localizedDescription)")
         }
     }
 }

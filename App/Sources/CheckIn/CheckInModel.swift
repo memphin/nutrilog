@@ -62,7 +62,7 @@ final class CheckInModel {
     @discardableResult
     func applyEdited(kcal: Double) -> Bool {
         guard kcal.isFinite, kcal >= 500, kcal <= 10000 else {
-            errorMessage = "Enter a daily target between 500 and 10,000 kcal."
+            errorMessage = String(localized: "Enter a daily target between 500 and 10,000 kcal.")
             return false
         }
         return record(.edited, kcal: kcal.rounded())
@@ -114,7 +114,7 @@ final class CheckInModel {
             reload()
             return true
         } catch {
-            errorMessage = "Couldn't save the check-in: \(error.localizedDescription)"
+            errorMessage = String(localized: "Couldn't save the check-in: \(error.localizedDescription)")
             return false
         }
     }
@@ -135,71 +135,98 @@ final class CheckInModel {
     ) -> [CheckInFact] {
         var facts = [
             CheckInFact(
-                kind: .weeklyChange, title: "Weight trend", value: "\(DashboardFormat.kgChange(estimate.weeklyChangeKg)) / week",
+                kind: .weeklyChange, title: String(localized: "Weight trend"),
+                value: String(localized: "\(DashboardFormat.kgChange(estimate.weeklyChangeKg)) / week"),
                 explanation: trendExplanation(estimate),
             ),
             CheckInFact(
-                kind: .goal, title: "Goal",
-                value: goalChangeKgPerWeek == 0 ? "Maintain" : "\(goalRate(goalChangeKgPerWeek)) / week",
+                kind: .goal, title: String(localized: "Goal"),
+                value: goalChangeKgPerWeek == 0
+                    ? String(localized: "Maintain") : String(localized: "\(goalRate(goalChangeKgPerWeek)) / week"),
                 explanation: goalExplanation(goalChangeKgPerWeek, unit: unit),
             ),
             CheckInFact(
-                kind: .intake, title: "Average intake", value: unit.format(estimate.meanIntakeKcal),
-                explanation: "The mean of your diary totals on the \(estimate.loggedDays) logged days of the last "
-                    + "\(estimate.windowDays). A day counts as logged with at least \(AdaptiveTDEE.minimumEntries) entries or when you "
-                    + "marked it as fully logged; other days are left out rather than counted as zero."
-                    + partialDaysSentence(estimate),
+                kind: .intake, title: String(localized: "Average intake"), value: unit.format(estimate.meanIntakeKcal),
+                explanation: intakeExplanation(estimate),
             ),
             CheckInFact(
-                kind: .estimate, title: "Estimated maintenance", value: unit.format(estimate.kcal),
+                kind: .estimate, title: String(localized: "Estimated maintenance"), value: unit.format(estimate.kcal),
                 explanation: estimateExplanation(estimate, unit: unit),
             ),
             CheckInFact(
                 kind: .confidence,
-                title: "Confidence",
+                title: String(localized: "Confidence"),
                 value: estimate.confidence.title,
                 explanation: confidenceExplanation(estimate),
             ),
         ]
         if let baseline = estimate.baselineKcal {
             facts.append(CheckInFact(
-                kind: .baseline, title: "Baseline", value: unit.format(baseline),
-                explanation: "Your average total energy burned (active + resting) in Apple Health over the last "
-                    + "\(Energy.measuredWindowDays) days or, with less than \(Energy.measuredMinimumDays) days of it, the "
-                    + "Mifflin-St Jeor formula for your height, weight, age and sex times your activity level. The estimate "
-                    + "replaces this with your intake and weight trend; until confidence is high it is kept within 25 % of it.",
+                kind: .baseline, title: String(localized: "Baseline"), value: unit.format(baseline),
+                explanation: baselineExplanation,
             ))
         }
         if let currentTargetKcal {
             facts.append(CheckInFact(
-                kind: .currentTarget, title: "Current target", value: unit.format(currentTargetKcal),
-                explanation: "The daily calorie target in effect today.",
+                kind: .currentTarget, title: String(localized: "Current target"), value: unit.format(currentTargetKcal),
+                explanation: String(localized: "The daily calorie target in effect today."),
             ))
         }
         if let proposal {
             facts.append(CheckInFact(
-                kind: .proposal, title: "Proposed target", value: unit.format(proposal.kcal),
+                kind: .proposal, title: String(localized: "Proposed target"), value: unit.format(proposal.kcal),
                 explanation: proposalExplanation(proposal, estimate: estimate, goalChangeKgPerWeek: goalChangeKgPerWeek, unit: unit),
             ))
         }
         return facts
     }
 
+    static func intakeExplanation(_ estimate: TDEEEstimate) -> String {
+        String(localized: """
+        The mean of your diary totals on the \(estimate.loggedDays) logged days of the last \(estimate.windowDays). \
+        A day counts as logged with at least \(AdaptiveTDEE.minimumEntries) entries or when you marked it as fully \
+        logged; other days are left out rather than counted as zero.
+        """) + partialDaysSentence(estimate)
+    }
+
+    static var baselineExplanation: String {
+        String(localized: """
+        Your average total energy burned (active + resting) in Apple Health over the last \
+        \(Energy.measuredWindowDays) days or, with less than \(Energy.measuredMinimumDays) days of it, the \
+        Mifflin-St Jeor formula for your height, weight, age and sex times your activity level. The estimate \
+        replaces this with your intake and weight trend; until confidence is high it is kept within 25 % of it.
+        """)
+    }
+
+    /// Each method gets its own whole sentence, so a translation can reorder it freely.
     static func trendExplanation(_ estimate: TDEEEstimate) -> String {
-        let measured: String = switch estimate.resolvedWeightMethod {
-        case .trend: "Your weight trend went"
-        case .weighInLine: "A straight line through your weigh-ins goes"
+        let startKg = kg2(estimate.trendStartKg), startDay = date(estimate.trendStartDay)
+        let endKg = kg2(estimate.trendEndKg), endDay = date(estimate.day)
+        let change = DashboardFormat.kgChange(estimate.trendChangeKg), days = estimate.trendSpanDays
+        let weekly = DashboardFormat.kgChange(estimate.weeklyChangeKg)
+        let measured = switch estimate.resolvedWeightMethod {
+        case .trend:
+            String(localized: """
+            Your weight trend went from \(startKg) on \(startDay) to \(endKg) on \(endDay): \(change) in \(days) days, \
+            which is \(weekly) per week.
+            """)
+        case .weighInLine:
+            String(localized: """
+            A straight line through your weigh-ins goes from \(startKg) on \(startDay) to \(endKg) on \(endDay): \
+            \(change) in \(days) days, which is \(weekly) per week.
+            """)
         }
-        var text = "\(measured) from \(kg2(estimate.trendStartKg)) on \(date(estimate.trendStartDay)) to "
-            + "\(kg2(estimate.trendEndKg)) on \(date(estimate.day)): \(DashboardFormat.kgChange(estimate.trendChangeKg)) in "
-            + "\(estimate.trendSpanDays) days, which is \(DashboardFormat.kgChange(estimate.weeklyChangeKg)) per week.\n\n"
-            + "The trend is a smoothed average of your weigh-ins (each daily one moves it by 10 %, one after a gap more), "
-            + "so single heavy or light mornings barely show. Weigh-ins that jump more than 2.5 % from one day to the next "
-            + "count even less."
+        var text = measured + "\n\n" + String(localized: """
+        The trend is a smoothed average of your weigh-ins (each daily one moves it by 10 %, one after a gap more), so \
+        single heavy or light mornings barely show. Weigh-ins that jump more than 2.5 % from one day to the next count \
+        even less.
+        """)
         if estimate.resolvedWeightMethod == .weighInLine {
-            text += "\n\nA young trend still lags behind your weigh-ins, so until it is \(AdaptiveTDEE.matureTrendDays) days "
-                + "old with weigh-ins on at least \(AdaptiveTDEE.denseWeighIns) of the last \(AdaptiveTDEE.windowDays) days, "
-                + "the change is measured with the line instead."
+            text += "\n\n" + String(localized: """
+            A young trend still lags behind your weigh-ins, so until it is \(AdaptiveTDEE.matureTrendDays) days old with \
+            weigh-ins on at least \(AdaptiveTDEE.denseWeighIns) of the last \(AdaptiveTDEE.windowDays) days, the change is \
+            measured with the line instead.
+            """)
         }
         return text
     }
@@ -208,69 +235,101 @@ final class CheckInModel {
     static func partialDaysSentence(_ estimate: TDEEEstimate) -> String {
         let count = estimate.partialDaysLeftOut
         guard count > 0 else { return "" }
-        return " \(count) partly logged day\(count == 1 ? " was" : "s were") left out too: under half of your usual day "
-            + "and not marked as fully logged."
+        return " " + String(localized: """
+        \(count) partly logged days were left out too: under half of your usual day and not marked as fully logged.
+        """)
     }
 
     static func goalExplanation(_ goalChangeKgPerWeek: Double, unit: EnergyUnit) -> String {
         guard goalChangeKgPerWeek != 0 else {
-            return "Your goal is to keep your weight. Change it in Settings → Profile & targets."
+            return String(localized: "Your goal is to keep your weight. Change it in Settings → Profile & targets.")
         }
-        return "Your goal from Settings → Profile & targets. One kilogram of body weight is counted as 7,700 kcal, so "
-            + "this goal means eating \(unit.format(abs(goalChangeKgPerWeek) * Energy.kcalPerKg / 7)) "
-            + "\(goalChangeKgPerWeek < 0 ? "less" : "more") than you burn every day."
+        let daily = unit.format(abs(goalChangeKgPerWeek) * Energy.kcalPerKg / 7)
+        return goalChangeKgPerWeek < 0
+            ? String(localized: """
+            Your goal from Settings → Profile & targets. One kilogram of body weight is counted as 7,700 kcal, so this \
+            goal means eating \(daily) less than you burn every day.
+            """)
+            : String(localized: """
+            Your goal from Settings → Profile & targets. One kilogram of body weight is counted as 7,700 kcal, so this \
+            goal means eating \(daily) more than you burn every day.
+            """)
     }
 
     static func estimateExplanation(_ estimate: TDEEEstimate, unit: EnergyUnit) -> String {
         let balance = estimate.dailyBalanceKcal
-        var text = "Maintenance = average intake − energy stored per day.\n\n"
-            + "You ate \(unit.format(estimate.meanIntakeKcal)) a day.\(partialDaysSentence(estimate)) "
-            + "\(estimate.resolvedWeightMethod.explanation) "
-            + "Your weight changed by "
-            + "\(DashboardFormat.kgChange(estimate.trendChangeKg)) in \(estimate.trendSpanDays) days; at 7,700 kcal per kg that is "
-            + "\(unit.format(abs(balance))) a day \(balance < 0 ? "taken from your reserves" : "stored").\n\n"
-            + "\(unit.format(estimate.meanIntakeKcal)) \(balance < 0 ? "+" : "−") \(unit.format(abs(balance))) = \(unit.format(estimate.rawKcal))."
+        let change = DashboardFormat.kgChange(estimate.trendChangeKg), days = estimate.trendSpanDays
+        let perDay = unit.format(abs(balance))
+        let stored = balance < 0
+            ? String(localized: """
+            Your weight changed by \(change) in \(days) days; at 7,700 kcal per kg that is \(perDay) a day taken from your \
+            reserves.
+            """)
+            : String(localized: "Your weight changed by \(change) in \(days) days; at 7,700 kcal per kg that is \(perDay) a day stored.")
+        // The sum itself is plain arithmetic of formatted values: nothing to translate.
+        let sum = "\(unit.format(estimate.meanIntakeKcal)) \(balance < 0 ? "+" : "−") \(perDay) = \(unit.format(estimate.rawKcal))."
+        var text = String(localized: "Maintenance = average intake − energy stored per day.") + "\n\n"
+            + String(localized: "You ate \(unit.format(estimate.meanIntakeKcal)) a day.") + partialDaysSentence(estimate) + " "
+            + estimate.resolvedWeightMethod.explanation + " " + stored + "\n\n" + sum
         if let previous = estimate.previousKcal {
-            text += "\n\nTo avoid jumps it is blended with the previous check-in's estimate (\(unit.format(previous))): "
-                + "70 % new + 30 % old = \(unit.format(0.7 * estimate.rawKcal + 0.3 * previous))."
+            text += "\n\n" + String(localized: """
+            To avoid jumps it is blended with the previous check-in's estimate (\(unit.format(previous))): 70 % new + \
+            30 % old = \(unit.format(0.7 * estimate.rawKcal + 0.3 * previous)).
+            """)
         }
         if estimate.wasClamped, let baseline = estimate.baselineKcal {
-            text += "\n\nThat is more than 25 % away from the baseline (\(unit.format(baseline))), so until confidence is "
-                + "high it is limited to \(unit.format(estimate.kcal))."
+            text += "\n\n" + String(localized: """
+            That is more than 25 % away from the baseline (\(unit.format(baseline))), so until confidence is high it is \
+            limited to \(unit.format(estimate.kcal)).
+            """)
         }
         if estimate.underLoggingSuspected {
-            text += "\n\nThis is unusually low for your body. The most common reason is food that wasn't logged."
+            text += "\n\n" + String(localized: "This is unusually low for your body. The most common reason is food that wasn't logged.")
         }
         return text
     }
 
     static func confidenceExplanation(_ estimate: TDEEEstimate) -> String {
-        "\(estimate.loggedDays) of the last \(estimate.windowDays) days are logged and \(estimate.weighIns) have a weigh-in.\n\n"
-            + "High: at least \(AdaptiveTDEE.highConfidenceDays) days of history with 80 % of them logged, and a weight trend "
-            + "at least \(AdaptiveTDEE.matureTrendDays) days old with weigh-ins on at least \(AdaptiveTDEE.denseWeighIns) of "
-            + "the last \(AdaptiveTDEE.windowDays) days.\n"
-            + "Medium: at least \(AdaptiveTDEE.mediumLoggedDays) logged days and \(AdaptiveTDEE.mediumWeighIns) weigh-ins in the "
-            + "last \(AdaptiveTDEE.windowDays) days.\nLow: anything less — treat the number as a rough guide."
+        String(localized: """
+        \(estimate.loggedDays) of the last \(estimate.windowDays) days are logged and \(estimate.weighIns) have a weigh-in.
+        """)
+            + "\n\n" + String(localized: """
+            High: at least \(AdaptiveTDEE.highConfidenceDays) days of history with 80 % of them logged, and a weight trend \
+            at least \(AdaptiveTDEE.matureTrendDays) days old with weigh-ins on at least \(AdaptiveTDEE.denseWeighIns) of \
+            the last \(AdaptiveTDEE.windowDays) days.
+            """)
+            + "\n" + String(localized: """
+            Medium: at least \(AdaptiveTDEE.mediumLoggedDays) logged days and \(AdaptiveTDEE.mediumWeighIns) weigh-ins in \
+            the last \(AdaptiveTDEE.windowDays) days.
+            """)
+            + "\n" + String(localized: "Low: anything less — treat the number as a rough guide.")
     }
 
     static func proposalExplanation(
         _ proposal: TargetProposal, estimate: TDEEEstimate, goalChangeKgPerWeek: Double, unit: EnergyUnit,
     ) -> String {
         let delta = goalChangeKgPerWeek * Energy.kcalPerKg / 7
-        var text = "Estimated maintenance \(unit.format(estimate.kcal))"
-        if delta != 0 {
-            text += " \(delta < 0 ? "−" : "+") \(unit.format(abs(delta))) for your goal"
+        let maintenance = unit.format(estimate.kcal), computed = unit.format(proposal.computedKcal)
+        let sign = delta < 0 ? "−" : "+", forGoal = unit.format(abs(delta))
+        var text = if delta != 0 {
+            String(localized: """
+            Estimated maintenance \(maintenance) \(sign) \(forGoal) for your goal = \(computed) (rounded to 10 kcal).
+            """)
+        } else {
+            String(localized: "Estimated maintenance \(maintenance) = \(computed) (rounded to 10 kcal).")
         }
-        text += " = \(unit.format(proposal.computedKcal)) (rounded to 10 kcal)."
         switch proposal.note {
         case .fromEstimate:
             break
         case .keptBecauseUnderLogging:
-            text += "\n\nYour logged intake looks too low for your weight trend, so the app does not lower your target on "
-                + "this basis and proposes keeping \(unit.format(proposal.kcal)). If your logging really is complete, use "
-                + "“Set my own” to lower it."
+            text += "\n\n" + String(localized: """
+            Your logged intake looks too low for your weight trend, so the app does not lower your target on this basis \
+            and proposes keeping \(unit.format(proposal.kcal)). If your logging really is complete, use “Set my own” to \
+            lower it.
+            """)
         case .raisedToFloor:
-            text += "\n\nThat is below \(unit.format(AdaptiveTDEE.minimumTargetKcal)), the lowest target the app proposes."
+            let floor = unit.format(AdaptiveTDEE.minimumTargetKcal)
+            text += "\n\n" + String(localized: "That is below \(floor), the lowest target the app proposes.")
         }
         return text
     }

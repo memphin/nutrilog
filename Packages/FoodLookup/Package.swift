@@ -5,6 +5,7 @@ import PackageDescription
 /// and saving local copies of online foods. A package of its own so Persistence and FoodSources stay independent.
 let package = Package(
     name: "FoodLookup",
+    defaultLocalization: "en",
     platforms: [.iOS(.v26), .macOS(.v15)], // macOS target lets `swift test` run on CI without a simulator
     products: [
         .library(name: "FoodLookup", targets: ["FoodLookup"]),
@@ -22,6 +23,7 @@ let package = Package(
                 .product(name: "Persistence", package: "Persistence"),
                 .product(name: "FoodSources", package: "FoodSources"),
             ],
+            resources: [.process("Localizable.xcstrings")],
             swiftSettings: [.swiftLanguageMode(.v6)],
         ),
         .testTarget(

@@ -119,7 +119,7 @@ struct WeightWritePermissionTests {
         #expect(await env.shouldOfferBodyFatWriting() == false)
     }
 
-    @Test func `today's manual weigh-in is the one entered last`() async throws {
+    @Test func `today's manual weigh-in is the one entered last`() async {
         let model = DashboardModel(environment: env)
         let task = Task { await model.observe() }
         defer { task.cancel() }
@@ -142,22 +142,29 @@ struct DashboardAccessibilityTests {
             let day = today.adding(days: -offset)
             data.metrics.append(DailyMetricsRecord(DailyHealthMetrics(day: day, weightKg: 80 + Double(offset) / 10), fetchedAt: Date()))
         }
-        let label = DashboardSnapshot(data).accessibilityLabel(of: .weight, state: .ready)
+        let label = DashboardSnapshot(data).accessibilityLabel(of: .weight, state: .ready, locale: .dashboardEnglish)
         // Like the tile: the weight only (#73).
         #expect(label == "Weight, 80.0 kilograms, below the weekly average")
     }
 
     @Test func `tiles without data say no data and why`() {
         let snapshot = DashboardSnapshot(DashboardData(today: today))
-        #expect(snapshot.accessibilityLabel(of: .steps, state: .noData(HealthKitClient.noDataMessage))
+        #expect(snapshot.accessibilityLabel(of: .steps, state: .noData(HealthKitClient.noDataMessage), locale: .dashboardEnglish)
             == "Steps, no data. No data found — check Health permissions")
-        #expect(snapshot.accessibilityLabel(of: .sleep, state: .needsAccess) == "Sleep, no data. \(TileState.needsAccessMessage)")
+        #expect(snapshot
+            .accessibilityLabel(of: .sleep, state: .needsAccess, locale: .dashboardEnglish) ==
+            "Sleep, no data. \(TileState.needsAccessMessage)")
         // At 08:00, an hour after the 07:00 wake-up, nothing drunk is still on pace.
-        #expect(snapshot.accessibilityLabel(of: .water, state: .ready, now: today.date(atHour: 8))
+        #expect(snapshot.accessibilityLabel(of: .water, state: .ready, now: today.date(atHour: 8), locale: .dashboardEnglish)
             == "Hydration, 0 of 2,500 millilitres, on pace")
-        #expect(snapshot.accessibilityLabel(of: .energy, state: .ready).hasPrefix("Calories, 0 calories eaten"))
+        #expect(snapshot.accessibilityLabel(of: .energy, state: .ready, locale: .dashboardEnglish).hasPrefix("Calories, 0 calories eaten"))
         #expect(DashboardSnapshot.spokenDuration(425) == "7 hours 5 minutes")
         #expect(DashboardSnapshot.spokenDuration(60) == "1 hour")
         #expect(DashboardSnapshot.spokenDuration(45) == "45 minutes")
     }
+}
+
+extension Locale {
+    /// The spoken tile labels group numbers for the locale; the expectations are written in US English.
+    static let dashboardEnglish = Locale(identifier: "en_US")
 }

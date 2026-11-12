@@ -195,6 +195,7 @@ private struct DayCell: View {
     private var label: String {
         let date = day.day.startDate().formatted(.dateTime.weekday(.wide).day().month(.wide))
         guard let kcal = day.kcal else { return "\(date), \(day.adherence.title)" }
-        return "\(date), \(unit.format(kcal)), \(isToday && day.adherence == .notLogged ? "in progress" : day.adherence.title)"
+        let state = isToday && day.adherence == .notLogged ? String(localized: "in progress") : day.adherence.title
+        return "\(date), \(unit.format(kcal)), \(state)"
     }
 }

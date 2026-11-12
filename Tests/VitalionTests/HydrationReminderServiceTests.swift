@@ -99,7 +99,8 @@ struct HydrationReminderServiceTests {
             scheduler: scheduler ?? self.scheduler,
             clock: clock.appClock,
             calendar: calendar,
-            locale: Locale(identifier: "en_US"),
+            // English with 24-hour times, so the copy reads "No drink since 11:00 · 2,000 of 2,500 ml".
+            locale: Locale(identifier: "en_GB"),
             defaults: defaults,
         )
     }
@@ -312,6 +313,20 @@ struct HydrationReminderServiceTests {
         #expect(NotificationDelegate.action(identifier: "weekly-check-in", actionIdentifier: add) == nil)
         #expect(NotificationDelegate.presentationOptions(identifier: reminder) == [.banner, .sound])
         #expect(NotificationDelegate.presentationOptions(identifier: "weekly-check-in") == [])
+    }
+
+    @Test func `the reminder's time and amounts follow the locale`() {
+        let since = at(13)
+        let us = HydrationReminderCopy.body(
+            .gap(since: since), totalMl: 1320, goalMl: 2400, calendar: calendar, locale: Locale(identifier: "en_US"),
+        )
+        #expect(us.hasPrefix("No drink since 01:00"))
+        #expect(us.hasSuffix("PM · 1,320 of 2,400 ml"))
+        let croatian = HydrationReminderCopy.body(
+            .gap(since: since), totalMl: 1320, goalMl: 2400, calendar: calendar, locale: Locale(identifier: "hr_HR"),
+        )
+        #expect(croatian.contains("13:00"))
+        #expect(croatian.contains("1.320"))
     }
 
     @Test func `tapping the reminder opens the Hydration detail on Today`() {

@@ -29,11 +29,11 @@ public enum Adherence: String, Sendable, CaseIterable {
 
     public var title: String {
         switch self {
-        case .onTarget: "On target (within 5%)"
-        case .near: "Close (within 15%)"
-        case .off: "Off target"
-        case .noTarget: "Logged, no target"
-        case .notLogged: "Not logged"
+        case .onTarget: String(localized: "On target (within 5%)", bundle: .module)
+        case .near: String(localized: "Close (within 15%)", bundle: .module)
+        case .off: String(localized: "Off target", bundle: .module)
+        case .noTarget: String(localized: "Logged, no target", bundle: .module)
+        case .notLogged: String(localized: "Not logged", bundle: .module)
         }
     }
 }

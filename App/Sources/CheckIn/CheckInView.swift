@@ -51,12 +51,15 @@ private struct CheckInContent: View {
                     estimateSections(estimate, snapshot: snapshot)
                 case let .failure(reason):
                     Section {
-                        EmptyStateView("Not enough data yet", systemImage: "chart.line.uptrend.xyaxis", message: reason.explanation)
-                    } footer: {
-                        Text(
-                            "The estimate compares what you ate with how your weight trend moved over the last "
-                                + "\(AdaptiveTDEE.windowDays) days. Log your food and weigh in most days and it appears by itself.",
+                        EmptyStateView(
+                            String(localized: "Not enough data yet"), systemImage: "chart.line.uptrend.xyaxis",
+                            message: reason.explanation,
                         )
+                    } footer: {
+                        Text("""
+                        The estimate compares what you ate with how your weight trend moved over the last \
+                        \(AdaptiveTDEE.windowDays) days. Log your food and weigh in most days and it appears by itself.
+                        """)
                     }
                 }
             }
@@ -104,10 +107,10 @@ private struct CheckInContent: View {
         if estimate.underLoggingSuspected {
             Section {
                 Label {
-                    Text(
-                        "Your logged intake looks low for how your weight moved. If some meals weren't logged, the estimate "
-                            + "is too low — your target is not lowered because of it.",
-                    )
+                    Text("""
+                    Your logged intake looks low for how your weight moved. If some meals weren't logged, the estimate \
+                    is too low — your target is not lowered because of it.
+                    """)
                 } icon: {
                     Image(systemName: "exclamationmark.triangle").foregroundStyle(.orange)
                 }
@@ -148,9 +151,9 @@ private struct CheckInContent: View {
 
     private func acceptTitle(_ proposal: TargetProposal, snapshot: ExpenditureSnapshot) -> String {
         if let current = snapshot.currentTarget?.kcal, abs(current - proposal.kcal) < 0.5 {
-            return "Keep \(model.unit.format(proposal.kcal))"
+            return String(localized: "Keep \(model.unit.format(proposal.kcal))")
         }
-        return "Use \(model.unit.format(proposal.kcal))"
+        return String(localized: "Use \(model.unit.format(proposal.kcal))")
     }
 }
 
@@ -223,11 +226,11 @@ struct EstimateDaysView: View {
             } header: {
                 Text("Days used (\(estimate.loggedDays) of \(estimate.windowDays))")
             } footer: {
-                Text(
-                    "Days with fewer than \(AdaptiveTDEE.minimumEntries) entries are left out unless you mark them as fully "
-                        + "logged in the diary, and so are partly logged days: under half of your usual day and not marked "
-                        + "as fully logged.",
-                )
+                Text("""
+                Days with fewer than \(AdaptiveTDEE.minimumEntries) entries are left out unless you mark them as fully \
+                logged in the diary, and so are partly logged days: under half of your usual day and not marked \
+                as fully logged.
+                """)
             }
         }
         .navigationTitle("How it was computed")
@@ -240,24 +243,25 @@ struct EstimateDaysView: View {
     /// The day's energy when it went into the mean, else why not.
     private func value(_ day: TDEEDay) -> String {
         if estimate.isPartial(day.day) {
-            return "\(unit.format(day.kcalIn)) · left out"
+            return String(localized: "\(unit.format(day.kcalIn)) · left out")
         }
-        return day.isLogged ? unit.format(day.kcalIn) : "not used"
+        return day.isLogged ? unit.format(day.kcalIn) : String(localized: "not used")
     }
 
     private func detail(_ day: TDEEDay) -> String {
         var parts: [String] = []
         if estimate.isPartial(day.day) {
-            parts.append("partly logged")
+            parts.append(String(localized: "partly logged"))
         }
         if day.isComplete {
-            parts.append("marked fully logged")
+            parts.append(String(localized: "marked fully logged"))
         } else {
-            parts.append("\(day.entryCount) \(day.entryCount == 1 ? "entry" : "entries")")
+            parts.append(String(localized: "\(day.entryCount) entries"))
         }
-        parts.append(day.weightKg.map { "weighed \(DashboardFormat.kg($0))" } ?? "no weigh-in")
+        parts.append(day.weightKg.map { String(localized: "weighed \(DashboardFormat.kg($0))") } ?? String(localized: "no weigh-in"))
         if let trend = day.trendKg {
-            parts.append("trend \(trend.formatted(.number.precision(.fractionLength(2)))) kg")
+            let kg = "\(trend.formatted(.number.precision(.fractionLength(2)))) kg"
+            parts.append(String(localized: "trend \(kg)", comment: "The weight trend of one day, e.g. \"trend 72.35 kg\"."))
         }
         return parts.joined(separator: " · ")
     }
@@ -275,8 +279,8 @@ struct CheckInHistoryView: View {
         List {
             if records.isEmpty {
                 EmptyStateView(
-                    "No check-ins yet", systemImage: "calendar.badge.clock",
-                    message: "Each weekly check-in is kept here with its estimate and your decision.",
+                    String(localized: "No check-ins yet"), systemImage: "calendar.badge.clock",
+                    message: String(localized: "Each weekly check-in is kept here with its estimate and your decision."),
                 )
                 .listRowBackground(Color.clear)
             }
@@ -306,10 +310,12 @@ struct CheckInHistoryView: View {
     /// "Medium confidence · accepted 2,150 kcal".
     static func summary(_ record: CheckInRecord, unit: EnergyUnit) -> String {
         let decision: String = switch record.decision {
-        case .accepted: record.appliedTargetKcal.map { "accepted \(unit.format($0))" } ?? "accepted"
-        case .edited: record.appliedTargetKcal.map { "set own target \(unit.format($0))" } ?? "set own target"
-        case .skipped: "skipped"
-        case nil: "no decision"
+        case .accepted:
+            record.appliedTargetKcal.map { String(localized: "accepted \(unit.format($0))") } ?? String(localized: "accepted")
+        case .edited:
+            record.appliedTargetKcal.map { String(localized: "set own target \(unit.format($0))") } ?? String(localized: "set own target")
+        case .skipped: String(localized: "skipped", comment: "Check-in decision: the week's target proposal was skipped.")
+        case nil: String(localized: "no decision")
         }
         return "\(record.confidence.title) · \(decision)"
     }
@@ -343,7 +349,7 @@ struct CheckInRecordView: View {
                 Section {
                     LabeledContent("Estimated maintenance", value: unit.format(record.tdeeKcal))
                     LabeledContent("Average intake", value: unit.format(record.meanIntakeKcal))
-                    LabeledContent("Logged days", value: "\(record.loggedDays) of \(record.windowDays)")
+                    LabeledContent("Logged days", value: String(localized: "\(record.loggedDays) of \(record.windowDays)"))
                 }
             }
         }
@@ -363,8 +369,10 @@ struct CheckInRecordView: View {
         )
         if let proposed = record.proposedTargetKcal {
             facts.append(CheckInFact(
-                kind: .proposal, title: "Proposed target", value: unit.format(proposed),
-                explanation: "The target the check-in proposed: estimated maintenance adjusted for your goal at the time.",
+                kind: .proposal, title: String(localized: "Proposed target"), value: unit.format(proposed),
+                explanation: String(
+                    localized: "The target the check-in proposed: estimated maintenance adjusted for your goal at the time.",
+                ),
             ))
         }
         return facts
@@ -412,9 +420,11 @@ struct CheckInSettingsView: View {
         } message: { Text(message ?? "") }
     }
 
-    /// Monday first, numbered as `Calendar.weekday` (1 = Sunday).
+    /// Monday first, numbered as `Calendar.weekday` (1 = Sunday). Names in the user's language.
     static let weekdays: [(number: Int, name: String)] = {
-        let names = Calendar(identifier: .gregorian).weekdaySymbols
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.locale = .current
+        let names = calendar.standaloneWeekdaySymbols
         return [2, 3, 4, 5, 6, 7, 1].map { ($0, names[$0 - 1]) }
     }()
 
@@ -437,7 +447,7 @@ struct CheckInSettingsView: View {
             }
             try profiles.setSetting(SettingKey.checkInReminderEnabled, reminderOn)
         } catch {
-            message = "Couldn't save: \(error.localizedDescription)"
+            message = String(localized: "Couldn't save: \(error.localizedDescription)")
             return
         }
         let reminder = environment.checkInReminder
@@ -449,13 +459,15 @@ struct CheckInSettingsView: View {
             }
             guard await reminder.requestAuthorization() else {
                 reminderOn = false
-                message = "Notifications are turned off for Vitalion. Allow them in the Settings app to get the reminder."
+                message = String(
+                    localized: "Notifications are turned off for Vitalion. Allow them in the Settings app to get the reminder.",
+                )
                 return
             }
             do {
                 try await reminder.schedule(weekday: weekday, hour: LocalNotificationCheckInReminder.defaultHour)
             } catch {
-                message = "Couldn't schedule the reminder: \(error.localizedDescription)"
+                message = String(localized: "Couldn't schedule the reminder: \(error.localizedDescription)")
             }
         }
     }

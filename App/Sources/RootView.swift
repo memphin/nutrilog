@@ -94,7 +94,7 @@ struct RootView: View {
                 tabs
             #endif
         case let .failed(message):
-            ErrorStateView("The database could not be opened.\n\(message)")
+            ErrorStateView(String(localized: "The database could not be opened.\n\(message)"))
         }
     }
 

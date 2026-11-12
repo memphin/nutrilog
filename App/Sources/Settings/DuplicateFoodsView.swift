@@ -14,8 +14,8 @@ struct DuplicateFoodsView: View {
         List {
             if groups.isEmpty {
                 EmptyStateView(
-                    "No duplicates found", systemImage: "checkmark.circle",
-                    message: "Foods with the same barcode, or the same name and brand, would show up here.",
+                    String(localized: "No duplicates found"), systemImage: "checkmark.circle",
+                    message: String(localized: "Foods with the same barcode, or the same name and brand, would show up here."),
                 )
                 .listRowBackground(Color.clear)
             }
@@ -58,15 +58,15 @@ struct DuplicateFoodsView: View {
 
     /// "Logged 12 times · 1 barcode · 2 servings".
     static func facts(_ detail: FoodDetail) -> String {
-        var parts = ["Logged \(detail.food.useCount) \(detail.food.useCount == 1 ? "time" : "times")"]
+        var parts = [String(localized: "Logged \(detail.food.useCount) times")]
         if !detail.barcodes.isEmpty {
-            parts.append("\(detail.barcodes.count) \(detail.barcodes.count == 1 ? "barcode" : "barcodes")")
+            parts.append(String(localized: "\(detail.barcodes.count) barcodes"))
         }
         if !detail.servings.isEmpty {
-            parts.append("\(detail.servings.count) \(detail.servings.count == 1 ? "serving" : "servings")")
+            parts.append(String(localized: "\(detail.servings.count) servings"))
         }
         if detail.food.dataQuality != .complete {
-            parts.append("incomplete nutrition")
+            parts.append(String(localized: "incomplete nutrition"))
         }
         return parts.joined(separator: " · ")
     }
@@ -92,7 +92,7 @@ struct DuplicateFoodsView: View {
         do {
             try foods.merge(keep: keepID, remove: group.map(\.food.id).filter { $0 != keepID })
         } catch {
-            message = "Couldn't merge: \(error.localizedDescription)"
+            message = String(localized: "Couldn't merge: \(error.localizedDescription)")
         }
         reload()
     }

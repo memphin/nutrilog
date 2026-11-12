@@ -95,7 +95,7 @@ final class HealthWriteService {
                 try setEnabled(newValue)
                 settingError = nil
             } catch {
-                settingError = "Couldn't save the setting: \(error.localizedDescription)"
+                settingError = String(localized: "Couldn't save the setting: \(error.localizedDescription)")
             }
         }
     }

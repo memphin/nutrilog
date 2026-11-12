@@ -24,7 +24,7 @@ struct OnlineFoodResult: Identifiable, Hashable {
 
     /// Name, else brand, else a generic label (OFF products sometimes have neither).
     var name: String {
-        draft.name ?? draft.brand ?? "Unnamed product"
+        draft.name ?? draft.brand ?? String(localized: "Unnamed product")
     }
 
     /// Brand shown under the name; `nil` when it already is the name.
@@ -319,20 +319,20 @@ final class OnlineSearchModel {
             switch error {
             case .offline: .offline
             case .rateLimited, .server: .busy
-            case .timedOut: .failed("Open Food Facts didn't answer in time.")
-            default: .failed("Open Food Facts search failed.")
+            case .timedOut: .failed(String(localized: "Open Food Facts didn't answer in time."))
+            default: .failed(String(localized: "Open Food Facts search failed."))
             }
         case let error as USDAError:
             switch error {
             case .missingAPIKey: .hidden
             case let .rateLimited(until): .paused(until: until)
             case .offline: .offline
-            case .invalidAPIKey: .failed("USDA rejected the API key. Check it in Settings → Food sources.")
-            case .timedOut: .failed("USDA didn't answer in time.")
-            default: .failed("USDA search failed.")
+            case .invalidAPIKey: .failed(String(localized: "USDA rejected the API key. Check it in Settings → Food sources."))
+            case .timedOut: .failed(String(localized: "USDA didn't answer in time."))
+            default: .failed(String(localized: "USDA search failed."))
             }
         default:
-            .failed("Search failed.")
+            .failed(String(localized: "Search failed."))
         }
     }
 }

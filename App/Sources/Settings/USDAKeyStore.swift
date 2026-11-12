@@ -21,7 +21,7 @@ struct KeychainError: LocalizedError, CustomStringConvertible {
     }
 
     var errorDescription: String? {
-        description
+        String(localized: "Keychain error \(String(status))")
     }
 }
 

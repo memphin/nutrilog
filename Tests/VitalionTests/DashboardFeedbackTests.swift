@@ -26,7 +26,9 @@ struct DashboardFeedbackTests {
             day: today, sleepAsleepMin: 450, sleepInBedMin: 480, sleepCoreMin: 240, sleepDeepMin: 90, sleepRemMin: 120, sleepAwakeMin: 30,
         )
         let snapshot = snapshot(night)
-        #expect(snapshot.accessibilityLabel(of: .sleep, state: .ready) == "Sleep, 7 hours 30 minutes asleep, close to the goal of 8 hours")
+        #expect(snapshot
+            .accessibilityLabel(of: .sleep, state: .ready, locale: .dashboardEnglish) ==
+            "Sleep, 7 hours 30 minutes asleep, close to the goal of 8 hours")
         // The stages stay in the detail list.
         var data = DashboardData(today: today)
         data.metrics = [DailyMetricsRecord(night, fetchedAt: Date())]
@@ -34,7 +36,9 @@ struct DashboardFeedbackTests {
         #expect(row?.detail?.contains("Deep") == true)
         // Only time in bed known: that is what the tile says.
         let inBedOnly = self.snapshot(DailyHealthMetrics(day: today, sleepInBedMin: 480))
-        #expect(inBedOnly.accessibilityLabel(of: .sleep, state: .ready) == "Sleep, 8 hours in bed, goal of 8 hours reached, 1-day streak")
+        #expect(inBedOnly
+            .accessibilityLabel(of: .sleep, state: .ready, locale: .dashboardEnglish) ==
+            "Sleep, 8 hours in bed, goal of 8 hours reached, 1-day streak")
         #expect(!DashboardTile.sleep.isWide)
     }
 
@@ -74,9 +78,15 @@ struct DashboardFeedbackTests {
         #expect(snapshot.goalColor(of: .steps, value: 8500) == GoalColor.near)
         #expect(snapshot.goalColor(of: .steps, value: 2000) == GoalColor.missed)
         #expect(snapshot.goalColor(of: .weight, value: 80) == nil)
-        #expect(snapshot.accessibilityLabel(of: .steps, state: .ready) == "Steps, 8,500 steps, close to the goal of 10,000")
+        #expect(snapshot
+            .accessibilityLabel(of: .steps, state: .ready, locale: .dashboardEnglish) == "Steps, 8,500 steps, close to the goal of 10,000")
         let reached = self.snapshot(DailyHealthMetrics(day: today, steps: 8500), stepGoal: 8000)
-        #expect(reached.accessibilityLabel(of: .steps, state: .ready) == "Steps, 8,500 steps, goal of 8,000 reached, 1-day streak")
+        #expect(reached
+            .accessibilityLabel(of: .steps, state: .ready, locale: .dashboardEnglish) ==
+            "Steps, 8,500 steps, goal of 8,000 reached, 1-day streak")
+        // Numbers are grouped for the locale (the test runner speaks English, so the words stay English).
+        #expect(snapshot.accessibilityLabel(of: .steps, state: .ready, locale: Locale(identifier: "hr_HR"))
+            == "Steps, 8.500 steps, close to the goal of 10.000")
     }
 
     // MARK: Water (#64)
@@ -94,7 +104,9 @@ struct DashboardFeedbackTests {
         let snapshot = DashboardSnapshot(data)
         #expect(snapshot.goalColor(of: .water, value: 1500) == GoalColor.missed)
         #expect(snapshot.goalColor(of: .water, value: 2000) == GoalColor.reached)
-        #expect(snapshot.accessibilityLabel(of: .water, state: .ready) == "Hydration, 2,100 of 2,000 millilitres, goal reached, 1-day streak")
+        #expect(snapshot
+            .accessibilityLabel(of: .water, state: .ready, locale: .dashboardEnglish) ==
+            "Hydration, 2,100 of 2,000 millilitres, goal reached, 1-day streak")
     }
 
     // MARK: Total energy (#66)
@@ -168,7 +180,7 @@ struct DashboardFeedbackTests {
         #expect(snapshot.goalColor(of: .sleep, value: 460) == GoalColor.reached)
         #expect(snapshot.goalColor(of: .sleep, value: 400) == GoalColor.near)
         #expect(snapshot.goalColor(of: .sleep, value: 380) == GoalColor.missed)
-        let label = snapshot.accessibilityLabel(of: .sleep, state: .ready)
+        let label = snapshot.accessibilityLabel(of: .sleep, state: .ready, locale: .dashboardEnglish)
         #expect(label == "Sleep, 7 hours 40 minutes asleep, goal of 7 hours 30 minutes reached, 1-day streak")
     }
 
@@ -178,7 +190,9 @@ struct DashboardFeedbackTests {
             DailyMetricsRecord(DailyHealthMetrics(day: today.adding(days: -$0), weightKg: 80 + Double($0) / 10), fetchedAt: Date())
         }
         let snapshot = DashboardSnapshot(data)
-        #expect(snapshot.accessibilityLabel(of: .weight, state: .ready) == "Weight, 80.0 kilograms, below the weekly average")
+        #expect(snapshot
+            .accessibilityLabel(of: .weight, state: .ready, locale: .dashboardEnglish) ==
+            "Weight, 80.0 kilograms, below the weekly average")
         #expect(snapshot.sparkline(for: .weight) != nil)
     }
 
@@ -210,7 +224,8 @@ struct DashboardFeedbackTests {
         #expect(snapshot.baselineColor(of: .hrv) == GoalColor.missed)
         #expect(snapshot.baselineColor(of: .restingHeartRate) == GoalColor.near)
         #expect(snapshot.baselineColor(of: .steps) == nil)
-        #expect(snapshot.accessibilityLabel(of: .restingHeartRate, state: .ready).contains("2% above your 30-day average"))
+        #expect(snapshot.accessibilityLabel(of: .restingHeartRate, state: .ready, locale: .dashboardEnglish)
+            .contains("2% above your 30-day average"))
         // No baseline yet: no colour.
         var short = DashboardData(today: today)
         short.metrics = [DailyMetricsRecord(DailyHealthMetrics(day: today, hrvSDNNms: 40), fetchedAt: Date())]
@@ -220,7 +235,7 @@ struct DashboardFeedbackTests {
     // MARK: Weight and body fat against the week before
 
     @Test func `weight is coloured by the goal against the weekly average, body fat by being below it`() {
-        // 7 days at 80 kg / 20 %, today as given.
+        /// 7 days at 80 kg / 20 %, today as given.
         func snapshot(kg: Double, fat: Double, goal: GoalMode, days: Int = 7) -> DashboardSnapshot {
             var data = DashboardData(today: today)
             data.goalMode = goal
@@ -249,9 +264,9 @@ struct DashboardFeedbackTests {
         let short = snapshot(kg: 82, fat: 22, goal: .lose, days: 2)
         #expect(short.weeklyWeightKg == nil && short.baselineColor(of: .weight) == nil && short.baselineColor(of: .bodyFat) == nil)
         // VoiceOver says what the colour means.
-        #expect(snapshot(kg: 80.8, fat: 19.5, goal: .lose).accessibilityLabel(of: .weight, state: .ready)
+        #expect(snapshot(kg: 80.8, fat: 19.5, goal: .lose).accessibilityLabel(of: .weight, state: .ready, locale: .dashboardEnglish)
             == "Weight, 80.8 kilograms, above the weekly average")
-        #expect(snapshot(kg: 80.8, fat: 19.5, goal: .lose).accessibilityLabel(of: .bodyFat, state: .ready)
+        #expect(snapshot(kg: 80.8, fat: 19.5, goal: .lose).accessibilityLabel(of: .bodyFat, state: .ready, locale: .dashboardEnglish)
             == "Body fat, 19.5 percent, below the weekly average")
     }
 

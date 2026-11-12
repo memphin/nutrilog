@@ -22,7 +22,7 @@ struct MealRow: View {
             Spacer()
             VStack(alignment: .trailing, spacing: NL.Spacing.xxs) {
                 Text(unit.format(meal.totals.kcal)).monospacedDigit().foregroundStyle(.primary)
-                Text("\(meal.items.count) \(meal.items.count == 1 ? "food" : "foods")").font(.caption2).foregroundStyle(.secondary)
+                Text("\(meal.items.count) foods").font(.caption2).foregroundStyle(.secondary)
             }
         }
         .accessibilityElement(children: .combine)
@@ -131,11 +131,11 @@ struct MealLogSheet: View {
 
                 Section {
                     Picker("Meal", selection: $slotID) {
-                        ForEach(slots) { Text($0.name).tag($0.id) }
+                        ForEach(slots) { Text($0.displayName).tag($0.id) }
                     }
                     NutrientRow(
-                        "Energy", value: environment.energyUnit.display(draft.totals.kcal), unit: environment.energyUnit.symbol,
-                        emphasized: true,
+                        String(localized: "Energy"), value: environment.energyUnit.display(draft.totals.kcal),
+                        unit: environment.energyUnit.symbol, emphasized: true,
                     )
                     MacroLine(protein: draft.totals.proteinG, carbs: draft.totals.carbsG, fat: draft.totals.fatG)
                 }

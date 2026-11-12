@@ -30,19 +30,21 @@ final class ScanFlowModel {
 
         var title: String {
             switch self {
-            case .offline: "You're offline"
-            case .unavailable: "Open Food Facts isn't answering"
-            case .other: "Couldn't look up this barcode"
+            case .offline: String(localized: "You're offline")
+            case .unavailable: String(localized: "Open Food Facts isn't answering")
+            case .other: String(localized: "Couldn't look up this barcode")
             }
         }
 
         var message: String {
             switch self {
             case .offline:
-                "This product isn't saved on your phone yet, so it needs a connection. Try again when you're online, "
-                    + "or create the food from its label now."
+                String(localized: """
+                This product isn't saved on your phone yet, so it needs a connection. Try again when you're online, \
+                or create the food from its label now.
+                """)
             case .unavailable:
-                "Try again in a moment, or create the food from its label now."
+                String(localized: "Try again in a moment, or create the food from its label now.")
             case let .other(detail):
                 detail
             }
@@ -158,7 +160,7 @@ final class ScanFlowModel {
         guard phase == .scanning else { return }
         notice = nil
         guard !candidates.isEmpty else {
-            notice = "That code isn't a product barcode."
+            notice = String(localized: "That code isn't a product barcode.")
             return
         }
         await resolve(candidates)
@@ -182,7 +184,7 @@ final class ScanFlowModel {
 
     private func resolve(_ candidates: [String], retrying: Bool = false) async {
         guard let lookup else {
-            phase = .failed(.other("The food database couldn't be opened."), candidates: candidates)
+            phase = .failed(.other(String(localized: "The food database couldn't be opened.")), candidates: candidates)
             return
         }
         generation += 1
@@ -215,7 +217,7 @@ final class ScanFlowModel {
             phase = next
         } else {
             phase = .scanning
-            notice = "That code isn't a product barcode."
+            notice = String(localized: "That code isn't a product barcode.")
         }
     }
 
@@ -251,7 +253,7 @@ final class ScanFlowModel {
     /// editing the stand-in serving would break "1 serving"). Set the serving weight first (``setServingWeight(_:)``).
     func foodForCompletingNutrition() throws -> (detail: FoodDetail, missing: Set<FoodEditorModel.RequiredNutrient>) {
         guard product?.needsServingWeight != true else {
-            throw PersistenceError.validation("enter the serving weight first")
+            throw PersistenceError.validation(String(localized: "enter the serving weight first"))
         }
         let product = try ensureSaved()
         return (product.detail, product.missing ?? [])
@@ -272,8 +274,9 @@ final class ScanFlowModel {
     /// `perServingOnly`. Saves the local copy first when needed.
     @discardableResult
     func setServingWeight(_ amount: Double) throws -> FoodDetail {
-        guard let foods else { throw PersistenceError.validation("database unavailable") }
-        guard amount > 0, amount.isFinite else { throw PersistenceError.validation("serving weight must be greater than zero") }
+        guard let foods else { throw PersistenceError.validation(String(localized: "database unavailable")) }
+        guard amount > 0,
+              amount.isFinite else { throw PersistenceError.validation(String(localized: "serving weight must be greater than zero")) }
         var product = try ensureSaved()
         guard product.detail.isPerServingPlaceholder else { return product.detail }
         let missing = product.missing.map { Set($0.compactMap { FoodDraft.MandatoryNutrient(rawValue: $0.rawValue) }) }
@@ -334,7 +337,8 @@ final class ScanFlowModel {
             labelPhotoFoodID = nil
             return true
         } catch {
-            labelPhotoFailure = LabelPhotoFailure(message: "The label photo couldn't be saved: \(error.localizedDescription)")
+            labelPhotoFailure =
+                LabelPhotoFailure(message: String(localized: "The label photo couldn't be saved: \(error.localizedDescription)"))
             return false
         }
     }
@@ -352,9 +356,9 @@ final class ScanFlowModel {
 
     /// The current product, saved as a local food (a no-op for local ones).
     private func ensureSaved() throws -> ScannedProduct {
-        guard var product else { throw PersistenceError.validation("no product") }
+        guard var product else { throw PersistenceError.validation(String(localized: "no product")) }
         guard !product.isSaved, let remote = product.remote else { return product }
-        guard let foods else { throw PersistenceError.validation("database unavailable") }
+        guard let foods else { throw PersistenceError.validation(String(localized: "database unavailable")) }
         product.detail = try foods.saveRemoteCopy(remote.draft)
         product.isSaved = true
         // `saveRemoteCopy` may return a food the user already completed.

@@ -108,6 +108,7 @@ struct CaffeineQuickAddButtons: View {
         }
         .buttonStyle(.bordered)
         .tint(NL.Palette.caffeine)
-        .accessibilityLabel("Add \(drink.name), \(CaffeineStatus.mgNumber(drink.mg)) milligrams of caffeine")
+        // Whole milligrams as an integer, so the catalog can pick the plural form.
+        .accessibilityLabel("Add \(drink.name), \(Int(max(drink.mg, 0).rounded(.toNearestOrEven))) milligrams of caffeine")
     }
 }

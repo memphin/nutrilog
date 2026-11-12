@@ -65,7 +65,7 @@ struct BodyFatWritePrompt: View {
                 try await environment.allowBodyFatWriting()
                 errorMessage = nil
             } catch {
-                errorMessage = "Couldn't ask Apple Health: \(error.localizedDescription)"
+                errorMessage = String(localized: "Couldn't ask Apple Health: \(error.localizedDescription)")
             }
             isOffered = await environment.shouldOfferBodyFatWriting()
         }
