@@ -456,15 +456,8 @@ struct WaterTileContent: View {
         // Green at the goal, orange behind pace or during a long gap without a drink, plain on pace.
         let color = GoalColor.hydration(day.status)
         VStack(alignment: .leading, spacing: NL.Spacing.s) {
-            HStack(alignment: .firstTextBaseline) {
-                ValueText(HydrationTileText.amount(day), unit: HydrationTileText.goal(day), color: color)
-                Spacer()
-                if day.status == .goalReached {
-                    Label("Goal reached", systemImage: "checkmark.circle.fill")
-                        .labelStyle(.iconOnly)
-                        .foregroundStyle(color)
-                }
-            }
+            // No goal checkmark: the green value says it, and the header carries the streak bolt.
+            ValueText(HydrationTileText.amount(day), unit: HydrationTileText.goal(day), color: color)
             Text(HydrationTileText.breakdown(day)).font(.footnote).foregroundStyle(.secondary)
             HydrationStrip(day: day)
             HStack(spacing: NL.Spacing.s) {
