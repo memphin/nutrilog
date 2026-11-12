@@ -2259,22 +2259,22 @@
         }
       }
     },
+    "1 month" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 mjesec"
+          }
+        }
+      }
+    },
     "1 serving" : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "1 porcija"
-          }
-        }
-      }
-    },
-    "1 year" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1 godina"
           }
         }
       }
@@ -6189,16 +6189,6 @@
         }
       }
     },
-    "Generic and branded food search in Add Food → Online — only with a USDA API key" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pretraživanje generičkih i brendiranih namirnica u Dodaj namirnicu → Online — samo s USDA API ključem"
-          }
-        }
-      }
-    },
     "Give the meal a name." : {
       "localizations" : {
         "hr" : {
@@ -7872,16 +7862,6 @@
         }
       }
     },
-    "Network access" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pristup mreži"
-          }
-        }
-      }
-    },
     "Never" : {
       "localizations" : {
         "hr" : {
@@ -9051,16 +9031,6 @@
         }
       }
     },
-    "Packaged-food search in Add Food → Online" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pretraživanje pakiranih namirnica u Dodaj namirnicu → Online"
-          }
-        }
-      }
-    },
     "Pairing" : {
       "localizations" : {
         "hr" : {
@@ -9512,32 +9482,12 @@
         }
       }
     },
-    "Product lookup when a barcode isn't in the local cache" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Traženje proizvoda kad barkod nije u lokalnoj predmemoriji"
-          }
-        }
-      }
-    },
     "Product not found" : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Proizvod nije pronađen"
-          }
-        }
-      }
-    },
-    "Product photo on the scanned product's card" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fotografija proizvoda na kartici skeniranog proizvoda"
           }
         }
       }
@@ -10501,16 +10451,6 @@
         }
       }
     },
-    "Sent: %@" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Poslano: %@"
-          }
-        }
-      }
-    },
     "Series" : {
       "localizations" : {
         "hr" : {
@@ -11193,16 +11133,6 @@
         }
       }
     },
-    "The barcode or the search text, and a User-Agent naming the app (Vitalion and its version). No account." : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Barkod ili tekst pretrage te User-Agent s nazivom aplikacije (Vitalion i njegova verzija). Bez računa."
-          }
-        }
-      }
-    },
     "The daily calorie target in effect today." : {
       "localizations" : {
         "hr" : {
@@ -11281,16 +11211,6 @@
         }
       }
     },
-    "The image address only (it names the product's barcode)." : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Samo adresa slike (u njoj je barkod proizvoda)."
-          }
-        }
-      }
-    },
     "The label photo couldn't be saved: %@" : {
       "localizations" : {
         "hr" : {
@@ -11365,16 +11285,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zapisnik skeniranja ne može se pročitati."
-          }
-        }
-      }
-    },
-    "The search text and your API key (in a request header, never stored in a cache)." : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tekst pretrage i tvoj API ključ (u zaglavlju zahtjeva, nikad se ne sprema u predmemoriju)."
           }
         }
       }
@@ -11461,16 +11371,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Premalo je razlika za usporedbu."
-          }
-        }
-      }
-    },
-    "These are the only hosts Vitalion contacts, and only when you scan a barcode or search online. No analytics, no tracking, no accounts." : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "To su jedini poslužitelji kojima se Vitalion obraća, i to samo kad skeniraš barkod ili pretražuješ na internetu. Bez analitike, bez praćenja, bez računa."
           }
         }
       }
@@ -13599,6 +13499,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "zadnjih 7 dana"
+          }
+        }
+      }
+    },
+    "last month" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "zadnjih mjesec dana"
           }
         }
       }

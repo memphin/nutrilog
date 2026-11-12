@@ -565,29 +565,3 @@ struct OnlineSelectionTests {
         #expect(OnlineFoodResult(usda).offProductURL == nil)
     }
 }
-
-struct NetworkInfoTests {
-    @Test func `network screen lists every request the app makes`() {
-        let paths = NetworkInfoView.hosts.flatMap { host in host.requests.map { host.host + $0.path } }
-        #expect(paths == [
-            "world.openfoodfacts.org/api/v2/product/{barcode}.json",
-            "world.openfoodfacts.org/cgi/search.pl",
-            "images.openfoodfacts.org/images/products/…",
-            "api.nal.usda.gov/fdc/v1/foods/search",
-        ])
-    }
-
-    @Test func `network screen covers the hosts of product images`() throws {
-        // What OFF returns in `image_front_small_url` and the product card loads (AsyncImage).
-        let product = OFFProduct(
-            code: "3017620422003",
-            productName: "Nutella",
-            imageFrontSmallURL: "https://images.openfoodfacts.org/images/products/301/762/042/2003/front_en.633.200.jpg",
-        )
-        let imageURL = try #require(OFFFoodMapper.map(product).imageURL)
-        let host = try #require(imageURL.host())
-        #expect(NetworkInfoView.hosts.map(\.host).contains(host))
-        let productURL = try #require(OFFFoodMapper.map(product).productURL?.host())
-        #expect(NetworkInfoView.hosts.map(\.host).contains(productURL))
-    }
-}

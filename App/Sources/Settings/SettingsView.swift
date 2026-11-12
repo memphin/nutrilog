@@ -85,7 +85,6 @@ struct SettingsView: View {
 
                 Section {
                     usdaKeyRows
-                    NavigationLink("Network access") { NetworkInfoView() }
                 } header: {
                     Text("Food sources")
                 } footer: {
@@ -455,76 +454,7 @@ struct DataSettingsView: View {
     }
 }
 
-// MARK: - Network & about
-
-struct NetworkInfoView: View {
-    struct Host {
-        let host: String
-        let requests: [(path: String, purpose: String)]
-        let sent: String
-    }
-
-    /// Every request the app makes (PRIVACY.md "What leaves the device"). Computed, so the texts follow the language.
-    static var hosts: [Host] {
-        [
-            Host(
-                host: "world.openfoodfacts.org",
-                requests: [
-                    ("/api/v2/product/{barcode}.json", String(localized: "Product lookup when a barcode isn't in the local cache")),
-                    ("/cgi/search.pl", String(localized: "Packaged-food search in Add Food → Online")),
-                ],
-                sent: String(
-                    localized: "The barcode or the search text, and a User-Agent naming the app (Vitalion and its version). No account.",
-                ),
-            ),
-            Host(
-                host: "images.openfoodfacts.org",
-                requests: [
-                    ("/images/products/…", String(localized: "Product photo on the scanned product's card")),
-                ],
-                sent: String(localized: "The image address only (it names the product's barcode)."),
-            ),
-            Host(
-                host: "api.nal.usda.gov",
-                requests: [
-                    (
-                        "/fdc/v1/foods/search",
-                        String(localized: "Generic and branded food search in Add Food → Online — only with a USDA API key"),
-                    ),
-                ],
-                sent: String(localized: "The search text and your API key (in a request header, never stored in a cache)."),
-            ),
-        ]
-    }
-
-    var body: some View {
-        List {
-            ForEach(Self.hosts, id: \.host) { item in
-                Section {
-                    ForEach(item.requests, id: \.path) { request in
-                        VStack(alignment: .leading, spacing: NL.Spacing.xxs) {
-                            Text(request.path).font(.footnote.monospaced())
-                            Text(request.purpose).font(.caption).foregroundStyle(.secondary)
-                        }
-                    }
-                } header: {
-                    Text(item.host).font(.body.monospaced()).textCase(nil)
-                } footer: {
-                    Text("Sent: \(item.sent)")
-                }
-            }
-            Section {
-                EmptyView()
-            } footer: {
-                Text("""
-                These are the only hosts Vitalion contacts, and only when you scan a barcode or search online. \
-                No analytics, no tracking, no accounts.
-                """)
-            }
-        }
-        .navigationTitle("Network access")
-    }
-}
+// MARK: - About
 
 struct AboutView: View {
     static var offAttribution: String {

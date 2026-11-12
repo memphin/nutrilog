@@ -112,6 +112,7 @@ private struct MealForm: View {
     let unit: EnergyUnit
     @Binding var showPicker: Bool
     let delete: () -> Void
+    @ScaledMetric private var unitWidth: CGFloat = 26
 
     var body: some View {
         Form {
@@ -132,10 +133,16 @@ private struct MealForm: View {
                             TextField("0", text: $row.amountText)
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
-                                .textFieldStyle(.roundedBorder)
+                                .monospacedDigit()
+                                .padding(.horizontal, NL.Spacing.s)
+                                .padding(.vertical, NL.Spacing.xs)
+                                // A grouped fill instead of `.roundedBorder`, which draws a black box in dark mode.
+                                .background(Color(.tertiarySystemFill), in: .rect(cornerRadius: NL.Radius.s))
                                 .frame(maxWidth: 90)
                                 .accessibilityLabel("Amount of \(row.food.name) in \(row.food.baseUnit.symbol)")
+                            // Fixed width, so the fields line up whether the unit is g or ml.
                             Text(row.food.baseUnit.symbol).foregroundStyle(.secondary)
+                                .frame(width: unitWidth, alignment: .leading)
                         }
                         if row.isFoodDeleted {
                             Label("This food was deleted. The meal keeps its last values.", systemImage: "exclamationmark.triangle")

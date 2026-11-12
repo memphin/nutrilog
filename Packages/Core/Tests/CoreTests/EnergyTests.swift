@@ -57,7 +57,7 @@ struct MacroTests {
 
     @Test func `grams from split`() {
         let g = MacroSplit.balanced.grams(forKcal: 2000)
-        #expect(g == MacroTargets(proteinG: 150, carbsG: 200, fatG: 67))
+        #expect(g == MacroTargets(proteinG: 125, carbsG: 225, fatG: 67))
         #expect(abs(g.kcal - 2003) < 0.01)
     }
 

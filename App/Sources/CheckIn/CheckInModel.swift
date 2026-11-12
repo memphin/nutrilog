@@ -76,7 +76,7 @@ final class CheckInModel {
 
     /// The target written for `kcal`, fiber unchanged, effective today, origin adaptive. Its macros are the current
     /// target's: unchanged when the energy is, otherwise scaled by new / current kcal (whole grams). Without a current
-    /// target (or with one of no energy) they are 30 / 40 / 30 or the current macros' split at the new energy.
+    /// target (or with one of no energy) they are 25 / 45 / 30 or the current macros' split at the new energy.
     func makeTarget(kcal: Double) -> Target? {
         guard let snapshot else { return nil }
         return Target(
