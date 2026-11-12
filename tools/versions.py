@@ -162,32 +162,115 @@ def asc_status(token):
             "expired": b.get("expired", False),
         }
 
-    store_versions = asc_get(token, f"apps/{app_id}/appStoreVersions", **{"filter[platform]": "IOS", "limit": "5"})
-    pending = None
+    # App Store version records carry a hand-typed label ("1.1"); the build attached to each one has the real version.
+    store_versions = asc_get(token, f"apps/{app_id}/appStoreVersions", **{
+        "filter[platform]": "IOS", "limit": "10", "include": "build",
+    })
+    live = pending = None
     for record in store_versions["data"]:
         a = record["attributes"]
         state = a.get("appVersionState") or a.get("appStoreState")
-        if state not in ("READY_FOR_SALE", "READY_FOR_DISTRIBUTION", "REPLACED_WITH_NEW_VERSION",
-                         "REMOVED_FROM_SALE", "DEVELOPER_REMOVED_FROM_SALE"):
-            pending = {"version": a.get("versionString"), "state": state}
-            break
-    return build, pending
+        entry = {"label": a.get("versionString"), "state": state, **store_build(token, record)}
+        if state in LIVE_STATES:
+            if live is None:
+                live = entry
+                live["whats_new"] = whats_new(token, record["id"])
+        elif state not in GONE_STATES and pending is None and live is None:
+            pending = entry  # newer than the live one (the list is newest first)
+    return build, live, pending
 
 
-# --- development ---------------------------------------------------------------------------------------------------
+LIVE_STATES = ("READY_FOR_SALE", "READY_FOR_DISTRIBUTION")
+GONE_STATES = ("REPLACED_WITH_NEW_VERSION", "REMOVED_FROM_SALE", "DEVELOPER_REMOVED_FROM_SALE")
+
+
+def store_build(token, record):
+    """{'version': '1.1.4', 'build': '40'} of the build attached to an App Store version record, or {}."""
+    relation = record.get("relationships", {}).get("build", {}).get("data")
+    if not relation:
+        return {}
+    build = asc_get(token, f"builds/{relation['id']}", include="preReleaseVersion")
+    included = build.get("included", [])
+    return {
+        "version": included[0]["attributes"]["version"] if included else None,
+        "build": build["data"]["attributes"].get("version"),
+    }
+
+
+def whats_new(token, version_id):
+    """The App Store "What's New" text, English if there is one."""
+    localizations = asc_get(token, f"appStoreVersions/{version_id}/appStoreVersionLocalizations")["data"]
+    texts = {l["attributes"]["locale"]: l["attributes"].get("whatsNew") for l in localizations}
+    for locale in ("en-US", "en-GB"):
+        if texts.get(locale):
+            return texts[locale].strip()
+    return next((t.strip() for t in texts.values() if t), None)
+
+
+# --- development and release notes --------------------------------------------------------------------------------
+
+INTERNAL = re.compile(r"^(Release \d|Release status|CI|Tests?|Docs?|Tools|Backlog|Chore)\b", re.IGNORECASE)
+FIXED = re.compile(r"\b(fix(es|ed)?|crash(es)?|bugs?|wrong)\b", re.IGNORECASE)
+
 
 def development():
     with open(os.path.join(ROOT, "project.yml")) as f:
         match = re.search(r'^\s*MARKETING_VERSION:\s*"?([^"\s]+)"?', f.read(), re.MULTILINE)
-    tags = [t for t in git("tag", "--list", "v*").split() if re.fullmatch(r"v\d+\.\d+\.\d+", t)]
-    tag = max(tags, key=lambda t: version_key(t[1:])) if tags else None
+    tags = sorted((t for t in git("tag", "--list", "v*").split() if re.fullmatch(r"v\d+\.\d+\.\d+", t)),
+                  key=lambda t: version_key(t[1:]))
+    tag = tags[-1] if tags else None
     return {
         "version": match.group(1) if match else None,
         "branch": git("rev-parse", "--abbrev-ref", "HEAD"),
         "commit": git("rev-parse", "--short", "HEAD"),
         "tag": tag,
+        "tags": tags,
         "since_tag": int(git("rev-list", "--count", f"{tag}..HEAD")) if tag else None,
     }
+
+
+def changes(since, until):
+    """Commit subjects in since..until (squash-merged PR titles), sorted into what users notice.
+
+    Releases, CI, tests and docs are left out. A title that mentions a fix, crash or bug goes under "Fixed",
+    everything else under "New & improved".
+    """
+    span = f"{since}..{until}" if since else until
+    out = {"New & improved": [], "Fixed": []}
+    for subject in git("log", "--format=%s", "--no-merges", span).splitlines():
+        if INTERNAL.match(subject):
+            continue
+        out["Fixed" if FIXED.search(subject) else "New & improved"].append(subject)
+    return out
+
+
+def release_notes(status):
+    """[(title, [labels], date, changes)] from the unreleased work on main down to the version on the App Store."""
+    dev = status.get("dev")
+    if not dev:
+        return []
+    tags = dev["tags"]
+    where = {}
+    live, pending, tf = status.get("live"), status.get("pending"), status.get("testflight")
+    for label, info in (("App Store", live), ("App Store, next", pending), ("TestFlight", tf)):
+        if info and info.get("version"):
+            where.setdefault("v" + info["version"], []).append(label)
+    production = live.get("version") if live else None
+    if not production and status.get("store"):
+        production = status["store"]["version"]  # the label: only matches a tag when it is the full version
+
+    out = []
+    if dev["since_tag"]:
+        out.append(("Unreleased (main)", ["Development"], None, changes(dev["tag"], "HEAD")))
+    for n in range(len(tags) - 1, -1, -1):
+        tag = tags[n]
+        date = git("log", "-1", "--format=%cs", tag)
+        out.append((tag[1:], where.get(tag, []), date, changes(tags[n - 1] if n else None, tag)))
+        if production and same_version(tag[1:], production):
+            break
+        if len(out) >= 12:
+            break
+    return out
 
 
 # --- report --------------------------------------------------------------------------------------------------------
@@ -201,7 +284,7 @@ def collect():
     try:
         token = asc_token()
         if token:
-            status["testflight"], status["pending"] = asc_status(token)
+            status["testflight"], status["live"], status["pending"] = asc_status(token)
         else:
             status["no_key"] = True
     except (urllib.error.URLError, subprocess.CalledProcessError, RuntimeError, ValueError, KeyError) as e:
@@ -213,28 +296,38 @@ def collect():
     return status
 
 
+def full(info):
+    """'1.1.4 (40)' for a record with a build, else its label."""
+    if info.get("version"):
+        return f"{info['version']} ({info['build']})" if info.get("build") else info["version"]
+    return info.get("label") or "?"
+
+
 def rows(status):
     """(environment, version, details) for each row."""
     out = []
-    store = status.get("store")
-    if store:
-        out.append(("Production (App Store)", store["version"], f"live since {day(store['released'])}"))
+    store, live = status.get("store"), status.get("live")
+    if store or live:
+        details = []
+        if live and live.get("version") and live.get("label") and not same_version(live["label"], live["version"]):
+            details.append(f"listed as {live['label']}")
+        if store:
+            details.append(f"live since {day(store['released'])}")
+        out.append(("Production (App Store)", full(live) if live else store["version"], " · ".join(details)))
     elif "store" in status:
         out.append(("Production (App Store)", "—", "not on the App Store"))
     pending = status.get("pending")
     if pending:
         state = (pending["state"] or "?").replace("_", " ").lower()
-        out.append(("App Store, next", pending["version"], state))
+        listed = f"listed as {pending['label']} · " if pending.get("version") and pending.get("label") \
+            and not same_version(pending["label"], pending["version"]) else ""
+        out.append(("App Store, next", full(pending), listed + state))
 
     tf = status.get("testflight")
     if tf:
-        if tf["expired"]:
-            expiry = "**expired**"
-        else:
-            expiry = f"expires {day(tf['expires'])}"
+        expiry = "**expired**" if tf["expired"] else f"expires {day(tf['expires'])}"
         state = "" if tf["state"] == "VALID" else f" · {(tf['state'] or '?').lower()}"
-        out.append(("Test (TestFlight)", f"{tf['version']} ({tf['build']})",
-                    f"uploaded {day(tf['uploaded'])} · {expiry}{state}"))
+        out.append(("Test (TestFlight)", full(tf), f"uploaded {day(tf['uploaded'])} · {expiry}{state}"))
     elif status.get("no_key"):
         out.append(("Test (TestFlight)", "?", "no App Store Connect key (set ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_PATH)"))
     elif "testflight" in status:
@@ -255,18 +348,21 @@ def rows(status):
 def notes(status):
     """Things that need a decision or an action."""
     out = []
-    store, tf, dev = status.get("store"), status.get("testflight"), status.get("dev")
+    tf, dev, pending = status.get("testflight"), status.get("dev"), status.get("pending")
+    live = status.get("live") or {}
+    production = live.get("version")
     now = dt.datetime.now(dt.timezone.utc)
     if tf and tf["expires"] and not tf["expired"] and (tf["expires"] - now).days < EXPIRY_WARNING_DAYS:
-        out.append(f"⚠️ TestFlight build {tf['version']} ({tf['build']}) expires in "
-                   f"{(tf['expires'] - now).days} days. Push a new patch tag to keep testing.")
+        out.append(f"⚠️ TestFlight build {full(tf)} expires in {(tf['expires'] - now).days} days. "
+                   "Push a new patch tag to keep testing.")
     if tf and tf["state"] not in ("VALID", "PROCESSING"):
-        out.append(f"⚠️ TestFlight build {tf['version']} ({tf['build']}) is {tf['state']}.")
+        out.append(f"⚠️ TestFlight build {full(tf)} is {tf['state']}.")
     if dev and dev["tag"] and tf and tf["version"] and not same_version(dev["tag"][1:], tf["version"]):
         out.append(f"⚠️ The newest tag is {dev['tag']}, but TestFlight has {tf['version']}. "
                    "Check the TestFlight upload job for that tag.")
-    if tf and store and tf["version"] and version_key(tf["version"]) > version_key(store["version"]) \
-            and not same_version(tf["version"], store["version"]) and not status.get("pending"):
+    submitted = pending and pending.get("version") and tf and same_version(pending["version"], tf["version"] or "")
+    if tf and production and tf["version"] and version_key(tf["version"]) > version_key(production) \
+            and not same_version(tf["version"], production) and not submitted:
         out.append(f"ℹ️ {tf['version']} is on TestFlight and not yet submitted to the App Store.")
     if dev and dev["tag"] and dev["since_tag"] and dev["version"] and same_version(dev["version"], dev["tag"][1:]):
         out.append(f"ℹ️ There are unreleased commits, but project.yml still says {dev['version']}. "
@@ -275,13 +371,26 @@ def notes(status):
     return out
 
 
+def heading(title, labels, date):
+    return " · ".join([title] + labels + ([date] if date else []))
+
+
 def as_text(status):
     table = rows(status)
     width = max((len(r[0]) for r in table), default=0)
     vwidth = max((len(r[1]) for r in table), default=0)
     lines = [f"{env:<{width}}  {ver:<{vwidth}}  {details}".replace("**", "") for env, ver, details in table]
     extra = notes(status)
-    return "\n".join(lines + ([""] + extra if extra else []))
+    if extra:
+        lines += [""] + extra
+    history = release_notes(status)
+    if history:
+        lines += ["", "What's in each version", "======================"]
+    for title, labels, date, groups in history:
+        lines += ["", heading(title, labels, date)]
+        items = [(g, s) for g, subjects in groups.items() for s in subjects]
+        lines += [f"  {'fix' if g == 'Fixed' else '+  '} {s}" for g, s in items] or ["  (internal changes only)"]
+    return "\n".join(lines)
 
 
 def as_markdown(status):
@@ -293,12 +402,28 @@ def as_markdown(status):
     store = status.get("store")
     if store and store.get("url"):
         lines += ["", f"[App Store page]({store['url']})"]
+
+    history = release_notes(status)
+    if history:
+        lines += ["", "## What's in each version", ""]
+    whats_new_text = (status.get("live") or {}).get("whats_new")
+    for title, labels, date, groups in history:
+        lines += [f"### {heading(title, [f'**{l}**' for l in labels], date)}", ""]
+        if "App Store" in labels and whats_new_text:
+            lines += ["> " + line for line in whats_new_text.splitlines()] + [""]
+        if not any(groups.values()):
+            lines += ["_Internal changes only (CI, tests, docs)._", ""]
+        for group, subjects in groups.items():
+            if subjects:
+                lines += [f"**{group}**", ""] + [f"- {s}" for s in subjects] + [""]
+    lines.append("<sub>Notes are the merged PR titles between release tags; CI, test, doc and release commits are "
+                 "left out. The quote under the App Store version is its \"What's New\" text.</sub>")
     return "\n".join(lines)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--markdown", action="store_true", help="print a Markdown table instead of plain text")
+    parser.add_argument("--markdown", action="store_true", help="print Markdown instead of plain text")
     args = parser.parse_args()
     status = collect()
     print(as_markdown(status) if args.markdown else as_text(status))

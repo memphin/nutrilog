@@ -138,6 +138,11 @@ TestFlight builds expire after 90 days. To keep the app on your phone, push a ne
 The pinned **Release status** issue shows the version on the App Store, the newest TestFlight build (with its expiry)
 and the version on `main`, and flags what needs doing: a build that expires soon, a tag that never reached TestFlight,
 a TestFlight build not yet submitted, unreleased commits without a `MARKETING_VERSION` bump.
+Versions are shown in full with their build number: an App Store version listed as `1.1` shows the build attached to
+it, such as `1.1.5 (43)`. Below the table, **What's in each version** lists the merged PR titles per release tag,
+from unreleased work on `main` down to the version on the App Store, split into *New & improved* and *Fixed* (a title
+that mentions a fix, crash or bug). Release, CI, test and doc PRs are left out, so write PR titles the way you'd want
+them in release notes.
 `.github/workflows/release-status.yml` refreshes it every 6 hours and after each CI run on `main` or a release tag. It
 uses the same `ASC_*` secrets as the TestFlight job. To refresh it by hand, use **Actions → Release status → Run
 workflow**.
