@@ -133,6 +133,21 @@ If any required secret is missing, the job fails on its first step and names the
 
 TestFlight builds expire after 90 days. To keep the app on your phone, push a new patch tag before then.
 
+## Which version is where
+
+The pinned **Release status** issue shows the version on the App Store, the newest TestFlight build (with its expiry)
+and the version on `main`, and flags what needs doing: a build that expires soon, a tag that never reached TestFlight,
+a TestFlight build not yet submitted, unreleased commits without a `MARKETING_VERSION` bump.
+`.github/workflows/release-status.yml` refreshes it every 6 hours and after each CI run on `main` or a release tag. It
+uses the same `ASC_*` secrets as the TestFlight job. To refresh it by hand, use **Actions → Release status → Run
+workflow**.
+
+You can print the same table locally:
+
+```sh
+python3 tools/versions.py   # TestFlight row needs ASC_KEY_ID, ASC_ISSUER_ID and ASC_KEY_PATH=/path/to/AuthKey.p8
+```
+
 ## Troubleshooting
 
 - **"Cloud signing permission error" or "No profiles for 'hr.ivanjuric.nutrilog'":** the API key needs the **Admin**
