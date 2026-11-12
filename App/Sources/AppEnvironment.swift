@@ -53,6 +53,9 @@ final class AppEnvironment {
     /// Writes diary, water and manual weight entries to Health (backlog #27, #29); nil when the database could not be opened.
     let healthWrites: HealthWriteService?
 
+    /// The ticks on the meal plan's prep list.
+    let prepTicks: PrepTickStore
+
     /// Display preference (Settings → Units); persisted in the `setting` table. Change it with `setEnergyUnit(_:)`.
     private(set) var energyUnit: EnergyUnit = .kcal
 
@@ -102,8 +105,11 @@ final class AppEnvironment {
         hydrationReminder: any HydrationReminderScheduling = NoHydrationReminder(),
         // Where the hydration reminder remembers its last plan across launches; nil keeps it in memory.
         hydrationReminderDefaults: UserDefaults? = nil,
+        // Where the prep list's ticks are kept across launches; nil keeps them in memory.
+        prepTickDefaults: UserDefaults? = nil,
         backupsDirectory: URL? = nil,
     ) {
+        prepTicks = PrepTickStore(defaults: prepTickDefaults)
         self.checkInReminder = checkInReminder
         self.hydrationReminder = hydrationReminder
         self.backupsDirectory = backupsDirectory
@@ -392,10 +398,15 @@ final class AppEnvironment {
         } catch {
             state = .failed(String(describing: error))
         }
+        let bundledIndex = BundledFoodIndex.inBundle(bundle)
         if case let .ready(db) = state {
             Task.detached(priority: .background) {
                 // The OFF product cache only holds re-fetchable data: drop entries older than 90 days (backlog #19).
                 _ = try? BarcodeLookup.evictExpiredCache(in: db)
+                // Copies of bundled foods logged before the index had caffeine get it now (coffee, tea, cola).
+                if let bundledIndex {
+                    _ = try? FoodRepository(db).fillBundledCaffeine(from: bundledIndex)
+                }
             }
         }
         let health = LiveHealthDataSource()
@@ -403,7 +414,7 @@ final class AppEnvironment {
         return AppEnvironment(
             database: state,
             config: config,
-            bundledIndex: BundledFoodIndex.inBundle(bundle),
+            bundledIndex: bundledIndex,
             health: health,
             healthWriter: health,
             healthObserver: health,
@@ -416,6 +427,7 @@ final class AppEnvironment {
             checkInReminder: LocalNotificationCheckInReminder(),
             hydrationReminder: LocalNotificationHydrationReminder(),
             hydrationReminderDefaults: .standard,
+            prepTickDefaults: .standard,
             backupsDirectory: try? FileManager.default
                 .url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
                 .appendingPathComponent("Backups", isDirectory: true),

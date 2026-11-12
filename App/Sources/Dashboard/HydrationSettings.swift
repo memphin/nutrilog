@@ -112,37 +112,25 @@ struct HydrationSettings: Equatable {
 
 // MARK: - Goal
 
-/// The day's hydration goal (spec §1): 30 ml/kg of the latest weight trend on or before the day, however old (weight
+/// The day's hydration goal (spec §1): 30 ml/kg of the weight trend on or before the day, however old (weight
 /// mode), or the fixed amount — raised by the day's boost on a training day (`TrainingBoost.waterMl`). The one goal
 /// lookup: Today's tile and detail, the streak, the reminders, the widget, Siri and Trends all read the weight with
 /// `trendsKg`, the training days with `trainingDays` and the goal with `goalMl`, so they always agree. Settings shows
 /// the base goal (`TrainingDays.none`).
 enum HydrationGoalResolver {
-    /// The weight each day's goal uses: the latest stored trend on or before the day, also one from before `days`
-    /// (`DailyMetricsRepository.weightTrends(in:)`, kept on Apple Health's rows). A day without a stored trend — e.g.
-    /// every day for someone who logs weight only in Vitalion — uses the trend computed from the weights instead
-    /// (`StatsLoader.dayWeights`, `WeightTrend.trendByDay`), as every weight screen does. Days before the first weight
-    /// are absent; so is everything when nothing can be read (the goal then falls back like without a weight).
+    /// The weight each day's goal uses: the trend on or before the day, however old, computed from every weight —
+    /// Apple Health's and the ones logged in Vitalion (`StatsLoader.dayWeights`, `WeightTrend.trendByDay`) — as every
+    /// weight screen does. The trend stored on Apple Health's rows (`DailyMetricsRepository.weightTrends(in:)`) is only
+    /// a fallback when the weights can't be read: it goes stale once Health stops syncing while weights are still
+    /// logged in Vitalion. Days before the first weight are absent; so is everything when nothing can be read (the
+    /// goal then falls back like without a weight).
     static func trendsKg(
         in days: ClosedRange<LocalDay>, metrics: DailyMetricsRepository?, weights: WeightRepository?, calendar: Calendar = .current,
     ) -> [LocalDay: Double] {
-        var trends = (try? metrics?.weightTrends(in: days)) ?? [:]
-        var missing: [LocalDay] = []
-        var day = days.lowerBound
-        while day <= days.upperBound {
-            if trends[day] == nil {
-                missing.append(day)
-            }
-            day = day.next
-        }
-        guard !missing.isEmpty,
-              let dayWeights = try? StatsLoader.dayWeights(through: days.upperBound, metrics: metrics, weights: weights, calendar: calendar)
-        else { return trends }
+        guard let dayWeights = try? StatsLoader.dayWeights(through: days.upperBound, metrics: metrics, weights: weights, calendar: calendar)
+        else { return (try? metrics?.weightTrends(in: days)) ?? [:] }
         let computed = WeightTrend.trendByDay(WeightTrend.samples(dayWeights), through: days.upperBound)
-        for day in missing {
-            trends[day] = computed[day]
-        }
-        return trends
+        return computed.filter { days.contains($0.key) }
     }
 
     /// The same, from the app's repositories.

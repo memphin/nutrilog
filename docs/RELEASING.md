@@ -6,6 +6,7 @@ After the package and app tests pass on the tagged commit, the job:
 1. Archives the app with `xcodebuild archive` (Release, `generic/platform=iOS`).
 2. Signs and uploads it with `xcodebuild -exportArchive`, using `Config/ExportOptions.plist`
    (`method: app-store-connect`, `destination: upload`).
+3. Revokes the development certificate the archive created on the CI machine (see Troubleshooting).
 
 Signing is automatic and cloud-managed. An App Store Connect API key is passed with `-authenticationKeyPath`,
 `-authenticationKeyID` and `-authenticationKeyIssuerID`, together with `-allowProvisioningUpdates`. That way, no
@@ -162,8 +163,14 @@ python3 tools/versions.py   # TestFlight row needs ASC_KEY_ID, ASC_ISSUER_ID and
 - **"The bundle version must be higher than the previously uploaded version":** the build number comes from the commit
   count. Re-running the job for a tag that already uploaded reuses the same number. Make a new commit and tag a new
   version instead.
-- **Accumulating "Created via API" development certificates:** automatic signing may create a development certificate
-  on each fresh CI machine. Revoke old ones now and then under **Certificates**. Revoking them does not affect builds
-  that are already installed.
+- **"Your account has reached the maximum number of certificates" / "Created via API" development certificates:**
+  automatic signing creates a new development certificate on every fresh CI machine, because the machine never has
+  the private key of an earlier one. The job now cleans up after itself: before the archive it lists the team's
+  development certificates, and after the upload (also when a step failed) it revokes the `DEVELOPMENT` /
+  `IOS_DEVELOPMENT` ones that weren't there before, with the same `ASC_*` key (`tools/asc_dev_certificates.py`). The
+  uploaded build is signed with the distribution certificate, so it isn't affected, and nor are other development
+  certificates (yours from Xcode). The cleanup never fails the job; if it couldn't run, the job shows a warning. If the
+  limit is already reached, revoke the old "Created via API" development certificates once under **Certificates**,
+  then re-run the job. Revoking them does not affect builds that are already installed.
 - **Rotating the key:** revoke it in App Store Connect, generate a new one (step 3), and update `ASC_KEY_ID` and
   `ASC_KEY_P8`.

@@ -92,6 +92,7 @@
 		9E44E217669F9D9D3B02D684 /* Scanner in Frameworks */ = {isa = PBXBuildFile; productRef = 109B13F8FBA8F197909A34BA /* Scanner */; };
 		9E5A8AC1856736495E2320D3 /* HealthOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAEA9B4600E43C70FAFDE929 /* HealthOnboardingView.swift */; };
 		A04A0BA89987C028C80F00DB /* Core in Frameworks */ = {isa = PBXBuildFile; productRef = DA4BCA0B907586F8CAC36B6B /* Core */; };
+		A40E8D70D7A95CF35247BECA /* PrepTickStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97BE4E21887F4EB73DADAE7A /* PrepTickStore.swift */; };
 		A62871BC5EADE61B26FA7058 /* VitalionApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 145A72571885772849F7177C /* VitalionApp.swift */; };
 		AD927069E95106E2C219841C /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E60E5672E7C562F57BC66FA /* AppConfig.swift */; };
 		B4615829B52B63295D15AA47 /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = B68B4221126F81E26762C323 /* DesignSystem */; };
@@ -246,6 +247,7 @@
 		8E60E5672E7C562F57BC66FA /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
 		912A68A271BB201D964BA3DD /* QuantitySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuantitySheet.swift; sourceTree = "<group>"; };
 		95EED48DFC8DD7C6D110221B /* MealLogSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealLogSheet.swift; sourceTree = "<group>"; };
+		97BE4E21887F4EB73DADAE7A /* PrepTickStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrepTickStore.swift; sourceTree = "<group>"; };
 		97DA4A909B6C3A6F354680A4 /* WeightEntrySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightEntrySheet.swift; sourceTree = "<group>"; };
 		983B961F60EB23E4DE3E070D /* Persistence */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Persistence; path = Packages/Persistence; sourceTree = SOURCE_ROOT; };
 		99465C5FA3B1C6B129AA300B /* ScanLogging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanLogging.swift; sourceTree = "<group>"; };
@@ -387,6 +389,7 @@
 				85B4D360C226611E7D4CEC65 /* DiarySheets.swift */,
 				9FF06B1DEF475ED5D95EB252 /* DiaryView.swift */,
 				B2562F6E4540C9C32B3D5E43 /* MealPlanViews.swift */,
+				97BE4E21887F4EB73DADAE7A /* PrepTickStore.swift */,
 			);
 			path = Diary;
 			sourceTree = "<group>";
@@ -895,6 +898,7 @@
 				6DBAC34FCD01C3ECED916F48 /* NotificationDelegate.swift in Sources */,
 				8542CDA8DAFD67E8F8BE182E /* OnlineResultsView.swift in Sources */,
 				0EE82979F3035BB3E93E17F2 /* OnlineSearchModel.swift in Sources */,
+				A40E8D70D7A95CF35247BECA /* PrepTickStore.swift in Sources */,
 				F6997FB68C7E9629093EAE46 /* ProductCardView.swift in Sources */,
 				88260E7EF4714B470A23977C /* ProfileTargetsView.swift in Sources */,
 				03F30914B5193485F88F9FA0 /* QuantitySheet.swift in Sources */,

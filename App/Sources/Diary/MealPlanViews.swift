@@ -180,8 +180,6 @@ struct MealPlanView: View {
     @State private var liquidFoodIDs: Set<String> = []
     @State private var prepDays = 7
     @State private var prepFromTomorrow = false
-    /// Ticked off while cooking or shopping; kept only while the sheet is open.
-    @State private var prepped: Set<String> = []
     @State private var errorMessage: String?
 
     enum Tab: Hashable { case week, prep }
@@ -232,6 +230,7 @@ struct MealPlanView: View {
             .task(id: today) { await observeEaten() }
             .task(id: today) { await observeTraining() }
             .task(id: today) { loadTargetsAndSlots() }
+            .task(id: today) { environment.prepTicks.prune(before: today) }
             .alert("Meal plan", isPresented: Binding(get: { errorMessage != nil }, set: {
                 if !$0 {
                     errorMessage = nil
@@ -352,18 +351,17 @@ struct MealPlanView: View {
             }
         } else {
             Section("To prep") {
+                let range = prepRange
                 ForEach(items) { item in
+                    // Ticked off while cooking or shopping; kept across launches (`PrepTickStore`).
+                    let done = environment.prepTicks.isTicked(item, in: range)
                     Button {
-                        if prepped.contains(item.id) {
-                            prepped.remove(item.id)
-                        } else {
-                            prepped.insert(item.id)
-                        }
+                        environment.prepTicks.toggle(item, in: range)
                     } label: {
-                        prepRow(item, done: prepped.contains(item.id))
+                        prepRow(item, done: done)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityAddTraits(prepped.contains(item.id) ? .isSelected : [])
+                    .accessibilityAddTraits(done ? .isSelected : [])
                 }
             }
             Section {

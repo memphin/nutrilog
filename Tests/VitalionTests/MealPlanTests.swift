@@ -153,3 +153,69 @@ struct MealPlanFixTests {
         #expect(try env.diary?.diary(for: model.today.previous).entryCount == 1)
     }
 }
+
+/// Prep-list ticks (`PrepTickStore`): kept across launches per food and date range, hidden when that food's plan
+/// changes, dropped once the range has started before today.
+@MainActor
+struct PrepTickTests {
+    @Test func `prep list ticks survive a relaunch and follow the plan`() throws {
+        let suite = "PrepTickTests-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let env = AppEnvironment.preview()
+        let plan = try #require(env.mealPlan)
+        let oats = try #require(try env.foods?.save(FoodDetail(food: Food(
+            name: "Oats", per100: Nutrients(kcal: 380, proteinG: 13, carbsG: 68, fatG: 7),
+        ))).food)
+        let rice = try #require(try env.foods?.save(FoodDetail(food: Food(
+            name: "Rice", per100: Nutrients(kcal: 130, proteinG: 3, carbsG: 28, fatG: 0.3),
+        ))).food)
+        let today = env.today
+        for day in [today.next, today.adding(days: 2)] {
+            try plan.plan(food: oats, quantity: .base(60), slotID: "breakfast", day: day)
+            try plan.plan(food: rice, quantity: .base(150), slotID: "lunch", day: day)
+        }
+        let week = MealPlanView.prepRange(today: today, fromTomorrow: false, days: 7)
+        func items(_ range: ClosedRange<LocalDay>) throws -> [String: PrepItem] {
+            let list = try MealPlanRepository.prepList(plan.pending(in: range))
+            return Dictionary(uniqueKeysWithValues: list.map { ($0.name, $0) })
+        }
+
+        let store = PrepTickStore(defaults: defaults)
+        var list = try items(week)
+        let oatsItem = try #require(list["Oats"]), riceItem = try #require(list["Rice"])
+        store.toggle(oatsItem, in: week)
+        store.toggle(riceItem, in: week)
+        store.toggle(riceItem, in: week) // unticked again
+        #expect(store.isTicked(oatsItem, in: week))
+        #expect(!store.isTicked(riceItem, in: week))
+
+        // A relaunch reads them back.
+        var relaunched = PrepTickStore(defaults: defaults)
+        #expect(relaunched.isTicked(oatsItem, in: week))
+        #expect(!relaunched.isTicked(riceItem, in: week))
+
+        // Another date range doesn't show them; switching back does.
+        let shorter = MealPlanView.prepRange(today: today, fromTomorrow: false, days: 2)
+        let shorterOats = try #require(try items(shorter)["Oats"])
+        #expect(!relaunched.isTicked(shorterOats, in: shorter))
+        #expect(relaunched.isTicked(oatsItem, in: week))
+
+        // Another portion of oats is planned: the tick no longer matches what was prepped.
+        try plan.plan(food: oats, quantity: .base(60), slotID: "breakfast", day: today.adding(days: 3))
+        list = try items(week)
+        let moreOats = try #require(list["Oats"])
+        #expect(moreOats.portions == 3)
+        #expect(!relaunched.isTicked(moreOats, in: week))
+
+        // A tick of a list that started before today is dropped.
+        relaunched.toggle(moreOats, in: week)
+        relaunched.prune(before: today)
+        #expect(relaunched.ticks.count == 1)
+        relaunched.prune(before: today.next)
+        #expect(relaunched.ticks.isEmpty)
+        relaunched = PrepTickStore(defaults: defaults)
+        #expect(relaunched.ticks.isEmpty)
+    }
+}

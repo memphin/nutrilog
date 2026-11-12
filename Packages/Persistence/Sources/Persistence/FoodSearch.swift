@@ -81,6 +81,21 @@ public final class BundledFoodIndex: Sendable {
         }
     }
 
+    /// FDC id → caffeine (mg per 100 g/ml) of every food with a known value; empty for indexes built without the
+    /// `caffeine_mg_100` column.
+    public func caffeineBySourceID() throws -> [String: Double] {
+        try queue.read { db in
+            guard try db.columns(in: "bundled_food").contains(where: { $0.name == "caffeine_mg_100" }) else { return [:] }
+            var result: [String: Double] = [:]
+            for row in try Row.fetchAll(db, sql: """
+            SELECT source_id, caffeine_mg_100 FROM bundled_food WHERE caffeine_mg_100 IS NOT NULL
+            """) {
+                result[row["source_id"]] = row["caffeine_mg_100"]
+            }
+            return result
+        }
+    }
+
     /// FTS5 search over the English and the Croatian name, best match first (shorter shown name on a tie).
     public func search(_ query: String, limit: Int) throws -> [BundledFood] {
         guard let pattern = FoodSearch.ftsPattern(query) else { return [] }
