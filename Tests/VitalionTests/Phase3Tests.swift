@@ -508,6 +508,25 @@ struct DiaryPhase3Tests {
         #expect(try meals.templates().map(\.template.name) == ["Pudding"])
     }
 
+    @Test func `meal editor: a food is added with the amount chosen for it, keeping its serving`() throws {
+        let foods = try #require(env.foods), meals = try #require(env.meals)
+        let bread = try foods.save(FoodDetail(
+            food: Food(name: "Bread", per100: Nutrients(kcal: 250, proteinG: 9, carbsG: 48, fatG: 3)),
+            servings: [Serving(label: "slice", grams: 30)],
+        ))
+        let slice = try #require(bread.servings.first)
+        let model = MealEditorModel()
+        model.name = "Toast"
+        model.add(bread.food, quantity: .servings(count: 2, serving: slice.size), servingID: slice.id)
+        model.add(bread.food, quantity: .base(45))
+        #expect(model.rows.map(\.amountText) == ["60", "45"])
+        #expect(abs(model.totals.kcal - 262.5) < 0.001)
+
+        let saved = try model.save(to: meals)
+        #expect(saved.items.map(\.item.grams) == [60, 45])
+        #expect(saved.items.map(\.item.servingID) == [slice.id, nil])
+    }
+
     @Test func `meal editor: change amounts, remove and add foods of an existing meal`() throws {
         let foods = try #require(env.foods), meals = try #require(env.meals)
         let oats = try foods.save(FoodDetail(

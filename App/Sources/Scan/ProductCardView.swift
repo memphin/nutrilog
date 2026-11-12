@@ -10,6 +10,8 @@ struct ProductCardView: View {
     let product: ScannedProduct
     let energyUnit: EnergyUnit
     var labelPhoto: Data?
+    /// The title of the bottom button ("Log", or "Add to meal" when the scan picks a meal's food).
+    var actionTitle: LocalizedStringKey = "Log"
     let onLog: () -> Void
     let onCompleteNutrition: () -> Void
     let onSetServingWeight: (Double) -> Void
@@ -81,7 +83,7 @@ struct ProductCardView: View {
         }
         .safeAreaInset(edge: .bottom) {
             Button(action: onLog) {
-                Text("Log").frame(maxWidth: .infinity)
+                Text(actionTitle).frame(maxWidth: .infinity)
             }
             .buttonStyle(.glassProminent)
             .controlSize(.large)
