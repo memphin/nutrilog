@@ -130,10 +130,16 @@ public struct HealthWorkout: Hashable, Sendable, Codable, Identifiable {
     /// Distance covered, in metres; nil for workouts without one.
     public var distanceM: Double?
     public var source: HealthSource
+    /// Started from a custom workout on Apple Watch (one of its steps is in the metadata). The only custom workout in
+    /// use is refereeing, so such a workout is called that (see ``automaticTitle``).
+    public var isCustomWorkout: Bool
+    /// The name the user gave this workout in Vitalion; nil for none.
+    public var name: String?
 
     public init(
         id: String, day: LocalDay, activityType: Int, start: Date, end: Date, durationSec: Double? = nil,
-        activeKcal: Double? = nil, distanceM: Double? = nil, source: HealthSource,
+        activeKcal: Double? = nil, distanceM: Double? = nil, source: HealthSource, isCustomWorkout: Bool = false,
+        name: String? = nil,
     ) {
         self.id = id
         self.day = day
@@ -144,15 +150,42 @@ public struct HealthWorkout: Hashable, Sendable, Codable, Identifiable {
         self.activeKcal = activeKcal
         self.distanceM = distanceM
         self.source = source
+        self.isCustomWorkout = isCustomWorkout
+        self.name = name
     }
 
     public var kind: WorkoutKind {
         WorkoutKind(activityType: activityType)
     }
 
+    /// What the workout is called without a name of its own: "Refereeing" for a custom workout, else its kind.
+    public var automaticTitle: String {
+        isCustomWorkout ? String(localized: "Refereeing", bundle: .module, comment: "A workout: refereeing a match") : kind.title
+    }
+
+    /// What the workout is called: the user's name for it, else ``automaticTitle``.
+    public var title: String {
+        if let name = WorkoutName.normalized(name) {
+            return name
+        }
+        return automaticTitle
+    }
+
     /// The duration in whole minutes (rounded).
     public var minutes: Int {
         Int((durationSec / 60).rounded())
+    }
+}
+
+/// A name the user gives a workout.
+public enum WorkoutName {
+    /// The longest name kept.
+    public static let maxLength = 60
+
+    /// `name` trimmed and cut to ``maxLength``; nil when nothing is left.
+    public static func normalized(_ name: String?) -> String? {
+        guard let trimmed = name?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else { return nil }
+        return String(trimmed.prefix(maxLength))
     }
 }
 
@@ -217,7 +250,7 @@ public struct TrainingRules: Equatable, Sendable {
 
 /// One session recorded twice — by the watch and by a training app, say — is one workout. Workouts that overlap for
 /// at least half of the shorter one are the same session; the one shown is a training workout if there is one, then
-/// the one from Apple Watch, then the longest. Energy and distance it lacks are taken from its doubles.
+/// the one from Apple Watch, then the longest. Energy, distance and a name it lacks are taken from its doubles.
 public enum WorkoutSessions {
     /// Two workouts are the same session when they share at least this part of the shorter one's time.
     public static let overlapShare = 0.5
@@ -249,6 +282,9 @@ public enum WorkoutSessions {
         let others = group.filter { $0.id != best.id }
         best.activeKcal = best.activeKcal ?? others.compactMap(\.activeKcal).max()
         best.distanceM = best.distanceM ?? others.compactMap(\.distanceM).max()
+        // The same session: a name given to one of its recordings, or a custom workout recorded by any, names it.
+        best.name = WorkoutName.normalized(best.name) ?? others.lazy.compactMap { WorkoutName.normalized($0.name) }.first
+        best.isCustomWorkout = best.isCustomWorkout || others.contains(where: \.isCustomWorkout)
         return best
     }
 

@@ -223,8 +223,19 @@
                     activeKcal: energy?.doubleValue(for: .kilocalorie()),
                     distanceM: distance?.doubleValue(for: .meter()),
                     source: HealthSource(workout.sourceRevision),
+                    isCustomWorkout: Self.isCustomWorkout(workout),
                 )
             }
+        }
+
+        /// The metadata key Apple Watch puts on a workout (or one of its activities) started from a custom workout: the
+        /// step it was in. Not public API; seen on watchOS 27.
+        static let customWorkoutStepKey = "WOIntervalStepKeyPath"
+
+        /// Whether `workout` was started from a custom workout on Apple Watch.
+        static func isCustomWorkout(_ workout: HKWorkout) -> Bool {
+            workout.metadata?[customWorkoutStepKey] != nil
+                || workout.workoutActivities.contains { $0.metadata?[customWorkoutStepKey] != nil }
         }
 
         /// The distance a workout may carry, most common first.

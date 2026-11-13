@@ -567,6 +567,17 @@
         }
       }
     },
+    "Refereeing" : {
+      "comment" : "A workout: refereeing a match",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suđenje"
+          }
+        }
+      }
+    },
     "Rowing" : {
       "localizations" : {
         "hr" : {

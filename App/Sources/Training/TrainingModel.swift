@@ -122,6 +122,15 @@ final class TrainingModel {
         }
     }
 
+    /// Gives `workout` the name `name`; an empty name brings back its own ("Running", "Refereeing").
+    func rename(_ workout: HealthWorkout, to name: String) {
+        do {
+            try environment.workouts?.setName(name, for: workout.id)
+        } catch {
+            errorMessage = String(localized: "Couldn't save the name: \(error.localizedDescription)")
+        }
+    }
+
     private func report(_ error: any Error) {
         errorMessage = String(localized: "Couldn't load your workouts: \(error.localizedDescription)")
     }

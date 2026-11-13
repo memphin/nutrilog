@@ -17,6 +17,7 @@ public struct WorkoutRecord: Codable, Hashable, Identifiable, Sendable, SyncedRe
     public var sourceName: String
     public var sourceBundleID: String
     public var sourceProductType: String?
+    public var isCustom: Bool
     public var createdAt: Date
     public var updatedAt: Date
     public var deletedAt: Date?
@@ -33,6 +34,7 @@ public struct WorkoutRecord: Codable, Hashable, Identifiable, Sendable, SyncedRe
         case sourceName = "source_name"
         case sourceBundleID = "source_bundle_id"
         case sourceProductType = "source_product_type"
+        case isCustom = "is_custom"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case deletedAt = "deleted_at"
@@ -52,6 +54,7 @@ public struct WorkoutRecord: Codable, Hashable, Identifiable, Sendable, SyncedRe
         sourceName = workout.source.name
         sourceBundleID = workout.source.bundleIdentifier
         sourceProductType = workout.source.productType
+        isCustom = workout.isCustomWorkout
         createdAt = now
         updatedAt = now
         deletedAt = nil
@@ -63,6 +66,7 @@ public struct WorkoutRecord: Codable, Hashable, Identifiable, Sendable, SyncedRe
             id: id, day: day, activityType: activityType, start: startAt, end: endAt, durationSec: durationSec,
             activeKcal: activeKcal, distanceM: distanceM,
             source: HealthSource(name: sourceName, bundleIdentifier: sourceBundleID, productType: sourceProductType),
+            isCustomWorkout: isCustom,
         )
     }
 
@@ -76,7 +80,30 @@ public struct WorkoutRecord: Codable, Hashable, Identifiable, Sendable, SyncedRe
             && same(startAt, workout.start) && same(endAt, workout.end) && durationSec == workout.durationSec
             && activeKcal == workout.activeKcal && distanceM == workout.distanceM && sourceName == workout.source.name
             && sourceBundleID == workout.source.bundleIdentifier && sourceProductType == workout.source.productType
+            && isCustom == workout.isCustomWorkout
     }
+}
+
+/// A row of `workout_name`: the name the user gave a workout (Core `HealthWorkout.name`).
+public struct WorkoutNameRecord: Codable, Hashable, Sendable, SyncedRecord {
+    public static let databaseTableName = "workout_name"
+
+    public var workoutID: String
+    public var name: String
+    public var createdAt: Date
+    public var updatedAt: Date
+    public var deletedAt: Date?
+    public var revision: Int
+
+    public enum CodingKeys: String, CodingKey, ColumnExpression {
+        case name, revision
+        case workoutID = "workout_id"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case deletedAt = "deleted_at"
+    }
+
+    public typealias Columns = CodingKeys
 }
 
 /// One entry of the "counts as training" history in the `setting` table (Core `TrainingRules`).
@@ -87,8 +114,8 @@ struct TrainingRulesEntry: Codable, Equatable, Sendable {
     var excluded: [Int]
 }
 
-/// The workouts read from Apple Health (`health_workout`) and which kinds of them count as training (`TrainingRules`,
-/// kept in the `setting` table so it is part of exports and backups).
+/// The workouts read from Apple Health (`health_workout`), the names the user gave them (`workout_name`) and which
+/// kinds of them count as training (`TrainingRules`, kept in the `setting` table so it is part of exports and backups).
 public struct WorkoutRepository: Sendable {
     /// `[TrainingRulesEntry]`: the kinds that don't count as training, as history.
     static let rulesSettingKey = "trainingWorkoutRules"
@@ -141,19 +168,47 @@ public struct WorkoutRepository: Sendable {
         }
     }
 
-    /// The workouts that started on `days`, oldest first (doubles included: see Core `WorkoutSessions`).
+    /// The workouts that started on `days` with their names, oldest first (doubles included: see Core
+    /// `WorkoutSessions`).
     public func workouts(in days: ClosedRange<LocalDay>) throws -> [HealthWorkout] {
-        try database.reader.read { db in try Self.request(days).fetchAll(db).map(\.workout) }
+        try database.reader.read { db in try Self.named(Self.request(days).fetchAll(db), db) }
     }
 
-    /// ``workouts(in:)`` now and after every change (a Health sync).
+    /// ``workouts(in:)`` now and after every change (a Health sync, a name).
     public func observeWorkouts(in days: ClosedRange<LocalDay>) -> AsyncValueObservation<[HealthWorkout]> {
-        database.observe { db in try Self.request(days).fetchAll(db).map(\.workout) }
+        database.observe { db in try Self.named(Self.request(days).fetchAll(db), db) }
     }
 
     /// The newest workout that started on `days`; nil when there is none.
     public func latestWorkout(in days: ClosedRange<LocalDay>) throws -> HealthWorkout? {
-        try database.reader.read { db in try Self.request(days).reversed().fetchOne(db)?.workout }
+        try database.reader.read { db in try Self.named(Self.request(days).reversed().limit(1).fetchAll(db), db).first }
+    }
+
+    // MARK: Names
+
+    /// Calls the workout `workoutID` `name` (trimmed); an empty name deletes the one it had, so it is called by its
+    /// kind (or "Refereeing") again.
+    public func setName(_ name: String?, for workoutID: String) throws {
+        let now = clock.now()
+        try database.writer.write { db in
+            let existing = try WorkoutNameRecord.fetchOne(db, key: workoutID)
+            guard let name = WorkoutName.normalized(name) else {
+                guard var existing, existing.deletedAt == nil else { return }
+                existing.stampDeleted(now)
+                try existing.update(db)
+                return
+            }
+            if var existing {
+                guard existing.deletedAt != nil || existing.name != name else { return }
+                existing.name = name
+                existing.deletedAt = nil // brings back a cleared name's row
+                existing.stampUpdated(now)
+                try existing.update(db)
+            } else {
+                try WorkoutNameRecord(workoutID: workoutID, name: name, createdAt: now, updatedAt: now, deletedAt: nil, revision: 1)
+                    .insert(db)
+            }
+        }
     }
 
     /// The kinds of every stored workout, each once, by name.
@@ -212,6 +267,21 @@ public struct WorkoutRepository: Sendable {
             .filter(WorkoutRecord.Columns.deletedAt == nil)
             .filter(WorkoutRecord.Columns.day >= days.lowerBound && WorkoutRecord.Columns.day <= days.upperBound)
             .order(WorkoutRecord.Columns.startAt, WorkoutRecord.Columns.id)
+    }
+
+    /// `records` as workouts, each with the name the user gave it.
+    static func named(_ records: [WorkoutRecord], _ db: Database) throws -> [HealthWorkout] {
+        guard !records.isEmpty else { return [] }
+        let names = try WorkoutNameRecord
+            .filter(WorkoutNameRecord.Columns.deletedAt == nil)
+            .filter(records.map(\.id).contains(WorkoutNameRecord.Columns.workoutID))
+            .fetchAll(db)
+        let byID = Dictionary(names.map { ($0.workoutID, $0.name) }) { first, _ in first }
+        return records.map { record in
+            var workout = record.workout
+            workout.name = byID[record.id]
+            return workout
+        }
     }
 
     static func entries(_ db: Database) throws -> [TrainingRulesEntry] {
