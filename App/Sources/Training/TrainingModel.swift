@@ -15,32 +15,8 @@ enum TrainingAccess: Equatable {
     case connected
 }
 
-/// This week's eating next to the training: the same numbers as the weekly report (`WeeklyReport`).
-struct TrainingFuel: Equatable {
-    /// Mean intake of the logged days; nil when nothing is logged yet this week.
-    var averageKcal: Double?
-    var averageTargetKcal: Double?
-    var proteinG: Double?
-    /// Protein per kilogram of body weight (the weight trend); nil without a weight.
-    var proteinPerKg: Double?
-    var trendChangeKg: Double?
-
-    /// - Parameter weightKg: the body weight for protein per kg when the week has no weight trend of its own.
-    init(report: WeeklyReport, weightKg: Double?) {
-        averageKcal = report.averageIntake?.kcal
-        averageTargetKcal = report.averageTargetKcal
-        proteinG = report.averageIntake?.proteinG
-        trendChangeKg = report.trendChangeKg
-        if let protein = proteinG, let weight = report.trendEndKg ?? weightKg, weight > 0 {
-            proteinPerKg = protein / weight
-        } else {
-            proteinPerKg = nil
-        }
-    }
-}
-
 /// State of the Training tab: the workouts Apple Health has, sorted into training and everyday activity
-/// (`TrainingOverview`), and this week's fuel. Follows Health syncs, the training days and the kinds that count as
+/// (`TrainingOverview`). Follows Health syncs, the training days and the kinds that count as
 /// training live.
 @MainActor
 @Observable
@@ -49,7 +25,6 @@ final class TrainingModel {
     private let calendarProvider: @MainActor () -> Calendar
 
     private(set) var overview: TrainingOverview?
-    private(set) var fuel: TrainingFuel?
     var errorMessage: String?
 
     @ObservationIgnored private var workouts: [HealthWorkout]?
@@ -132,26 +107,10 @@ final class TrainingModel {
         }
     }
 
-    /// Re-reads this week's fuel; the view calls it when the tab appears and when the day, the data, the unit or
-    /// Health change.
-    func reloadFuel() {
-        let week = environment.today.weekStart(firstWeekday: firstWeekday)
-        guard let report = try? WeeklyReportLoader.load(weekStart: week, environment: environment) else {
-            fuel = nil
-            return
-        }
-        let weight = try? environment.dailyMetrics?.weightTrendKg(onOrBefore: environment.today)
-        let loaded = TrainingFuel(report: report, weightKg: weight)
-        if fuel != loaded {
-            fuel = loaded
-        }
-    }
-
     /// Pull-to-refresh: re-reads Health.
     func refresh() async {
         await environment.refreshHealth()
         await environment.healthSync?.reloadAuthorization()
-        reloadFuel()
     }
 
     /// "Allow workouts": the Health sheet for the types not answered yet, then a full read.

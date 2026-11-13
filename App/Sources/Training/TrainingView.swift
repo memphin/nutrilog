@@ -1,10 +1,9 @@
-import Charts
 import Core
 import DesignSystem
 import HealthKitClient
 import SwiftUI
 
-/// "Training" tab: the workouts Apple Health has, next to this week's eating. Training (strength, running, …) and
+/// "Training" tab: the workouts Apple Health has. Training (strength, running, …) and
 /// everyday activity (walks) are kept apart: only training counts as a session and makes a day a training day; which
 /// kinds are which is set in Settings → Training days. Nothing is logged here.
 struct TrainingView: View {
@@ -75,26 +74,11 @@ private struct TrainingContent: View {
         }
         .errorAlert($model.errorMessage)
         .task(id: environment.today) { await model.observe() }
-        .task(id: FuelKey(
-            today: environment.today, generation: environment.dataGeneration, unit: environment.energyUnit,
-            synced: environment.healthSync?.lastSyncedAt,
-        )) { model.reloadFuel() }
-        .onAppear { model.reloadFuel() } // the diary may have changed on another tab
-    }
-
-    /// What this week's fuel is re-read on: a new day, an import, the energy unit, Health syncs (weights).
-    private struct FuelKey: Hashable {
-        var today: LocalDay
-        var generation: Int
-        var unit: EnergyUnit
-        var synced: Date?
     }
 
     @ViewBuilder private var overview: some View {
         if let overview = model.overview, overview.hasWorkouts {
             WeekCard(week: overview.week, today: overview.today)
-            WeeksChartCard(weeks: overview.weeklySessions)
-            FuelCard(fuel: model.fuel, unit: model.energyUnit)
             SessionsCard(sessions: overview.recentSessions, today: overview.today, unit: model.energyUnit)
             if !overview.activity.workouts.isEmpty {
                 ActivityCard(activity: overview.activity, today: overview.today, unit: model.energyUnit)
@@ -227,95 +211,6 @@ private struct DayMark: View {
     }
 }
 
-/// Training sessions per week for the last weeks; the current week stands out.
-private struct WeeksChartCard: View {
-    let weeks: [TrainingOverview.WeekCount]
-
-    private var top: Int {
-        max(weeks.map(\.sessions).max() ?? 0, 1)
-    }
-
-    /// The finished weeks' mean (the current week is still running).
-    private var average: Double? {
-        let finished = weeks.dropLast()
-        return finished.isEmpty ? nil : Double(finished.reduce(0) { $0 + $1.sessions }) / Double(finished.count)
-    }
-
-    var body: some View {
-        TrainingCard(title: String(localized: "Last \(weeks.count) weeks"), detail: average.map(TrainingText.perWeek)) {
-            Chart(weeks) { week in
-                BarMark(x: .value("Week", week.weekStart.isoString), y: .value("Workouts", week.sessions), width: .ratio(0.7))
-                    .foregroundStyle(week.id == weeks.last?.id ? Color.accentColor : Color.accentColor.opacity(0.45))
-                    .cornerRadius(3)
-            }
-            .chartXAxis(.hidden)
-            .chartYScale(domain: 0 ... top)
-            .chartYAxis {
-                AxisMarks(values: Array(stride(from: 0, through: top, by: TrainingText.axisStep(top: top)))) {
-                    AxisGridLine()
-                    AxisValueLabel()
-                }
-            }
-            .frame(height: 96)
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Last \(weeks.count) weeks")
-        .accessibilityValue(average.map(TrainingText.perWeek) ?? "")
-    }
-}
-
-/// This week's eating: average intake against the target, protein per kg and the weight trend. Opens the weekly report.
-private struct FuelCard: View {
-    let fuel: TrainingFuel?
-    let unit: EnergyUnit
-
-    var body: some View {
-        NavigationLink {
-            WeeklyReportView()
-        } label: {
-            TrainingCard(title: String(localized: "This week's fuel")) {
-                if let fuel, let kcal = fuel.averageKcal {
-                    row(
-                        "Average intake",
-                        unit.format(kcal),
-                        detail: fuel.averageTargetKcal.map { String(localized: "target \(unit.format($0))") },
-                    )
-                    if let protein = fuel.proteinG {
-                        if let perKg = fuel.proteinPerKg {
-                            row(
-                                "Protein",
-                                TrainingText.gramsPerKg(perKg),
-                                detail: String(localized: "\(DisplayRounding.whole(protein)) g a day"),
-                            )
-                        } else {
-                            row("Protein", "\(DisplayRounding.whole(protein)) g", detail: String(localized: "per day"))
-                        }
-                    }
-                } else {
-                    Text("Nothing logged this week.").foregroundStyle(.secondary)
-                }
-                row("Weight trend", fuel?.trendChangeKg.map(Format.kgChange) ?? "—")
-            }
-        }
-        .buttonStyle(.plain)
-        .accessibilityHint("Shows the weekly report")
-    }
-
-    private func row(_ title: LocalizedStringKey, _ value: String, detail: String? = nil) -> some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text(title)
-            Spacer()
-            VStack(alignment: .trailing, spacing: 0) {
-                Text(value).font(NL.Typography.smallNumber).monospacedDigit()
-                if let detail {
-                    Text(detail).font(.caption).foregroundStyle(.secondary)
-                }
-            }
-        }
-        .accessibilityElement(children: .combine)
-    }
-}
-
 /// The training sessions of the last four weeks, newest first.
 private struct SessionsCard: View {
     let sessions: [HealthWorkout]
@@ -431,23 +326,6 @@ enum TrainingText {
     /// "6.8 km" (the app is metric).
     static func km(_ meters: Double, locale: Locale = .autoupdatingCurrent) -> String {
         "\((meters / 1000).formatted(.number.precision(.fractionLength(1)).locale(locale))) km"
-    }
-
-    /// "1.7 g/kg".
-    static func gramsPerKg(_ value: Double, locale: Locale = .autoupdatingCurrent) -> String {
-        let number = value.formatted(.number.precision(.fractionLength(1)).locale(locale))
-        return String(localized: "\(number) g/kg", comment: "Protein per kilogram of body weight, e.g. “1.7 g/kg”")
-    }
-
-    /// "3.2 a week": the mean number of training sessions per week.
-    static func perWeek(_ average: Double) -> String {
-        let number = average.formatted(.number.precision(.fractionLength(0 ... 1)))
-        return String(localized: "\(number) a week", comment: "Average training sessions per week, e.g. “3.2 a week”")
-    }
-
-    /// The distance between the chart's Y axis lines, so there are at most about four.
-    static func axisStep(top: Int) -> Int {
-        max(1, Int((Double(top) / 4).rounded(.up)))
     }
 }
 

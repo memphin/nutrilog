@@ -6,7 +6,7 @@ import Testing
 @testable import Vitalion
 
 /// The Training tab: workouts from Apple Health sorted into training and everyday activity, training days that follow
-/// them, and this week's fuel.
+/// them.
 @MainActor
 struct TrainingTabTests {
     // `ManualClock` starts on Monday 2026-11-09 at noon.
@@ -190,68 +190,6 @@ struct TrainingTabTests {
         #expect(settings.statuses[.workout] != .noData)
     }
 
-    // MARK: Fuel
-
-    @Test func `fuel shows last days' intake, protein per kg and the weight trend`() throws {
-        // Two logged days (Monday, Tuesday) with a weight trend; the rest of the week is empty.
-        let eaten = Nutrients(kcal: 2300, proteinG: 160, carbsG: 250, fatG: 70)
-        var stats: [DayStats] = []
-        for offset in 0 ..< 7 {
-            var stat = DayStats(day: monday.adding(days: offset), targetKcal: 2400)
-            if offset < 2 {
-                stat.intake = eaten
-                stat.entryCount = 3
-                stat.trendKg = 80 - 0.1 * Double(offset)
-            }
-            stats.append(stat)
-        }
-        let fuel = TrainingFuel(report: WeeklyReport(days: stats, trendBefore: 80.2), weightKg: 85)
-        #expect(fuel.averageKcal == 2300)
-        #expect(fuel.averageTargetKcal == 2400)
-        #expect(fuel.proteinG == 160)
-        #expect(try abs(#require(fuel.proteinPerKg) - 160 / 79.9) < 0.0001) // the week's own trend, not the fallback
-        #expect(try abs(#require(fuel.trendChangeKg) + 0.3) < 0.0001)
-
-        // Nothing logged: no numbers; no weight at all: no protein per kg.
-        let empty = TrainingFuel(report: WeeklyReport(days: [DayStats(day: monday)]), weightKg: 80)
-        #expect(empty.averageKcal == nil && empty.proteinPerKg == nil && empty.trendChangeKg == nil)
-        let noWeight = TrainingFuel(
-            report: WeeklyReport(days: [DayStats(
-                day: monday,
-                intake: Nutrients(kcal: 2000, proteinG: 150, carbsG: 200, fatG: 70),
-                entryCount: 3,
-            )]),
-            weightKg: nil,
-        )
-        #expect(noWeight.proteinG == 150 && noWeight.proteinPerKg == nil)
-        // Without a trend in the week the latest known weight is used.
-        let fallback = TrainingFuel(
-            report: WeeklyReport(days: [DayStats(
-                day: monday,
-                intake: Nutrients(kcal: 2000, proteinG: 150, carbsG: 200, fatG: 70),
-                entryCount: 3,
-            )]),
-            weightKg: 75,
-        )
-        #expect(fallback.proteinPerKg == 2)
-    }
-
-    @Test func `the model loads this week's fuel from the diary`() throws {
-        let env = AppEnvironment.preview(clock: clock.appClock)
-        let model = TrainingModel(environment: env)
-        model.reloadFuel()
-        #expect(model.fuel?.averageKcal == nil)
-        // Today counts once it is marked as fully logged.
-        let diary = try #require(env.diary)
-        for slot in ["breakfast", "lunch", "dinner"] {
-            try diary.logQuickAdd(name: nil, nutrients: Nutrients(kcal: 700, proteinG: 50, carbsG: 80, fatG: 20), slotID: slot, day: monday)
-        }
-        try diary.setDayNote(day: monday, text: "", isComplete: true)
-        model.reloadFuel()
-        #expect(model.fuel?.averageKcal == 2100)
-        #expect(model.fuel?.proteinG == 150)
-    }
-
     // MARK: Texts
 
     @Test func `texts of the week, a workout and distances`() {
@@ -264,7 +202,6 @@ struct TrainingTabTests {
         #expect(TrainingText.extras(plain, unit: .kcal) == nil)
         #expect(TrainingText.km(6840, locale: english) == "6.8 km")
         #expect(TrainingText.km(13200, locale: Locale(identifier: "hr_HR")) == "13,2 km")
-        #expect(TrainingText.gramsPerKg(1.72, locale: english) == "1.7 g/kg")
 
         let days = (0 ..< 7).map { offset in
             TrainingWeek.Day(day: monday.adding(days: offset), sessions: offset == 0 ? [lift] : offset == 1 ? [run] : [], isPlanned: false)
@@ -277,11 +214,6 @@ struct TrainingTabTests {
         #expect(TrainingText.weekSpoken(none) == "0 of 1 planned")
         let one = TrainingWeek(days: [TrainingWeek.Day(day: monday, sessions: [plain], isPlanned: false)])
         #expect(TrainingText.weekHeadline(one) == "1 workout · 30 min")
-
-        #expect(TrainingText.axisStep(top: 1) == 1)
-        #expect(TrainingText.axisStep(top: 4) == 1)
-        #expect(TrainingText.axisStep(top: 5) == 2)
-        #expect(TrainingText.axisStep(top: 14) == 4)
     }
 
     @Test func `every workout kind has an icon`() {
