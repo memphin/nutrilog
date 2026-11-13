@@ -209,6 +209,20 @@ jobs:
         if: always()
         run: xcrun simctl shutdown all || true
 
+  # The one required check for build & test (branch protection): a skipped matrix job never reports its per-group
+  # checks, so requiring those would block every PR without the `run-tests` label. Passes when both jobs passed or
+  # were skipped, fails otherwise.
+  build-and-test:
+    name: Build & test
+    if: always()
+    needs: [packages, app]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check build & test results
+        run: |
+          echo "packages: ${{ needs.packages.result }}, app: ${{ needs.app.result }}"
+          [[ "${{ needs.packages.result }}" =~ ^(success|skipped)$ && "${{ needs.app.result }}" =~ ^(success|skipped)$ ]]
+
   # Archives, signs (automatic, cloud-managed, via an App Store Connect API key: no certificates or profiles in the
   # repo) and uploads to TestFlight. Runs only for `v*` tags, after the tests passed. One-time setup and the secrets
   # it reads: docs/RELEASING.md.
