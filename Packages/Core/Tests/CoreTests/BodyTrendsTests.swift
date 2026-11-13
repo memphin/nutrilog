@@ -57,7 +57,6 @@ struct WeightTrendTests {
                 day: day("2026-11-01").adding(days: offset),
                 kg: 90 - Double(offset),
                 bodyFatPct: nil,
-                isManual: false,
             ))
         }
         let summary = try #require(WeightTrend.summary(weights, today: day("2026-11-10")))
@@ -71,14 +70,14 @@ struct WeightTrendTests {
     }
 
     @Test func `summary without a week of history has no change`() throws {
-        let weights = [DayWeight(day: day("2026-11-08"), kg: 80, bodyFatPct: nil, isManual: true)]
+        let weights = [DayWeight(day: day("2026-11-08"), kg: 80, bodyFatPct: nil)]
         let summary = try #require(WeightTrend.summary(weights, today: day("2026-11-10")))
         #expect(summary.trendKg == 80)
         #expect(summary.trendChange7d == nil)
         #expect(WeightTrend.summary([], today: day("2026-11-10")) == nil)
         // Body fat only: no weight to summarize.
         #expect(WeightTrend.summary(
-            [DayWeight(day: day("2026-11-08"), kg: nil, bodyFatPct: 18, isManual: false)],
+            [DayWeight(day: day("2026-11-08"), kg: nil, bodyFatPct: 18)],
             today: day("2026-11-10"),
         ) == nil)
     }
@@ -99,9 +98,9 @@ struct WeightReconcilerTests {
         ]
         let days = WeightReconciler.daily(health: health, manual: manual, calendar: zagreb)
         #expect(days.map(\.day) == [day("2026-11-08"), day("2026-11-09")])
-        #expect(days[0] == DayWeight(day: day("2026-11-08"), kg: 81, bodyFatPct: 19, isManual: false))
+        #expect(days[0] == DayWeight(day: day("2026-11-08"), kg: 81, bodyFatPct: 19))
         // Latest entered manual of the day; body fat falls back to Health's when the manual entries have none.
-        #expect(days[1] == DayWeight(day: day("2026-11-09"), kg: 80.2, bodyFatPct: 18.5, isManual: true))
+        #expect(days[1] == DayWeight(day: day("2026-11-09"), kg: 80.2, bodyFatPct: 18.5))
         // Without entry times, the later measurement counts as entered later.
         let plain = manual.map { ManualWeight(measuredAt: $0.measuredAt, kg: $0.kg) }
         #expect(WeightReconciler.daily(health: [], manual: plain, calendar: zagreb).first?.kg == 81.2)
@@ -120,7 +119,7 @@ struct WeightReconcilerTests {
         let health = [DailyHealthMetrics(day: day("2026-11-09"), bodyFatPct: 19)]
         let days = WeightReconciler.daily(health: health, manual: manual, calendar: zagreb)
         // The 00:30 entry was made last and wins; its missing body fat comes from the other manual entry.
-        #expect(days == [DayWeight(day: day("2026-11-09"), kg: 80, bodyFatPct: 17, isManual: true)])
+        #expect(days == [DayWeight(day: day("2026-11-09"), kg: 80, bodyFatPct: 17)])
         // 00:30 in Zagreb is still Nov 8 in New York.
         let ny = WeightReconciler.daily(health: [], manual: [manual[0]], calendar: HealthFixtures.newYork)
         #expect(ny.map(\.day) == [day("2026-11-08")])
@@ -150,7 +149,6 @@ struct WeightReconcilerTests {
         let manual = [ManualWeight(measuredAt: time("2026-11-10 07:00", zagreb), kg: 79, bodyFatPct: 17)]
         let days = WeightReconciler.daily(health: rows, manual: manual, calendar: zagreb)
         #expect(days.map(\.kg) == [81, 79])
-        #expect(days.map(\.isManual) == [false, true])
     }
 }
 

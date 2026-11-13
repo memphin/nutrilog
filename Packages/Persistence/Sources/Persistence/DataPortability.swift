@@ -13,7 +13,7 @@ public struct DataPortability: Sendable {
 
     /// Tables in foreign-key-safe insertion order. `off_product_cache` is a re-fetchable cache of ODbL data and
     /// is deliberately excluded, as are `healthkit_outbox` (this device's queue of pending Apple Health writes)
-    /// and `barcode_scan_log` (private, device-local scan diagnostics).
+    /// and `barcode_scan_log` (a former device-local scan log, no longer written).
     static let tables = [
         "meal_slot", "food", "serving", "food_barcode", "recipe_ingredient", "meal_template", "meal_template_item",
         "diary_entry", "planned_entry", "healthkit_link", "day_note", "water_entry", "caffeine_entry", "weight_entry",

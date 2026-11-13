@@ -2,8 +2,8 @@ import Core
 import DesignSystem
 import SwiftUI
 
-/// Settings → Caffeine: bedtime and the sleep-safe line, what changes the half-life (or a custom one), and the
-/// quick-add drinks of the Today tile.
+/// Settings → Caffeine: the sleep-safe line, what changes the half-life (or a custom one), and the quick-add drinks
+/// of the Today tile. Bedtime is set in Settings → Hydration.
 struct CaffeineSettingsView: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var settings = CaffeineSettings.default
@@ -12,7 +12,6 @@ struct CaffeineSettingsView: View {
     var body: some View {
         Form {
             Section {
-                DatePicker("Bedtime", selection: bedtime, displayedComponents: .hourAndMinute)
                 Stepper(
                     value: binding(\.thresholdMg),
                     in: CaffeineSettings.thresholdRange,
@@ -109,19 +108,6 @@ struct CaffeineSettingsView: View {
         Binding(get: { settings[keyPath: keyPath] }, set: { value in update { $0[keyPath: keyPath] = value } })
     }
 
-    private var bedtime: Binding<Date> {
-        Binding(
-            get: {
-                let minutes = settings.bedtimeMinutes
-                return Calendar.current.date(bySettingHour: minutes / 60, minute: minutes % 60, second: 0, of: Date()) ?? Date()
-            },
-            set: { date in
-                let parts = Calendar.current.dateComponents([.hour, .minute], from: date)
-                update { $0.bedtimeMinutes = (parts.hour ?? 0) * 60 + (parts.minute ?? 0) }
-            },
-        )
-    }
-
     /// On: starts from the half-life in use; off: back to the one derived from the toggles.
     private var usesCustomHalfLife: Binding<Bool> {
         Binding(
@@ -157,7 +143,6 @@ struct CaffeineSettingsView: View {
         change(&updated)
         do {
             settings = try updated.save(to: profiles)
-            environment.refreshHydrationReminder() // bedtime is shared with hydration
         } catch {
             errorMessage = String(localized: "Couldn't save the caffeine settings: \(error.localizedDescription)")
         }

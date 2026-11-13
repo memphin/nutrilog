@@ -333,30 +333,6 @@ final class DiaryModel {
         performPlan { try $0.move(plannedID: entry.id, toSlot: slotID, day: targetDay ?? entry.day) }
     }
 
-    /// Plans one meal (or the whole day) of the current day — what was eaten and what is planned — on the next `days`
-    /// days, e.g. the same prepped lunch Monday to Friday.
-    func repeatOnNextDays(slotID: String?, days: Int) {
-        guard let repo = environment.mealPlan, days > 0 else { return }
-        let targets = (1 ... days).map { day.adding(days: $0) }
-        do {
-            let ids = try repo.copyToPlan(from: day, slotID: slotID, to: targets)
-            guard !ids.isEmpty else {
-                errorMessage = slotID == nil
-                    ? String(localized: "Nothing to plan — this day is empty.")
-                    : String(localized: "Nothing to plan — this meal is empty.")
-                return
-            }
-            let generation = environment.dataGeneration
-            let message = String(localized: "Planned \(ids.count) entries over \(days) days")
-            undo.offer(message) { [weak self] in
-                guard let self, environment.dataGeneration == generation else { return }
-                performPlan { try $0.softDelete(plannedIDs: ids) }
-            }
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-
     // MARK: Copy (backlog #12)
 
     /// Copies one meal (or the whole day when `slotID` is nil) from `source` into the current day. A future day gets
@@ -382,7 +358,7 @@ final class DiaryModel {
     private func copyIntoPlan(from source: LocalDay, slotID: String?) {
         guard let repo = environment.mealPlan else { return }
         do {
-            let ids = try repo.copyToPlan(from: source, slotID: slotID, to: [day])
+            let ids = try repo.copyToPlan(from: source, slotID: slotID, to: day)
             guard !ids.isEmpty else {
                 errorMessage = Self.nothingToCopy(source, today: today, slotID: slotID)
                 return

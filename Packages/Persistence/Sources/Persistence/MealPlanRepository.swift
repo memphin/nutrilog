@@ -291,13 +291,11 @@ public struct MealPlanRepository: Sendable {
 
     // MARK: Copy
 
-    /// Plans what `sourceDay` holds (one slot, or every slot when `slotID` is nil) on each of `targetDays`: its
-    /// active diary entries and its pending plan. Food entries are re-estimated from the food's current values.
-    /// Returns the new planned ids (soft-delete them to undo).
+    /// Plans what `sourceDay` holds (one slot, or every slot when `slotID` is nil) on `targetDay`: its active diary
+    /// entries and its pending plan. Food entries are re-estimated from the food's current values. Returns the new
+    /// planned ids (soft-delete them to undo).
     @discardableResult
-    public func copyToPlan(
-        from sourceDay: LocalDay, slotID: String? = nil, to targetDays: [LocalDay], targetSlotID: String? = nil,
-    ) throws -> [String] {
+    public func copyToPlan(from sourceDay: LocalDay, slotID: String? = nil, to targetDay: LocalDay) throws -> [String] {
         let now = clock.now()
         return try database.writer.write { db in
             var eaten = DiaryEntry.filter(DiaryEntry.Columns.day == sourceDay && DiaryEntry.Columns.deletedAt == nil)
@@ -308,26 +306,24 @@ public struct MealPlanRepository: Sendable {
             let planned = try Self.pending(db, in: sourceDay ... sourceDay).filter { slotID == nil || $0.mealSlotID == slotID }
             let sources = logged.map(Source.init(entry:)) + planned.map(Source.init(planned:))
             var created: [String] = []
-            for day in targetDays {
-                for source in sources {
-                    let slot = targetSlotID ?? source.slotID
-                    var name = source.name
-                    var nutrients = source.nutrients
-                    // A 0 g source (legacy or imported) keeps its own snapshot and name.
-                    if !source.isQuickAdd, source.grams > 0, let foodID = source.foodID,
-                       let food = try Food.fetchOne(db, key: foodID), food.deletedAt == nil
-                    {
-                        name = food.name
-                        nutrients = food.per100.scaled(toGrams: source.grams)
-                    }
-                    let entry = try PlannedEntry(
-                        day: day, mealSlotID: slot, foodID: source.foodID, displayName: name, grams: source.grams,
-                        servingLabel: source.servingLabel, isQuickAdd: source.isQuickAdd, nutrients: nutrients,
-                        sortOrder: PlannedEntry.nextSortOrder(db, day: day, slotID: slot), now: now,
-                    )
-                    try entry.insert(db)
-                    created.append(entry.id)
+            for source in sources {
+                var name = source.name
+                var nutrients = source.nutrients
+                // A 0 g source (legacy or imported) keeps its own snapshot and name.
+                if !source.isQuickAdd, source.grams > 0, let foodID = source.foodID,
+                   let food = try Food.fetchOne(db, key: foodID), food.deletedAt == nil
+                {
+                    name = food.name
+                    nutrients = food.per100.scaled(toGrams: source.grams)
                 }
+                let entry = try PlannedEntry(
+                    day: targetDay, mealSlotID: source.slotID, foodID: source.foodID, displayName: name,
+                    grams: source.grams, servingLabel: source.servingLabel, isQuickAdd: source.isQuickAdd,
+                    nutrients: nutrients,
+                    sortOrder: PlannedEntry.nextSortOrder(db, day: targetDay, slotID: source.slotID), now: now,
+                )
+                try entry.insert(db)
+                created.append(entry.id)
             }
             return created
         }

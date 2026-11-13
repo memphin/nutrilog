@@ -29,11 +29,6 @@ struct DashboardFeedbackTests {
         #expect(snapshot
             .accessibilityLabel(of: .sleep, state: .ready, locale: .dashboardEnglish) ==
             "Sleep, 7 hours 30 minutes asleep, close to the goal of 8 hours")
-        // The stages stay in the detail list.
-        var data = DashboardData(today: today)
-        data.metrics = [DailyMetricsRecord(night, fetchedAt: Date())]
-        let row = TileHistory.rows(for: .sleep, data: data).first
-        #expect(row?.detail?.contains("Deep") == true)
         // Only time in bed known: that is what the tile says.
         let inBedOnly = self.snapshot(DailyHealthMetrics(day: today, sleepInBedMin: 480))
         #expect(inBedOnly

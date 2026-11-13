@@ -64,11 +64,6 @@ public final class USDARateLimit: Sendable {
     public func block(until date: Date) {
         until.withLock { $0 = max($0 ?? date, date) }
     }
-
-    /// Ends the cool-down, e.g. when a different key is configured.
-    public func reset() {
-        until.withLock { $0 = nil }
-    }
 }
 
 /// ``USDAClient`` over the FDC REST API (SPEC §3.2, §10, §15, ADR-0004).

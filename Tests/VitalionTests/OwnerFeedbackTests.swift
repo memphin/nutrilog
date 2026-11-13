@@ -145,7 +145,6 @@ struct TotalEnergyTests {
         let snapshot = snapshot(active: 420, basal: 1650)
         let burned = snapshot.energyBurned
         #expect(burned?.totalKcal == 2070)
-        #expect(burned?.breakdown(.kcal) == "Active \(EnergyUnit.kcal.format(420)) · Resting \(EnergyUnit.kcal.format(1650))")
         #expect(snapshot.state(of: .totalEnergy, access: .requested, isFirstSync: false) == .ready)
         #expect(snapshot
             .accessibilityLabel(of: .totalEnergy, state: .ready, locale: .dashboardEnglish) ==
@@ -157,7 +156,6 @@ struct TotalEnergyTests {
         #expect(activeOnly.energyBurned?.totalKcal == nil)
         #expect(activeOnly.energyBurned?.activeKcal == 420)
         #expect(activeOnly.state(of: .totalEnergy, access: .requested, isFirstSync: false) == .ready)
-        #expect(activeOnly.energyBurned?.breakdown(.kcal) == "Active \(EnergyUnit.kcal.format(420)) · Resting unknown")
         #expect(activeOnly.accessibilityLabel(of: .totalEnergy, state: .ready, locale: .dashboardEnglish)
             == "Total energy, active 420 calories, close to the active goal of 500, resting energy unknown, no total yet")
 
@@ -189,21 +187,6 @@ struct TotalEnergyTests {
         #expect(none.energyBurned == nil)
         #expect(none.state(of: .totalEnergy, access: .requested, isFirstSync: false) == .noData(HealthKitClient.noDataMessage))
         #expect(none.state(of: .totalEnergy, access: .notRequested, isFirstSync: false) == .needsAccess)
-    }
-
-    @Test func `detail rows show the total and its parts`() {
-        var data = DashboardData(today: today)
-        data.metrics = [
-            DailyMetricsRecord(DailyHealthMetrics(day: today, activeKcal: 400, basalKcal: 1600), fetchedAt: Date()),
-            DailyMetricsRecord(DailyHealthMetrics(day: today.previous, activeKcal: 300), fetchedAt: Date()),
-        ]
-        let rows = TileHistory.rows(for: .totalEnergy, data: data)
-        #expect(rows[0].value == EnergyUnit.kcal.format(2000))
-        #expect(rows[0].detail == "Active \(EnergyUnit.kcal.format(400)) · Resting \(EnergyUnit.kcal.format(1600))")
-        #expect(rows[1].value == nil) // only active known: no total
-        #expect(rows[1].detail == "Active \(EnergyUnit.kcal.format(300)) · Resting unknown")
-        #expect(rows[2].value == nil)
-        #expect(rows[2].detail == nil)
     }
 }
 

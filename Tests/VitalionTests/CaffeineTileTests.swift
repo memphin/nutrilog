@@ -165,12 +165,10 @@ struct CaffeineSettingsTests {
 
         var settings = CaffeineSettings.default
         settings.thresholdMg = 263 // clamped, stepped
-        settings.bedtimeMinutes = -30 // 23:30
         settings.metabolism = CaffeineMetabolism(smoker: true, oralContraceptives: true, overrideHours: 7.3)
         settings.quickAddIDs = ["matcha", "unknown", "matcha", "cola", "espresso", "green_tea", "black_tea"]
         let saved = try settings.save(to: profiles)
         #expect(saved.thresholdMg == 200)
-        #expect(saved.bedtimeMinutes == 23 * 60 + 30)
         #expect(saved.metabolism.overrideHours == 7.5)
         #expect(saved.metabolism.halfLifeHours == 7.5)
         #expect(saved.quickAddIDs == ["matcha", "cola", "espresso", "green_tea"])

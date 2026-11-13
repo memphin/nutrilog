@@ -153,14 +153,6 @@ struct EnergyBurned: Equatable {
     var hasValue: Bool {
         activeKcal != nil || restingKcal != nil
     }
-
-    /// "Active 420 kcal · Resting 1,650 kcal"; a missing part says so.
-    func breakdown(_ unit: EnergyUnit) -> String {
-        let unknown = String(localized: "unknown", comment: "An energy value Apple Health has no data for")
-        let active = activeKcal.map { unit.format($0) } ?? unknown
-        let resting = restingKcal.map { unit.format($0) } ?? unknown
-        return [String(localized: "Active \(active)"), String(localized: "Resting \(resting)")].joined(separator: " · ")
-    }
 }
 
 struct BodyFatValue: Equatable {
@@ -344,72 +336,27 @@ struct TileHistoryRow: Equatable, Identifiable {
     }
 }
 
-/// The last days of one tile, newest first (the detail screen; charts come in phase 3).
+/// The last days of hydration or caffeine, newest first (the list on their detail screens).
 enum TileHistory {
     static let days = 14
 
+    /// Rows for `.water` or `.caffeine`; any other tile gets empty rows.
     /// - Parameters:
-    ///   - kcalByDay: diary energy per day (only for `.energy`).
     ///   - loggedFluidByDay: every drink logged in Vitalion per day — water, diary drinks, caffeine drinks (only
     ///     for `.water`).
     ///   - caffeineByDay: caffeine per day, quick-adds and diary (only for `.caffeine`).
     static func rows(
         for tile: DashboardTile,
         data: DashboardData,
-        kcalByDay: [LocalDay: Double] = [:],
         loggedFluidByDay: [LocalDay: Double] = [:],
         caffeineByDay: [LocalDay: Double] = [:],
-        energyUnit: EnergyUnit = .kcal,
-        calendar: Calendar = .current,
     ) -> [TileHistoryRow] {
-        let snapshot = DashboardSnapshot(data, calendar: calendar)
         let metrics = Dictionary(data.metrics.map { ($0.day, $0.metrics) }) { first, _ in first }
-        let weights = Dictionary(snapshot.dayWeights.map { ($0.day, $0) }) { first, _ in first }
-        var weightByDay: [LocalDay: Double] = [:]
-        for (day, weight) in weights {
-            if let kg = weight.kg {
-                weightByDay[day] = kg
-            }
-        }
-        let trend = WeightTrend.trendByDay(weightByDay, through: data.today)
         return (0 ..< days).map { offset in
             let day = data.today.adding(days: -offset)
-            let row = metrics[day]
             switch tile {
-            case .energy:
-                let kcal = kcalByDay[day]
-                return TileHistoryRow(day: day, value: kcal.map { energyUnit.format($0) })
-            case .steps:
-                return TileHistoryRow(day: day, value: row?.steps.map { String(localized: "\($0) steps") })
-            case .sleep:
-                let asleep = row?.sleepAsleepMin ?? row?.sleepInBedMin
-                return TileHistoryRow(day: day, value: asleep.map(DashboardFormat.duration), detail: row.flatMap(DashboardFormat.stages))
-            case .weight:
-                let weight = weights[day]
-                let kg = weight?.kg
-                return TileHistoryRow(
-                    day: day,
-                    value: kg.map(DashboardFormat.kg),
-                    detail: kg == nil ? nil : [
-                        trend[day].map { String(localized: "Trend \(DashboardFormat.kg($0))") },
-                        weight?.isManual == true ? String(localized: "Entered in Vitalion") : nil,
-                    ].compactMap(\.self).joined(separator: " · "),
-                )
-            case .bodyFat:
-                return TileHistoryRow(day: day, value: weights[day]?.bodyFatPct.map(DashboardFormat.percent))
-            case .totalEnergy:
-                let burned = EnergyBurned(activeKcal: row?.activeKcal, restingKcal: row?.basalKcal)
-                return TileHistoryRow(
-                    day: day,
-                    value: burned.totalKcal.map { energyUnit.format($0) },
-                    detail: burned.hasValue ? burned.breakdown(energyUnit) : nil,
-                )
-            case .restingHeartRate:
-                return TileHistoryRow(day: day, value: row?.restingHR.map(DashboardFormat.bpm))
-            case .hrv:
-                return TileHistoryRow(day: day, value: row?.hrvSDNNms.map(DashboardFormat.ms))
             case .water:
-                return hydrationRow(day, totalMl: (loggedFluidByDay[day] ?? 0) + (row?.waterMl ?? 0), data: data)
+                return hydrationRow(day, totalMl: (loggedFluidByDay[day] ?? 0) + (metrics[day]?.waterMl ?? 0), data: data)
             case .caffeine:
                 let mg = caffeineByDay[day] ?? 0
                 return TileHistoryRow(
@@ -418,6 +365,8 @@ enum TileHistory {
                     detail: CaffeineLevel.isOverLimit(totalMg: mg, limitMg: data.caffeineSettings.dailyLimitMg)
                         ? String(localized: "Over the daily \(CaffeineStatus.mg(data.caffeineSettings.dailyLimitMg))") : nil,
                 )
+            default:
+                return TileHistoryRow(day: day)
             }
         }
     }
@@ -444,19 +393,6 @@ enum DashboardFormat {
         return rest == 0
             ? String(localized: "\(hours)h", comment: "Short duration in hours")
             : String(localized: "\(hours)h \(rest)min", comment: "Short duration in hours and minutes")
-    }
-
-    /// "Core 3h 30min · Deep 1h 15min · REM 1h 40min · Awake 10min"; nil without stages.
-    static func stages(_ metrics: DailyHealthMetrics) -> String? {
-        // Whole phrases per sleep stage, so a translation can reorder name and duration.
-        let parts: [(Int?, (String) -> String)] = [
-            (metrics.sleepCoreMin, { String(localized: "Core \($0)", comment: "Sleep stage and its duration") }),
-            (metrics.sleepDeepMin, { String(localized: "Deep \($0)", comment: "Sleep stage and its duration") }),
-            (metrics.sleepRemMin, { String(localized: "REM \($0)", comment: "Sleep stage and its duration") }),
-            (metrics.sleepAwakeMin, { String(localized: "Awake \($0)", comment: "Sleep stage and its duration") }),
-        ]
-        let text = parts.compactMap { minutes, phrase in minutes.map { phrase(duration($0)) } }
-        return text.isEmpty ? nil : text.joined(separator: " · ")
     }
 
     static func kg(_ value: Double) -> String {

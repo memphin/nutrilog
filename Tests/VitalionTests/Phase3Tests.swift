@@ -724,7 +724,7 @@ struct TrendsDataTests {
         var weights: [DayWeight] = []
         for row in metrics {
             if let kg = row.weightKg {
-                weights.append(DayWeight(day: row.day, kg: kg, bodyFatPct: 20, isManual: false))
+                weights.append(DayWeight(day: row.day, kg: kg, bodyFatPct: 20))
             }
         }
         return StatsBuilder.build(

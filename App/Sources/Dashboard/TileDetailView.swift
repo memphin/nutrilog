@@ -3,9 +3,8 @@ import DesignSystem
 import Persistence
 import SwiftUI
 
-/// A tile's detail: its chart (FR-51, backlog #38) and the last 14 days as a list. Weight lists the manual entries
-/// (edit, delete with undo). Hydration and caffeine have their own details (`HydrationDetailView`,
-/// `CaffeineDetailView`).
+/// A tile's detail: its chart (FR-51, backlog #38). Weight adds a weigh-in and links to the manual entries (edit,
+/// delete with undo). Hydration and caffeine have their own details (`HydrationDetailView`, `CaffeineDetailView`).
 struct TileDetailView: View {
     let tile: DashboardTile
     @Bindable var model: DashboardModel
@@ -26,7 +25,6 @@ private struct MetricDetailView: View {
     let tile: DashboardTile
     @Bindable var model: DashboardModel
     @State private var weightSheet: WeightSheetTarget?
-    @State private var rows: [TileHistoryRow] = []
 
     var body: some View {
         List {
@@ -38,16 +36,18 @@ private struct MetricDetailView: View {
                 if tile == .energy {
                     NavigationLink("Macros chart") { MetricChartScreen(metric: .macros) }
                 }
+            } footer: {
+                if let description = tile.detailDescription {
+                    Text(description)
+                }
             }
             switch tile {
             case .weight:
                 Section {
                     Button("Add weight", systemImage: "plus") { weightSheet = .new }
                 }
-                manualWeights
                 Section {
-                    // Loaded on demand: the dashboard only reads its history window, so older weigh-ins are
-                    // edited and deleted from this list.
+                    // Loaded on demand: the dashboard only reads its history window.
                     NavigationLink("All weigh-ins") { AllWeighInsView(model: model) }
                 } footer: {
                     Text("Every weight entered in Vitalion, however old.")
@@ -55,44 +55,13 @@ private struct MetricDetailView: View {
             default:
                 EmptyView()
             }
-            Section {
-                ForEach(rows) { row in
-                    VStack(alignment: .leading, spacing: NL.Spacing.xxs) {
-                        LabeledContent(Format.day(row.day, today: model.data.today)) {
-                            Text(row.value ?? "—").monospacedDigit()
-                                .foregroundStyle(row.value == nil ? .tertiary : .primary)
-                        }
-                        if let detail = row.detail, !detail.isEmpty {
-                            Text(detail).font(.caption).foregroundStyle(.secondary)
-                        }
-                    }
-                }
-            } header: {
-                Text("Last \(TileHistory.days) days")
-            } footer: {
-                if let description = tile.detailDescription {
-                    Text(description)
-                }
-            }
         }
         .navigationTitle(tile.title)
         .refreshable { await model.refresh() }
-        .task(id: model.data) { rows = model.history(for: tile) }
         .sheet(item: $weightSheet) { target in
             WeightEntrySheet(model: model, editing: target.entry)
         }
         .undoToast(model.undo)
-    }
-
-    @ViewBuilder private var manualWeights: some View {
-        let entries = model.data.manualWeights.reversed()
-        if !entries.isEmpty {
-            Section("Entered in Vitalion") {
-                ForEach(Array(entries)) { entry in
-                    ManualWeightRow(entry: entry, model: model) { weightSheet = .edit(entry) }
-                }
-            }
-        }
     }
 }
 
@@ -119,8 +88,8 @@ private struct ManualWeightRow: View {
     }
 }
 
-/// Every manual weigh-in, newest first — also those older than the dashboard's history window, which the weight
-/// detail doesn't list inline. Observed only while this screen is open.
+/// Every manual weigh-in, newest first, also those older than the dashboard's history window. Observed only while
+/// this screen is open.
 private struct AllWeighInsView: View {
     @Bindable var model: DashboardModel
     @State private var weightSheet: WeightSheetTarget?

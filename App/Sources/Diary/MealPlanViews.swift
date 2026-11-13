@@ -120,46 +120,6 @@ struct EditPlannedView: View {
     }
 }
 
-/// "Plan for the next days…": how many following days get the same meal (or day), e.g. a prepped lunch for the week.
-struct RepeatPlanSheet: View {
-    let title: String
-    let from: LocalDay
-    let onPlan: (Int) -> Void
-    @Environment(\.dismiss) private var dismiss
-    @State private var days = 4
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    Stepper("Next \(days) days", value: $days, in: 1 ... 13)
-                } footer: {
-                    Text("""
-                    Adds it to the plan from \(Self.label(from.next)) to \(Self.label(from.adding(days: days))). \
-                    Nothing is logged until you mark it as eaten on the day.
-                    """)
-                }
-            }
-            .navigationTitle(title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Plan") {
-                        onPlan(days)
-                        dismiss()
-                    }
-                }
-            }
-        }
-        .presentationDetents([.medium])
-    }
-
-    static func label(_ day: LocalDay) -> String {
-        day.startDate().formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated))
-    }
-}
-
 // MARK: - Week plan and prep list
 
 /// The next 7 days at a glance, and a prep list that sums up what to cook or buy for them.
@@ -275,10 +235,7 @@ struct MealPlanView: View {
             }
         }
         Section {} footer: {
-            Text("""
-            Plan a day by opening it in the diary and adding food. To prep the same meal for several days, \
-            use “Plan for the next days…” in a meal's menu. Planned food counts only once you mark it as eaten.
-            """)
+            Text("Plan a day by opening it in the diary and adding food. Planned food counts only once you mark it as eaten.")
         }
     }
 
@@ -340,7 +297,7 @@ struct MealPlanView: View {
             Toggle("Start tomorrow", isOn: $prepFromTomorrow)
         } footer: {
             Text("""
-            \(RepeatPlanSheet.label(prepRange.lowerBound)) – \(RepeatPlanSheet.label(prepRange.upperBound)). \
+            \(Self.label(prepRange.lowerBound)) – \(Self.label(prepRange.upperBound)). \
             Sums up planned food that isn't eaten yet.
             """)
         }
@@ -398,6 +355,11 @@ struct MealPlanView: View {
         return "\(NutrientRow.format(item.totalGrams, unit: base.symbol)) \(base.symbol)"
     }
 
+    /// "Mon 9 Nov".
+    static func label(_ day: LocalDay) -> String {
+        day.startDate().formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated))
+    }
+
     private func dayList(_ days: [LocalDay]) -> String {
         days.map { $0.startDate().formatted(.dateTime.weekday(.abbreviated)) }.joined(separator: ", ")
     }
@@ -405,7 +367,7 @@ struct MealPlanView: View {
     /// Plain text for the share sheet (notes, reminders, a shopping list).
     private var prepText: String {
         let header = String(
-            localized: "Meal prep \(RepeatPlanSheet.label(prepRange.lowerBound)) – \(RepeatPlanSheet.label(prepRange.upperBound))",
+            localized: "Meal prep \(Self.label(prepRange.lowerBound)) – \(Self.label(prepRange.upperBound))",
         )
         let lines = prepItems.map { "• \($0.name): \(totalAmount($0)) (\($0.portions)×)" }
         return ([header] + lines).joined(separator: "\n")

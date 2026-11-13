@@ -1,3 +1,4 @@
+import FoodSources
 import Foundation
 import Persistence
 import Synchronization
@@ -18,6 +19,21 @@ struct AppEnvironmentTests {
         let config = AppConfig(usdaAPIKey: nil)
         #expect(config.usdaAPIKey == nil)
         #expect(config.offContact == AppConfig.defaultOFFContact)
+    }
+
+    @Test func `without a build-time key USDA is unavailable and the app still works`() async throws {
+        let env = AppEnvironment.preview()
+        #expect(!env.usda.isAvailable)
+        await #expect(throws: USDAError.missingAPIKey) {
+            try await env.usda.search(query: "apple")
+        }
+        #expect(env.foods != nil)
+        #expect(env.search != nil)
+    }
+
+    @Test func `the build-time key makes USDA available`() {
+        let env = AppEnvironment(database: .failed("unused"), config: AppConfig(usdaAPIKey: "build-key"), bundledIndex: nil)
+        #expect(env.usda.isAvailable)
     }
 
     @Test func `main bundle config reads info plist`() {

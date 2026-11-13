@@ -133,8 +133,8 @@ struct WeightTrendComputeTests {
         #expect(WeightTrend.trendByDay([start: 80, start.next: 81])[start.next] == 80.1)
         #expect(WeightTrend.defaultAlpha == 0.1)
         let weights = [
-            DayWeight(day: start, kg: 80, bodyFatPct: nil, isManual: false),
-            DayWeight(day: start.next, kg: nil, bodyFatPct: 20, isManual: false),
+            DayWeight(day: start, kg: 80, bodyFatPct: nil),
+            DayWeight(day: start.next, kg: nil, bodyFatPct: 20),
         ]
         #expect(WeightTrend.samples(weights) == [start: 80])
     }

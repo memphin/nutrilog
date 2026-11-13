@@ -399,7 +399,6 @@ struct DashboardModelTests {
         // Immediately, before any Health write or read.
         #expect(await waitUntil { model.snapshot.weight?.latestKg == 79.4 })
         #expect(model.snapshot.bodyFat?.pct == 17.5)
-        #expect(model.snapshot.weight?.latest.isManual == true)
 
         // Written to Health, read back: our own sample is ignored, so daily_metrics has no weight for today.
         await env.refreshHealth()
@@ -424,7 +423,6 @@ struct DashboardModelTests {
         let entry = try #require(try env.weights?.latest())
         model.deleteWeight(entry)
         #expect(await waitUntil { model.snapshot.weight?.latestKg == 80.1 })
-        #expect(model.snapshot.weight?.latest.isManual == false)
     }
 
     @Test func `weigh-ins older than the history window can still be listed, edited, deleted and restored`() async throws {

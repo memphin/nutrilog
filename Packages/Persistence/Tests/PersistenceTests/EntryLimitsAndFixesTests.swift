@@ -225,7 +225,7 @@ struct ZeroGramEntryTests {
     @Test func `planning from a 0 g entry keeps its snapshot`() throws {
         let f = try Fixture()
         _ = try zeroGramEntry(f, day: day("2026-11-09"))
-        let ids = try plans(f).copyToPlan(from: day("2026-11-09"), to: [day("2026-11-12")])
+        let ids = try plans(f).copyToPlan(from: day("2026-11-09"), to: day("2026-11-12"))
         let planned = try #require(try plans(f).entry(id: ids[0]))
         #expect(planned.kcal == 150)
         #expect(planned.displayName == "Old soup")

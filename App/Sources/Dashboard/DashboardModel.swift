@@ -86,8 +86,7 @@ final class DashboardModel {
         updateLayout { $0.show(tile) }
     }
 
-    /// Applies `change` and saves it (the same setting Settings → Dashboard edits); the layout changes only when the
-    /// save worked.
+    /// Applies `change` and saves it; the layout changes only when the save worked.
     private func updateLayout(_ change: (inout DashboardLayout) -> Void) {
         guard let profiles = environment.profiles else { return }
         var updated = layout
@@ -430,19 +429,11 @@ final class DashboardModel {
 
     // MARK: Detail data
 
-    /// The last `TileHistory.days` days of `tile`, newest first.
+    /// The last `TileHistory.days` days of `.water` or `.caffeine`, newest first.
     func history(for tile: DashboardTile) -> [TileHistoryRow] {
         let days = (0 ..< TileHistory.days).map { data.today.adding(days: -$0) }
-        var kcal: [LocalDay: Double] = [:]
         var fluid: [LocalDay: Double] = [:]
         var caffeine: [LocalDay: Double] = [:]
-        if tile == .energy, let diary = environment.diary {
-            for day in days {
-                if let dayDiary = try? diary.diary(for: day), dayDiary.entryCount > 0 {
-                    kcal[day] = dayDiary.totals.kcal
-                }
-            }
-        }
         if tile == .water, let repo = environment.hydration, let first = days.last,
            let intakes = try? repo.intakes(in: first ... data.today)
         {
@@ -455,10 +446,7 @@ final class DashboardModel {
                 caffeine[day] = intakes.totalMg(on: day)
             }
         }
-        return TileHistory.rows(
-            for: tile, data: data, kcalByDay: kcal, loggedFluidByDay: fluid, caffeineByDay: caffeine,
-            energyUnit: energyUnit, calendar: calendar,
-        )
+        return TileHistory.rows(for: tile, data: data, loggedFluidByDay: fluid, caffeineByDay: caffeine)
     }
 
     // MARK: Helpers

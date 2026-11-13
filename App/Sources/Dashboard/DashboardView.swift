@@ -4,8 +4,7 @@ import Persistence
 import SwiftUI
 
 /// Today: intake, weight, steps, sleep and the other Health tiles (backlog #28, FR-41). Long-press a tile to edit the
-/// layout right here (drag to reorder, hide, show); Settings → Dashboard edits the same layout. Pull to refresh
-/// re-reads Health.
+/// layout right here (drag to reorder, hide, show). Pull to refresh re-reads Health.
 struct DashboardView: View {
     @Environment(AppEnvironment.self) private var environment
     /// Opens in edit mode (debug screens).
@@ -58,7 +57,7 @@ private struct DashboardContent: View {
                             systemImage: "square.grid.2x2",
                             message: model.isEditing
                                 ? String(localized: "Tap + on a hidden tile below to show it again.")
-                                : String(localized: "Edit Today to show them again, or use Settings → Dashboard."),
+                                : String(localized: "Edit Today to show them again."),
                         )
                         if !model.isEditing {
                             Button("Edit Today") { model.isEditing = true }

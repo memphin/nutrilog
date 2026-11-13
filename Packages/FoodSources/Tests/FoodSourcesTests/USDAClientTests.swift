@@ -102,15 +102,6 @@ struct USDAClientTests {
         #expect(transport.requests.isEmpty)
     }
 
-    @Test func `reset ends the cool-down`() {
-        let clock = TestClock()
-        let rateLimit = USDARateLimit()
-        rateLimit.block(until: clock.now.addingTimeInterval(60))
-        #expect(rateLimit.blockedUntil(now: clock.now) != nil)
-        rateLimit.reset()
-        #expect(rateLimit.blockedUntil(now: clock.now) == nil)
-    }
-
     // MARK: - Missing key
 
     @Test(arguments: [nil, "", "   \n"])

@@ -381,7 +381,7 @@ struct CheckInRecordView: View {
 
 // MARK: - Settings
 
-/// Settings → Weekly check-in: the weekday and the opt-in reminder.
+/// Check-in day & reminder (from Trends): the weekday and the opt-in reminder.
 struct CheckInSettingsView: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var weekday = 2

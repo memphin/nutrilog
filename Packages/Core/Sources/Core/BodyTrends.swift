@@ -33,14 +33,11 @@ public struct DayWeight: Hashable, Sendable {
     public var day: LocalDay
     public var kg: Double?
     public var bodyFatPct: Double?
-    /// True when `kg` comes from a manual entry.
-    public var isManual: Bool
 
-    public init(day: LocalDay, kg: Double?, bodyFatPct: Double?, isManual: Bool) {
+    public init(day: LocalDay, kg: Double?, bodyFatPct: Double?) {
         self.day = day
         self.kg = kg
         self.bodyFatPct = bodyFatPct
-        self.isManual = isManual
     }
 }
 
@@ -61,14 +58,14 @@ public enum WeightReconciler {
     ) -> [DayWeight] {
         var result: [LocalDay: DayWeight] = [:]
         for metrics in health where metrics.weightKg != nil || metrics.bodyFatPct != nil {
-            result[metrics.day] = DayWeight(day: metrics.day, kg: metrics.weightKg, bodyFatPct: metrics.bodyFatPct, isManual: false)
+            result[metrics.day] = DayWeight(day: metrics.day, kg: metrics.weightKg, bodyFatPct: metrics.bodyFatPct)
         }
         let manualByDay = Dictionary(grouping: manual) { LocalDay($0.measuredAt, calendar: calendar) }
         for (day, entries) in manualByDay {
             let sorted = entries.sorted(by: ManualWeight.enteredLater)
             guard let chosen = sorted.first else { continue }
             let fat = chosen.bodyFatPct ?? sorted.first { $0.bodyFatPct != nil }?.bodyFatPct ?? result[day]?.bodyFatPct
-            result[day] = DayWeight(day: day, kg: chosen.kg, bodyFatPct: fat, isManual: true)
+            result[day] = DayWeight(day: day, kg: chosen.kg, bodyFatPct: fat)
         }
         return result.values.sorted { $0.day < $1.day }
     }

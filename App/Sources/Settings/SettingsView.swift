@@ -11,7 +11,6 @@ struct SettingsView: View {
     @State private var sleepGoal = SleepGoal.defaultMinutes
     @State private var activeEnergyGoal = ActiveEnergyGoal.defaultKcal
     @State private var errorMessage: String?
-    @State private var usdaKeyDraft = ""
 
     var body: some View {
         NavigationStack {
@@ -19,10 +18,8 @@ struct SettingsView: View {
                 Section {
                     NavigationLink("Profile & targets") { ProfileTargetsView() }
                     NavigationLink("Training days") { TrainingDaysSettingsView() }
-                    NavigationLink("Dashboard") { DashboardSettingsView() }
                     NavigationLink("Meal slots") { MealSlotsEditor() }
                     NavigationLink("Apple Health") { HealthSettingsView() }
-                    NavigationLink("Weekly check-in") { CheckInSettingsView() }
                 }
 
                 Section("Units") {
@@ -84,18 +81,6 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    usdaKeyRows
-                } header: {
-                    Text("Food sources")
-                } footer: {
-                    Text(usdaKeyFooter)
-                }
-
-                Section("Diagnostics") {
-                    NavigationLink("Barcode resolution") { BarcodeResolutionView() }
-                }
-
-                Section {
                     NavigationLink("About & licenses") { AboutView() }
                 }
             }
@@ -113,61 +98,6 @@ struct SettingsView: View {
             })) {
                 Button("OK", role: .cancel) {}
             } message: { Text(errorMessage ?? "") }
-        }
-    }
-
-    /// "USDA API key": a secure field with Save, or the saved key's status with Remove.
-    @ViewBuilder private var usdaKeyRows: some View {
-        if environment.usdaKeySource == .keychain {
-            LabeledContent("USDA API key", value: String(localized: "Saved", comment: "State of the USDA API key"))
-            Button("Remove USDA API key", role: .destructive) { removeUSDAKey() }
-        } else if environment.usdaKeychainUnreadable {
-            // A key may be stored but can't be read yet: don't offer an empty field that looks like "no key".
-            LabeledContent("USDA API key", value: String(localized: "Keychain locked"))
-        } else {
-            SecureField("USDA API key", text: $usdaKeyDraft)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .submitLabel(.done)
-                .onSubmit { saveUSDAKey() }
-            Button("Save USDA API key") { saveUSDAKey() }
-                .disabled(usdaKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-        }
-    }
-
-    private var usdaKeyFooter: String {
-        if environment.usdaKeySource != .keychain, environment.usdaKeychainUnreadable {
-            return String(
-                localized: "If you saved a USDA API key, it can't be read until this iPhone is unlocked. It then loads automatically.",
-            )
-        }
-        return switch environment.usdaKeySource {
-        case .keychain:
-            String(localized: "Online USDA FoodData Central search uses your key, stored in this iPhone's Keychain.")
-        case .buildConfig:
-            String(localized: "Online USDA FoodData Central search uses the key built into this version. Save your own to use it instead.")
-        case .none:
-            String(localized: """
-            Optional. With a free key from api.data.gov you can also search USDA FoodData Central online. \
-            It's stored only in this iPhone's Keychain.
-            """)
-        }
-    }
-
-    private func saveUSDAKey() {
-        do {
-            try environment.saveUSDAKey(usdaKeyDraft)
-            usdaKeyDraft = ""
-        } catch {
-            errorMessage = String(localized: "Couldn't save the USDA API key: \(error.localizedDescription)")
-        }
-    }
-
-    private func removeUSDAKey() {
-        do {
-            try environment.removeUSDAKey()
-        } catch {
-            errorMessage = String(localized: "Couldn't remove the USDA API key: \(error.localizedDescription)")
         }
     }
 

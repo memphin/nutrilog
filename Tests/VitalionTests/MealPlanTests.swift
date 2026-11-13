@@ -44,17 +44,6 @@ struct MealPlanTests {
         #expect(try plan.pending(for: model.day).map(\.id) == [planned.id])
     }
 
-    @Test func `repeat a meal on the next days`() throws {
-        let (env, food) = try environment()
-        let model = DiaryModel(environment: env)
-        try env.mealPlan?.plan(food: food, quantity: .base(60), slotID: "lunch", day: model.day)
-        model.repeatOnNextDays(slotID: "lunch", days: 4)
-        let pending = try #require(try env.mealPlan?.pending(in: model.day.next ... model.day.adding(days: 6)))
-        #expect(pending.map(\.day) == (1 ... 4).map { model.day.adding(days: $0) })
-        model.repeatOnNextDays(slotID: "dinner", days: 2)
-        #expect(model.errorMessage?.hasPrefix("Nothing to plan") == true)
-    }
-
     @Test func `removing a planned entry offers undo`() throws {
         let (env, food) = try environment()
         let model = DiaryModel(environment: env)
