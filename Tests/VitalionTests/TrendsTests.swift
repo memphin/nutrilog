@@ -335,3 +335,34 @@ struct TrendsTodayTests {
         #expect(report.averageSteps == 9000 && report.averageWaterMl == 2000 && report.averageSleepMin == 420)
     }
 }
+
+struct BarAxisTopTests {
+    private func series(_ points: [ChartPoint], average: Double? = nil) -> ChartSeries {
+        ChartSeries(
+            metric: .steps, range: .month, points: points, average: average,
+            daysWithData: points.count, unitLabel: "steps", bucketDays: 1,
+        )
+    }
+
+    private func point(_ day: Int, value: Double? = nil) -> ChartPoint {
+        ChartPoint(day: LocalDay("2026-11-01")!.adding(days: day), spanDays: 1, value: value)
+    }
+
+    @Test func `the axis ends at the next round number above the tallest bar`() {
+        let peak = series([point(0, value: 21805), point(1, value: 4517)], average: 9679)
+        #expect(ChartBuilder.barAxisTop(peak, goal: 8000) == 25000)
+        #expect(ChartBuilder.barAxisTop(series([point(0, value: 12000)]), goal: nil) == 15000)
+        #expect(ChartBuilder.barAxisTop(series([point(0, value: 9000)]), goal: nil) == 10000)
+        #expect(ChartBuilder.barAxisTop(series([point(0, value: 10000)]), goal: nil) == 10000)
+    }
+
+    @Test func `the goal line and stacked bars stay inside the axis`() {
+        #expect(ChartBuilder.barAxisTop(series([point(0, value: 6000)]), goal: 10500) == 15000)
+        var stacked = point(0)
+        stacked.proteinG = 150
+        stacked.carbsG = 250
+        stacked.fatG = 80
+        #expect(ChartBuilder.barAxisTop(series([stacked]), goal: nil) == 500)
+        #expect(ChartBuilder.barAxisTop(series([point(0)]), goal: nil) == nil)
+    }
+}

@@ -177,7 +177,7 @@ struct MetricChartView: View {
 
     private func chart(_ series: ChartSeries) -> some View {
         let component: Calendar.Component = series.bucketDays == 7 ? .weekOfYear : .day
-        return Chart {
+        let chart = Chart {
             ForEach(series.points) { point in
                 marks(point, series: series, component: component)
             }
@@ -214,8 +214,19 @@ struct MetricChartView: View {
                 : [NL.Palette.protein, NL.Palette.carbs, NL.Palette.fat],
         )
         .chartLegend(metric == .macros || metric == .totalEnergy ? .visible : .hidden)
-        .chartYScale(domain: .automatic(includesZero: metric.isBar))
         .chartXSelection(value: $selectedDate)
+        return yScaled(chart, series)
+    }
+
+    /// Bar charts start at zero and end just above the tallest bar (see `ChartBuilder.barAxisTop`); line charts
+    /// fit their data.
+    @ViewBuilder
+    private func yScaled(_ chart: some View, _ series: ChartSeries) -> some View {
+        if metric.isBar, let top = ChartBuilder.barAxisTop(series, goal: goal) {
+            chart.chartYScale(domain: 0 ... top)
+        } else {
+            chart.chartYScale(domain: .automatic(includesZero: metric.isBar))
+        }
     }
 
     @ChartContentBuilder
