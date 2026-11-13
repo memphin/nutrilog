@@ -2190,45 +2190,6 @@
         }
       }
     },
-    "%lldh" : {
-      "comment" : "Short duration in hours",
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld h"
-          }
-        }
-      }
-    },
-    "%lldh %lldmin" : {
-      "comment" : "Short duration in hours and minutes",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$lldh %2$lldmin"
-          }
-        },
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld h %2$lld min"
-          }
-        }
-      }
-    },
-    "%lldmin" : {
-      "comment" : "Short duration in minutes",
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld min"
-          }
-        }
-      }
-    },
     "+%lld ml" : {
       "localizations" : {
         "hr" : {
@@ -2421,17 +2382,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Povezanost ne dokazuje da jedno uzrokuje drugo."
-          }
-        }
-      }
-    },
-    "A meal always uses the current values of its foods. Swipe to remove a food, hold and drag to reorder." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Obrok uvijek koristi trenutačne vrijednosti svojih namirnica. Povuci prstom za uklanjanje namirnice, zadrži i povuci za promjenu redoslijeda."
           }
         }
       }
@@ -4569,17 +4519,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Napravi namirnice za ono što često jedeš — lokalne specijalitete, domaća jela, pakirane proizvode — i kombiniraj namirnice u obroke."
-          }
-        }
-      }
-    },
-    "Create the food first in Foods, or scan it once." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Najprije napravi namirnicu u Namirnicama ili je jednom skeniraj."
           }
         }
       }
@@ -10617,12 +10556,12 @@
         }
       }
     },
-    "The tile says when the caffeine in your body drops below this line, and whether it will by bedtime. %@ is a common rule of thumb." : {
+    "The tile says when the caffeine in your body drops below this line, and whether it will by bedtime. %@ is a common rule of thumb. Bedtime is set in Settings → Hydration." : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pločica pokazuje kad kofein u tvom tijelu padne ispod ove granice i hoće li se to dogoditi do odlaska na spavanje. %@ često je pravilo."
+            "value" : "Pločica pokazuje kad kofein u tvom tijelu padne ispod ove granice i hoće li se to dogoditi do odlaska na spavanje. %@ često je pravilo. Vrijeme spavanja postavlja se u Postavkama → Hidracija."
           }
         }
       }

@@ -25,7 +25,7 @@ struct CaffeineSettingsView: View {
                 let threshold = CaffeineStatus.mg(CaffeineDefaults.sleepSafeThresholdMg)
                 Text("""
                 The tile says when the caffeine in your body drops below this line, and whether it will by bedtime. \
-                \(threshold) is a common rule of thumb.
+                \(threshold) is a common rule of thumb. Bedtime is set in Settings → Hydration.
                 """)
             }
 
