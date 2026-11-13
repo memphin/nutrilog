@@ -48,7 +48,7 @@ enum ChartMetric: String, CaseIterable, Identifiable {
         }
     }
 
-    /// The chart a dashboard tile opens; nil for caffeine, whose detail draws its own curve.
+    /// The chart a dashboard tile opens; nil for caffeine, whose detail draws its own curve, and the weekly report.
     init?(tile: DashboardTile) {
         switch tile {
         case .energy: self = .energy
@@ -60,7 +60,7 @@ enum ChartMetric: String, CaseIterable, Identifiable {
         case .totalEnergy: self = .totalEnergy
         case .restingHeartRate: self = .restingHeartRate
         case .hrv: self = .hrv
-        case .caffeine: return nil
+        case .caffeine, .weeklyReport: return nil
         }
     }
 }

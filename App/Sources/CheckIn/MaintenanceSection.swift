@@ -3,42 +3,28 @@ import DesignSystem
 import Persistence
 import SwiftUI
 
-/// "Trends": the maintenance estimate and weekly check-in, the history calendar and the weekly report. Charts open from
-/// the Today tiles.
-struct TrendsView: View {
+/// Settings → "Maintenance & check-in": the maintenance estimate (tap for how it was computed), the weekly check-in,
+/// its history and its day & reminder.
+struct MaintenanceSection: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var snapshot: ExpenditureSnapshot?
     @State private var showCheckIn = false
     @State private var explaining: CheckInFact?
 
     var body: some View {
-        NavigationStack {
-            List {
-                maintenanceSection
-                Section {
-                    NavigationLink { HistoryCalendarView() } label: { Label("History calendar", systemImage: "calendar") }
-                    NavigationLink { WeeklyReportView() } label: { Label("Weekly report", systemImage: "doc.text.below.ecg") }
-                }
-                Section {
-                    NavigationLink { CheckInHistoryView() } label: { Label("Check-in history", systemImage: "clock.arrow.circlepath") }
-                    NavigationLink { CheckInSettingsView() } label: { Label("Check-in day & reminder", systemImage: "bell") }
-                }
-            }
-            .navigationTitle("Trends")
-            .refreshable { reload() }
+        maintenanceSection
             .sheet(isPresented: $showCheckIn, onDismiss: reload) { CheckInView() }
             .sheet(item: $explaining) { ExplanationSheet(fact: $0) }
-        }
-        .task(id: TrendsKey(
-            today: environment.today, generation: environment.dataGeneration, tab: environment.selectedTab,
-            synced: environment.healthSync?.lastSyncedAt,
-        )) { reload() }
+            .task(id: Key(today: environment.today, generation: environment.dataGeneration, synced: environment.healthSync?.lastSyncedAt)) {
+                reload()
+            }
+            // Back from the check-in day & reminder, or from another tab: the check-in may be due now.
+            .onAppear(perform: reload)
     }
 
-    private struct TrendsKey: Hashable {
+    private struct Key: Hashable {
         var today: LocalDay
         var generation: Int
-        var tab: AppTab
         /// Weights arrive with Health syncs.
         var synced: Date?
     }
@@ -93,6 +79,10 @@ struct TrendsView: View {
             } else {
                 ProgressView()
             }
+            NavigationLink { CheckInHistoryView() } label: { Label("Check-in history", systemImage: "clock.arrow.circlepath") }
+            NavigationLink { CheckInSettingsView() } label: { Label("Check-in day & reminder", systemImage: "bell") }
+        } header: {
+            Text("Maintenance & check-in")
         } footer: {
             Text("Estimated from what you logged and how your weight moved over the last \(AdaptiveTDEE.windowDays) days.")
         }

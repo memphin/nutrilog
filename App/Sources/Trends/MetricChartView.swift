@@ -4,7 +4,7 @@ import DesignSystem
 import SwiftUI
 
 /// A chart of one metric with 1W / 1M / 3M / 1Y ranges, scrubbing and an average line (FR-51, backlog #38).
-/// Used on its own screen (Trends → Charts) and at the top of each dashboard tile's detail.
+/// Used on its own screen (Calories → Macros chart) and at the top of each dashboard tile's detail.
 struct MetricChartView: View {
     let metric: ChartMetric
     @Environment(AppEnvironment.self) private var environment
@@ -321,7 +321,7 @@ struct MetricChartView: View {
     }
 }
 
-/// Trends → Charts → one metric.
+/// One metric on its own screen (Calories → Macros chart).
 struct MetricChartScreen: View {
     let metric: ChartMetric
 

@@ -168,13 +168,13 @@ private struct TargetsForm: View {
                 if model.measured == nil {
                     Text("""
                     Without at least \(Energy.measuredMinimumDays) days of active and resting energy in Apple Health, maintenance \
-                    is estimated from your activity level. The weekly check-in (Trends) refines this with your real intake and \
+                    is estimated from your activity level. The weekly check-in (Settings) refines this with your real intake and \
                     weight trend.
                     """)
                 } else {
                     Text("""
                     Maintenance is your average total energy burned (active + resting, Apple Health) over the last \
-                    \(Energy.measuredWindowDays) days. The weekly check-in (Trends) refines this with your real intake and \
+                    \(Energy.measuredWindowDays) days. The weekly check-in (Settings) refines this with your real intake and \
                     weight trend.
                     """)
                 }

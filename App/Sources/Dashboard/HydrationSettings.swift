@@ -114,7 +114,7 @@ struct HydrationSettings: Equatable {
 
 /// The day's hydration goal (spec §1): 30 ml/kg of the weight trend on or before the day, however old (weight
 /// mode), or the fixed amount — raised by the day's boost on a training day (`TrainingBoost.waterMl`). The one goal
-/// lookup: Today's tile and detail, the streak, the reminders, the widget, Siri and Trends all read the weight with
+/// lookup: Today's tile and detail, the streak, the reminders, the widget, Siri and the charts all read the weight with
 /// `trendsKg`, the training days with `trainingDays` and the goal with `goalMl`, so they always agree. Settings shows
 /// the base goal (`TrainingDays.none`).
 enum HydrationGoalResolver {

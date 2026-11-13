@@ -107,6 +107,18 @@ private struct DashboardContent: View {
             model.reloadSettings()
             model.undo.dismiss()
         }
+        .task(id: LastWeekKey(
+            today: environment.today, generation: environment.dataGeneration, unit: environment.energyUnit,
+            synced: environment.healthSync?.lastSyncedAt,
+        )) { model.reloadLastWeek() }
+    }
+
+    /// What last week's tile is re-read on: diary edits, a new day, the energy unit, Health syncs (weights, steps).
+    private struct LastWeekKey: Hashable {
+        var today: LocalDay
+        var generation: Int
+        var unit: EnergyUnit
+        var synced: Date?
     }
 }
 
@@ -154,7 +166,18 @@ struct DashboardTileView: View {
     }
 
     private var detailHint: String {
-        tile == .caffeine ? String(localized: "Shows the caffeine curve and today's drinks") : String(localized: "Shows the last 14 days")
+        switch tile {
+        case .caffeine: String(localized: "Shows the caffeine curve and today's drinks")
+        case .weeklyReport: String(localized: "Shows the weekly report")
+        default: String(localized: "Shows the last 14 days")
+        }
+    }
+
+    private func spokenLabel(state: TileState, now: Date) -> String {
+        if tile == .weeklyReport {
+            return LastWeekTileText.spoken(model.lastWeek, unit: model.energyUnit)
+        }
+        return model.snapshot.accessibilityLabel(of: tile, state: state, energyUnit: model.energyUnit, now: now)
     }
 
     @ViewBuilder private func card(now: Date) -> some View {
@@ -190,7 +213,7 @@ struct DashboardTileView: View {
             // One element: "Weight, 81.4 kilograms". Activating opens the detail.
             card
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(snapshot.accessibilityLabel(of: tile, state: state, energyUnit: model.energyUnit, now: now))
+                .accessibilityLabel(spokenLabel(state: state, now: now))
                 .accessibilityValue(trend ?? "")
                 .accessibilityAddTraits(.isButton)
                 .accessibilityHint(detailHint)
@@ -313,7 +336,57 @@ private struct TileContent: View {
             CaffeineTileContent(
                 status: model.caffeineStatus(at: now), drinks: snapshot.caffeineSettings.quickAddDrinks,
             ) { model.addCaffeine(drink: $0) }
+        case .weeklyReport:
+            LastWeekTileContent(report: model.lastWeek, unit: model.energyUnit)
         }
+    }
+}
+
+/// Last week on Today: the average intake per logged day, the average target and the weight trend's change.
+private struct LastWeekTileContent: View {
+    let report: WeeklyReport?
+    let unit: EnergyUnit
+
+    var body: some View {
+        if let report {
+            VStack(alignment: .leading, spacing: NL.Spacing.xxs) {
+                if let kcal = report.averageIntake?.kcal {
+                    ValueText(Format.whole(unit.display(kcal)), unit: String(localized: "\(unit.symbol) / day", comment: "Energy unit per day, e.g. “kcal / day”"))
+                    if let target = report.averageTargetKcal {
+                        Text("Target \(unit.format(target))").font(.footnote).foregroundStyle(.secondary)
+                    }
+                } else {
+                    Text("Nothing logged").font(NL.Typography.smallNumber).foregroundStyle(.tertiary)
+                }
+                if let change = report.trendChangeKg {
+                    Text("Weight \(Format.kgChange(change))").font(.footnote).foregroundStyle(.secondary)
+                }
+                Text(WeeklyReportView.title(report.start)).font(.caption).foregroundStyle(.tertiary)
+            }
+        } else {
+            ProgressView()
+        }
+    }
+}
+
+/// VoiceOver for the Last week tile: "Last week, 1,950 calories a day, target 2,100, weight −0.3 kg".
+enum LastWeekTileText {
+    static func spoken(_ report: WeeklyReport?, unit: EnergyUnit) -> String {
+        let title = DashboardTile.weeklyReport.title
+        guard let report else { return title }
+        var parts = [title]
+        if let kcal = report.averageIntake?.kcal {
+            parts.append(String(localized: "\(unit.format(kcal)) a day"))
+            if let target = report.averageTargetKcal {
+                parts.append(String(localized: "target \(unit.format(target))"))
+            }
+        } else {
+            parts.append(String(localized: "nothing logged"))
+        }
+        if let change = report.trendChangeKg {
+            parts.append(String(localized: "weight \(Format.kgChange(change))"))
+        }
+        return parts.joined(separator: ", ")
     }
 }
 

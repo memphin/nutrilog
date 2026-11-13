@@ -208,7 +208,7 @@ struct CaffeineDashboardTests {
         let saved = #"{"order":["weight","water","energy","sleep","bodyFat","steps","totalEnergy","restingHeartRate","hrv"],"hidden":["hrv"]}"#
         try profiles.setSetting(SettingKey.dashboardLayout, JSONDecoder().decode(RawLayout.self, from: Data(saved.utf8)))
         let layout = DashboardLayout.load(from: profiles)
-        #expect(layout.order == [.weight, .water, .caffeine, .energy, .sleep, .bodyFat, .steps, .totalEnergy, .restingHeartRate, .hrv])
+        #expect(layout.order == [.weight, .water, .caffeine, .energy, .sleep, .bodyFat, .steps, .totalEnergy, .restingHeartRate, .hrv, .weeklyReport])
         #expect(layout.isVisible(.caffeine))
         #expect(layout.hidden == [.hrv])
     }

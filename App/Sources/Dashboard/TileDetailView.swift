@@ -4,7 +4,8 @@ import Persistence
 import SwiftUI
 
 /// A tile's detail: its chart (FR-51, backlog #38). Weight adds a weigh-in and links to the manual entries (edit,
-/// delete with undo). Hydration and caffeine have their own details (`HydrationDetailView`, `CaffeineDetailView`).
+/// delete with undo). Hydration and caffeine have their own details (`HydrationDetailView`, `CaffeineDetailView`); last
+/// week opens the weekly report.
 struct TileDetailView: View {
     let tile: DashboardTile
     @Bindable var model: DashboardModel
@@ -15,6 +16,8 @@ struct TileDetailView: View {
             CaffeineDetailView(model: model)
         case .water:
             HydrationDetailView(model: model)
+        case .weeklyReport:
+            WeeklyReportView(weekStart: model.lastWeekStart)
         default:
             MetricDetailView(tile: tile, model: model)
         }

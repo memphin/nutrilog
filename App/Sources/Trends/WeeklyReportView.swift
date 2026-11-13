@@ -41,6 +41,11 @@ struct WeeklyReportView: View {
     @State private var shareURL: URL?
     @State private var errorMessage: String?
 
+    /// - Parameter weekStart: the week to open on; the current week when nil.
+    init(weekStart: LocalDay? = nil) {
+        _weekStart = State(initialValue: weekStart)
+    }
+
     private var currentWeek: LocalDay {
         environment.today.weekStart(firstWeekday: Calendar.current.firstWeekday)
     }

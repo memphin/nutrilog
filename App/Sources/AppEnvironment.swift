@@ -675,7 +675,7 @@ enum EnergyUnit: String, CaseIterable, Identifiable {
             }
         }
 
-        /// Six weeks of diary history, a complete profile and a saved meal, so the Trends screens (maintenance
+        /// Six weeks of diary history, a complete profile and a saved meal, so the maintenance and history screens (maintenance
         /// estimate, check-in, calendar, charts, weekly report) have something to show. Weights come from the demo Health data.
         private func insertSampleHistory(oats: Food?, milk: Food?) {
             guard let foods, let diary, let profiles, let meals else { return }

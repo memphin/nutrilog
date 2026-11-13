@@ -36,6 +36,8 @@ enum DashboardTile: String, CaseIterable, Codable, Identifiable, Hashable {
     case totalEnergy
     case restingHeartRate
     case hrv
+    /// Last week's averages; opens the weekly report.
+    case weeklyReport
 
     var id: String {
         rawValue
@@ -53,6 +55,7 @@ enum DashboardTile: String, CaseIterable, Codable, Identifiable, Hashable {
         case .hrv: String(localized: "HRV", comment: "Heart rate variability, tile title")
         case .water: String(localized: "Hydration")
         case .caffeine: String(localized: "Caffeine")
+        case .weeklyReport: String(localized: "Last week")
         }
     }
 
@@ -68,6 +71,7 @@ enum DashboardTile: String, CaseIterable, Codable, Identifiable, Hashable {
         case .hrv: "waveform.path.ecg"
         case .water: "drop"
         case .caffeine: "cup.and.saucer"
+        case .weeklyReport: "doc.text.below.ecg"
         }
     }
 
@@ -83,7 +87,7 @@ enum DashboardTile: String, CaseIterable, Codable, Identifiable, Hashable {
     /// come from.
     var detailDescription: String? {
         switch self {
-        case .energy, .water:
+        case .energy, .water, .weeklyReport:
             nil
         case .caffeine:
             CaffeineStatus.explanation(halfLifeHours: CaffeineMetabolism.baseHalfLifeHours)
@@ -113,9 +117,10 @@ enum DashboardTile: String, CaseIterable, Codable, Identifiable, Hashable {
         }
     }
 
-    /// False for tiles that never depend on Health (the diary's calories, caffeine logged in Vitalion).
+    /// False for tiles that never depend on Health (the diary's calories, caffeine logged in Vitalion, the weekly
+    /// report, which shows what was logged even without Health).
     var usesHealth: Bool {
-        self != .energy && self != .caffeine
+        self != .energy && self != .caffeine && self != .weeklyReport
     }
 }
 

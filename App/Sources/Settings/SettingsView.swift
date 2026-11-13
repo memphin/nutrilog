@@ -4,7 +4,7 @@ import Persistence
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Settings: profile & targets, meal slots, Apple Health, units, data export/import, network, attributions (backlog #15).
+/// Settings: profile & targets, meal slots, Apple Health, maintenance & weekly check-in, units, data export/import, network, attributions (backlog #15).
 struct SettingsView: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var stepGoal = StepGoal.defaultSteps
@@ -22,6 +22,8 @@ struct SettingsView: View {
                     NavigationLink("Meal slots") { MealSlotsEditor() }
                     NavigationLink("Apple Health") { HealthSettingsView() }
                 }
+
+                MaintenanceSection()
 
                 Section("Units") {
                     Picker("Energy", selection: energyUnit) {

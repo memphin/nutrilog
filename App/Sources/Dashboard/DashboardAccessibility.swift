@@ -136,6 +136,8 @@ extension DashboardSnapshot {
             return parts
         case .caffeine, .water:
             return [] // spoken with the time, see accessibilityLabel
+        case .weeklyReport:
+            return [] // the report lives in the model, see `LastWeekTileText.spoken`
         }
     }
 

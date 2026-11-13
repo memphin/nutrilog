@@ -106,7 +106,7 @@ struct DashboardLayoutTests {
         let json = #"{"order":["water","future-tile","water","steps"],"hidden":["steps","other"]}"#
         let layout = try JSONDecoder().decode(DashboardLayout.self, from: Data(json.utf8))
         // Missing tiles follow the tile before them in the default order; `energy` has none and goes last.
-        #expect(layout.order == [.water, .caffeine, .sleep, .weight, .bodyFat, .steps, .totalEnergy, .restingHeartRate, .hrv, .energy])
+        #expect(layout.order == [.water, .caffeine, .sleep, .weight, .bodyFat, .steps, .totalEnergy, .restingHeartRate, .hrv, .weeklyReport, .energy])
         #expect(Set(layout.order) == Set(DashboardTile.allCases))
         #expect(layout.order.count == DashboardTile.allCases.count)
         #expect(layout.hidden == [.steps])
@@ -127,7 +127,7 @@ struct DashboardLayoutTests {
             + #""hidden":["hrv","activeEnergy"]}"#
         try profiles.setSetting(SettingKey.dashboardLayout, JSONDecoder().decode(OldLayout.self, from: Data(saved.utf8)))
         let layout = DashboardLayout.load(from: profiles)
-        #expect(layout.order == [.weight, .energy, .water, .caffeine, .sleep, .bodyFat, .steps, .totalEnergy, .restingHeartRate, .hrv])
+        #expect(layout.order == [.weight, .energy, .water, .caffeine, .sleep, .bodyFat, .steps, .totalEnergy, .restingHeartRate, .hrv, .weeklyReport])
         #expect(layout.hidden == [.hrv])
         // A layout from before Total energy existed gets it after Steps, visible.
         let older = #"{"order":["steps","activeEnergy","energy"],"hidden":[]}"#
@@ -142,6 +142,23 @@ struct DashboardLayoutTests {
         var hidden: [String]
     }
 
+    @Test func `last week's tile reads the week before this one and opens the report`() throws {
+        let env = AppEnvironment.preview(sampleData: true)
+        let model = DashboardModel(environment: env)
+        let thisWeek = env.today.weekStart(firstWeekday: Calendar.current.firstWeekday)
+        #expect(model.lastWeekStart == thisWeek.adding(days: -7))
+        #expect(model.lastWeek == nil)
+        model.reloadLastWeek()
+        let report = try #require(model.lastWeek)
+        #expect(report.start == model.lastWeekStart)
+        #expect(report.loggedDays > 0) // the sample data has weeks of history
+        #expect(!DashboardTile.weeklyReport.usesHealth)
+        #expect(model.state(of: .weeklyReport) == .ready)
+        let spoken = LastWeekTileText.spoken(report, unit: .kcal)
+        #expect(spoken.hasPrefix(DashboardTile.weeklyReport.title + ", "))
+        #expect(LastWeekTileText.spoken(nil, unit: .kcal) == DashboardTile.weeklyReport.title)
+    }
+
     @Test func `rows pair narrow tiles and give wide tiles a row`() {
         let layout = DashboardLayout(
             order: [.energy, .steps, .weight, .bodyFat, .water, .sleep, .hrv, .restingHeartRate, .totalEnergy], hidden: [],
@@ -153,7 +170,8 @@ struct DashboardLayoutTests {
             [.water],
             [.caffeine], // not in the order given: added after water, a wide tile
             [.sleep, .hrv], // sleep shows one number now, so it pairs up
-            [.restingHeartRate, .totalEnergy],
+            [.weeklyReport, .restingHeartRate], // not in the order given: added after HRV
+            [.totalEnergy],
         ])
         var hidden = layout
         hidden.setVisible(.weight, false)
@@ -493,9 +511,9 @@ struct DashboardDemoTests {
         #expect(snapshot.hrv?.deviationText != nil)
         #expect(snapshot.restingHR != nil)
         #expect(snapshot.energyBurned?.totalKcal != nil)
-        // A week of demo history: every tile but calories and caffeine (whose tile draws today's curve) has a
-        // sparkline and a spoken trend.
-        for tile in DashboardTile.allCases where tile != .energy && tile != .caffeine {
+        // A week of demo history: every tile but calories, caffeine (whose tile draws today's curve) and last week
+        // has a sparkline and a spoken trend.
+        for tile in DashboardTile.allCases where ![.energy, .caffeine, .weeklyReport].contains(tile) {
             #expect(snapshot.sparkline(for: tile) != nil, "\(tile)")
             #expect(snapshot.accessibilityTrend(of: tile, state: .ready) != nil, "\(tile)")
         }
