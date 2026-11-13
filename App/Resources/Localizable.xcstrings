@@ -58,22 +58,6 @@
         }
       }
     },
-    "%@ against %@, %@." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ against %2$@, %3$@."
-          }
-        },
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ prema %2$@, %3$@."
-          }
-        }
-      }
-    },
     "%@ asleep" : {
       "localizations" : {
         "hr" : {
@@ -426,102 +410,6 @@
         }
       }
     },
-    "%@, %@ changed by %@, vs %@ %@." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@, %2$@ changed by %3$@, vs %4$@ %5$@."
-          }
-        },
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@, %2$@ mijenjao se za %3$@, naspram %4$@ %5$@."
-          }
-        }
-      }
-    },
-    "%@, %@ was %@ higher than %@." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@, %2$@ was %3$@ higher than %4$@."
-          }
-        },
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@, %2$@ bio je za %3$@ veći nego %4$@."
-          }
-        }
-      }
-    },
-    "%@, %@ was %@ longer than %@." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@, %2$@ was %3$@ longer than %4$@."
-          }
-        },
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@, %2$@ bio je za %3$@ dulji nego %4$@."
-          }
-        }
-      }
-    },
-    "%@, %@ was %@ lower than %@." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@, %2$@ was %3$@ lower than %4$@."
-          }
-        },
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@, %2$@ bio je za %3$@ manji nego %4$@."
-          }
-        }
-      }
-    },
-    "%@, %@ was %@ shorter than %@." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@, %2$@ was %3$@ shorter than %4$@."
-          }
-        },
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@, %2$@ bio je za %3$@ kraći nego %4$@."
-          }
-        }
-      }
-    },
-    "%@, %@ was about the same as %@." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@, %2$@ was about the same as %3$@."
-          }
-        },
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@, %2$@ bio je otprilike isti kao %3$@."
-          }
-        }
-      }
-    },
     "%@, %@: average %@, from %@ to %@ (weekly averages)." : {
       "localizations" : {
         "en" : {
@@ -609,17 +497,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@. Možeš poništiti"
-          }
-        }
-      }
-    },
-    "%@/week" : {
-      "comment" : "A weekly weight change: \"−0.3 kg/week\"",
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@/tjedan"
           }
         }
       }
@@ -2220,16 +2097,6 @@
         }
       }
     },
-    "1 month" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1 mjesec"
-          }
-        }
-      }
-    },
     "1 serving" : {
       "localizations" : {
         "hr" : {
@@ -2283,16 +2150,6 @@
         }
       }
     },
-    "3 months" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "3 mjeseca"
-          }
-        }
-      }
-    },
     "30-day average after a week of data" : {
       "localizations" : {
         "hr" : {
@@ -2310,16 +2167,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "3 mj."
-          }
-        }
-      }
-    },
-    "6 months" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "6 mjeseci"
           }
         }
       }
@@ -2372,16 +2219,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pretpostavka o tome što je na fotografiji, povezana s namirnicama na ovom iPhoneu. Količine se ne procjenjuju: postavi ih ručno."
-          }
-        }
-      }
-    },
-    "A link doesn't prove that one causes the other." : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Povezanost ne dokazuje da jedno uzrokuje drugo."
           }
         }
       }
@@ -2925,16 +2762,6 @@
         }
       }
     },
-    "After nights you slept %@ or more" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nakon noći s %@ sna ili više"
-          }
-        }
-      }
-    },
     "All eaten" : {
       "localizations" : {
         "hr" : {
@@ -3393,98 +3220,6 @@
         }
       }
     },
-    "Based on %lld days" : {
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Based on %lld day"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Based on %lld days"
-                }
-              }
-            }
-          }
-        },
-        "hr" : {
-          "variations" : {
-            "plural" : {
-              "few" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Na temelju %lld dana"
-                }
-              },
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Na temelju %lld dana"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Na temelju %lld dana"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "Based on %lld weeks" : {
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Based on %lld week"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Based on %lld weeks"
-                }
-              }
-            }
-          }
-        },
-        "hr" : {
-          "variations" : {
-            "plural" : {
-              "few" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Na temelju %lld tjedna"
-                }
-              },
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Na temelju %lld tjedna"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Na temelju %lld tjedana"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "Based on weight (%@ ml/kg)" : {
       "localizations" : {
         "hr" : {
@@ -3701,16 +3436,6 @@
         }
       }
     },
-    "Calories → Weight" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kalorije → težina"
-          }
-        }
-      }
-    },
     "Cancel" : {
       "localizations" : {
         "hr" : {
@@ -3777,16 +3502,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Promjene ovdje vrijede samo za ovo zapisivanje; spremljeni obrok ostaje nepromijenjen."
-          }
-        }
-      }
-    },
-    "Charts" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Grafikoni"
           }
         }
       }
@@ -3877,16 +3592,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Najbliže cilju"
-          }
-        }
-      }
-    },
-    "Compare any two" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Usporedi bilo koje dvije mjere"
           }
         }
       }
@@ -4093,16 +3798,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kopiraj cijeli dan s datuma…"
-          }
-        }
-      }
-    },
-    "Correlations" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Korelacije"
           }
         }
       }
@@ -4583,16 +4278,6 @@
         }
       }
     },
-    "Daily" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dnevno"
-          }
-        }
-      }
-    },
     "Daily average" : {
       "localizations" : {
         "hr" : {
@@ -5061,26 +4746,6 @@
         }
       }
     },
-    "Each day's x value against the next day's y value. Sleep belongs to the morning it ends." : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vrijednost X svakog dana prema vrijednosti Y sljedećeg dana. San pripada jutru u kojem završava."
-          }
-        }
-      }
-    },
-    "Each day's x value against the same day's y value. Sleep belongs to the morning it ends." : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vrijednost X svakog dana prema vrijednosti Y istog dana. San pripada jutru u kojem završava."
-          }
-        }
-      }
-    },
     "Each macro percentage must be between 0 and 100." : {
       "localizations" : {
         "hr" : {
@@ -5097,16 +4762,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Svaka porcija treba naziv i količinu."
-          }
-        }
-      }
-    },
-    "Each week's average of one against the same week's average of the other." : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tjedni prosjek jedne mjere prema prosjeku druge u istom tjednu."
           }
         }
       }
@@ -5959,16 +5614,6 @@
         }
       }
     },
-    "Grouping" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Grupiranje"
-          }
-        }
-      }
-    },
     "HRV" : {
       "comment" : "Heart rate variability, tile title",
       "localizations" : {
@@ -6166,26 +5811,6 @@
         }
       }
     },
-    "Hydration → HRV" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hidracija → HRV"
-          }
-        }
-      }
-    },
-    "Hydration → Sleep" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hidracija → san"
-          }
-        }
-      }
-    },
     "Import" : {
       "localizations" : {
         "hr" : {
@@ -6254,116 +5879,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Uvezeno. Novo: %1$lld, ažurirano: %2$lld, nepromijenjeno: %3$lld. Sigurnosna kopija prethodnih podataka nije izrađena: %4$@"
-          }
-        }
-      }
-    },
-    "In weeks you averaged %@ of carbs or more" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "U tjednima s prosječno %@ ugljikohidrata ili više"
-          }
-        }
-      }
-    },
-    "In weeks you averaged %@ of fat or more" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "U tjednima s prosječno %@ masti ili više"
-          }
-        }
-      }
-    },
-    "In weeks you averaged %@ of protein or more" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "U tjednima s prosječno %@ proteina ili više"
-          }
-        }
-      }
-    },
-    "In weeks you averaged %@ of sleep or more" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "U tjednima s prosječno %@ sna ili više"
-          }
-        }
-      }
-    },
-    "In weeks you averaged %@ or more" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "U tjednima s prosjekom od %@ ili više"
-          }
-        }
-      }
-    },
-    "In weeks your HRV averaged %@ or more" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "U tjednima s prosječnim HRV-om od %@ ili više"
-          }
-        }
-      }
-    },
-    "In weeks your active energy averaged %@ or more" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "U tjednima s prosječnim aktivnim utroškom od %@ ili više"
-          }
-        }
-      }
-    },
-    "In weeks your hydration averaged %@ or more" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "U tjednima s prosječnim unosom tekućine od %@ ili više"
-          }
-        }
-      }
-    },
-    "In weeks your resting heart rate averaged %@ or more" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "U tjednima s prosječnim pulsom u mirovanju od %@ ili više"
-          }
-        }
-      }
-    },
-    "In weeks your total energy averaged %@ or more" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "U tjednima s prosječnim ukupnim utroškom od %@ ili više"
-          }
-        }
-      }
-    },
-    "In weeks your weight trend changed by %@ or more" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "U tjednima kad se trend težine promijenio za %@ ili više"
           }
         }
       }
@@ -7290,26 +6805,6 @@
         }
       }
     },
-    "Moderate negative link" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Umjerena negativna povezanost"
-          }
-        }
-      }
-    },
-    "Moderate positive link" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Umjerena pozitivna povezanost"
-          }
-        }
-      }
-    },
     "Move" : {
       "localizations" : {
         "hr" : {
@@ -7440,98 +6935,6 @@
         }
       }
     },
-    "Needs %lld days with both values." : {
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Needs %lld day with both values."
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Needs %lld days with both values."
-                }
-              }
-            }
-          }
-        },
-        "hr" : {
-          "variations" : {
-            "plural" : {
-              "few" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Potrebna su %lld dana s obje vrijednosti."
-                }
-              },
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Potreban je %lld dan s obje vrijednosti."
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Potrebno je %lld dana s obje vrijednosti."
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "Needs %lld weeks with both values." : {
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Needs %lld week with both values."
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Needs %lld weeks with both values."
-                }
-              }
-            }
-          }
-        },
-        "hr" : {
-          "variations" : {
-            "plural" : {
-              "few" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Potrebna su %lld tjedna s obje vrijednosti."
-                }
-              },
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Potreban je %lld tjedan s obje vrijednosti."
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Potrebno je %lld tjedana s obje vrijednosti."
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "Never" : {
       "localizations" : {
         "hr" : {
@@ -7632,16 +7035,6 @@
         }
       }
     },
-    "No clear link" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nema jasne povezanosti"
-          }
-        }
-      }
-    },
     "No custom foods" : {
       "localizations" : {
         "hr" : {
@@ -7658,16 +7051,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nema podataka"
-          }
-        }
-      }
-    },
-    "No days with both values in the %@." : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nema dana s obje vrijednosti u %@."
           }
         }
       }
@@ -7808,16 +7191,6 @@
         }
       }
     },
-    "No weeks with both values in the %@." : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nema tjedana s obje vrijednosti u %@."
-          }
-        }
-      }
-    },
     "No weigh-ins" : {
       "localizations" : {
         "hr" : {
@@ -7864,16 +7237,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nije dostupno"
-          }
-        }
-      }
-    },
-    "Not enough data" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nedovoljno podataka"
           }
         }
       }
@@ -8198,106 +7561,6 @@
         }
       }
     },
-    "On days you ate %@ of carbs or more" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "U danima s %@ ugljikohidrata ili više"
-          }
-        }
-      }
-    },
-    "On days you ate %@ of fat or more" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "U danima s %@ masti ili više"
-          }
-        }
-      }
-    },
-    "On days you ate %@ of protein or more" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "U danima s %@ proteina ili više"
-          }
-        }
-      }
-    },
-    "On days you ate %@ or more" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "U danima s unosom od %@ ili više"
-          }
-        }
-      }
-    },
-    "On days you burned %@ or more in total" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "U danima s ukupnim utroškom od %@ ili više"
-          }
-        }
-      }
-    },
-    "On days you burned %@ or more of active energy" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "U danima s aktivnim utroškom od %@ ili više"
-          }
-        }
-      }
-    },
-    "On days you drank %@ or more" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "U danima s %@ tekućine ili više"
-          }
-        }
-      }
-    },
-    "On days you walked %@ or more" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "U danima s %@ ili više"
-          }
-        }
-      }
-    },
-    "On days your HRV was %@ or more" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "U danima s HRV-om od %@ ili više"
-          }
-        }
-      }
-    },
-    "On days your resting heart rate was %@ or more" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "U danima s pulsom u mirovanju od %@ ili više"
-          }
-        }
-      }
-    },
     "On pace" : {
       "localizations" : {
         "hr" : {
@@ -8535,16 +7798,6 @@
         }
       }
     },
-    "Pairing" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Uparivanje"
-          }
-        }
-      }
-    },
     "Part" : {
       "localizations" : {
         "hr" : {
@@ -8608,16 +7861,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Po porciji"
-          }
-        }
-      }
-    },
-    "Period" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Razdoblje"
           }
         }
       }
@@ -9487,16 +8730,6 @@
         }
       }
     },
-    "Same day" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Isti dan"
-          }
-        }
-      }
-    },
     "Saturated fat is higher than total fat." : {
       "localizations" : {
         "hr" : {
@@ -9614,16 +8847,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Skeniraj barkod za popunjavanje"
-          }
-        }
-      }
-    },
-    "Scatter plot" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dijagram raspršenja"
           }
         }
       }
@@ -9994,16 +9217,6 @@
         }
       }
     },
-    "Shows the scatter plot" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prikazuje dijagram raspršenja"
-          }
-        }
-      }
-    },
     "Skip" : {
       "localizations" : {
         "hr" : {
@@ -10194,42 +9407,12 @@
         }
       }
     },
-    "Steps → Weight" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Koraci → težina"
-          }
-        }
-      }
-    },
     "Steps, sleep and active energy are green on a day that reached the goal, orange close below it (sleep: up to an hour short) and red further away. Hydration turns green at the goal and orange when you fall behind pace or go too long without a drink." : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Koraci, san i aktivna energija zeleni su na dan kad je cilj dosegnut, narančasti malo ispod njega (san: do sat vremena manje) i crveni kad su dalje od njega. Hidracija postaje zelena kad dosegneš cilj, a narančasta kad zaostaješ za tempom ili kad predugo nema pića."
-          }
-        }
-      }
-    },
-    "Strong negative link" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Jaka negativna povezanost"
-          }
-        }
-      }
-    },
-    "Strong positive link" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Jaka pozitivna povezanost"
           }
         }
       }
@@ -10608,16 +9791,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nema aktivnog obroka u koji se može zapisati."
-          }
-        }
-      }
-    },
-    "There is too little variation to compare." : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Premalo je razlika za usporedbu."
           }
         }
       }
@@ -11509,42 +10682,12 @@
         }
       }
     },
-    "Weak negative link" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Slaba negativna povezanost"
-          }
-        }
-      }
-    },
-    "Weak positive link" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Slaba pozitivna povezanost"
-          }
-        }
-      }
-    },
     "Week" : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tjedan"
-          }
-        }
-      }
-    },
-    "Week of %@" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tjedan od %@"
           }
         }
       }
@@ -11565,16 +10708,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dani u tjednu"
-          }
-        }
-      }
-    },
-    "Weekly" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tjedno"
           }
         }
       }
@@ -11635,26 +10768,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Trend težine"
-          }
-        }
-      }
-    },
-    "Weight-trend change" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Promjena trenda težine"
-          }
-        }
-      }
-    },
-    "Weight-trend change is measured over a week, so this compares weeks: each week's average with its weight-trend change." : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Promjena trenda težine mjeri se kroz tjedan pa se uspoređuju tjedni: prosjek svakog tjedna s promjenom trenda težine u tom tjednu."
           }
         }
       }
@@ -11745,26 +10858,6 @@
         }
       }
     },
-    "X axis" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Os X"
-          }
-        }
-      }
-    },
-    "Y axis" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Os Y"
-          }
-        }
-      }
-    },
     "Yesterday" : {
       "localizations" : {
         "hr" : {
@@ -11817,16 +10910,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Danas ti je preostalo %@."
-          }
-        }
-      }
-    },
-    "You have %lld." : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Imaš %lld."
           }
         }
       }
@@ -12283,16 +11366,6 @@
         }
       }
     },
-    "active energy burned" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "aktivni utrošak energije"
-          }
-        }
-      }
-    },
     "active energy unknown" : {
       "localizations" : {
         "hr" : {
@@ -12327,16 +11400,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Moje"
-          }
-        }
-      }
-    },
-    "after nights under %@" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "nakon noći s manje od %@ sna"
           }
         }
       }
@@ -12427,26 +11490,6 @@
         }
       }
     },
-    "calorie intake" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "unos kalorija"
-          }
-        }
-      }
-    },
-    "carb intake" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "unos ugljikohidrata"
-          }
-        }
-      }
-    },
     "close to the active goal of %lld" : {
       "localizations" : {
         "hr" : {
@@ -12527,16 +11570,6 @@
         }
       }
     },
-    "fat intake" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "unos masti"
-          }
-        }
-      }
-    },
     "g" : {
       "localizations" : {
         "hr" : {
@@ -12587,17 +11620,6 @@
         }
       }
     },
-    "hydration" : {
-      "comment" : "Hydration as the subject of a sentence",
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "unos tekućine"
-          }
-        }
-      }
-    },
     "in bed" : {
       "localizations" : {
         "hr" : {
@@ -12614,16 +11636,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "u tijeku"
-          }
-        }
-      }
-    },
-    "in weeks under %@" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "u tjednima ispod %@"
           }
         }
       }
@@ -12658,17 +11670,6 @@
         }
       }
     },
-    "kg/week" : {
-      "comment" : "Unit of a weekly weight change",
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "kg/tjedan"
-          }
-        }
-      }
-    },
     "last 3 months" : {
       "localizations" : {
         "hr" : {
@@ -12689,32 +11690,12 @@
         }
       }
     },
-    "last 6 months" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "zadnjih 6 mjeseci"
-          }
-        }
-      }
-    },
     "last 7 days" : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "zadnjih 7 dana"
-          }
-        }
-      }
-    },
-    "last month" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "zadnjih mjesec dana"
           }
         }
       }
@@ -12897,16 +11878,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "od čega šećeri"
-          }
-        }
-      }
-    },
-    "on days under %@" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "u danima ispod %@"
           }
         }
       }
@@ -13169,16 +12140,6 @@
         }
       }
     },
-    "protein intake" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "unos proteina"
-          }
-        }
-      }
-    },
     "required" : {
       "localizations" : {
         "hr" : {
@@ -13317,16 +12278,6 @@
         }
       }
     },
-    "resting heart rate" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "puls u mirovanju"
-          }
-        }
-      }
-    },
     "serving weight must be greater than zero" : {
       "localizations" : {
         "hr" : {
@@ -13388,16 +12339,6 @@
         }
       }
     },
-    "step count" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "broj koraka"
-          }
-        }
-      }
-    },
     "steps" : {
       "comment" : "Unit after a number of steps (\"8,412 steps\")\nUnit under the step count",
       "localizations" : {
@@ -13425,16 +12366,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "linija tempa sada je na %lld"
-          }
-        }
-      }
-    },
-    "total energy burned" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ukupni utrošak energije"
           }
         }
       }
@@ -13476,79 +12407,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "vaganje %@"
-          }
-        }
-      }
-    },
-    "your %@ that day" : {
-      "comment" : "The subject of a correlation sentence",
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ tog dana"
-          }
-        }
-      }
-    },
-    "your %@ the next day" : {
-      "comment" : "The subject of a correlation sentence",
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ sljedećeg dana"
-          }
-        }
-      }
-    },
-    "your average %@" : {
-      "comment" : "The subject of a correlation sentence",
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "prosječni %@"
-          }
-        }
-      }
-    },
-    "your average sleep" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "prosječni san"
-          }
-        }
-      }
-    },
-    "your sleep that night" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "san te noći"
-          }
-        }
-      }
-    },
-    "your sleep the night before" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "san prethodne noći"
-          }
-        }
-      }
-    },
-    "your weight trend" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "trend težine"
           }
         }
       }

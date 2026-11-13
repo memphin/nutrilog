@@ -62,40 +62,6 @@
                 NavigationStack { MetricChartScreen(metric: .macros) }
             case "chartSteps":
                 NavigationStack { MetricChartScreen(metric: .steps) }
-            case "correlations":
-                // Fixed sample days with clear links (`CorrelationSampleData`); `-uiScreen trends` shows the real ones.
-                NavigationStack {
-                    List { CorrelationsSection() }
-                        .navigationTitle("Trends")
-                }
-                .environment(\.correlationSource, .fixed(CorrelationSampleData.days(endingOn: environment.today)))
-            case "correlationsLive":
-                // The same section on the `-uiSampleData` database.
-                NavigationStack {
-                    List { CorrelationsSection() }
-                        .navigationTitle("Trends")
-                }
-            case "correlationDetail":
-                NavigationStack {
-                    CorrelationDetailView(
-                        title: CorrelationCard.hydrationHRV.title,
-                        analysis: CorrelationSampleData.analysis(.hydrationHRV, today: environment.today, unit: environment.energyUnit),
-                    )
-                }
-            case "correlationWeightDetail":
-                NavigationStack {
-                    CorrelationDetailView(
-                        title: CorrelationCard.stepsWeight.title,
-                        analysis: CorrelationSampleData.analysis(.stepsWeight, today: environment.today, unit: environment.energyUnit),
-                    )
-                }
-            case "correlationExplorer":
-                NavigationStack { CorrelationExplorerView(period: .constant(.threeMonths)) }
-                    .environment(\.correlationSource, .fixed(CorrelationSampleData.days(endingOn: environment.today)))
-            case "correlationExplorerWeight":
-                // Weight-trend change forces weeks.
-                NavigationStack { CorrelationExplorerView(period: .constant(.sixMonths), x: .protein, y: .weightTrendChange) }
-                    .environment(\.correlationSource, .fixed(CorrelationSampleData.days(endingOn: environment.today)))
             case "meal":
                 MealEditorView(mealID: (try? environment.meals?.templates())?.first?.id)
             case "duplicates":

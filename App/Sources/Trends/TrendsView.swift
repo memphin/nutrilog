@@ -3,8 +3,8 @@ import DesignSystem
 import Persistence
 import SwiftUI
 
-/// "Trends": the maintenance estimate and weekly check-in, the history calendar, charts, correlations and the weekly
-/// report.
+/// "Trends": the maintenance estimate and weekly check-in, the history calendar and the weekly report. Charts open from
+/// the Today tiles.
 struct TrendsView: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var snapshot: ExpenditureSnapshot?
@@ -19,12 +19,6 @@ struct TrendsView: View {
                     NavigationLink { HistoryCalendarView() } label: { Label("History calendar", systemImage: "calendar") }
                     NavigationLink { WeeklyReportView() } label: { Label("Weekly report", systemImage: "doc.text.below.ecg") }
                 }
-                Section("Charts") {
-                    ForEach(ChartMetric.allCases) { metric in
-                        NavigationLink { MetricChartScreen(metric: metric) } label: { Label(metric.title, systemImage: metric.systemImage) }
-                    }
-                }
-                CorrelationsSection()
                 Section {
                     NavigationLink { CheckInHistoryView() } label: { Label("Check-in history", systemImage: "clock.arrow.circlepath") }
                     NavigationLink { CheckInSettingsView() } label: { Label("Check-in day & reminder", systemImage: "bell") }

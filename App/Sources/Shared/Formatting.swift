@@ -81,14 +81,6 @@ enum Format {
         "\(value.formatted(.number.precision(.fractionLength(1)))) %"
     }
 
-    static func bpm(_ value: Double) -> String {
-        "\(whole(value)) bpm"
-    }
-
-    static func ms(_ value: Double) -> String {
-        "\(whole(value)) ms"
-    }
-
     /// "7 h 5 min", "8 h", "45 min"; the unit abbreviations come from the string catalog. Spoken durations are
     /// `DashboardAccessibility`'s.
     static func duration(minutes: Int) -> String {

@@ -403,9 +403,8 @@ public enum AdaptiveTDEE {
         let outliers = Set(WeightTrend.compute(samples: samples, through: endDay).filter(\.isOutlier).map(\.day))
         let points = samples.filter { $0.key >= from && !outliers.contains($0.key) }.sorted { $0.key < $1.key }
         guard let first = points.first?.key, let last = points.last?.key, points.count >= 2,
-              first.days(until: last) >= minimumTrendSpanDays
-        else { return nil }
-        guard let fit = Correlation.linearFit(points.map { CorrelationPoint(x: Double(first.days(until: $0.key)), y: $0.value) })
+              first.days(until: last) >= minimumTrendSpanDays,
+              let fit = LinearFit(points.map { (x: Double(first.days(until: $0.key)), y: $0.value) })
         else { return nil }
         let span = first.days(until: endDay)
         return WeightChange(
