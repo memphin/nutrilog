@@ -67,9 +67,8 @@ struct OFFFoodNameLanguageTests {
 
     @Test func `search results come in the language asked for`() async throws {
         let body = Data("""
-        {"count": 1, "products": [{"code": "3850104012341", "product_name": "Vegeta food seasoning",
-          "product_name_hr": "Vegeta dodatak jelima",
-          "nutriments": {"energy-kcal_100g": 160, "proteins_100g": 9, "carbohydrates_100g": 25, "fat_100g": 1}}]}
+        {"count": 1, "hits": [{"code": "3850104012341", "product_name": "Vegeta food seasoning",
+          "product_name_hr": "Vegeta dodatak jelima"}]}
         """.utf8)
         let client = OpenFoodFactsSearchHTTPClient(
             contact: "test", transport: StubTransport([.http(200, body), .http(200, body)]),

@@ -83,6 +83,7 @@
 		8A74B65E3C2A83440728F372 /* CaffeineTileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1F6491AE676169DC5DB4353 /* CaffeineTileTests.swift */; };
 		8DB27045B44240C76FD57872 /* DashboardSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A6C8154BF03A64FECDE2B0 /* DashboardSnapshot.swift */; };
 		906AE94CDC142A300A23FEB7 /* SmartLogModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50DE4B047A2C8A513CF35E38 /* SmartLogModel.swift */; };
+		925625F9DC2496CD5A8FD20D /* OnlineSelectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A05F3EE1E930B0B46539CB0 /* OnlineSelectionTests.swift */; };
 		92B074339D108435ECF60481 /* FoodsListModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD383A5C27B3EEBA52E452DD /* FoodsListModel.swift */; };
 		92D82A62D3E1D5657285FBAE /* WidgetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5516198E467F49B553A99AB6 /* WidgetTests.swift */; };
 		98AA9AE21C945F046186B911 /* ChartData.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF6487B9D40F670D92683369 /* ChartData.swift */; };
@@ -231,6 +232,7 @@
 		51648512C272F5BAB2CCDAEB /* MealEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealEditorView.swift; sourceTree = "<group>"; };
 		5516198E467F49B553A99AB6 /* WidgetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetTests.swift; sourceTree = "<group>"; };
 		55EC2E5E56394F5A6918F97A /* QuickAddView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddView.swift; sourceTree = "<group>"; };
+		5A05F3EE1E930B0B46539CB0 /* OnlineSelectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnlineSelectionTests.swift; sourceTree = "<group>"; };
 		5BA0B226DE90A3D156F5DE73 /* HealthWriteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthWriteTests.swift; sourceTree = "<group>"; };
 		5CB96FF471284934C83435DA /* DuplicateFoodsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuplicateFoodsView.swift; sourceTree = "<group>"; };
 		5CDA5AF8DBBC3637F6563E9E /* ScanFlowModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanFlowModel.swift; sourceTree = "<group>"; };
@@ -636,6 +638,7 @@
 				BF217C5A1CECD3C0A93356F9 /* MealEditorTests.swift */,
 				3F43367A7535A76FE70C2845 /* MealPlanTests.swift */,
 				6BA3CBA42FC3C42A0F41781B /* OnlineSearchTests.swift */,
+				5A05F3EE1E930B0B46539CB0 /* OnlineSelectionTests.swift */,
 				15CD6B45F2D27884C9DF1AC9 /* ScanFlowTests.swift */,
 				43D66CA0BD012691840B5848 /* SmartLogTests.swift */,
 				431A0E3AA578CECD1896931A /* StreakTileTests.swift */,
@@ -862,6 +865,7 @@
 				F54B1640CEF14C152EA98102 /* MealEditorTests.swift in Sources */,
 				31A211C649A04D1145D678A2 /* MealPlanTests.swift in Sources */,
 				CB6221947B8992CA1EFEDC96 /* OnlineSearchTests.swift in Sources */,
+				925625F9DC2496CD5A8FD20D /* OnlineSelectionTests.swift in Sources */,
 				22462DF09A1DFAA471195F83 /* ScanFlowTests.swift in Sources */,
 				48CF0140E6C20D235385AFE3 /* SmartLogTests.swift in Sources */,
 				C2C2999B0A08A5486739FC6D /* StreakTileTests.swift in Sources */,

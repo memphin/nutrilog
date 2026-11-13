@@ -119,12 +119,12 @@
         }
       }
     },
-    "%@ is busy. Try again in a minute." : {
+    "%@ is busy. Retrying shortly." : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Usluga %@ trenutačno je zauzeta. Pokušaj ponovno za minutu."
+            "value" : "Usluga %@ trenutačno je zauzeta. Uskoro pokušavam ponovno."
           }
         }
       }
@@ -167,6 +167,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@ je na namirnici '%2$@'"
+          }
+        }
+      }
+    },
+    "%@ is rate-limited. Retrying %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ is rate-limited. Retrying %2$@."
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: ograničenje broja zahtjeva. Ponovni pokušaj %2$@."
           }
         }
       }
@@ -291,22 +307,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ iznad"
-          }
-        }
-      }
-    },
-    "%@ paused until %@ (rate limit)" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ paused until %2$@ (rate limit)"
-          }
-        },
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@: pauza do %2$@ (ograničenje broja zahtjeva)"
           }
         }
       }
@@ -6337,6 +6337,16 @@
         }
       }
     },
+    "Loading nutrition" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Učitavanje nutritivnih vrijednosti"
+          }
+        }
+      }
+    },
     "Log" : {
       "localizations" : {
         "hr" : {
@@ -7969,12 +7979,32 @@
         }
       }
     },
+    "Open Food Facts didn't answer. Try again in a moment." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Food Facts nije odgovorio. Pokušaj ponovno za trenutak."
+          }
+        }
+      }
+    },
     "Open Food Facts isn't answering" : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Open Food Facts ne odgovara"
+          }
+        }
+      }
+    },
+    "Open Food Facts no longer has this product." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Food Facts više nema ovaj proizvod."
           }
         }
       }
@@ -11412,6 +11442,16 @@
         }
       }
     },
+    "You're offline. Connect to load this product from Open Food Facts." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nisi povezan s internetom. Poveži se da učitaš ovaj proizvod s Open Food Factsa."
+          }
+        }
+      }
+    },
     "You're offline. Online search needs a connection." : {
       "localizations" : {
         "hr" : {
@@ -12316,6 +12356,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "nije korišteno"
+          }
+        }
+      }
+    },
+    "now" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sada"
           }
         }
       }

@@ -21,7 +21,7 @@ enum Fixture {
 
 extension OpenFoodFactsSearchHTTPClient {
     /// English names, for tests that don't care about the food name language.
-    func search(query: String) async throws -> [FoodDraft] {
+    func search(query: String) async throws -> [OFFSearchHit] {
         try await search(query: query, nameLanguage: .english)
     }
 }
