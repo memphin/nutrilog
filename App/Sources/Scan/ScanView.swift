@@ -51,9 +51,7 @@ struct ScanView: View {
                     Color.black
                 }
             }
-            .navigationTitle("Scan barcode")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.visible, for: .navigationBar)
+            .barcodeScannerBar()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button((model?.loggedCount ?? 0) > 0 ? "Done" : "Close") { close() }
@@ -318,5 +316,15 @@ struct ScanResultView: View {
         case .close:
             onFinished()
         }
+    }
+}
+
+extension View {
+    /// The navigation bar of the barcode scanner screens (scan to log, scan into the food editor): "Scan barcode",
+    /// inline, on a solid bar above the camera.
+    func barcodeScannerBar() -> some View {
+        navigationTitle("Scan barcode")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.visible, for: .navigationBar)
     }
 }

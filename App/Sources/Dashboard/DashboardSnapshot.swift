@@ -125,6 +125,32 @@ struct SleepValue: Equatable {
     var inBedMin: Int?
 }
 
+/// The Health values of a day as the tiles, sparklines, streaks, charts and widgets show them.
+extension DailyHealthMetrics {
+    /// The night's sleep: time asleep, or time in bed when that is all Health has (#72).
+    var shownSleepMinutes: Int? {
+        sleepAsleepMin ?? sleepInBedMin
+    }
+
+    /// The day's active and resting energy.
+    var energyBurned: EnergyBurned {
+        EnergyBurned(activeKcal: activeKcal, restingKcal: basalKcal)
+    }
+}
+
+extension [DailyHealthMetrics] {
+    /// `value` of every row that has one, by day.
+    func byDay(_ value: (DailyHealthMetrics) -> Double?) -> [LocalDay: Double] {
+        var result: [LocalDay: Double] = [:]
+        for row in self {
+            if let value = value(row) {
+                result[row.day] = value
+            }
+        }
+        return result
+    }
+}
+
 /// Energy burned on one day: active (exercise, movement) plus resting (basal). The total is shown only when both are
 /// known — half of it presented as "total" would read as a low-burn day.
 struct EnergyBurned: Equatable {
@@ -197,8 +223,8 @@ struct DashboardSnapshot: Equatable {
         weight = WeightTrend.summary(dayWeights, today: data.today)
         bodyFat = dayWeights.last { $0.bodyFatPct != nil && $0.day <= data.today }
             .flatMap { day in day.bodyFatPct.map { BodyFatValue(day: day.day, pct: $0) } }
-        restingHR = MetricBaseline.compare(Self.values(rows, \.restingHR), today: data.today)
-        hrv = MetricBaseline.compare(Self.values(rows, \.hrvSDNNms), today: data.today)
+        restingHR = MetricBaseline.compare(rows.byDay(\.restingHR), today: data.today)
+        hrv = MetricBaseline.compare(rows.byDay(\.hrvSDNNms), today: data.today)
         hydrationIntakes = data.hydrationIntakes[data.today] ?? []
         water = WaterProgress(
             loggedMl: hydrationIntakes.reduce(0) { $0 + $1.ml },
@@ -260,8 +286,7 @@ struct DashboardSnapshot: Equatable {
 
     /// Today's active and resting energy; nil when neither is known.
     var energyBurned: EnergyBurned? {
-        let burned = EnergyBurned(activeKcal: todayMetrics?.activeKcal, restingKcal: todayMetrics?.basalKcal)
-        return burned.hasValue ? burned : nil
+        todayMetrics.flatMap { $0.energyBurned.hasValue ? $0.energyBurned : nil }
     }
 
     /// Last night's minutes on the tile: asleep, or in bed when that is all Health has.
@@ -290,16 +315,6 @@ struct DashboardSnapshot: Equatable {
 
     func state(of tile: DashboardTile, access: HealthAccess, isFirstSync: Bool) -> TileState {
         TileState.resolve(hasValue: hasValue(tile), usesHealth: tile.usesHealth, access: access, isFirstSync: isFirstSync)
-    }
-
-    private static func values(_ rows: [DailyHealthMetrics], _ key: KeyPath<DailyHealthMetrics, Double?>) -> [LocalDay: Double] {
-        var result: [LocalDay: Double] = [:]
-        for row in rows {
-            if let value = row[keyPath: key] {
-                result[row.day] = value
-            }
-        }
-        return result
     }
 }
 

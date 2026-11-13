@@ -23,6 +23,7 @@
 		13E4BDE239DB9F5E99B43D9E /* CorrelationPairs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6872692A10881771CB9FC507 /* CorrelationPairs.swift */; };
 		14DDA87A51B7C682A1D79CEE /* HealthSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6F1000F849D9C825042F5BC /* HealthSyncService.swift */; };
 		1827D48BF3FA36152BE08C7A /* DashboardTiles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72C954B5795DDCACDCBA6BB8 /* DashboardTiles.swift */; };
+		1895059645609B4F00022D39 /* DayChartContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FCCC2FBD1D4E3FAE52B144E /* DayChartContent.swift */; };
 		1A21A5FF648E3E5110034173 /* WeightEntrySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97DA4A909B6C3A6F354680A4 /* WeightEntrySheet.swift */; };
 		1A5D56FF536B75EAEC9ABF78 /* IngredientPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80D0B3A2046C75086ED91AAA /* IngredientPicker.swift */; };
 		1A97AEF6376A4C2E760AAD96 /* MealPhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2F38B07CDBC88FC4F971C55 /* MealPhoto.swift */; };
@@ -222,6 +223,7 @@
 		4CA1AF81E2A95BA54BA93489 /* SmartLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartLogView.swift; sourceTree = "<group>"; };
 		4F4638235FA94DB5B79F0E95 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		4FA4EA6323E6B2F2F5C12EA4 /* FoodEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodEditorView.swift; sourceTree = "<group>"; };
+		4FCCC2FBD1D4E3FAE52B144E /* DayChartContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayChartContent.swift; sourceTree = "<group>"; };
 		50DE4B047A2C8A513CF35E38 /* SmartLogModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartLogModel.swift; sourceTree = "<group>"; };
 		5160930D4897048DD0B73B46 /* Vitalion.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Vitalion.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		51648512C272F5BAB2CCDAEB /* MealEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealEditorView.swift; sourceTree = "<group>"; };
@@ -562,6 +564,7 @@
 				C3A6C8154BF03A64FECDE2B0 /* DashboardSnapshot.swift */,
 				72C954B5795DDCACDCBA6BB8 /* DashboardTiles.swift */,
 				65CB71012E9A8D3148E74F61 /* DashboardView.swift */,
+				4FCCC2FBD1D4E3FAE52B144E /* DayChartContent.swift */,
 				6FAEDF11C58DD3B0EA3B71DF /* HydrationChart.swift */,
 				B82C78F6A08FA91289CE96E4 /* HydrationDayBuilder.swift */,
 				2A6BBD67C5C882E7C4FF9E51 /* HydrationDetailView.swift */,
@@ -885,6 +888,7 @@
 				8DB27045B44240C76FD57872 /* DashboardSnapshot.swift in Sources */,
 				1827D48BF3FA36152BE08C7A /* DashboardTiles.swift in Sources */,
 				035005A4660128FD5DEEF43A /* DashboardView.swift in Sources */,
+				1895059645609B4F00022D39 /* DayChartContent.swift in Sources */,
 				4E6E423EA294CE432DABE3EE /* DebugScreens.swift in Sources */,
 				D07E24984F4338BF87992581 /* DiaryModel.swift in Sources */,
 				B6AB84B938F35F68C4F5AF1F /* DiarySheets.swift in Sources */,

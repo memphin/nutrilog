@@ -383,9 +383,7 @@ private struct BarcodeScanSheet: View {
                         .padding(.horizontal, NL.Spacing.l)
                 }
             }
-            .navigationTitle("Scan barcode")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.visible, for: .navigationBar)
+            .barcodeScannerBar()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

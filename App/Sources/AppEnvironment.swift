@@ -661,7 +661,9 @@ enum EnergyUnit: String, CaseIterable, Identifiable {
                 }
             }
             if let oats, let milk {
-                _ = try? meals.create(name: "Overnight oats", items: [.init(foodID: oats.id, grams: 40), .init(foodID: milk.id, grams: 125)])
+                _ = try? meals.create(
+                    name: "Overnight oats", items: [.init(foodID: oats.id, grams: 40), .init(foodID: milk.id, grams: 125)],
+                )
                 _ = try? meals.createFromDiary(day: today, slotID: "breakfast", name: "Usual breakfast")
                 try? foods.setFavorite(id: milk.id, true)
             }

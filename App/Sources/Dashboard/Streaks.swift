@@ -21,9 +21,8 @@ extension DashboardSnapshot {
         func streak(todayIsFinal: Bool = false, _ reached: (LocalDay) -> Bool) -> Streak {
             Streak.current(today: data.today, maxDays: DashboardData.historyDays, todayIsFinal: todayIsFinal, reached: reached)
         }
-        // Like the tile: time asleep, or time in bed when that is all Health has.
         func sleepMinutes(_ day: LocalDay) -> Int? {
-            metrics[day].flatMap { $0.sleepAsleepMin ?? $0.sleepInBedMin }
+            metrics[day]?.shownSleepMinutes
         }
         return [
             .steps: streak { day in

@@ -41,7 +41,7 @@ enum StatsBuilder {
                 isComplete: summary?.isComplete ?? false,
                 targetKcal: training.effectiveTarget(targets.value(on: day), on: day)?.kcal,
                 steps: health?.steps,
-                sleepMin: health?.sleepAsleepMin ?? health?.sleepInBedMin,
+                sleepMin: health?.shownSleepMinutes,
                 activeKcal: health?.activeKcal,
                 basalKcal: health?.basalKcal,
                 restingHR: health?.restingHR,

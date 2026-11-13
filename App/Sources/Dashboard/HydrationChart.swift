@@ -51,32 +51,12 @@ struct HydrationChart: View {
                     .symbolSize(40)
             }
             if window.contains(day.now) {
-                RuleMark(x: .value("Now", day.now))
-                    .foregroundStyle(Color.primary.opacity(0.35))
-                    .lineStyle(StrokeStyle(lineWidth: 1))
-                    .annotation(position: .top, alignment: .center, overflowResolution: .init(x: .fit(to: .chart), y: .fit(to: .chart))) {
-                        Text("Now").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
-                    }
+                NowRuleMark(now: day.now)
             }
         }
         .chartXScale(domain: window)
         .chartYScale(domain: 0 ... top)
-        .chartXAxis {
-            AxisMarks(values: .stride(by: .hour, count: 3)) { _ in
-                AxisGridLine()
-                AxisValueLabel(format: .dateTime.hour())
-            }
-        }
-        .chartYAxis {
-            AxisMarks(position: .leading) { value in
-                AxisGridLine()
-                AxisValueLabel {
-                    if let ml = value.as(Double.self) {
-                        Text(Format.whole(ml))
-                    }
-                }
-            }
-        }
+        .dayChartAxes { Format.whole($0) }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Hydration chart")
         .accessibilityValue(Self.accessibilityValue(day))
