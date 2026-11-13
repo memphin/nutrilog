@@ -559,7 +559,6 @@ struct DiaryPhase3Tests {
         let saved = try model.save(to: meals)
         #expect(saved.id == meal.id)
         #expect(saved.template.name == "Porridge")
-        #expect(saved.template.mealSlotHint == "breakfast")
         #expect(saved.items.map(\.food.id) == [oats.food.id, milk.id])
         #expect(saved.items.map(\.item.grams) == [80, 300])
         #expect(saved.items[0].item.servingID == cup.id) // an untouched item keeps its serving

@@ -170,14 +170,6 @@ struct TrainingDayRepositoryTests {
         #expect(try await iterator.next()?.isTraining(monday) == true)
     }
 
-    @Test func `observing the schedule in effect follows changes`() async throws {
-        let f = try Fixture()
-        var iterator = f.trainingDays.observeSchedule(on: monday).makeAsyncIterator()
-        #expect(try await iterator.next() == .some(nil))
-        try f.trainingDays.setSchedule(weekdays: [2], boostPercent: 12, effectiveFrom: monday)
-        #expect(try await iterator.next()??.boostPercent == 12)
-    }
-
     @Test func `a target is boosted for a training day`() {
         let target = Target(
             effectiveFrom: monday, kcal: 2000, macros: MacroTargets(proteinG: 150, carbsG: 200, fatG: 70), fiberG: 30,

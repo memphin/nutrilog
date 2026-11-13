@@ -84,29 +84,10 @@ struct DailyMetricsRepositoryTests {
         #expect(range.map(\.day.isoString) == ["2026-11-08", "2026-11-10"])
     }
 
-    @Test func `metrics with data`() throws {
+    @Test func `delete all`() throws {
         let f = try Fixture()
         let repo = DailyMetricsRepository(f.db, clock: f.clock.appClock)
-        let days = day("2026-11-01") ... day("2026-11-09")
-        #expect(try repo.metricsWithData(in: days).isEmpty)
-        try repo.upsert([DailyHealthMetrics(day: day("2026-11-02")), DailyHealthMetrics(day: day("2026-11-03"), waterMl: 250)])
-        #expect(try repo.metricsWithData(in: days) == [.water])
-        try repo.upsert([sample("2026-11-05", steps: nil, weight: nil)])
-        let found = try repo.metricsWithData(in: days)
-        #expect(!found.contains(.steps))
-        #expect(!found.contains(.weight))
-        #expect(found.contains(.sleep))
-        #expect(found.contains(.hrv))
-    }
-
-    @Test func `last fetched at and delete all`() throws {
-        let f = try Fixture()
-        let repo = DailyMetricsRepository(f.db, clock: f.clock.appClock)
-        #expect(try repo.lastFetchedAt() == nil)
-        try repo.upsert([sample("2026-11-08")])
-        f.clock.advance(120)
-        try repo.upsert([sample("2026-11-09")])
-        #expect(try repo.lastFetchedAt() == f.clock.now)
+        try repo.upsert([sample("2026-11-08"), sample("2026-11-09")])
         try repo.deleteAll()
         #expect(try repo.metrics(in: day("2026-11-01") ... day("2026-11-30")).isEmpty)
     }

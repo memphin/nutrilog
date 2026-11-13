@@ -292,18 +292,12 @@ public struct HealthKitLinkRepository: Sendable {
     /// Emits the generation counter now and whenever a row is queued. Completing, failing or discarding rows never
     /// changes it, so a drain triggered by this never re-triggers itself.
     public func observeQueue() -> AsyncValueObservation<Int?> {
-        ValueObservation
-            .tracking { db in try Int.fetchOne(db, sql: "SELECT value FROM healthkit_outbox_sequence WHERE id = 1") }
-            .removeDuplicates()
-            .values(in: database.reader)
+        database.observe { db in try Int.fetchOne(db, sql: "SELECT value FROM healthkit_outbox_sequence WHERE id = 1") }
     }
 
     /// Emits the queued rows (pending and failed) now and after every change — for a "waiting to be written" hint.
     public func observePending() -> AsyncValueObservation<[HealthKitOutboxItem]> {
-        ValueObservation
-            .tracking { db in try HealthKitOutboxItem.order(HealthKitOutboxItem.Columns.generation).fetchAll(db) }
-            .removeDuplicates()
-            .values(in: database.reader)
+        database.observe { db in try HealthKitOutboxItem.order(HealthKitOutboxItem.Columns.generation).fetchAll(db) }
     }
 
     // MARK: Helpers

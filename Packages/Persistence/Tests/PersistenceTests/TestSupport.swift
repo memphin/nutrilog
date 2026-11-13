@@ -44,6 +44,10 @@ struct Fixture {
         WaterRepository(db, clock: clock.appClock)
     }
 
+    var weights: WeightRepository {
+        WeightRepository(db, clock: clock.appClock)
+    }
+
     var caffeine: CaffeineRepository {
         CaffeineRepository(db, clock: clock.appClock)
     }
@@ -149,4 +153,29 @@ func makeBilingualIndexFile(rows: [(id: String, fdc: String, name: String, nameH
     }
     try queue.close()
     return url
+}
+
+/// Direct access to the training-day helpers the app only reaches through `toggleTraining` and the resolver.
+extension TrainingDayRepository {
+    func setTraining(_ isTraining: Bool, on day: LocalDay) throws {
+        let now = clock.now()
+        try database.writer.write { db in try Self.setTraining(db, isTraining, on: day, now: now) }
+    }
+
+    func clearOverride(on day: LocalDay) throws {
+        let now = clock.now()
+        try database.writer.write { db in try Self.clearOverride(db, on: day, now: now) }
+    }
+
+    func overrides(in days: ClosedRange<LocalDay>) throws -> [LocalDay: Bool] {
+        try database.reader.read { db in try Self.overrides(db, in: days) }
+    }
+
+    func scheduleHistory() throws -> [TrainingScheduleRecord] {
+        try database.reader.read { db in try Self.scheduleHistory(db) }
+    }
+
+    func scheduleTimeline() throws -> EffectiveTimeline<TrainingSchedule> {
+        try database.reader.read { db in try Self.timeline(db) }
+    }
 }

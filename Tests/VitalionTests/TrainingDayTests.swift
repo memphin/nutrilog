@@ -120,7 +120,7 @@ struct TrainingDayTests {
 
     @Test func `the widget, Siri and the water read use the boosted goals; the check-in keeps the base target`() throws {
         let env = try environment()
-        try #require(env.trainingDays).setTraining(true, on: env.today)
+        try #require(env.trainingDays).toggleTraining(on: env.today) // no schedule: a training day
 
         let widget = try #require(WidgetSnapshotWriter.make(from: env))
         #expect(widget.targetKcal == 2200)
@@ -169,17 +169,17 @@ struct TrainingDayTests {
         model.toggleTrainingDay()
         #expect(await waitUntil { model.isTrainingDay && model.target?.kcal == 2200 })
         #expect(model.baseTarget?.kcal == 2000)
-        #expect(try repo.overrides(in: day ... day) == [day: true])
+        #expect(try repo.trainingDays(in: day ... day).overrides == [day: true])
 
         // Scheduled from today on: switching it off is an override, back on follows the schedule again.
         try repo.setSchedule(weekdays: [day.weekday], boostPercent: 20, effectiveFrom: day)
         #expect(await waitUntil { model.target?.kcal == 2400 && model.trainingBoostPercent == 20 })
         model.toggleTrainingDay()
         #expect(await waitUntil { !model.isTrainingDay && model.target?.kcal == 2000 })
-        #expect(try repo.overrides(in: day ... day) == [day: false])
+        #expect(try repo.trainingDays(in: day ... day).overrides == [day: false])
         model.toggleTrainingDay()
         #expect(await waitUntil { model.isTrainingDay })
-        #expect(try repo.overrides(in: day ... day) == [:])
+        #expect(try repo.trainingDays(in: day ... day).overrides == [:])
         #expect(model.errorMessage == nil)
     }
 

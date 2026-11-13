@@ -70,35 +70,25 @@ public struct WaterRepository: Sendable {
     }
 
     public func observeEntries(for day: LocalDay) -> AsyncValueObservation<[WaterEntry]> {
-        ValueObservation.tracking { db in try Self.request(day).fetchAll(db) }
-            .removeDuplicates()
-            .values(in: database.reader)
+        database.observe { db in try Self.request(day).fetchAll(db) }
     }
 
     /// Active entries of every day in `days`, oldest first: one observation for a multi-day view (the dashboard's
     /// 7-day water trend and today's entries).
     public func observeEntries(in days: ClosedRange<LocalDay>) -> AsyncValueObservation<[WaterEntry]> {
-        ValueObservation.tracking { db in
+        database.observe { db in
             try WaterEntry
                 .filter(WaterEntry.Columns.day >= days.lowerBound && WaterEntry.Columns.day <= days.upperBound)
                 .filter(WaterEntry.Columns.deletedAt == nil)
                 .order(WaterEntry.Columns.day, WaterEntry.Columns.loggedAt, WaterEntry.Columns.id)
                 .fetchAll(db)
         }
-        .removeDuplicates()
-        .values(in: database.reader)
     }
 
     public func softDelete(ids: [String]) throws {
         let now = clock.now()
         try database.writer.write { db in
-            var changed: [String] = []
-            for id in ids {
-                guard var entry = try WaterEntry.fetchOne(db, key: id), entry.deletedAt == nil else { continue }
-                entry.stampDeleted(now)
-                try entry.update(db)
-                changed.append(id)
-            }
+            let changed = try WaterEntry.softDelete(db, ids: ids, now: now)
             try HealthKitLinkRepository.enqueue(db, owner: .waterEntry, ids: changed, now: now)
         }
     }
@@ -107,14 +97,7 @@ public struct WaterRepository: Sendable {
     public func restore(ids: [String]) throws {
         let now = clock.now()
         try database.writer.write { db in
-            var changed: [String] = []
-            for id in ids {
-                guard var entry = try WaterEntry.fetchOne(db, key: id), entry.deletedAt != nil else { continue }
-                entry.deletedAt = nil
-                entry.stampUpdated(now)
-                try entry.update(db)
-                changed.append(id)
-            }
+            let changed = try WaterEntry.restore(db, ids: ids, now: now)
             try HealthKitLinkRepository.enqueue(db, owner: .waterEntry, ids: changed, now: now)
         }
     }

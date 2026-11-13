@@ -149,36 +149,7 @@ public struct TrainingDayRepository: Sendable {
         try database.reader.read { db in try Self.schedule(db, on: day) }
     }
 
-    /// The schedule in effect on `day`, now and after every change (e.g. for the settings screen on today).
-    public func observeSchedule(on day: LocalDay) -> AsyncValueObservation<TrainingSchedule?> {
-        ValueObservation.tracking { db in try Self.schedule(db, on: day) }
-            .removeDuplicates()
-            .values(in: database.reader)
-    }
-
-    /// Every live schedule row, newest first.
-    public func scheduleHistory() throws -> [TrainingScheduleRecord] {
-        try database.reader.read { db in try Self.scheduleHistory(db) }
-    }
-
-    /// Every schedule by its first day, to look up the one in effect on any day.
-    public func scheduleTimeline() throws -> EffectiveTimeline<TrainingSchedule> {
-        try database.reader.read { db in try Self.timeline(db) }
-    }
-
     // MARK: Overrides
-
-    /// Makes `day` a training day or not, whatever its weekday (replaces an earlier choice for that day).
-    public func setTraining(_ isTraining: Bool, on day: LocalDay) throws {
-        let now = clock.now()
-        try database.writer.write { db in try Self.setTraining(db, isTraining, on: day, now: now) }
-    }
-
-    /// Removes the choice for `day`, so it follows its schedule again. Nothing happens without one.
-    public func clearOverride(on day: LocalDay) throws {
-        let now = clock.now()
-        try database.writer.write { db in try Self.clearOverride(db, on: day, now: now) }
-    }
 
     /// The user's tap on a day's training switch (diary, meal plan, history calendar): flips whether `day` is a
     /// training day. The choice is kept as an override only while it differs from the day's schedule; a day switched
@@ -198,11 +169,6 @@ public struct TrainingDayRepository: Sendable {
         }
     }
 
-    /// The days in `days` the user switched on (`true`) or off (`false`).
-    public func overrides(in days: ClosedRange<LocalDay>) throws -> [LocalDay: Bool] {
-        try database.reader.read { db in try Self.overrides(db, in: days) }
-    }
-
     // MARK: Resolver
 
     /// Every schedule and the overrides of `days`. Only answers days in `days` correctly: overrides outside it are
@@ -214,9 +180,7 @@ public struct TrainingDayRepository: Sendable {
     /// ``trainingDays(in:)`` now and after every change to a schedule or an override — for the dashboard, diary and
     /// history, which must follow the settings live.
     public func observeTrainingDays(in days: ClosedRange<LocalDay>) -> AsyncValueObservation<TrainingDays> {
-        ValueObservation.tracking { db in try Self.trainingDays(db, in: days) }
-            .removeDuplicates()
-            .values(in: database.reader)
+        database.observe { db in try Self.trainingDays(db, in: days) }
     }
 
     /// The target that applies on `day` (``TrainingDays/effectiveTarget(_:on:)``): the one in effect then, boosted on a

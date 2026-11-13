@@ -515,8 +515,6 @@ struct Phase3QueryTests {
         #expect(rows[1].isComplete)
         #expect(rows[1].entryCount == 1)
         #expect(rows[2] == DiaryDaySummary(day: d.adding(days: 3), totals: .zero, entryCount: 0, isComplete: true))
-        #expect(try f.diary.firstLoggedDay() == d)
-        #expect(try Fixture().diary.firstLoggedDay() == nil)
     }
 
     @Test func `weight trend is stored on existing rows and survives a Health refresh`() throws {

@@ -36,7 +36,6 @@ public struct Food: Codable, Hashable, Identifiable, Sendable, SyncedRecord {
     public var satFatG100: Double?
     public var sodiumMg100: Double?
     public var caffeineMg100: Double?
-    public var microsJSON: String?
     public var isLiquid: Bool
     public var defaultServingID: String?
     public var imageURL: String?
@@ -46,8 +45,6 @@ public struct Food: Codable, Hashable, Identifiable, Sendable, SyncedRecord {
     public var useCount: Int
     public var lastUsedAt: Date?
     public var notes: String?
-    public var cookedWeightG: Double?
-    public var servingsCount: Double?
     public var lastServingID: String?
     public var lastAmount: Double?
     /// The per-100 values are really the values of one serving whose weight is unknown (a copy of a per-serving-only
@@ -77,7 +74,6 @@ public struct Food: Codable, Hashable, Identifiable, Sendable, SyncedRecord {
         case satFatG100 = "sat_fat_g_100"
         case sodiumMg100 = "sodium_mg_100"
         case caffeineMg100 = "caffeine_mg_100"
-        case microsJSON = "micros_json"
         case isLiquid = "is_liquid"
         case defaultServingID = "default_serving_id"
         case imageURL = "image_url"
@@ -85,8 +81,6 @@ public struct Food: Codable, Hashable, Identifiable, Sendable, SyncedRecord {
         case isFavorite = "is_favorite"
         case useCount = "use_count"
         case lastUsedAt = "last_used_at"
-        case cookedWeightG = "cooked_weight_g"
-        case servingsCount = "servings_count"
         case lastServingID = "last_serving_id"
         case lastAmount = "last_amount"
         case perServingOnly = "per_serving_only"
@@ -326,7 +320,7 @@ public struct MealSlot: Codable, Hashable, Identifiable, Sendable, SyncedRecord 
     }
 }
 
-public struct DiaryEntry: Codable, Hashable, Identifiable, Sendable, SyncedRecord {
+public struct DiaryEntry: Codable, Hashable, Identifiable, Sendable, SlottedEntry {
     public static let databaseTableName = "diary_entry"
 
     public var id: String
@@ -513,11 +507,6 @@ public struct Profile: Codable, Hashable, Sendable, TimestampedRecord {
         case checkinWeekday = "checkin_weekday"
         case updatedAt = "updated_at"
     }
-
-    /// True when everything needed for the Mifflin-St Jeor formula is known (weight comes separately).
-    public var isCompleteForFormula: Bool {
-        heightCm != nil && birthDate != nil && sex != nil
-    }
 }
 
 public enum TargetOrigin: String, Codable, Sendable, DatabaseValueConvertible {
@@ -534,7 +523,6 @@ public struct Target: Codable, Hashable, Identifiable, Sendable, SyncedRecord {
     public var carbsG: Double
     public var fatG: Double
     public var fiberG: Double?
-    public var weekdayOverridesJSON: String?
     public var origin: TargetOrigin
     public var createdAt: Date
     public var updatedAt: Date
@@ -548,7 +536,6 @@ public struct Target: Codable, Hashable, Identifiable, Sendable, SyncedRecord {
         case carbsG = "carbs_g"
         case fatG = "fat_g"
         case fiberG = "fiber_g"
-        case weekdayOverridesJSON = "weekday_overrides_json"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case deletedAt = "deleted_at"

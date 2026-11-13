@@ -41,4 +41,10 @@ public final class AppDatabase: Sendable {
     public var reader: any DatabaseReader {
         writer
     }
+
+    /// `fetch`'s value now and after every change to what it read, skipping values equal to the previous one — the
+    /// observation behind every repository's `observe…` method.
+    func observe<Value: Equatable>(_ fetch: @escaping @Sendable (Database) throws -> Value) -> AsyncValueObservation<Value> {
+        ValueObservation.tracking(fetch).removeDuplicates().values(in: reader)
+    }
 }

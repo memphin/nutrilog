@@ -8,8 +8,8 @@ public struct MealTemplate: Codable, Hashable, Identifiable, Sendable, SyncedRec
 
     public var id: String
     public var name: String
-    /// The slot the meal was saved from; preselected nowhere, shown as a hint.
-    public var mealSlotHint: String?
+    /// The slot the meal was saved from; stored with the meal but not read by the app.
+    var mealSlotHint: String?
     public var useCount: Int
     public var lastUsedAt: Date?
     public var createdAt: Date
@@ -184,22 +184,13 @@ public struct MealTemplateRepository: Sendable {
 
     public func softDelete(id: String) throws {
         let now = clock.now()
-        try database.writer.write { db in
-            guard var template = try MealTemplate.fetchOne(db, key: id), template.deletedAt == nil else { return }
-            template.stampDeleted(now)
-            try template.update(db)
-        }
+        try database.writer.write { db in try MealTemplate.softDelete(db, ids: [id], now: now) }
     }
 
     /// Undo for `softDelete`.
     public func restore(id: String) throws {
         let now = clock.now()
-        try database.writer.write { db in
-            guard var template = try MealTemplate.fetchOne(db, key: id), template.deletedAt != nil else { return }
-            template.deletedAt = nil
-            template.stampUpdated(now)
-            try template.update(db)
-        }
+        try database.writer.write { db in try MealTemplate.restore(db, ids: [id], now: now) }
     }
 
     /// Logs `items` (the meal's items, possibly with changed amounts or some left out) into one slot and counts the

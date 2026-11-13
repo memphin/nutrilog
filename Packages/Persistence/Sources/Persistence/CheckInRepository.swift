@@ -30,7 +30,8 @@ public struct CheckInRecord: Codable, Hashable, Identifiable, Sendable, Timestam
     public var confidence: TDEEConfidence
     public var proposedTargetKcal: Double?
     public var decision: CheckInDecision?
-    public var rawTDEEKcal: Double?
+    /// The estimate before blending and clamping; stored with the check-in but not read by the app.
+    var rawTDEEKcal: Double?
     public var baselineKcal: Double?
     /// Actual trend change per week at the time (negative = loss).
     public var weeklyChangeKg: Double?
@@ -142,10 +143,7 @@ public struct CheckInRepository: Sendable {
     }
 
     public func observeHistory() -> AsyncValueObservation<[CheckInRecord]> {
-        ValueObservation
-            .tracking { db in try CheckInRecord.order(CheckInRecord.Columns.computedForDay.desc).fetchAll(db) }
-            .removeDuplicates()
-            .values(in: database.reader)
+        database.observe { db in try CheckInRecord.order(CheckInRecord.Columns.computedForDay.desc).fetchAll(db) }
     }
 
     /// The most recent check-in on or before `day` (default: any).

@@ -4,7 +4,7 @@ import GRDB
 
 /// A food planned for a day and meal slot (meal plan / meal prep). It is not eaten until it is confirmed: only then a
 /// real `DiaryEntry` is logged, so a plan never counts in day totals, the TDEE estimate, Apple Health or exports.
-public struct PlannedEntry: Codable, Hashable, Identifiable, Sendable, SyncedRecord {
+public struct PlannedEntry: Codable, Hashable, Identifiable, Sendable, SlottedEntry {
     public static let databaseTableName = "planned_entry"
 
     public var id: String
@@ -141,10 +141,7 @@ public struct MealPlanRepository: Sendable {
 
     /// Emits the pending plan of `days` now and after every change (including diary changes that un-eat a plan).
     public func observePending(in days: ClosedRange<LocalDay>) -> AsyncValueObservation<[PlannedEntry]> {
-        ValueObservation
-            .tracking { db in try Self.pending(db, in: days) }
-            .removeDuplicates()
-            .values(in: database.reader)
+        database.observe { db in try Self.pending(db, in: days) }
     }
 
     public func entry(id: String) throws -> PlannedEntry? {
@@ -176,7 +173,7 @@ public struct MealPlanRepository: Sendable {
                     day: day, mealSlotID: slotID, foodID: item.food.id, displayName: item.food.name,
                     grams: item.quantity.baseAmount, servingLabel: item.quantity.servingLabel, isQuickAdd: false,
                     nutrients: item.quantity.nutrients(per100: item.food.per100),
-                    sortOrder: Self.nextSortOrder(db, day: day, slotID: slotID), now: now,
+                    sortOrder: PlannedEntry.nextSortOrder(db, day: day, slotID: slotID), now: now,
                 )
                 try entry.insert(db)
                 return entry
@@ -189,12 +186,11 @@ public struct MealPlanRepository: Sendable {
     public func planQuickAdd(name: String?, nutrients: Nutrients, slotID: String, day: LocalDay) throws -> PlannedEntry {
         try EntryLimits.validate(nutrients)
         let now = clock.now()
-        let title = name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return try database.writer.write { db in
             let entry = try PlannedEntry(
-                day: day, mealSlotID: slotID, foodID: nil, displayName: title.isEmpty ? QuickAddName.default : title,
+                day: day, mealSlotID: slotID, foodID: nil, displayName: QuickAddName.name(typed: name),
                 grams: 0, servingLabel: nil, isQuickAdd: true, nutrients: nutrients,
-                sortOrder: Self.nextSortOrder(db, day: day, slotID: slotID), now: now,
+                sortOrder: PlannedEntry.nextSortOrder(db, day: day, slotID: slotID), now: now,
             )
             try entry.insert(db)
             return entry
@@ -229,38 +225,19 @@ public struct MealPlanRepository: Sendable {
     public func move(plannedID: String, toSlot slotID: String, day: LocalDay) throws {
         let now = clock.now()
         try database.writer.write { db in
-            guard var entry = try PlannedEntry.fetchOne(db, key: plannedID) else { throw PersistenceError.notFound(plannedID) }
-            guard entry.mealSlotID != slotID || entry.day != day else { return }
-            entry.sortOrder = try Self.nextSortOrder(db, day: day, slotID: slotID)
-            entry.mealSlotID = slotID
-            entry.day = day
-            entry.stampUpdated(now)
-            try entry.update(db)
+            _ = try PlannedEntry.move(db, id: plannedID, toSlot: slotID, day: day, now: now)
         }
     }
 
     public func softDelete(plannedIDs: [String]) throws {
         let now = clock.now()
-        try database.writer.write { db in
-            for id in plannedIDs {
-                guard var entry = try PlannedEntry.fetchOne(db, key: id), entry.deletedAt == nil else { continue }
-                entry.stampDeleted(now)
-                try entry.update(db)
-            }
-        }
+        try database.writer.write { db in try PlannedEntry.softDelete(db, ids: plannedIDs, now: now) }
     }
 
     /// Undo for `softDelete`.
     public func restore(plannedIDs: [String]) throws {
         let now = clock.now()
-        try database.writer.write { db in
-            for id in plannedIDs {
-                guard var entry = try PlannedEntry.fetchOne(db, key: id), entry.deletedAt != nil else { continue }
-                entry.deletedAt = nil
-                entry.stampUpdated(now)
-                try entry.update(db)
-            }
-        }
+        try database.writer.write { db in try PlannedEntry.restore(db, ids: plannedIDs, now: now) }
     }
 
     // MARK: Confirming
@@ -298,7 +275,7 @@ public struct MealPlanRepository: Sendable {
                     day: planned.day, mealSlotID: planned.mealSlotID, foodID: planned.foodID, displayName: displayName,
                     grams: planned.grams, servingLabel: planned.servingLabel, isQuickAdd: planned.isQuickAdd,
                     nutrients: nutrients, loggedAt: now,
-                    sortOrder: DiaryRepository.nextSortOrder(db, day: planned.day, slotID: planned.mealSlotID),
+                    sortOrder: DiaryEntry.nextSortOrder(db, day: planned.day, slotID: planned.mealSlotID),
                 )
                 entry.fluidMl = fluidMl
                 try entry.insert(db)
@@ -346,7 +323,7 @@ public struct MealPlanRepository: Sendable {
                     let entry = try PlannedEntry(
                         day: day, mealSlotID: slot, foodID: source.foodID, displayName: name, grams: source.grams,
                         servingLabel: source.servingLabel, isQuickAdd: source.isQuickAdd, nutrients: nutrients,
-                        sortOrder: Self.nextSortOrder(db, day: day, slotID: slot), now: now,
+                        sortOrder: PlannedEntry.nextSortOrder(db, day: day, slotID: slot), now: now,
                     )
                     try entry.insert(db)
                     created.append(entry.id)
@@ -436,12 +413,5 @@ public struct MealPlanRepository: Sendable {
         return try Bool.fetchOne(db, sql: """
         SELECT EXISTS(SELECT 1 FROM diary_entry WHERE id = ? AND deleted_at IS NULL)
         """, arguments: [id]) ?? false
-    }
-
-    static func nextSortOrder(_ db: Database, day: LocalDay, slotID: String) throws -> Int {
-        let max = try Int.fetchOne(db, sql: """
-        SELECT MAX(sort_order) FROM planned_entry WHERE day = ? AND meal_slot_id = ?
-        """, arguments: [day, slotID])
-        return (max ?? -1) + 1
     }
 }

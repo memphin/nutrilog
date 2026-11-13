@@ -138,10 +138,6 @@ struct DiaryRepositoryTests {
         #expect(throws: PersistenceError.validation("not a quick-add entry")) {
             try f.diary.updateQuickAdd(entryID: e.id, name: nil, nutrients: .zero)
         }
-        try f.diary.setNote(entryID: e.id, note: "green one")
-        #expect(try f.diary.entry(id: e.id)?.note == "green one")
-        try f.diary.setNote(entryID: e.id, note: "")
-        #expect(try f.diary.entry(id: e.id)?.note == nil)
     }
 
     @Test func `soft delete and restore`() throws {

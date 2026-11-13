@@ -72,6 +72,77 @@ extension SyncedRecord {
         deletedAt = now
         stampUpdated(now)
     }
+
+    /// Soft-deletes the live rows of `ids` (missing and already deleted ones are skipped). Returns the ids it deleted,
+    /// in order, for the caller's follow-ups (e.g. queuing Apple Health writes).
+    @discardableResult
+    static func softDelete(_ db: Database, ids: [String], now: Date) throws -> [String] {
+        var changed: [String] = []
+        for id in ids {
+            guard var record = try fetchOne(db, key: id), record.deletedAt == nil else { continue }
+            record.stampDeleted(now)
+            try record.update(db)
+            changed.append(id)
+        }
+        return changed
+    }
+
+    /// Undo for ``softDelete(_:ids:now:)``: restores the deleted rows of `ids` (missing and live ones are skipped),
+    /// after `prepare` adjusted each one. Returns the ids it restored, in order.
+    @discardableResult
+    static func restore(
+        _ db: Database, ids: [String], now: Date, prepare: (Database, inout Self) throws -> Void = { _, _ in },
+    ) throws -> [String] {
+        var changed: [String] = []
+        for id in ids {
+            guard var record = try fetchOne(db, key: id), record.deletedAt != nil else { continue }
+            try prepare(db, &record)
+            record.deletedAt = nil
+            record.stampUpdated(now)
+            try record.update(db)
+            changed.append(id)
+        }
+        return changed
+    }
+}
+
+/// A row placed in a day's meal slot by `sort_order`: diary entries and planned entries.
+protocol SlottedEntry: SyncedRecord {
+    var id: String { get }
+    var day: LocalDay { get set }
+    var mealSlotID: String { get set }
+    var sortOrder: Int { get set }
+}
+
+extension SlottedEntry {
+    /// The position after the last row of `day`'s slot `slotID` (deleted rows included).
+    static func nextSortOrder(_ db: Database, day: LocalDay, slotID: String) throws -> Int {
+        let max = try Int.fetchOne(db, sql: """
+        SELECT MAX(sort_order) FROM \(databaseTableName) WHERE day = ? AND meal_slot_id = ?
+        """, arguments: [day, slotID])
+        return (max ?? -1) + 1
+    }
+
+    /// Moves row `id` to another slot and/or day, at the end of the target slot. Returns false when it is already
+    /// there (nothing changes); throws `notFound` for a missing row.
+    static func move(_ db: Database, id: String, toSlot slotID: String, day: LocalDay, now: Date) throws -> Bool {
+        guard var entry = try fetchOne(db, key: id) else { throw PersistenceError.notFound(id) }
+        guard entry.mealSlotID != slotID || entry.day != day else { return false }
+        entry.sortOrder = try nextSortOrder(db, day: day, slotID: slotID)
+        entry.mealSlotID = slotID
+        entry.day = day
+        entry.stampUpdated(now)
+        try entry.update(db)
+        return true
+    }
+}
+
+extension String? {
+    /// nil for nil or blank (whitespace-only) text, else the text unchanged.
+    var nonBlank: String? {
+        guard let self, !self.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        return self
+    }
 }
 
 /// New random UUID string (lowercase, portable TEXT primary key).

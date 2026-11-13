@@ -116,7 +116,9 @@ struct HealthSyncServiceTests {
         let sync = try #require(env.healthSync)
         try await connect(sync)
         let repository = try #require(env.dailyMetrics)
-        #expect(try repository.metricsWithData(in: sync.window).isEmpty)
+        #expect(try repository.metrics(in: sync.window).allSatisfy { row in
+            !HealthMetric.allCases.contains { row.metrics.hasValue($0) }
+        })
 
         // The user allows reading in the Health app later.
         fake.update { $0.readAllowed = true }
@@ -175,8 +177,7 @@ struct HealthSyncServiceTests {
             return
         }
         let repository = try #require(env.dailyMetrics)
-        #expect(try repository.metrics(in: sync.window).count == 30)
-        #expect(try repository.lastFetchedAt() != nil) // rows were fetched…
+        #expect(try repository.metrics(in: sync.window).count == 30) // rows were fetched…
         #expect(sync.lastSyncedAt == nil) // …but the sync did not succeed
         #expect(!sync.isBackfillComplete)
         #expect(try env.profiles?.setting(SettingKey.healthLastSyncedAt, as: Date.self) == nil)

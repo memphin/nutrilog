@@ -171,7 +171,7 @@ struct HydrationReminderServiceTests {
     }
 
     @Test func `a training day raises the goal the reminder plans for`() async throws {
-        try #require(env.trainingDays).setTraining(true, on: today)
+        try #require(env.trainingDays).toggleTraining(on: today) // no schedule: a training day
         // 2,500 ml reaches the base goal, not the training day's 2,750 ml.
         try drink(2500, at: at(11))
         try await makeService().recompute()

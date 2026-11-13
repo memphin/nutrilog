@@ -11,14 +11,12 @@ struct ProfileRepositoryTests {
         #expect(profile.activityLevel == .light)
         #expect(profile.goalMode == .maintain)
         #expect(profile.waterGoalMl == 2500)
-        #expect(!profile.isCompleteForFormula)
         profile.heightCm = 180
         profile.birthDate = day("1990-05-01")
         profile.sex = .male
         profile.activityLevel = .veryActive
         try f.profiles.save(profile)
         let saved = try f.profiles.profile()
-        #expect(saved.isCompleteForFormula)
         #expect(saved.activityLevel == .veryActive)
         #expect(saved.birthDate == day("1990-05-01"))
         #expect(saved.revision == 2)
@@ -45,11 +43,11 @@ struct ProfileRepositoryTests {
 
     @Test func `manual weights`() throws {
         let f = try Fixture()
-        #expect(try f.profiles.latestWeight() == nil)
-        try f.profiles.addWeight(kg: 82.4, at: f.clock.now.addingTimeInterval(-86400))
-        try f.profiles.addWeight(kg: 82.0, bodyFatPct: 18)
-        #expect(try f.profiles.latestWeight()?.kg == 82.0)
-        #expect(throws: PersistenceError.validation("weight out of range")) { try f.profiles.addWeight(kg: 0) }
+        #expect(try f.weights.latest() == nil)
+        try f.weights.add(kg: 82.4, measuredAt: f.clock.now.addingTimeInterval(-86400))
+        try f.weights.add(kg: 82.0, bodyFatPct: 18)
+        #expect(try f.weights.latest()?.kg == 82.0)
+        #expect(throws: PersistenceError.validation("weight out of range")) { try f.weights.add(kg: 0) }
     }
 
     @Test func `settings round trip`() throws {
@@ -113,7 +111,7 @@ struct DataPortabilityTests {
             day: day("2026-11-08"),
         )
         try f.diary.setDayNote(day: day("2026-11-08"), text: "line1\nline2", isComplete: true)
-        try f.profiles.addWeight(kg: 81.25, bodyFatPct: 17.5)
+        try f.weights.add(kg: 81.25, bodyFatPct: 17.5)
         try f.profiles.setTarget(Target(
             effectiveFrom: day("2026-11-01"),
             kcal: 2100,

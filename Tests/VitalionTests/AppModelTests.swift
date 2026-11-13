@@ -491,7 +491,8 @@ struct TargetsModelTests {
         let today = try #require(LocalDay("2026-11-09"))
         let env = AppEnvironment.preview()
         let profiles = try #require(env.profiles)
-        try profiles.addWeight(kg: 80.123)
+        let weights = try #require(env.weights)
+        try weights.add(kg: 80.123)
 
         let empty = TargetsModel(today: today)
         try empty.load(profile: profiles.profile(), target: nil, latestWeightKg: nil)
@@ -499,7 +500,7 @@ struct TargetsModelTests {
         #expect(try profiles.target(on: today) == nil)
 
         let first = TargetsModel(today: today)
-        try first.load(profile: profiles.profile(), target: nil, latestWeightKg: profiles.latestWeight()?.kg)
+        try first.load(profile: profiles.profile(), target: nil, latestWeightKg: weights.latest()?.kg)
         first.overrideKcal = true
         first.manualKcal = "2200"
         #expect(try first.save(to: profiles))
@@ -507,11 +508,11 @@ struct TargetsModelTests {
         #expect(saved.kcal == 2200)
 
         let second = TargetsModel(today: today)
-        try second.load(profile: profiles.profile(), target: saved, latestWeightKg: profiles.latestWeight()?.kg)
+        try second.load(profile: profiles.profile(), target: saved, latestWeightKg: weights.latest()?.kg)
         #expect(try second.save(to: profiles))
         #expect(try profiles.target(on: today)?.macros == saved.macros)
-        let weights = try #require(try env.portability?.exportCSV()["weights.csv"])
-        #expect(weights.split(whereSeparator: \.isNewline).count == 2) // header + the one weigh-in
+        let csv = try #require(try env.portability?.exportCSV()["weights.csv"])
+        #expect(csv.split(whereSeparator: \.isNewline).count == 2) // header + the one weigh-in
     }
 }
 
