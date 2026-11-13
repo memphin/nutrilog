@@ -66,6 +66,37 @@ struct WorkoutMigrationTests {
     }
 }
 
+struct WorkoutNameMigrationTests {
+    @Test func `migration 019 marks every stored workout as not custom and adds the names table`() throws {
+        let queue = try DatabaseQueue()
+        var old = DatabaseMigrator()
+        let index = try #require(Migrator.migrations.firstIndex(of: "019_workout_names"))
+        for name in Migrator.migrations.prefix(index) {
+            if let migrate = Migrator.codedMigration(named: name, deviceCalendar: .gregorian) {
+                old.registerMigration(name, migrate: migrate)
+            } else {
+                old.registerMigration(name) { db in try db.execute(sql: Migrator.sql(named: name)) }
+            }
+        }
+        try old.migrate(queue)
+        let stamp = "2026-01-01T00:00:00.000Z"
+        try queue.write { db in
+            try db.execute(sql: """
+            INSERT INTO health_workout (id, day, activity_type, start_at, end_at, duration_sec, created_at, updated_at)
+            VALUES ('run', '2026-11-09', 37, '2026-11-09T18:00:00.000Z', '2026-11-09T19:00:00.000Z', 3600, ?, ?)
+            """, arguments: [stamp, stamp])
+        }
+        let db = try AppDatabase(queue)
+        #expect(try queue.read { try Migrator.make().appliedMigrations($0) } == Migrator.migrations)
+        let run = try #require(try WorkoutRepository(db).workouts(in: day("2026-11-09") ... day("2026-11-09")).first)
+        #expect(!run.isCustomWorkout)
+        #expect(run.name == nil)
+        let columns = try queue.read { db in try db.columns(in: "workout_name").map(\.name) }
+        #expect(Set(columns) == ["workout_id", "name", "created_at", "updated_at", "deleted_at", "revision"])
+        #expect(DataPortability.tables.contains("workout_name"))
+    }
+}
+
 struct WorkoutRepositoryTests {
     let monday = day("2026-11-09")
 
@@ -127,6 +158,17 @@ struct WorkoutRepositoryTests {
         #expect(try f.workouts.workouts(in: day("2026-08-01") ... day("2026-11-30")).map(\.id) == ["old"])
     }
 
+    @Test func `a custom workout is stored as one, and a sync that finds the marker updates the row`() throws {
+        let f = try Fixture()
+        var run = workout("run", .running, "2026-11-09")
+        try f.workouts.reconcile([run], in: interval("2026-11-09", "2026-11-09"))
+        run.isCustomWorkout = true
+        #expect(try f.workouts.reconcile([run], in: interval("2026-11-09", "2026-11-09")) == 1)
+        let stored = try #require(try f.workouts.workouts(in: monday ... monday).first)
+        #expect(stored.isCustomWorkout)
+        #expect(stored.title == "Refereeing")
+    }
+
     @Test func `kinds list what Apple Health has, each once`() throws {
         let f = try Fixture()
         #expect(try f.workouts.kinds().isEmpty)
@@ -149,6 +191,64 @@ struct WorkoutRepositoryTests {
         #expect(try await iterator.next() == [])
         try f.workouts.reconcile([workout("lift", .strength, "2026-11-09")], in: interval("2026-11-09", "2026-11-09"))
         #expect(try await iterator.next()?.map(\.id) == ["lift"])
+    }
+}
+
+struct WorkoutNameRepositoryTests {
+    let monday = day("2026-11-09")
+
+    @Test func `a name is kept, changed and cleared`() throws {
+        let f = try Fixture()
+        try f.workouts.reconcile([workout("run", .running, "2026-11-09")], in: interval("2026-11-09", "2026-11-09"))
+        try f.workouts.setName("  Cup final ", for: "run")
+        #expect(try f.workouts.workouts(in: monday ... monday).map(\.title) == ["Cup final"])
+        f.clock.advance(60)
+        try f.workouts.setName("Cup final", for: "run") // the same name: no change
+        var row = try #require(try f.db.reader.read { db in try WorkoutNameRecord.fetchOne(db, key: "run") })
+        #expect(row.revision == 1)
+        try f.workouts.setName("Derby", for: "run")
+        #expect(try f.workouts.workouts(in: monday ... monday).map(\.title) == ["Derby"])
+        // Cleared: back to the kind's name, the row a tombstone.
+        try f.workouts.setName(" ", for: "run")
+        #expect(try f.workouts.workouts(in: monday ... monday).map(\.title) == ["Running"])
+        row = try #require(try f.db.reader.read { db in try WorkoutNameRecord.fetchOne(db, key: "run") })
+        #expect(row.deletedAt != nil && row.revision == 3)
+        // Named again: the same row lives again.
+        try f.workouts.setName("Final", for: "run")
+        row = try #require(try f.db.reader.read { db in try WorkoutNameRecord.fetchOne(db, key: "run") })
+        #expect(row.deletedAt == nil && row.name == "Final" && row.revision == 4)
+    }
+
+    @Test func `a name survives syncs and leaves training alone`() throws {
+        let f = try Fixture()
+        try f.workouts.startRulesIfNeeded(from: day("2026-11-01"))
+        try f.workouts.reconcile([workout("run", .running, "2026-11-09")], in: interval("2026-11-09", "2026-11-09"))
+        try f.workouts.setName("Refereeing", for: "run")
+        try f.workouts.reconcile([workout("run", .running, "2026-11-09", kcal: 500)], in: interval("2026-11-09", "2026-11-09"))
+        let stored = try f.workouts.workouts(in: monday ... monday)
+        #expect(stored.map(\.title) == ["Refereeing"])
+        #expect(stored.map(\.activeKcal) == [500])
+        #expect(try f.trainingDays.trainingDays(in: monday ... monday).isTraining(monday))
+        #expect(try f.workouts.latestWorkout(in: monday ... monday)?.name == "Refereeing")
+    }
+
+    @Test func `observing workouts follows a name`() async throws {
+        let f = try Fixture()
+        try f.workouts.reconcile([workout("run", .running, "2026-11-09")], in: interval("2026-11-09", "2026-11-09"))
+        var iterator = f.workouts.observeWorkouts(in: monday ... monday).makeAsyncIterator()
+        #expect(try await iterator.next()?.map(\.title) == ["Running"])
+        try f.workouts.setName("Refereeing", for: "run")
+        #expect(try await iterator.next()?.map(\.title) == ["Refereeing"])
+    }
+
+    @Test func `names survive an export and a restore`() throws {
+        let f = try Fixture()
+        try f.workouts.reconcile([workout("run", .running, "2026-11-09")], in: interval("2026-11-09", "2026-11-09"))
+        try f.workouts.setName("Cup final", for: "run")
+        let export = try DataPortability(f.db, clock: f.clock.appClock).exportJSON()
+        let restored = try Fixture()
+        try DataPortability(restored.db, clock: restored.clock.appClock).importJSON(export, mode: .replace)
+        #expect(try restored.workouts.workouts(in: monday ... monday).map(\.title) == ["Cup final"])
     }
 }
 

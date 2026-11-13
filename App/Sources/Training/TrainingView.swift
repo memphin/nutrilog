@@ -5,7 +5,7 @@ import SwiftUI
 
 /// "Training" tab: the workouts Apple Health has. Training (strength, running, …) and
 /// everyday activity (walks) are kept apart: only training counts as a session and makes a day a training day; which
-/// kinds are which is set in Settings → Training days. Nothing is logged here.
+/// kinds are which is set in Settings → Training days. Nothing is logged here; tapping a workout renames it.
 struct TrainingView: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var model: TrainingModel?
@@ -33,6 +33,8 @@ private struct TrainingContent: View {
     @Environment(AppEnvironment.self) private var environment
     @Bindable var model: TrainingModel
     @State private var showOnboarding = false
+    /// The workout whose name is being edited.
+    @State private var renaming: HealthWorkout?
 
     var body: some View {
         ScrollView {
@@ -72,6 +74,9 @@ private struct TrainingContent: View {
         .sheet(isPresented: $showOnboarding) {
             HealthOnboardingView()
         }
+        .sheet(item: $renaming) { workout in
+            WorkoutNameSheet(workout: workout) { model.rename(workout, to: $0) }
+        }
         .errorAlert($model.errorMessage)
         .task(id: environment.today) { await model.observe() }
     }
@@ -79,9 +84,9 @@ private struct TrainingContent: View {
     @ViewBuilder private var overview: some View {
         if let overview = model.overview, overview.hasWorkouts {
             WeekCard(week: overview.week, today: overview.today)
-            SessionsCard(sessions: overview.recentSessions, today: overview.today, unit: model.energyUnit)
+            SessionsCard(sessions: overview.recentSessions, today: overview.today, unit: model.energyUnit) { renaming = $0 }
             if !overview.activity.workouts.isEmpty {
-                ActivityCard(activity: overview.activity, today: overview.today, unit: model.energyUnit)
+                ActivityCard(activity: overview.activity, today: overview.today, unit: model.energyUnit) { renaming = $0 }
             }
         } else if model.overview == nil || model.isSyncing {
             ProgressView("Reading Apple Health…").frame(minHeight: 200)
@@ -216,13 +221,14 @@ private struct SessionsCard: View {
     let sessions: [HealthWorkout]
     let today: LocalDay
     let unit: EnergyUnit
+    let rename: (HealthWorkout) -> Void
 
     var body: some View {
         TrainingCard(title: String(localized: "Workouts"), detail: String(localized: "Last 4 weeks")) {
             if sessions.isEmpty {
                 Text("No training in the last 4 weeks.").foregroundStyle(.secondary)
             } else {
-                WorkoutRows(workouts: sessions, today: today, unit: unit)
+                WorkoutRows(workouts: sessions, today: today, unit: unit, rename: rename)
             }
         }
     }
@@ -233,13 +239,14 @@ private struct ActivityCard: View {
     let activity: ActivitySummary
     let today: LocalDay
     let unit: EnergyUnit
+    let rename: (HealthWorkout) -> Void
 
     var body: some View {
         TrainingCard(
             title: activity.isOnlyWalks ? String(localized: "Walks") : String(localized: "Other activity"),
             detail: TrainingText.activitySummary(activity),
         ) {
-            WorkoutRows(workouts: activity.workouts, today: today, unit: unit)
+            WorkoutRows(workouts: activity.workouts, today: today, unit: unit, rename: rename)
         }
     }
 }
@@ -248,31 +255,89 @@ private struct WorkoutRows: View {
     let workouts: [HealthWorkout]
     let today: LocalDay
     let unit: EnergyUnit
+    /// Tapping a workout: edit its name.
+    let rename: (HealthWorkout) -> Void
 
     var body: some View {
         VStack(spacing: NL.Spacing.s) {
             ForEach(workouts) { workout in
-                HStack(spacing: NL.Spacing.m) {
-                    Image(systemName: workout.kind.systemImage)
-                        .font(.title3)
-                        .foregroundStyle(Color.accentColor)
-                        .frame(width: 28)
-                        .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(workout.kind.title)
-                        Text(Format.day(workout.day, today: today)).font(.caption).foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    VStack(alignment: .trailing, spacing: 0) {
-                        Text(Format.duration(minutes: workout.minutes)).font(NL.Typography.smallNumber).monospacedDigit()
-                        if let extras = TrainingText.extras(workout, unit: unit) {
-                            Text(extras).font(.caption).foregroundStyle(.secondary).monospacedDigit()
-                        }
-                    }
-                }
-                .accessibilityElement(children: .combine)
+                Button { rename(workout) } label: { row(workout) }
+                    .buttonStyle(.plain)
+                    .accessibilityHint(Text("Renames the workout"))
             }
         }
+    }
+
+    private func row(_ workout: HealthWorkout) -> some View {
+        HStack(spacing: NL.Spacing.m) {
+            Image(systemName: workout.kind.systemImage)
+                .font(.title3)
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 28)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(workout.title)
+                Text(Format.day(workout.day, today: today)).font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+            VStack(alignment: .trailing, spacing: 0) {
+                Text(Format.duration(minutes: workout.minutes)).font(NL.Typography.smallNumber).monospacedDigit()
+                if let extras = TrainingText.extras(workout, unit: unit) {
+                    Text(extras).font(.caption).foregroundStyle(.secondary).monospacedDigit()
+                }
+            }
+        }
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// Names a workout: what the Training tab calls it instead of its kind ("Running") or "Refereeing".
+private struct WorkoutNameSheet: View {
+    let workout: HealthWorkout
+    let save: (String) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var name: String
+
+    init(workout: HealthWorkout, save: @escaping (String) -> Void) {
+        self.workout = workout
+        self.save = save
+        _name = State(initialValue: workout.name ?? "")
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField(workout.automaticTitle, text: $name)
+                        .submitLabel(.done)
+                        .onSubmit(done)
+                        .onChange(of: name) { _, new in
+                            if new.count > WorkoutName.maxLength {
+                                name = String(new.prefix(WorkoutName.maxLength))
+                            }
+                        }
+                } footer: {
+                    Text("Leave empty to call it \(workout.automaticTitle).", comment: "Footer of a workout's name field")
+                }
+            }
+            .navigationTitle("Workout name")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save", action: done)
+                }
+            }
+        }
+        .presentationDetents([.medium])
+    }
+
+    private func done() {
+        save(name)
+        dismiss()
     }
 }
 

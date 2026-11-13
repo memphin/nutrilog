@@ -25,7 +25,8 @@ public enum Migrator {
         "016_drop_barcode_scan_log",
         "017_supplements",
         "018_health_workout",
-        // "019_<description>",
+        "019_workout_names",
+        // "020_<description>",
     ]
 
     /// `deviceCalendar`: the calendar the device uses now, which migration 011 needs to tell which calendar the

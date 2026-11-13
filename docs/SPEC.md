@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Document version | 1.16 (app 1.2.0 shipped) |
+| Document version | 1.17 (app 1.2.0 shipped) |
 | Date | 2026-11-10 |
 | Status | **Approved** — phases 1–3 shipped (app 1.2.0); phase 4 not started. Changes go through PRs to `docs/SPEC.md` with a change-log entry. |
 | Name | **Vitalion** (called Nutrilog until November 2026; the bundle ID `hr.ivanjuric.nutrilog` stays) |
@@ -214,7 +214,7 @@ Unit tests cover: perfect-logging synthetic data (recovers the true TDEE within 
 - FR-51 Charts (Swift Charts): weight (raw + trend), daily kcal vs. target, macro distribution, steps, sleep — 1w / 1m / 3m / 1y. Each opens from its Today tile's detail (macros from the calories tile).
 - FR-52 Weekly report: averages, best/worst day, intake vs. estimated expenditure. Opens from Today's "Last week" tile (last week's average intake, average target and weight-trend change).
 - FR-53 Correlations (COULD): removed in 1.13 (owner request).
-- FR-54 (SHOULD, owner request) **Training tab**: the workouts Apple Health has (from the watch or a training app), read-only — nothing is logged in Vitalion. Each workout kind (`HKWorkoutActivityType`) either counts as training or is everyday activity; walking is activity by default, every other kind training, set per kind found in Health in Settings → Training days → Counts as training. Like targets the choice is history: a change applies from today. The tab shows this week (days trained of days planned, time trained, a mark per day: trained / planned), training sessions per week for the last 12 weeks, this week's fuel (average intake against the average target, protein per kg of the weight trend, weight-trend change — the weekly report's numbers, which it opens), the training sessions of the last 4 weeks and, apart from them, this week's walks and other activity. A session recorded twice (watch and training app: workouts overlapping for at least half of the shorter one) counts once; the one shown is a training workout if there is one, then the watch's, then the longest. From the first workout read on, a workout that counts as training makes its day a training day (FR-32); earlier days keep their status. Workouts are kept one by one in `health_workout` (migration 018), beyond the 90 days a sync reads; one deleted in Health is deleted here. Users who connected Health before this are asked once for the new type, from the tab. No load or readiness score, no workout detail, no Today tile.
+- FR-54 (SHOULD, owner request) **Training tab**: the workouts Apple Health has (from the watch or a training app), read-only — nothing is logged in Vitalion. Each workout kind (`HKWorkoutActivityType`) either counts as training or is everyday activity; walking is activity by default, every other kind training, set per kind found in Health in Settings → Training days → Counts as training. Like targets the choice is history: a change applies from today. The tab shows this week (days trained of days planned, time trained, a mark per day: trained / planned), training sessions per week for the last 12 weeks, this week's fuel (average intake against the average target, protein per kg of the weight trend, weight-trend change — the weekly report's numbers, which it opens), the training sessions of the last 4 weeks and, apart from them, this week's walks and other activity. A session recorded twice (watch and training app: workouts overlapping for at least half of the shorter one) counts once; the one shown is a training workout if there is one, then the watch's, then the longest. From the first workout read on, a workout that counts as training makes its day a training day (FR-32); earlier days keep their status. Workouts are kept one by one in `health_workout` (migration 018), beyond the 90 days a sync reads; one deleted in Health is deleted here. Users who connected Health before this are asked once for the new type, from the tab. A workout started from a custom workout on Apple Watch (`WOIntervalStepKeyPath` in its metadata; the owner's only one is refereeing) is called Refereeing / Suđenje. Tapping a workout gives it a name of its own, kept in `workout_name` (migration 019); clearing it brings back the kind's name (or Refereeing). Names change only what a workout is called: its kind, whether it counts as training and its day's status stay. No load or readiness score, no workout detail, no Today tile.
 
 ### 5.7 Data portability (MUST)
 - FR-60 Export all data as JSON (full fidelity, versioned schema) and CSV (diary, weights); share sheet / Files.
@@ -326,7 +326,10 @@ DailyMetrics (from HealthKit, one row per date)
 
 HealthWorkout (from HealthKit, one row per workout; FR-54)
   id (HKWorkout UUID), day, activityType (HKWorkoutActivityType raw value), startAt, endAt, durationSec (without pauses),
-  activeKcal?, distanceM?, sourceName, sourceBundleId, sourceProductType?, createdAt, updatedAt, deletedAt?, revision
+  activeKcal?, distanceM?, sourceName, sourceBundleId, sourceProductType?, isCustom (custom workout, migration 019), createdAt,
+  updatedAt, deletedAt?, revision
+
+WorkoutName (the user's name for a workout; FR-54) { workoutId, name, createdAt, updatedAt, deletedAt?, revision }
 
 WaterEntry { id, timestamp, ml, healthKitUUID?, createdAt, updatedAt, deletedAt?, revision }
 
@@ -433,6 +436,7 @@ All blocking decisions are made (D1–D9). The following defaults may be changed
 ---
 
 *Change log*
+- 1.17 — owner request: a custom workout from Apple Watch is called Refereeing, and any workout can be renamed from the Training tab (FR-54, migration 019) (2026-11-13)
 - 1.16 — owner request: the Training tab shows the workouts from Apple Health (FR-54) — training apart from walks and other everyday activity, this week against the planned training days, 12 weeks of sessions, this week's fuel — and a workout that counts as training makes its day a training day (FR-32); workouts are a new Health read type (migration 018) (2026-11-13)
 - 1.15 — owner request: the Trends tab is replaced by an empty Training tab; the maintenance estimate, weekly check-in, check-in history and check-in day & reminder move to Settings → Maintenance & check-in; the weekly report opens from a new "Last week" Today tile (FR-52); the diary's toolbar opens the history calendar instead of the meal plan, which moves to the Foods tab, renamed Food (2026-11-13)
 - 1.14 — owner request: Supplements & medications in the diary with reminders (FR-83); a 200 mg caffeine pill among the caffeine presets (FR-49), which adds no fluid (2026-11-13)

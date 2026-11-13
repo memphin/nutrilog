@@ -57,6 +57,30 @@ struct WorkoutKindTests {
     }
 }
 
+struct WorkoutTitleTests {
+    @Test func `a workout is called by its kind, a custom workout refereeing, a name over both`() {
+        var run = workout("run", .running, "2026-11-09")
+        #expect(run.title == "Running")
+        run.isCustomWorkout = true
+        #expect(run.automaticTitle == "Refereeing")
+        #expect(run.title == "Refereeing")
+        run.name = "  Cup final  "
+        #expect(run.title == "Cup final")
+        #expect(run.automaticTitle == "Refereeing")
+        run.name = "   "
+        #expect(run.title == "Refereeing")
+        // Still a run underneath: training counts it as one.
+        #expect(run.kind == .running)
+    }
+
+    @Test func `names are trimmed, capped and empty is none`() {
+        #expect(WorkoutName.normalized(nil) == nil)
+        #expect(WorkoutName.normalized(" \n ") == nil)
+        #expect(WorkoutName.normalized(" Refereeing ") == "Refereeing")
+        #expect(WorkoutName.normalized(String(repeating: "a", count: 100))?.count == WorkoutName.maxLength)
+    }
+}
+
 struct TrainingRulesTests {
     let monday = day("2026-11-09")
 
@@ -121,6 +145,21 @@ struct WorkoutSessionsTests {
         #expect(merged.map(\.id) == ["app"])
         #expect(merged[0].activeKcal == 300)
         #expect(merged[0].distanceM == 1200)
+    }
+
+    @Test func `a name or a custom workout of a double names the session`() {
+        var app = workout("app", .running, "2026-11-09", "18:00", minutes: 55, source: gymApp)
+        app.name = "Derby"
+        var watch = workout("watch", .running, "2026-11-09", "18:00", minutes: 60)
+        watch.isCustomWorkout = true
+        let named = WorkoutSessions.merged([app, watch], rules: rules)
+        #expect(named.map(\.id) == ["watch"])
+        #expect(named[0].title == "Derby")
+        app.name = nil
+        watch.isCustomWorkout = false
+        app.isCustomWorkout = true
+        let custom = WorkoutSessions.merged([app, watch], rules: rules)
+        #expect(custom[0].id == "watch" && custom[0].isCustomWorkout)
     }
 
     @Test func `the watch wins over an app and the longer over the shorter`() {

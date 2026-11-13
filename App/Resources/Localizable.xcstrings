@@ -4345,6 +4345,16 @@
         }
       }
     },
+    "Couldn't save the name: %@" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Naziv nije spremljen: %@"
+          }
+        }
+      }
+    },
     "Couldn't save the setting: %@" : {
       "localizations" : {
         "hr" : {
@@ -6448,6 +6458,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zadnje ažuriranje"
+          }
+        }
+      }
+    },
+    "Leave empty to call it %@." : {
+      "comment" : "Footer of a workout's name field",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ostavi prazno i zvat će se %@."
           }
         }
       }
@@ -9127,6 +9148,16 @@
         }
       }
     },
+    "Renames the workout" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preimenuje trening"
+          }
+        }
+      }
+    },
     "Replace all my data" : {
       "localizations" : {
         "hr" : {
@@ -11579,6 +11610,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bez barem %lld dana aktivne energije i energije u mirovanju u aplikaciji Zdravlje potrošnja za održavanje procjenjuje se prema razini aktivnosti. Tjedna provjera (Postavke) to precizira tvojim stvarnim unosom i trendom težine."
+          }
+        }
+      }
+    },
+    "Workout name" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Naziv treninga"
           }
         }
       }
