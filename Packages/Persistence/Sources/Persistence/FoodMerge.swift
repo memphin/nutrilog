@@ -97,11 +97,11 @@ public extension FoodRepository {
                     nextSort += 1
                 }
 
-                keep.brand = keep.brand.nonEmpty ?? removed.brand.nonEmpty
-                keep.nameLocal = keep.nameLocal.nonEmpty ?? removed.nameLocal.nonEmpty
-                keep.imageURL = keep.imageURL.nonEmpty ?? removed.imageURL.nonEmpty
-                keep.nutriscore = keep.nutriscore.nonEmpty ?? removed.nutriscore.nonEmpty
-                keep.notes = keep.notes.nonEmpty ?? removed.notes.nonEmpty
+                keep.brand = keep.brand.nonBlank ?? removed.brand.nonBlank
+                keep.nameLocal = keep.nameLocal.nonBlank ?? removed.nameLocal.nonBlank
+                keep.imageURL = keep.imageURL.nonBlank ?? removed.imageURL.nonBlank
+                keep.nutriscore = keep.nutriscore.nonBlank ?? removed.nutriscore.nonBlank
+                keep.notes = keep.notes.nonBlank ?? removed.notes.nonBlank
                 // Optional nutrients only when both describe the same thing per 100 g/ml.
                 if removed.isLiquid == keep.isLiquid, !removed.perServingOnly, !keep.perServingOnly {
                     keep.fiberG100 = keep.fiberG100 ?? removed.fiberG100
@@ -170,13 +170,5 @@ public extension FoodRepository {
             return left < right
         }
         return (lhs.food.createdAt, lhs.food.id) < (rhs.food.createdAt, rhs.food.id)
-    }
-}
-
-private extension String? {
-    /// nil for nil or blank text.
-    var nonEmpty: String? {
-        guard let self, !self.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
-        return self
     }
 }

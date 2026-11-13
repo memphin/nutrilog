@@ -35,6 +35,8 @@ struct SmartLogTests {
             bundledIndex: nil,
             mealEstimator: estimator,
             imageLabeler: StubLabeler(found: labels),
+            openFoodFacts: StubOpenFoodFactsClient(),
+            offSearch: StubOpenFoodFactsSearchClient(),
         )
         let foods = try #require(env.foods)
         try foods.save(FoodDetail(

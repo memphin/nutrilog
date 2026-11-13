@@ -173,18 +173,7 @@ private struct CaffeineCurveChart: View {
 
     private func chart(points: [CaffeinePoint], window: ClosedRange<Date>, top: Double) -> some View {
         Chart {
-            ForEach(points, id: \.date) { point in
-                AreaMark(x: .value("Time", point.date), y: .value("Caffeine", point.mg))
-                    .foregroundStyle(LinearGradient(
-                        colors: [NL.Palette.caffeine.opacity(0.35), NL.Palette.caffeine.opacity(0.03)],
-                        startPoint: .top, endPoint: .bottom,
-                    ))
-                    .interpolationMethod(.monotone)
-                LineMark(x: .value("Time", point.date), y: .value("Caffeine", point.mg))
-                    .foregroundStyle(NL.Palette.caffeine)
-                    .interpolationMethod(.monotone)
-                    .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
-            }
+            CaffeineCurveMarks(points: points)
             RuleMark(y: .value("Sleep-safe", status.thresholdMg))
                 .foregroundStyle(Color.secondary)
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
@@ -196,34 +185,14 @@ private struct CaffeineCurveChart: View {
                         Image(systemName: "moon.fill").font(.caption2).foregroundStyle(.indigo)
                     }
             }
-            RuleMark(x: .value("Now", status.now))
-                .foregroundStyle(Color.primary.opacity(0.35))
-                .lineStyle(StrokeStyle(lineWidth: 1))
-                .annotation(position: .top, alignment: .center, overflowResolution: .init(x: .fit(to: .chart), y: .fit(to: .chart))) {
-                    Text("Now").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
-                }
+            NowRuleMark(now: status.now)
             PointMark(x: .value("Time", status.now), y: .value("Caffeine", status.mgNow))
                 .foregroundStyle(GoalColor.color(status.band))
                 .symbolSize(60)
         }
         .chartXScale(domain: window)
         .chartYScale(domain: 0 ... top)
-        .chartXAxis {
-            AxisMarks(values: .stride(by: .hour, count: 3)) { _ in
-                AxisGridLine()
-                AxisValueLabel(format: .dateTime.hour())
-            }
-        }
-        .chartYAxis {
-            AxisMarks(position: .leading) { value in
-                AxisGridLine()
-                AxisValueLabel {
-                    if let mg = value.as(Double.self) {
-                        Text("\(CaffeineStatus.mgNumber(mg))")
-                    }
-                }
-            }
-        }
+        .dayChartAxes(label: CaffeineStatus.mgNumber)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Caffeine curve")
         .accessibilityValue(accessibilityValue)
@@ -317,9 +286,8 @@ struct CaffeineEntrySheet: View {
     private func add() {
         guard let mg else { return }
         let preset = drinkID.flatMap(CaffeineDrink.preset(id:))
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         model.addCaffeine(
-            mg: mg, at: min(time, model.now), drinkID: preset?.id, name: preset?.name ?? (trimmed.isEmpty ? nil : trimmed),
+            mg: mg, at: min(time, model.now), drinkID: preset?.id, name: preset?.name ?? name.trimmedNonEmpty,
             ml: Self.volumeMl(mlText),
         )
         dismiss()

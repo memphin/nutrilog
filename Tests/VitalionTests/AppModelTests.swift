@@ -491,7 +491,8 @@ struct TargetsModelTests {
         let today = try #require(LocalDay("2026-11-09"))
         let env = AppEnvironment.preview()
         let profiles = try #require(env.profiles)
-        try profiles.addWeight(kg: 80.123)
+        let weights = try #require(env.weights)
+        try weights.add(kg: 80.123)
 
         let empty = TargetsModel(today: today)
         try empty.load(profile: profiles.profile(), target: nil, latestWeightKg: nil)
@@ -499,7 +500,7 @@ struct TargetsModelTests {
         #expect(try profiles.target(on: today) == nil)
 
         let first = TargetsModel(today: today)
-        try first.load(profile: profiles.profile(), target: nil, latestWeightKg: profiles.latestWeight()?.kg)
+        try first.load(profile: profiles.profile(), target: nil, latestWeightKg: weights.latest()?.kg)
         first.overrideKcal = true
         first.manualKcal = "2200"
         #expect(try first.save(to: profiles))
@@ -507,11 +508,11 @@ struct TargetsModelTests {
         #expect(saved.kcal == 2200)
 
         let second = TargetsModel(today: today)
-        try second.load(profile: profiles.profile(), target: saved, latestWeightKg: profiles.latestWeight()?.kg)
+        try second.load(profile: profiles.profile(), target: saved, latestWeightKg: weights.latest()?.kg)
         #expect(try second.save(to: profiles))
         #expect(try profiles.target(on: today)?.macros == saved.macros)
-        let weights = try #require(try env.portability?.exportCSV()["weights.csv"])
-        #expect(weights.split(whereSeparator: \.isNewline).count == 2) // header + the one weigh-in
+        let csv = try #require(try env.portability?.exportCSV()["weights.csv"])
+        #expect(csv.split(whereSeparator: \.isNewline).count == 2) // header + the one weigh-in
     }
 }
 
@@ -676,6 +677,65 @@ struct DiaryModelTests {
         center.offer("y") {}
         center.dismiss()
         #expect(center.current == nil)
+    }
+
+    @Test func `under-logging hints are gentle and only for finished, unmarked days`() {
+        let env = AppEnvironment.preview(clock: ManualClock().appClock)
+        let today = env.today
+        func hint(day: LocalDay, kcal: Double, entries: Int, complete: Bool = false, estimate: Double? = 2400) -> String? {
+            DiaryHints.hint(
+                day: day,
+                today: today,
+                kcal: kcal,
+                entryCount: entries,
+                isComplete: complete,
+                estimateKcal: estimate,
+                unit: .kcal,
+            )
+        }
+        #expect(hint(day: today.previous, kcal: 900, entries: 5)?.contains("less than half") == true)
+        #expect(hint(day: today.previous, kcal: 900, entries: 5, complete: true) == nil)
+        #expect(hint(day: today, kcal: 300, entries: 1) == nil) // today is still being logged
+        #expect(hint(day: today.previous, kcal: 0, entries: 0) == nil)
+        #expect(hint(day: today.previous, kcal: 2000, entries: 5) == nil)
+        #expect(hint(day: today.previous, kcal: 2000, entries: 2)?.contains("fewer than 3") == true)
+        #expect(hint(day: today.previous, kcal: 900, entries: 5, estimate: nil) == nil)
+    }
+
+    @Test func `a low day warns but never changes the target`() async throws {
+        let env = AppEnvironment.preview(clock: ManualClock().appClock)
+        try seedHistory(env)
+        try completeProfile(env)
+        let profiles = try #require(env.profiles), diary = try #require(env.diary)
+        try profiles.setTarget(Target(
+            effectiveFrom: env.today.adding(days: -40), kcal: 2300, macros: MacroTargets(proteinG: 150, carbsG: 250, fatG: 78),
+            origin: .manual,
+        ))
+        let yesterday = env.today.previous
+        let entries = try diary.diary(for: yesterday).sections.flatMap(\.entries)
+        try diary.softDelete(entryIDs: entries.dropFirst().map(\.id)) // one entry of ~667 kcal left
+
+        let model = DiaryModel(environment: env, day: yesterday)
+        let observing = Task { await model.observeDiary() }
+        defer { observing.cancel() }
+        #expect(await waitUntil { model.diary?.entryCount == 1 })
+        model.reloadEstimate()
+        #expect(model.estimateKcal != nil)
+        #expect(model.loggingHint?.contains("less than half") == true)
+        #expect(try profiles.targetHistory().map(\.kcal) == [2300])
+
+        model.toggleComplete()
+        #expect(await waitUntil { model.diary?.note?.isComplete == true })
+        #expect(model.loggingHint == nil)
+        #expect(try profiles.targetHistory().map(\.kcal) == [2300])
+    }
+
+    @Test func `the history calendar asks the diary for a day`() {
+        let env = AppEnvironment.preview(clock: ManualClock().appClock)
+        let day = env.today.adding(days: -40)
+        env.openDiary(on: day)
+        #expect(env.selectedTab == .diary)
+        #expect(env.diaryDayRequest == day)
     }
 }
 

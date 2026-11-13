@@ -4,27 +4,20 @@
 
 Log what you eat (barcode scan, search, saved meals) and see it next to how your body responds — weight trend, body fat, steps, sleep, resting heart rate, HRV — all pulled from Apple Health. No account, no cloud, no telemetry.
 
-> Status: **v1.0 feature-complete** (phases 1–3 of the [roadmap](docs/SPEC.md#13-roadmap)): diary, barcode scanning, Apple Health, saved meals, adaptive TDEE with a weekly check-in, history, charts, weekly report, Shortcuts and widgets. Next is phase 4 (optional self-hosted sync and a web client). Release notes: [docs/RELEASE_NOTES_1.0.0.md](docs/RELEASE_NOTES_1.0.0.md).
-
-| Today | Trends | Weekly check-in |
-|---|---|---|
-| ![Today dashboard](docs/screenshots/today.png) | ![Trends](docs/screenshots/trends.png) | ![Weekly check-in](docs/screenshots/check-in.png) |
-
-| History | Weight chart | Weekly report |
-|---|---|---|
-| ![History calendar](docs/screenshots/history.png) | ![Weight chart](docs/screenshots/weight-chart.png) | ![Weekly report](docs/screenshots/weekly-report.png) |
-
-*Screenshots show the built-in sample data (`-uiSampleData`), not real data.*
+> Status: current version **1.2.0** (phases 1–3 of the [roadmap](docs/SPEC.md#13-roadmap)). Next is phase 4 (optional self-hosted sync and a web client).
 
 ## Features
 
 - Fast food diary with meal slots, recents, favorites, quick-add, copy meal/day, and **saved meals** (a list of foods with amounts, built from scratch or from a logged meal; log it in one tap)
 - Snap or describe a meal: a photo or a sentence becomes foods with amounts and calories, estimated on the iPhone by Apple Intelligence (no account, nothing sent anywhere)
-- English and Croatian UI (follows the iOS language, incl. Settings → Vitalion → Language); bundled foods searchable by Croatian or English name
+- English and Croatian UI (follows the iOS language, incl. Settings → Vitalion → Language); built-in food names in English or Croatian, chosen separately in Settings → Food names
 - Barcode scanning (VisionKit) with Open Food Facts lookup and one-tap manual entry when a product is missing
 - Offline search over a bundled USDA FoodData Central subset + your own foods (SQLite FTS5, diacritic-insensitive); online search in Open Food Facts and USDA
 - Calorie and macro targets, **adaptive maintenance (TDEE) estimate** from your intake and smoothed weight trend, and a **weekly check-in** that proposes a target — every number explains how it was computed
-- Apple Health: reads steps, sleep (with stages), weight, body fat %, active and resting energy, resting HR, HRV, water; writes nutrients, water and manual weights
+- Today dashboard edited in place (Edit on Today): calories, macros, weight, sleep, steps, energy, water, **caffeine** tiles
+- **Hydration**: daily goal, intake timeline and local reminders; **training days** raise that day's calorie target and hydration goal
+- **Streaks**, and **correlations** on Trends over 1, 3 or 6 months (e.g. hydration vs next-day HRV and sleep)
+- Apple Health: reads steps, sleep, weight, body fat %, active and resting energy, resting HR, HRV, water; writes nutrients, water and manual weights
 - Works with any scale/watch that syncs to Apple Health (built and tested with a Withings scale + Apple Watch)
 - History calendar colored by adherence, charts (1W / 1M / 3M / 1Y) for weight and trend, body fat, calories vs target, macros, steps, sleep, heart rate, HRV, water and energy burned, and a shareable weekly report
 - Siri / Shortcuts: log a favorite, quick-add calories, remaining calories, log water; Home Screen and Lock Screen widgets
@@ -43,7 +36,7 @@ Not planned: ads, subscriptions, social features, coaching, analytics SDKs.
 ```bash
 git clone https://github.com/memphin/vitalion.git
 cd vitalion
-cp Config/Secrets.xcconfig.template Config/Secrets.xcconfig   # optional: USDA key, Team ID
+cp Config/Secrets.xcconfig.template Config/Secrets.xcconfig   # optional: Team ID, USDA key
 open Vitalion.xcodeproj
 ```
 
@@ -57,7 +50,7 @@ Tests: `xcodebuild test -project Vitalion.xcodeproj -scheme Vitalion -destinatio
 
 ### Optional: USDA FoodData Central key
 
-The app works without one (bundled foods + Open Food Facts). For online USDA search either paste a free key in **Settings → Food sources** (stored in Keychain) or put it in `Config/Secrets.xcconfig` (git-ignored). Never commit a key — USDA deactivates keys found in public repos.
+The app works without one (bundled foods + Open Food Facts). For online USDA search put a free key in `Config/Secrets.xcconfig` (git-ignored); it is built into the app — there is no key field in Settings. Never commit a key — USDA deactivates keys found in public repos.
 
 ## Project layout
 
@@ -66,7 +59,7 @@ App/            SwiftUI app, DI, navigation; App Intents (Siri / Shortcuts) in A
 Packages/       Swift packages: Core, Persistence (GRDB), FoodSources, FoodLookup, HealthKitClient, Scanner, DesignSystem
 Widgets/        WidgetKit extension (Home Screen and Lock Screen widgets)
 Shared/         Code compiled into both the app and the widget extension
-Resources/      Bundled food index, licenses
+Resources/      Bundled food index (FoodIndex)
 tools/          Scripts (e.g. build the bundled USDA food index)
 docs/           SPEC.md (product & technical specification), ADRs
 ```
@@ -79,7 +72,7 @@ docs/           SPEC.md (product & technical specification), ADRs
 
 ## Privacy
 
-See [PRIVACY.md](PRIVACY.md). Short version: the only network calls are to Open Food Facts and (optionally) USDA. Nothing else leaves your phone.
+See [PRIVACY.md](PRIVACY.md). Short version: the only network calls are to Open Food Facts and (when the build includes a key) USDA. Nothing else leaves your phone.
 
 ## Contributing
 

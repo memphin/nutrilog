@@ -5,44 +5,30 @@ import SwiftUI
 import Testing
 @testable import Vitalion
 
-// Owner feedback after the second device test (#62–#67, #70): a quieter sleep tile, a step goal with goal-coloured
-// bars, water coloured by its goal, one Total energy tile drawn as resting + active, and metric descriptions.
-
+/// Goals and colours on Today: each tile's value against its goal or baseline, how it is spoken, and the goal settings.
 @MainActor
-struct DashboardFeedbackTests {
+struct DashboardGoalColorTests {
     let today = LocalDay("2026-11-09")!
 
-    private func snapshot(_ metrics: DailyHealthMetrics, stepGoal: Int = StepGoal.defaultSteps) -> DashboardSnapshot {
-        var data = DashboardData(today: today)
-        data.metrics = [DailyMetricsRecord(metrics, fetchedAt: Date())]
-        data.stepGoal = stepGoal
-        return DashboardSnapshot(data)
-    }
-
-    // MARK: Sleep (#62)
+    // MARK: Sleep
 
     @Test func `the sleep tile speaks the time asleep only`() {
         let night = DailyHealthMetrics(
             day: today, sleepAsleepMin: 450, sleepInBedMin: 480, sleepCoreMin: 240, sleepDeepMin: 90, sleepRemMin: 120, sleepAwakeMin: 30,
         )
-        let snapshot = snapshot(night)
+        let snapshot = dashboardSnapshot(today: today, metrics: [night])
         #expect(snapshot
             .accessibilityLabel(of: .sleep, state: .ready, locale: .dashboardEnglish) ==
             "Sleep, 7 hours 30 minutes asleep, close to the goal of 8 hours")
-        // The stages stay in the detail list.
-        var data = DashboardData(today: today)
-        data.metrics = [DailyMetricsRecord(night, fetchedAt: Date())]
-        let row = TileHistory.rows(for: .sleep, data: data).first
-        #expect(row?.detail?.contains("Deep") == true)
         // Only time in bed known: that is what the tile says.
-        let inBedOnly = self.snapshot(DailyHealthMetrics(day: today, sleepInBedMin: 480))
+        let inBedOnly = dashboardSnapshot(today: today, metrics: [DailyHealthMetrics(day: today, sleepInBedMin: 480)])
         #expect(inBedOnly
             .accessibilityLabel(of: .sleep, state: .ready, locale: .dashboardEnglish) ==
             "Sleep, 8 hours in bed, goal of 8 hours reached, 1-day streak")
         #expect(!DashboardTile.sleep.isWide)
     }
 
-    // MARK: Step goal (#63)
+    // MARK: Step goal
 
     @Test func `steps are banded by the goal`() {
         #expect(StepGoal.band(steps: 10000, goal: 10000) == .reached)
@@ -73,14 +59,14 @@ struct DashboardFeedbackTests {
     }
 
     @Test func `step bars and the spoken label follow the goal`() {
-        let snapshot = snapshot(DailyHealthMetrics(day: today, steps: 8500), stepGoal: 10000)
+        let snapshot = dashboardSnapshot(today: today, metrics: [DailyHealthMetrics(day: today, steps: 8500)]) { $0.stepGoal = 10000 }
         #expect(snapshot.goalColor(of: .steps, value: 10000) == GoalColor.reached)
         #expect(snapshot.goalColor(of: .steps, value: 8500) == GoalColor.near)
         #expect(snapshot.goalColor(of: .steps, value: 2000) == GoalColor.missed)
         #expect(snapshot.goalColor(of: .weight, value: 80) == nil)
         #expect(snapshot
             .accessibilityLabel(of: .steps, state: .ready, locale: .dashboardEnglish) == "Steps, 8,500 steps, close to the goal of 10,000")
-        let reached = self.snapshot(DailyHealthMetrics(day: today, steps: 8500), stepGoal: 8000)
+        let reached = dashboardSnapshot(today: today, metrics: [DailyHealthMetrics(day: today, steps: 8500)]) { $0.stepGoal = 8000 }
         #expect(reached
             .accessibilityLabel(of: .steps, state: .ready, locale: .dashboardEnglish) ==
             "Steps, 8,500 steps, goal of 8,000 reached, 1-day streak")
@@ -120,10 +106,11 @@ struct DashboardFeedbackTests {
     }
 
     @Test func `total energy bars are coloured by the active part only`() throws {
-        var data = DashboardData(today: today)
-        data.activeEnergyGoalKcal = 400
-        data.metrics = [DailyMetricsRecord(DailyHealthMetrics(day: today, activeKcal: 300, basalKcal: 1700), fetchedAt: Date())]
-        let snapshot = DashboardSnapshot(data)
+        let metrics = [DailyHealthMetrics(day: today, activeKcal: 300, basalKcal: 1700)]
+        let snapshot = dashboardSnapshot(today: today, metrics: metrics) { $0.activeEnergyGoalKcal = 400 }
+        // The total is active plus resting.
+        #expect(snapshot.energyBurned?.totalKcal == 2000)
+        #expect(snapshot.state(of: .totalEnergy, access: .requested, isFirstSync: false) == .ready)
         let point = try #require(snapshot.sparklines[.totalEnergy]?.points.last)
         #expect(point.upper == 300)
         // 2,000 kcal in total, but 300 active of a 400 goal: red, not green.
@@ -136,7 +123,7 @@ struct DashboardFeedbackTests {
             .contains("below the active goal of 1,674"))
     }
 
-    // MARK: Water (#64)
+    // MARK: Water
 
     @Test func `water is red far below its goal, orange close to it and green from it`() {
         #expect(GoalColor.water(1999, goalMl: 2500) == GoalColor.missed)
@@ -144,27 +131,16 @@ struct DashboardFeedbackTests {
         #expect(GoalColor.water(2499, goalMl: 2500) == GoalColor.near)
         #expect(GoalColor.water(2500, goalMl: 2500) == GoalColor.reached)
         #expect(GoalColor.water(3000, goalMl: 2500) == GoalColor.reached)
-        var data = DashboardData(today: today)
-        data.waterGoalMode = .fixed
-        data.waterGoalMl = 2000
-        data.metrics = [DailyMetricsRecord(DailyHealthMetrics(day: today, waterMl: 2100), fetchedAt: Date())]
-        let snapshot = DashboardSnapshot(data)
-        #expect(snapshot.goalColor(of: .water, value: 1500) == GoalColor.missed)
-        #expect(snapshot.goalColor(of: .water, value: 2000) == GoalColor.reached)
+        let snapshot = dashboardSnapshot(today: today, metrics: [DailyHealthMetrics(day: today, waterMl: 2100)]) { data in
+            data.waterGoalMode = .fixed
+            data.waterGoalMl = 2000
+        }
         #expect(snapshot
             .accessibilityLabel(of: .water, state: .ready, locale: .dashboardEnglish) ==
             "Hydration, 2,100 of 2,000 millilitres, goal reached, 1-day streak")
     }
 
-    // MARK: Total energy (#66)
-
-    @Test func `there is one energy-burned tile and chart`() {
-        #expect(DashboardTile.allCases.map(\.title).count { $0.localizedCaseInsensitiveContains("energy") } == 1)
-        #expect(DashboardTile.totalEnergy.title == "Total energy")
-        #expect(ChartMetric(tile: .totalEnergy) == .totalEnergy)
-        #expect(ChartMetric.totalEnergy.title == "Total energy")
-        #expect(!ChartMetric.allCases.contains { $0.rawValue == "activeEnergy" })
-    }
+    // MARK: Total energy chart
 
     @Test func `total energy bars are resting plus active`() {
         // Monday to Wednesday of one week.
@@ -187,12 +163,12 @@ struct DashboardFeedbackTests {
         #expect(weekly[0].value == 2150 && weekly[0].resting == 1650 && weekly[0].active == 500)
     }
 
-    // MARK: Sleep goal, weight, baselines (#72–#74)
+    // MARK: Sleep goal, weight, baselines
 
     @Test func `sleep is written plainly and coloured by the sleep goal`() throws {
-        #expect(DashboardFormat.duration(425) == "7h 5min")
-        #expect(DashboardFormat.duration(480) == "8h")
-        #expect(DashboardFormat.duration(45) == "45min")
+        #expect(Format.duration(minutes: 425) == "7 h 5 min")
+        #expect(Format.duration(minutes: 480) == "8 h")
+        #expect(Format.duration(minutes: 45) == "45 min")
         // Green at the goal, orange up to an hour short, red further below.
         #expect(SleepGoal.band(minutes: 480, goal: 480) == .reached)
         #expect(SleepGoal.band(minutes: 479, goal: 480) == .near)
@@ -215,12 +191,10 @@ struct DashboardFeedbackTests {
         #expect(model.snapshot.sleepGoalMin == 420)
 
         // The 7-day bars are back, coloured like the value.
-        var data = DashboardData(today: today)
-        data.sleepGoalMin = 450
-        data.metrics = [0: 460, 1: 400, 2: 380].map { offset, minutes in
-            DailyMetricsRecord(DailyHealthMetrics(day: today.adding(days: -offset), sleepAsleepMin: minutes), fetchedAt: Date())
+        let nights = [0: 460, 1: 400, 2: 380].map { offset, minutes in
+            DailyHealthMetrics(day: today.adding(days: -offset), sleepAsleepMin: minutes)
         }
-        let snapshot = DashboardSnapshot(data)
+        let snapshot = dashboardSnapshot(today: today, metrics: nights) { $0.sleepGoalMin = 450 }
         let bars = try #require(snapshot.sparkline(for: .sleep))
         #expect(bars.mark == .bar)
         #expect(bars.points.map(\.value).sorted() == [380, 400, 460])
@@ -232,11 +206,8 @@ struct DashboardFeedbackTests {
     }
 
     @Test func `the weight tile says the weight only`() {
-        var data = DashboardData(today: today)
-        data.metrics = (0 ..< 10).map {
-            DailyMetricsRecord(DailyHealthMetrics(day: today.adding(days: -$0), weightKg: 80 + Double($0) / 10), fetchedAt: Date())
-        }
-        let snapshot = DashboardSnapshot(data)
+        let weights = (0 ..< 10).map { DailyHealthMetrics(day: today.adding(days: -$0), weightKg: 80 + Double($0) / 10) }
+        let snapshot = dashboardSnapshot(today: today, metrics: weights)
         #expect(snapshot
             .accessibilityLabel(of: .weight, state: .ready, locale: .dashboardEnglish) ==
             "Weight, 80.0 kilograms, below the weekly average")
@@ -262,21 +233,16 @@ struct DashboardFeedbackTests {
         #expect(BaselineBand.restingHR(comparison(64, average30: 60)) == .far)
 
         // On the snapshot: 30 days at 50 ms / 60 bpm, today 40 ms / 61 bpm.
-        var data = DashboardData(today: today)
-        data.metrics = (0 ... 30).map {
-            let metrics = DailyHealthMetrics(day: today.adding(days: -$0), restingHR: $0 == 0 ? 61 : 60, hrvSDNNms: $0 == 0 ? 40 : 50)
-            return DailyMetricsRecord(metrics, fetchedAt: Date())
-        }
-        let snapshot = DashboardSnapshot(data)
+        let snapshot = dashboardSnapshot(today: today, metrics: (0 ... 30).map {
+            DailyHealthMetrics(day: today.adding(days: -$0), restingHR: $0 == 0 ? 61 : 60, hrvSDNNms: $0 == 0 ? 40 : 50)
+        })
         #expect(snapshot.baselineColor(of: .hrv) == GoalColor.missed)
         #expect(snapshot.baselineColor(of: .restingHeartRate) == GoalColor.near)
         #expect(snapshot.baselineColor(of: .steps) == nil)
         #expect(snapshot.accessibilityLabel(of: .restingHeartRate, state: .ready, locale: .dashboardEnglish)
             .contains("2% above your 30-day average"))
         // No baseline yet: no colour.
-        var short = DashboardData(today: today)
-        short.metrics = [DailyMetricsRecord(DailyHealthMetrics(day: today, hrvSDNNms: 40), fetchedAt: Date())]
-        #expect(DashboardSnapshot(short).baselineColor(of: .hrv) == nil)
+        #expect(dashboardSnapshot(today: today, metrics: [DailyHealthMetrics(day: today, hrvSDNNms: 40)]).baselineColor(of: .hrv) == nil)
     }
 
     // MARK: Weight and body fat against the week before
@@ -284,13 +250,10 @@ struct DashboardFeedbackTests {
     @Test func `weight is coloured by the goal against the weekly average, body fat by being below it`() {
         /// 7 days at 80 kg / 20 %, today as given.
         func snapshot(kg: Double, fat: Double, goal: GoalMode, days: Int = 7) -> DashboardSnapshot {
-            var data = DashboardData(today: today)
-            data.goalMode = goal
-            data.metrics = (0 ... days).map {
-                let metrics = DailyHealthMetrics(day: today.adding(days: -$0), weightKg: $0 == 0 ? kg : 80, bodyFatPct: $0 == 0 ? fat : 20)
-                return DailyMetricsRecord(metrics, fetchedAt: Date())
+            let metrics = (0 ... days).map {
+                DailyHealthMetrics(day: today.adding(days: -$0), weightKg: $0 == 0 ? kg : 80, bodyFatPct: $0 == 0 ? fat : 20)
             }
-            return DashboardSnapshot(data)
+            return dashboardSnapshot(today: today, metrics: metrics) { $0.goalMode = goal }
         }
         // Losing: below the average is green, slightly above orange, far above red.
         #expect(snapshot(kg: 79.6, fat: 19.8, goal: .lose).weeklyBand(of: .weight) == .reached)
@@ -317,7 +280,7 @@ struct DashboardFeedbackTests {
             == "Body fat, 19.5 percent, below the weekly average")
     }
 
-    // MARK: Descriptions (#67)
+    // MARK: Descriptions
 
     @Test func `HRV and resting heart rate details describe the metric`() throws {
         for tile in [DashboardTile.hrv, .restingHeartRate] {

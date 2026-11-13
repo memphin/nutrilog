@@ -21,7 +21,6 @@ struct RootView: View {
                         environment.refreshStoredWeightTrend()
                         environment.refreshHydrationReminder() // drinks may have been logged in other apps
                     }
-                    environment.reloadUSDAKey() // the Keychain may have been locked at launch
                     Task { await environment.healthDidEnterForeground() }
                     environment.backupIfDue()
                     offerCheckInIfDue()
@@ -30,9 +29,6 @@ struct RootView: View {
             // Midnight, clock changes and time-zone changes move day boundaries: refresh "today" and re-sync Health.
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
                 Task { await environment.systemTimeDidChange() }
-            }
-            .onReceive(NotificationCenter.default.publisher(for: UIApplication.protectedDataDidBecomeAvailableNotification)) { _ in
-                environment.reloadUSDAKey()
             }
             .onReceive(NotificationCenter.default.publisher(for: .NSSystemTimeZoneDidChange).receive(on: DispatchQueue.main)) { _ in
                 Task { await environment.systemTimeDidChange() }
@@ -130,6 +126,8 @@ enum CheckInPrompt {
     }
 }
 
-#Preview {
-    RootView().environment(AppEnvironment.preview(sampleData: true))
-}
+#if DEBUG
+    #Preview {
+        RootView().environment(AppEnvironment.preview(sampleData: true))
+    }
+#endif

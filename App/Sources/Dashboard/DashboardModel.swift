@@ -86,8 +86,7 @@ final class DashboardModel {
         updateLayout { $0.show(tile) }
     }
 
-    /// Applies `change` and saves it (the same setting Settings → Dashboard edits); the layout changes only when the
-    /// save worked.
+    /// Applies `change` and saves it; the layout changes only when the save worked.
     private func updateLayout(_ change: (inout DashboardLayout) -> Void) {
         guard let profiles = environment.profiles else { return }
         var updated = layout
@@ -285,7 +284,7 @@ final class DashboardModel {
             guard let water = environment.water else { return }
             do {
                 try water.softDelete(ids: [intake.id])
-                offerUndo(String(localized: "Removed \(DashboardFormat.ml(intake.ml)) water")) { try water.restore(ids: [intake.id]) }
+                offerUndo(String(localized: "Removed \(Format.ml(intake.ml)) water")) { try water.restore(ids: [intake.id]) }
             } catch {
                 errorMessage = String(localized: "Couldn't remove water: \(error.localizedDescription)")
             }
@@ -405,7 +404,7 @@ final class DashboardModel {
             try weights.softDelete(ids: [entry.id])
             environment.refreshStoredWeightTrend()
             environment.widgetDataDidChange()
-            offerUndo(String(localized: "Deleted \(DashboardFormat.kg(entry.kg))")) { [environment] in
+            offerUndo(String(localized: "Deleted \(Format.kg(entry.kg))")) { [environment] in
                 try weights.restore(ids: [entry.id])
                 environment.refreshStoredWeightTrend()
                 environment.widgetDataDidChange()
@@ -430,19 +429,11 @@ final class DashboardModel {
 
     // MARK: Detail data
 
-    /// The last `TileHistory.days` days of `tile`, newest first.
+    /// The last `TileHistory.days` days of `.water` or `.caffeine`, newest first.
     func history(for tile: DashboardTile) -> [TileHistoryRow] {
         let days = (0 ..< TileHistory.days).map { data.today.adding(days: -$0) }
-        var kcal: [LocalDay: Double] = [:]
         var fluid: [LocalDay: Double] = [:]
         var caffeine: [LocalDay: Double] = [:]
-        if tile == .energy, let diary = environment.diary {
-            for day in days {
-                if let dayDiary = try? diary.diary(for: day), dayDiary.entryCount > 0 {
-                    kcal[day] = dayDiary.totals.kcal
-                }
-            }
-        }
         if tile == .water, let repo = environment.hydration, let first = days.last,
            let intakes = try? repo.intakes(in: first ... data.today)
         {
@@ -455,10 +446,7 @@ final class DashboardModel {
                 caffeine[day] = intakes.totalMg(on: day)
             }
         }
-        return TileHistory.rows(
-            for: tile, data: data, kcalByDay: kcal, loggedFluidByDay: fluid, caffeineByDay: caffeine,
-            energyUnit: energyUnit, calendar: calendar,
-        )
+        return TileHistory.rows(for: tile, data: data, loggedFluidByDay: fluid, caffeineByDay: caffeine)
     }
 
     // MARK: Helpers

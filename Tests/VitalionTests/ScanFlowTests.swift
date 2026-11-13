@@ -352,6 +352,10 @@ struct ScanFlowTests {
         #expect(ProductCardView.servingTitle(label: "1 portion (30g)", amount: 30, unit: "g") == "Per 1 portion (30g)")
         #expect(ProductCardView.servingTitle(label: "2 biscuits 25,5 g", amount: 25.5, unit: "g") == "Per 2 biscuits 25,5 g")
         #expect(ProductCardView.servingTitle(label: "1 can (33 cl)", amount: 330, unit: "ml") == "Per 1 can (33 cl)")
+        #expect(ProductCardView.servingTitle(label: "100 ml (105 g)", amount: 105, unit: "g") == "Per 100 ml (105 g)")
+        #expect(ProductCardView.servingTitle(label: "2 x 125 ml", amount: 125, unit: "ml") == "Per 2 x 125 ml")
+        // An imperial label gets the metric weight next to it.
+        #expect(ProductCardView.servingTitle(label: "1 oz", amount: 28.3495, unit: "g") == "Per 1 oz (28 g)")
         // The label doesn't state this weight: append it.
         #expect(ProductCardView.servingTitle(label: "1 shot", amount: 60, unit: "ml") == "Per 1 shot (60 ml)")
         #expect(ProductCardView.servingTitle(label: "2 biscuits (25 g)", amount: 50, unit: "g") == "Per 2 biscuits (25 g) (50 g)")
@@ -439,18 +443,6 @@ struct ScanFlowTests {
         #expect(stored.kcal == 12)
         let food = try #require(try h.foods.food(id: placeholder.food.id))
         #expect(abs(food.per100.scaled(toGrams: stored.grams).kcal - 12) < 1e-9)
-    }
-
-    @Test func `placeholder conversion keeps partial quality when macros are missing`() throws {
-        var food = Food(name: "Bar", per100: Nutrients(kcal: 200, proteinG: 0, carbsG: 0, fatG: 0), dataQuality: .partialMacros)
-        food.perServingOnly = true
-        let serving = Serving(label: "1 bar", grams: 100)
-        food.defaultServingID = serving.id
-        let detail = FoodDetail(food: food, servings: [serving])
-        let converted = try detail.convertingPerServingPlaceholder(servingWeight: 40, missing: [.protein])
-        #expect(converted.food.dataQuality == .partialMacros)
-        #expect(converted.food.kcal100 == 500)
-        #expect(converted.servings.first?.grams == 40)
     }
 
     // MARK: Review follow-ups

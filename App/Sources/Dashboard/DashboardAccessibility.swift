@@ -29,10 +29,9 @@ extension DashboardSnapshot {
     }
 
     /// A whole number to speak, rounded like `.number.precision(.fractionLength(0))` (half to even), as an `Int` so
-    /// the localized phrase can pick its plural form.
+    /// the localized phrase can pick its plural form. `DisplayRounding.whole` clamps what `Int` can't hold.
     private static func count(_ value: Double) -> Int {
-        guard value.isFinite else { return 0 }
-        return Int(value.rounded(.toNearestOrEven))
+        DisplayRounding.whole(value.rounded(.toNearestOrEven))
     }
 
     private func accessibilityParts(of tile: DashboardTile, energyUnit: EnergyUnit, locale: Locale) -> [String] {
@@ -193,7 +192,7 @@ extension DashboardSnapshot {
         return [String(localized: "\(steps) steps", locale: locale), goal]
     }
 
-    /// Like the tile: time asleep only; time in bed when that is all Health has. Stages are in the detail (#62).
+    /// Like the tile: time asleep only; time in bed when that is all Health has.
     private func sleepParts(locale: Locale) -> [String] {
         guard let minutes = sleepMinutes else { return [] }
         let goalText = Self.spokenDuration(sleepGoalMin, locale: locale)

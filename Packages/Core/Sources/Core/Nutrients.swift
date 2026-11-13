@@ -108,7 +108,7 @@ public struct Nutrients: Hashable, Sendable, Codable {
 public extension Nutrients {
     /// Energy implied by macros using Atwater general factors (4 / 4 / 9 kcal per g).
     var kcalFromMacros: Double {
-        proteinG * 4 + carbsG * 4 + fatG * 9
+        proteinG * Energy.kcalPerGramProtein + carbsG * Energy.kcalPerGramCarbs + fatG * Energy.kcalPerGramFat
     }
 
     /// Relative difference between stored kcal and the 4/4/9 estimate, e.g. 0.2 = 20 %.
@@ -138,16 +138,5 @@ public enum Salt {
     /// Sodium (mg) → salt (g).
     public static func saltG(fromSodiumMg sodium: Double) -> Double {
         sodium / 400
-    }
-}
-
-// MARK: - Macro energy split
-
-public extension Nutrients {
-    /// Share of energy from protein / carbs / fat based on 4/4/9, each 0…1. All zero when no macros.
-    var macroEnergyShares: (protein: Double, carbs: Double, fat: Double) {
-        let total = kcalFromMacros
-        guard total > 0 else { return (0, 0, 0) }
-        return (proteinG * 4 / total, carbsG * 4 / total, fatG * 9 / total)
     }
 }

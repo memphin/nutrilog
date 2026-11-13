@@ -51,13 +51,7 @@ struct MealEditorView: View {
             } message: {
                 Text("Its foods and the diary entries logged from it stay as they are.")
             }
-            .alert("Meal", isPresented: Binding(get: { errorMessage != nil }, set: {
-                if !$0 {
-                    errorMessage = nil
-                }
-            })) {
-                Button("OK", role: .cancel) {}
-            } message: { Text(errorMessage ?? "") }
+            .errorAlert($errorMessage, title: "Meal")
         }
         .onAppear(perform: load)
     }

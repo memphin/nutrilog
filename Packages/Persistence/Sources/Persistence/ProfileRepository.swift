@@ -34,9 +34,7 @@ public struct ProfileRepository: Sendable {
     }
 
     public func observeProfile() -> AsyncValueObservation<Profile?> {
-        ValueObservation.tracking { db in try Profile.fetchOne(db, key: 1) }
-            .removeDuplicates()
-            .values(in: database.reader)
+        database.observe { db in try Profile.fetchOne(db, key: 1) }
     }
 
     // MARK: Targets
@@ -47,9 +45,7 @@ public struct ProfileRepository: Sendable {
     }
 
     public func observeTarget(on day: LocalDay) -> AsyncValueObservation<Target?> {
-        ValueObservation.tracking { db in try Self.target(db, on: day) }
-            .removeDuplicates()
-            .values(in: database.reader)
+        database.observe { db in try Self.target(db, on: day) }
     }
 
     /// Saves a target effective from `target.effectiveFrom`. A target already starting that day is replaced
@@ -94,18 +90,6 @@ public struct ProfileRepository: Sendable {
             .filter(Target.Columns.deletedAt == nil && Target.Columns.effectiveFrom <= day)
             .order(Target.Columns.effectiveFrom.desc)
             .fetchOne(db)
-    }
-
-    // MARK: Weight (see `WeightRepository`)
-
-    /// A manual weigh-in (Profile & targets); queued for Apple Health like every manual weight.
-    @discardableResult
-    public func addWeight(kg: Double, bodyFatPct: Double? = nil, at date: Date? = nil) throws -> WeightEntry {
-        try WeightRepository(database, clock: clock).add(kg: kg, bodyFatPct: bodyFatPct, measuredAt: date)
-    }
-
-    public func latestWeight() throws -> WeightEntry? {
-        try WeightRepository(database, clock: clock).latest()
     }
 
     // MARK: Settings

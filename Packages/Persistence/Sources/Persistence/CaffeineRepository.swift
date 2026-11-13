@@ -116,10 +116,11 @@ public struct CaffeineRepository: Sendable {
             try EntryLimits.validate(amount: ml)
         }
         let volume = ml ?? drinkID.flatMap(CaffeineDrink.preset(id:))?.servingMl
+        let name = name.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.nonBlank
         let now = clock.now()
         return try database.writer.write { db in
             let entry = CaffeineEntry(
-                id: newID(), day: day, loggedAt: loggedAt ?? now, mg: mg, drinkID: drinkID, name: Self.cleaned(name),
+                id: newID(), day: day, loggedAt: loggedAt ?? now, mg: mg, drinkID: drinkID, name: name,
                 ml: volume, createdAt: now, updatedAt: now, deletedAt: nil, revision: 1,
             )
             try entry.insert(db)
@@ -150,26 +151,13 @@ public struct CaffeineRepository: Sendable {
 
     public func softDelete(ids: [String]) throws {
         let now = clock.now()
-        try database.writer.write { db in
-            for id in ids {
-                guard var entry = try CaffeineEntry.fetchOne(db, key: id), entry.deletedAt == nil else { continue }
-                entry.stampDeleted(now)
-                try entry.update(db)
-            }
-        }
+        _ = try database.writer.write { db in try CaffeineEntry.softDelete(db, ids: ids, now: now) }
     }
 
     /// Undo for `softDelete`.
     public func restore(ids: [String]) throws {
         let now = clock.now()
-        try database.writer.write { db in
-            for id in ids {
-                guard var entry = try CaffeineEntry.fetchOne(db, key: id), entry.deletedAt != nil else { continue }
-                entry.deletedAt = nil
-                entry.stampUpdated(now)
-                try entry.update(db)
-            }
-        }
+        _ = try database.writer.write { db in try CaffeineEntry.restore(db, ids: ids, now: now) }
     }
 
     // MARK: Reads
@@ -191,9 +179,7 @@ public struct CaffeineRepository: Sendable {
 
     /// Active entries of every day in `days`, now and after every change.
     public func observeEntries(in days: ClosedRange<LocalDay>) -> AsyncValueObservation<[CaffeineEntry]> {
-        ValueObservation.tracking { db in try Self.entries(db, in: days) }
-            .removeDuplicates()
-            .values(in: database.reader)
+        database.observe { db in try Self.entries(db, in: days) }
     }
 
     /// Quick-adds and diary caffeine of every day in `days`.
@@ -205,9 +191,7 @@ public struct CaffeineRepository: Sendable {
     /// for the dashboard tile (current amount, sleep-safe time) and its detail chart. Include the day before today:
     /// caffeine from last night still counts this morning.
     public func observeIntakes(in days: ClosedRange<LocalDay>) -> AsyncValueObservation<CaffeineIntakes> {
-        ValueObservation.tracking { db in try Self.intakes(db, in: days) }
-            .removeDuplicates()
-            .values(in: database.reader)
+        database.observe { db in try Self.intakes(db, in: days) }
     }
 
     // MARK: Helpers
@@ -226,10 +210,5 @@ public struct CaffeineRepository: Sendable {
 
     static func validate(mg: Double) throws {
         guard mg > 0, mg.isFinite else { throw PersistenceError.amountNotPositive }
-    }
-
-    static func cleaned(_ name: String?) -> String? {
-        guard let trimmed = name?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else { return nil }
-        return trimmed
     }
 }

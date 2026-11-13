@@ -26,13 +26,7 @@ struct ProfileTargetsView: View {
         }
         .navigationTitle("Profile & targets")
         .task { load() }
-        .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: {
-            if !$0 {
-                errorMessage = nil
-            }
-        })) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(errorMessage ?? "") }
+        .errorAlert($errorMessage)
         .alert("Saved", isPresented: Binding(get: { savedMessage != nil }, set: {
             if !$0 {
                 savedMessage = nil
@@ -82,7 +76,7 @@ private struct TargetsForm: View {
                 LabeledContent("Weight") {
                     if let weight = model.weightKg {
                         VStack(alignment: .trailing, spacing: NL.Spacing.xxs) {
-                            Text(DashboardFormat.kg(weight)).monospacedDigit()
+                            Text(Format.kg(weight)).monospacedDigit()
                             if let day = model.weightDay {
                                 Text(Format.day(day, today: model.today)).font(.caption).foregroundStyle(.secondary)
                             }

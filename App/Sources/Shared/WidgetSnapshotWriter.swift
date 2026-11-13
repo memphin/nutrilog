@@ -21,7 +21,7 @@ enum WidgetSnapshotWriter {
             day: today.isoString, kcal: totals.kcal, targetKcal: target?.kcal,
             proteinG: totals.proteinG, carbsG: totals.carbsG, fatG: totals.fatG,
             targetProteinG: target?.proteinG, targetCarbsG: target?.carbsG, targetFatG: target?.fatG,
-            steps: metrics?.steps, sleepMin: metrics?.sleepAsleepMin ?? metrics?.sleepInBedMin,
+            steps: metrics?.steps, sleepMin: metrics?.shownSleepMinutes,
             weightKg: WeightTrend.summary(weights, today: today)?.latestKg,
             waterMl: hydration?.totalMl ?? 0,
             waterGoalMl: hydration?.goalMl ?? HydrationGoal.fallbackMl,

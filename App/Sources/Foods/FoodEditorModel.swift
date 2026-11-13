@@ -17,11 +17,6 @@ final class FoodEditorModel {
         }
     }
 
-    /// The nutrients every food must have; listed when completing a partial food (SPEC §9 "Complete nutrition").
-    enum RequiredNutrient: String, CaseIterable, Hashable, Sendable {
-        case energy, protein, carbs, fat
-    }
-
     struct ServingDraft: Identifiable, Equatable {
         var id: String = newID()
         var label: String = ""
@@ -106,7 +101,7 @@ final class FoodEditorModel {
     private(set) var original: FoodDetail?
     /// Set when completing the nutrition of a partial food: these fields start empty so they must be typed in,
     /// and saving marks the food's data complete.
-    private(set) var completing: Set<RequiredNutrient>?
+    private(set) var completing: Set<FoodDraft.MandatoryNutrient>?
 
     /// Nutrition fields as loaded from `original`. Fields still showing this text keep the stored value on
     /// save: the fields round to 2 decimals, and USDA / Open Food Facts values often have more.
@@ -124,7 +119,7 @@ final class FoodEditorModel {
         editing detail: FoodDetail? = nil,
         initialName: String = "",
         barcode: String? = nil,
-        completing: Set<RequiredNutrient>? = nil,
+        completing: Set<FoodDraft.MandatoryNutrient>? = nil,
     ) {
         self.energyUnit = energyUnit
         original = detail
@@ -237,9 +232,9 @@ final class FoodEditorModel {
         guard canSave, let per100 else { return nil }
         var food = original?.food ?? Food(name: "", per100: per100)
         food.name = name.trimmingCharacters(in: .whitespaces)
-        food.nameLocal = Self.optional(nameLocal)
-        food.brand = Self.optional(brand)
-        food.notes = Self.optional(notes)
+        food.nameLocal = nameLocal.trimmedNonEmpty
+        food.brand = brand.trimmedNonEmpty
+        food.notes = notes.trimmedNonEmpty
         food.isLiquid = isLiquid
         food.countsAsFluid = countsAsFluid
         food.per100 = keepingUneditedValues(per100)
@@ -346,7 +341,7 @@ final class FoodEditorModel {
             return .notFound
         case let .remote(remote):
             guard canFillFromLookup else { return .skipped } // values were typed while the lookup ran
-            let missing = Set(remote.draft.missingNutrients.compactMap { RequiredNutrient(rawValue: $0.rawValue) })
+            let missing = remote.draft.missingNutrients
             let product = FoodDetail(draft: remote.draft)
             fill(from: product, missing: missing)
             return .filled(name: product.food.name)
@@ -356,7 +351,7 @@ final class FoodEditorModel {
     /// Fills a new food's form with a product's values; a name or brand already typed is kept. The food stays a new
     /// custom food. Values the source doesn't have stay empty, and a product known only per serving switches the
     /// form to "Per serving" so the serving size is asked for.
-    func fill(from product: FoodDetail, missing: Set<RequiredNutrient> = []) {
+    func fill(from product: FoodDetail, missing: Set<FoodDraft.MandatoryNutrient> = []) {
         let food = product.food
         if name.trimmingCharacters(in: .whitespaces).isEmpty {
             name = food.name
@@ -368,16 +363,7 @@ final class FoodEditorModel {
             brand = food.brand ?? ""
         }
         isLiquid = food.isLiquid
-        energy = missing.contains(.energy) ? "" : Format.field(energyUnit.display(food.kcal100))
-        protein = missing.contains(.protein) ? "" : Format.field(food.proteinG100)
-        carbs = missing.contains(.carbs) ? "" : Format.field(food.carbsG100)
-        fat = missing.contains(.fat) ? "" : Format.field(food.fatG100)
-        fiber = Format.field(food.fiberG100)
-        sugar = Format.field(food.sugarG100)
-        satFat = Format.field(food.satFatG100)
-        entersSalt = false
-        sodiumOrSalt = Format.field(food.sodiumMg100)
-        caffeine = Format.field(food.caffeineMg100)
+        fillNutrientFields(from: food, missing: missing)
         if product.isPerServingPlaceholder {
             // The stored values are per serving of unknown weight.
             basis = .perServing
@@ -485,6 +471,20 @@ final class FoodEditorModel {
         return result
     }
 
+    /// The nutrient fields from `food`'s stored values (per 100); the `missing` ones are left empty to be typed.
+    private func fillNutrientFields(from food: Food, missing: Set<FoodDraft.MandatoryNutrient> = []) {
+        energy = missing.contains(.energy) ? "" : Format.field(energyUnit.display(food.kcal100))
+        protein = missing.contains(.protein) ? "" : Format.field(food.proteinG100)
+        carbs = missing.contains(.carbs) ? "" : Format.field(food.carbsG100)
+        fat = missing.contains(.fat) ? "" : Format.field(food.fatG100)
+        fiber = Format.field(food.fiberG100)
+        sugar = Format.field(food.sugarG100)
+        satFat = Format.field(food.satFatG100)
+        entersSalt = false
+        sodiumOrSalt = Format.field(food.sodiumMg100)
+        caffeine = Format.field(food.caffeineMg100)
+    }
+
     private func load(_ detail: FoodDetail) {
         let food = detail.food
         name = food.name
@@ -493,16 +493,7 @@ final class FoodEditorModel {
         notes = food.notes ?? ""
         isLiquid = food.isLiquid
         countsAsFluid = food.countsAsFluid
-        energy = Format.field(energyUnit.display(food.kcal100))
-        protein = Format.field(food.proteinG100)
-        carbs = Format.field(food.carbsG100)
-        fat = Format.field(food.fatG100)
-        fiber = Format.field(food.fiberG100)
-        sugar = Format.field(food.sugarG100)
-        satFat = Format.field(food.satFatG100)
-        entersSalt = false
-        sodiumOrSalt = Format.field(food.sodiumMg100)
-        caffeine = Format.field(food.caffeineMg100)
+        fillNutrientFields(from: food)
         loaded = LoadedFields(
             energy: energy, protein: protein, carbs: carbs, fat: fat, fiber: fiber, sugar: sugar, satFat: satFat,
             sodiumOrSalt: sodiumOrSalt, caffeine: caffeine, entersSalt: entersSalt,
@@ -515,11 +506,6 @@ final class FoodEditorModel {
     static func value(_ text: String) -> Double? {
         guard let number = Format.number(text), number >= 0, number.isFinite else { return nil }
         return number
-    }
-
-    private static func optional(_ text: String) -> String? {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
     }
 }
 

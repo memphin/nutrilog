@@ -41,11 +41,6 @@ struct DashboardData: Equatable {
         today.adding(days: -(Self.historyDays - 1)) ... today
     }
 
-    /// The days of the tiles' sparklines, today included.
-    var sparklineWindow: ClosedRange<LocalDay> {
-        today.adding(days: -(Sparkline.days - 1)) ... today
-    }
-
     /// Yesterday and today: the caffeine doses the curve needs.
     var caffeineWindow: ClosedRange<LocalDay> {
         today.adding(days: -1) ... today
@@ -121,20 +116,38 @@ enum HydrationTileText {
     }
 
     private static func number(_ ml: Double, _ locale: Locale) -> String {
-        ml.formatted(.number.precision(.fractionLength(0)).locale(locale))
+        Format.whole(ml, locale: locale)
     }
 }
 
 struct SleepValue: Equatable {
     var asleepMin: Int?
     var inBedMin: Int?
-    var coreMin: Int?
-    var deepMin: Int?
-    var remMin: Int?
-    var awakeMin: Int?
+}
 
-    var hasStages: Bool {
-        coreMin != nil || deepMin != nil || remMin != nil
+/// The Health values of a day as the tiles, sparklines, streaks, charts and widgets show them.
+extension DailyHealthMetrics {
+    /// The night's sleep: time asleep, or time in bed when that is all Health has (#72).
+    var shownSleepMinutes: Int? {
+        sleepAsleepMin ?? sleepInBedMin
+    }
+
+    /// The day's active and resting energy.
+    var energyBurned: EnergyBurned {
+        EnergyBurned(activeKcal: activeKcal, restingKcal: basalKcal)
+    }
+}
+
+extension [DailyHealthMetrics] {
+    /// `value` of every row that has one, by day.
+    func byDay(_ value: (DailyHealthMetrics) -> Double?) -> [LocalDay: Double] {
+        var result: [LocalDay: Double] = [:]
+        for row in self {
+            if let value = value(row) {
+                result[row.day] = value
+            }
+        }
+        return result
     }
 }
 
@@ -152,14 +165,6 @@ struct EnergyBurned: Equatable {
 
     var hasValue: Bool {
         activeKcal != nil || restingKcal != nil
-    }
-
-    /// "Active 420 kcal · Resting 1,650 kcal"; a missing part says so.
-    func breakdown(_ unit: EnergyUnit) -> String {
-        let unknown = String(localized: "unknown", comment: "An energy value Apple Health has no data for")
-        let active = activeKcal.map { unit.format($0) } ?? unknown
-        let resting = restingKcal.map { unit.format($0) } ?? unknown
-        return [String(localized: "Active \(active)"), String(localized: "Resting \(resting)")].joined(separator: " · ")
     }
 }
 
@@ -218,8 +223,8 @@ struct DashboardSnapshot: Equatable {
         weight = WeightTrend.summary(dayWeights, today: data.today)
         bodyFat = dayWeights.last { $0.bodyFatPct != nil && $0.day <= data.today }
             .flatMap { day in day.bodyFatPct.map { BodyFatValue(day: day.day, pct: $0) } }
-        restingHR = MetricBaseline.compare(Self.values(rows, \.restingHR), today: data.today)
-        hrv = MetricBaseline.compare(Self.values(rows, \.hrvSDNNms), today: data.today)
+        restingHR = MetricBaseline.compare(rows.byDay(\.restingHR), today: data.today)
+        hrv = MetricBaseline.compare(rows.byDay(\.hrvSDNNms), today: data.today)
         hydrationIntakes = data.hydrationIntakes[data.today] ?? []
         water = WaterProgress(
             loggedMl: hydrationIntakes.reduce(0) { $0 + $1.ml },
@@ -281,8 +286,7 @@ struct DashboardSnapshot: Equatable {
 
     /// Today's active and resting energy; nil when neither is known.
     var energyBurned: EnergyBurned? {
-        let burned = EnergyBurned(activeKcal: todayMetrics?.activeKcal, restingKcal: todayMetrics?.basalKcal)
-        return burned.hasValue ? burned : nil
+        todayMetrics.flatMap { $0.energyBurned.hasValue ? $0.energyBurned : nil }
     }
 
     /// Last night's minutes on the tile: asleep, or in bed when that is all Health has.
@@ -293,10 +297,7 @@ struct DashboardSnapshot: Equatable {
     /// Last night (the night ending today).
     var sleep: SleepValue? {
         guard let metrics = todayMetrics, metrics.hasValue(.sleep) else { return nil }
-        return SleepValue(
-            asleepMin: metrics.sleepAsleepMin, inBedMin: metrics.sleepInBedMin, coreMin: metrics.sleepCoreMin,
-            deepMin: metrics.sleepDeepMin, remMin: metrics.sleepRemMin, awakeMin: metrics.sleepAwakeMin,
-        )
+        return SleepValue(asleepMin: metrics.sleepAsleepMin, inBedMin: metrics.sleepInBedMin)
     }
 
     func hasValue(_ tile: DashboardTile) -> Bool {
@@ -314,16 +315,6 @@ struct DashboardSnapshot: Equatable {
 
     func state(of tile: DashboardTile, access: HealthAccess, isFirstSync: Bool) -> TileState {
         TileState.resolve(hasValue: hasValue(tile), usesHealth: tile.usesHealth, access: access, isFirstSync: isFirstSync)
-    }
-
-    private static func values(_ rows: [DailyHealthMetrics], _ key: KeyPath<DailyHealthMetrics, Double?>) -> [LocalDay: Double] {
-        var result: [LocalDay: Double] = [:]
-        for row in rows {
-            if let value = row[keyPath: key] {
-                result[row.day] = value
-            }
-        }
-        return result
     }
 }
 
@@ -344,72 +335,27 @@ struct TileHistoryRow: Equatable, Identifiable {
     }
 }
 
-/// The last days of one tile, newest first (the detail screen; charts come in phase 3).
+/// The last days of hydration or caffeine, newest first (the list on their detail screens).
 enum TileHistory {
     static let days = 14
 
+    /// Rows for `.water` or `.caffeine`; any other tile gets empty rows.
     /// - Parameters:
-    ///   - kcalByDay: diary energy per day (only for `.energy`).
     ///   - loggedFluidByDay: every drink logged in Vitalion per day — water, diary drinks, caffeine drinks (only
     ///     for `.water`).
     ///   - caffeineByDay: caffeine per day, quick-adds and diary (only for `.caffeine`).
     static func rows(
         for tile: DashboardTile,
         data: DashboardData,
-        kcalByDay: [LocalDay: Double] = [:],
         loggedFluidByDay: [LocalDay: Double] = [:],
         caffeineByDay: [LocalDay: Double] = [:],
-        energyUnit: EnergyUnit = .kcal,
-        calendar: Calendar = .current,
     ) -> [TileHistoryRow] {
-        let snapshot = DashboardSnapshot(data, calendar: calendar)
         let metrics = Dictionary(data.metrics.map { ($0.day, $0.metrics) }) { first, _ in first }
-        let weights = Dictionary(snapshot.dayWeights.map { ($0.day, $0) }) { first, _ in first }
-        var weightByDay: [LocalDay: Double] = [:]
-        for (day, weight) in weights {
-            if let kg = weight.kg {
-                weightByDay[day] = kg
-            }
-        }
-        let trend = WeightTrend.trendByDay(weightByDay, through: data.today)
         return (0 ..< days).map { offset in
             let day = data.today.adding(days: -offset)
-            let row = metrics[day]
             switch tile {
-            case .energy:
-                let kcal = kcalByDay[day]
-                return TileHistoryRow(day: day, value: kcal.map { energyUnit.format($0) })
-            case .steps:
-                return TileHistoryRow(day: day, value: row?.steps.map { String(localized: "\($0) steps") })
-            case .sleep:
-                let asleep = row?.sleepAsleepMin ?? row?.sleepInBedMin
-                return TileHistoryRow(day: day, value: asleep.map(DashboardFormat.duration), detail: row.flatMap(DashboardFormat.stages))
-            case .weight:
-                let weight = weights[day]
-                let kg = weight?.kg
-                return TileHistoryRow(
-                    day: day,
-                    value: kg.map(DashboardFormat.kg),
-                    detail: kg == nil ? nil : [
-                        trend[day].map { String(localized: "Trend \(DashboardFormat.kg($0))") },
-                        weight?.isManual == true ? String(localized: "Entered in Vitalion") : nil,
-                    ].compactMap(\.self).joined(separator: " · "),
-                )
-            case .bodyFat:
-                return TileHistoryRow(day: day, value: weights[day]?.bodyFatPct.map(DashboardFormat.percent))
-            case .totalEnergy:
-                let burned = EnergyBurned(activeKcal: row?.activeKcal, restingKcal: row?.basalKcal)
-                return TileHistoryRow(
-                    day: day,
-                    value: burned.totalKcal.map { energyUnit.format($0) },
-                    detail: burned.hasValue ? burned.breakdown(energyUnit) : nil,
-                )
-            case .restingHeartRate:
-                return TileHistoryRow(day: day, value: row?.restingHR.map(DashboardFormat.bpm))
-            case .hrv:
-                return TileHistoryRow(day: day, value: row?.hrvSDNNms.map(DashboardFormat.ms))
             case .water:
-                return hydrationRow(day, totalMl: (loggedFluidByDay[day] ?? 0) + (row?.waterMl ?? 0), data: data)
+                return hydrationRow(day, totalMl: (loggedFluidByDay[day] ?? 0) + (metrics[day]?.waterMl ?? 0), data: data)
             case .caffeine:
                 let mg = caffeineByDay[day] ?? 0
                 return TileHistoryRow(
@@ -418,6 +364,8 @@ enum TileHistory {
                     detail: CaffeineLevel.isOverLimit(totalMg: mg, limitMg: data.caffeineSettings.dailyLimitMg)
                         ? String(localized: "Over the daily \(CaffeineStatus.mg(data.caffeineSettings.dailyLimitMg))") : nil,
                 )
+            default:
+                return TileHistoryRow(day: day)
             }
         }
     }
@@ -427,62 +375,8 @@ enum TileHistory {
         guard totalMl > 0 else { return TileHistoryRow(day: day) }
         let goal = data.hydrationGoalMl(on: day)
         return TileHistoryRow(
-            day: day, value: DashboardFormat.ml(totalMl), detail: String(localized: "of \(DashboardFormat.ml(goal))"),
+            day: day, value: Format.ml(totalMl), detail: String(localized: "of \(Format.ml(goal))"),
             amountMl: totalMl, goalMl: goal,
         )
-    }
-}
-
-// MARK: - Formatting
-
-enum DashboardFormat {
-    /// "7h 5min", "8h", "45min" (#72); the unit abbreviations come from the string catalog.
-    static func duration(_ minutes: Int) -> String {
-        let hours = minutes / 60
-        let rest = minutes % 60
-        guard hours > 0 else { return String(localized: "\(rest)min", comment: "Short duration in minutes") }
-        return rest == 0
-            ? String(localized: "\(hours)h", comment: "Short duration in hours")
-            : String(localized: "\(hours)h \(rest)min", comment: "Short duration in hours and minutes")
-    }
-
-    /// "Core 3h 30min · Deep 1h 15min · REM 1h 40min · Awake 10min"; nil without stages.
-    static func stages(_ metrics: DailyHealthMetrics) -> String? {
-        // Whole phrases per sleep stage, so a translation can reorder name and duration.
-        let parts: [(Int?, (String) -> String)] = [
-            (metrics.sleepCoreMin, { String(localized: "Core \($0)", comment: "Sleep stage and its duration") }),
-            (metrics.sleepDeepMin, { String(localized: "Deep \($0)", comment: "Sleep stage and its duration") }),
-            (metrics.sleepRemMin, { String(localized: "REM \($0)", comment: "Sleep stage and its duration") }),
-            (metrics.sleepAwakeMin, { String(localized: "Awake \($0)", comment: "Sleep stage and its duration") }),
-        ]
-        let text = parts.compactMap { minutes, phrase in minutes.map { phrase(duration($0)) } }
-        return text.isEmpty ? nil : text.joined(separator: " · ")
-    }
-
-    static func kg(_ value: Double) -> String {
-        "\(value.formatted(.number.precision(.fractionLength(1)))) kg"
-    }
-
-    /// "−0.4 kg", "+0.2 kg", "±0.0 kg".
-    static func kgChange(_ value: Double) -> String {
-        let rounded = (value * 10).rounded() / 10
-        let sign = rounded > 0 ? "+" : rounded < 0 ? "−" : "±"
-        return "\(sign)\(abs(rounded).formatted(.number.precision(.fractionLength(1)))) kg"
-    }
-
-    static func percent(_ value: Double) -> String {
-        "\(value.formatted(.number.precision(.fractionLength(1)))) %"
-    }
-
-    static func bpm(_ value: Double) -> String {
-        "\(value.formatted(.number.precision(.fractionLength(0)))) bpm"
-    }
-
-    static func ms(_ value: Double) -> String {
-        "\(value.formatted(.number.precision(.fractionLength(0)))) ms"
-    }
-
-    static func ml(_ value: Double) -> String {
-        "\(value.formatted(.number.precision(.fractionLength(0)))) ml"
     }
 }

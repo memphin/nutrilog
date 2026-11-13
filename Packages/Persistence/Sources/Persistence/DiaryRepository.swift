@@ -52,6 +52,11 @@ public enum QuickAddName {
         String(localized: "Quick add", bundle: .module, comment: "Name of a quick-add entry the user didn't name")
     }
 
+    /// The name the user typed, trimmed; the default name when they typed none.
+    static func name(typed name: String?) -> String {
+        name.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.nonBlank ?? self.default
+    }
+
     /// Whether `name` is a default name (English or the current language) rather than one the user typed.
     public static func isDefault(_ name: String) -> Bool {
         name == "Quick add" || name == self.default
@@ -82,10 +87,7 @@ public struct DiaryRepository: Sendable {
 
     /// Emits the day's diary now and after every change (backlog #3 — `ValueObservation`).
     public func observeDiary(for day: LocalDay) -> AsyncValueObservation<DayDiary> {
-        ValueObservation
-            .tracking { db in try Self.fetchDiary(db, day: day) }
-            .removeDuplicates()
-            .values(in: database.reader)
+        database.observe { db in try Self.fetchDiary(db, day: day) }
     }
 
     public func entry(id: String) throws -> DiaryEntry? {
@@ -105,17 +107,7 @@ public struct DiaryRepository: Sendable {
     }
 
     public func observeDaySummaries(in days: ClosedRange<LocalDay>) -> AsyncValueObservation<[DiaryDaySummary]> {
-        ValueObservation
-            .tracking { db in try Self.daySummaries(db, in: days) }
-            .removeDuplicates()
-            .values(in: database.reader)
-    }
-
-    /// The earliest day with an active entry; nil for an empty diary.
-    public func firstLoggedDay() throws -> LocalDay? {
-        try database.reader.read { db in
-            try LocalDay.fetchOne(db, sql: "SELECT MIN(day) FROM diary_entry WHERE deleted_at IS NULL")
-        }
+        database.observe { db in try Self.daySummaries(db, in: days) }
     }
 
     // MARK: Caffeine
@@ -124,13 +116,6 @@ public struct DiaryRepository: Sendable {
     /// doses. ``CaffeineRepository/observeIntakes(in:)`` combines them with the caffeine quick-adds.
     public func caffeineIntakes(in days: ClosedRange<LocalDay>) throws -> [DiaryCaffeineIntake] {
         try database.reader.read { db in try Self.caffeineIntakes(db, in: days) }
-    }
-
-    public func observeCaffeineIntakes(in days: ClosedRange<LocalDay>) -> AsyncValueObservation<[DiaryCaffeineIntake]> {
-        ValueObservation
-            .tracking { db in try Self.caffeineIntakes(db, in: days) }
-            .removeDuplicates()
-            .values(in: database.reader)
     }
 
     static func caffeineIntakes(_ db: Database, in days: ClosedRange<LocalDay>) throws -> [DiaryCaffeineIntake] {
@@ -251,7 +236,7 @@ public struct DiaryRepository: Sendable {
             day: day, mealSlotID: slotID, foodID: food.id, displayName: food.name,
             grams: quantity.baseAmount, servingLabel: quantity.servingLabel, isQuickAdd: false,
             nutrients: nutrients, loggedAt: now,
-            sortOrder: nextSortOrder(db, day: day, slotID: slotID),
+            sortOrder: DiaryEntry.nextSortOrder(db, day: day, slotID: slotID),
         )
         entry.fluidMl = fluidMl(for: food, baseAmount: quantity.baseAmount)
         try entry.insert(db)
@@ -280,13 +265,11 @@ public struct DiaryRepository: Sendable {
     public func logQuickAdd(name: String?, nutrients: Nutrients, slotID: String, day: LocalDay) throws -> DiaryEntry {
         try EntryLimits.validate(nutrients)
         let now = clock.now()
-        let title = name?.trimmingCharacters(in: .whitespacesAndNewlines)
         return try database.writer.write { db in
             let entry = try DiaryEntry(
-                day: day, mealSlotID: slotID, foodID: nil,
-                displayName: (title?.isEmpty ?? true) ? QuickAddName.default : title!,
+                day: day, mealSlotID: slotID, foodID: nil, displayName: QuickAddName.name(typed: name),
                 grams: 0, servingLabel: nil, isQuickAdd: true, nutrients: nutrients, loggedAt: now,
-                sortOrder: Self.nextSortOrder(db, day: day, slotID: slotID),
+                sortOrder: DiaryEntry.nextSortOrder(db, day: day, slotID: slotID),
             )
             try entry.insert(db)
             try Self.queueHealthWrite(db, ids: [entry.id], now: now)
@@ -326,8 +309,7 @@ public struct DiaryRepository: Sendable {
         try database.writer.write { db in
             guard var entry = try DiaryEntry.fetchOne(db, key: entryID) else { throw PersistenceError.notFound(entryID) }
             guard entry.isQuickAdd else { throw PersistenceError.validation(String(localized: "not a quick-add entry", bundle: .module)) }
-            let title = name?.trimmingCharacters(in: .whitespacesAndNewlines)
-            entry.displayName = (title?.isEmpty ?? true) ? QuickAddName.default : title!
+            entry.displayName = QuickAddName.name(typed: name)
             entry.nutrients = nutrients
             entry.stampUpdated(now)
             try entry.update(db)
@@ -335,28 +317,12 @@ public struct DiaryRepository: Sendable {
         }
     }
 
-    public func setNote(entryID: String, note: String?) throws {
-        let now = clock.now()
-        try database.writer.write { db in
-            guard var entry = try DiaryEntry.fetchOne(db, key: entryID) else { throw PersistenceError.notFound(entryID) }
-            entry.note = (note?.isEmpty ?? true) ? nil : note
-            entry.stampUpdated(now)
-            try entry.update(db)
-        }
-    }
-
     /// Moves an entry to another slot and/or day; it goes to the end of the target slot.
     public func move(entryID: String, toSlot slotID: String, day: LocalDay) throws {
         let now = clock.now()
         try database.writer.write { db in
-            guard var entry = try DiaryEntry.fetchOne(db, key: entryID) else { throw PersistenceError.notFound(entryID) }
-            guard entry.mealSlotID != slotID || entry.day != day else { return }
-            entry.sortOrder = try Self.nextSortOrder(db, day: day, slotID: slotID)
-            entry.mealSlotID = slotID
-            entry.day = day
-            entry.stampUpdated(now)
-            try entry.update(db)
-            try Self.queueHealthWrite(db, ids: [entry.id], now: now) // the sample's date follows the day
+            guard try DiaryEntry.move(db, id: entryID, toSlot: slotID, day: day, now: now) else { return }
+            try Self.queueHealthWrite(db, ids: [entryID], now: now) // the sample's date follows the day
         }
     }
 
@@ -383,7 +349,7 @@ public struct DiaryRepository: Sendable {
             var copy = source
             copy.id = newID()
             copy.loggedAt = now
-            copy.sortOrder = try Self.nextSortOrder(db, day: source.day, slotID: source.mealSlotID)
+            copy.sortOrder = try DiaryEntry.nextSortOrder(db, day: source.day, slotID: source.mealSlotID)
             copy.stampCreated(now)
             try copy.insert(db)
             try Self.queueHealthWrite(db, ids: [copy.id], now: now)
@@ -396,13 +362,7 @@ public struct DiaryRepository: Sendable {
     public func softDelete(entryIDs: [String]) throws {
         let now = clock.now()
         try database.writer.write { db in
-            var changed: [String] = []
-            for id in entryIDs {
-                guard var entry = try DiaryEntry.fetchOne(db, key: id), entry.deletedAt == nil else { continue }
-                entry.stampDeleted(now)
-                try entry.update(db)
-                changed.append(id)
-            }
+            let changed = try DiaryEntry.softDelete(db, ids: entryIDs, now: now)
             try Self.queueHealthWrite(db, ids: changed, now: now)
         }
     }
@@ -411,20 +371,15 @@ public struct DiaryRepository: Sendable {
     public func restore(entryIDs: [String]) throws {
         let now = clock.now()
         try database.writer.write { db in
-            var changed: [String] = []
-            for id in entryIDs {
-                guard var entry = try DiaryEntry.fetchOne(db, key: id), entry.deletedAt != nil else { continue }
+            let changed = try DiaryEntry.restore(db, ids: entryIDs, now: now) { db, entry in
+                // Its old position may have been taken since: it goes to the end of the slot then.
                 let taken = try Bool.fetchOne(db, sql: """
                 SELECT EXISTS(SELECT 1 FROM diary_entry
                 WHERE day = ? AND meal_slot_id = ? AND sort_order = ? AND deleted_at IS NULL AND id != ?)
                 """, arguments: [entry.day, entry.mealSlotID, entry.sortOrder, entry.id]) ?? false
                 if taken {
-                    entry.sortOrder = try Self.nextSortOrder(db, day: entry.day, slotID: entry.mealSlotID)
+                    entry.sortOrder = try DiaryEntry.nextSortOrder(db, day: entry.day, slotID: entry.mealSlotID)
                 }
-                entry.deletedAt = nil
-                entry.stampUpdated(now)
-                try entry.update(db)
-                changed.append(id)
             }
             try Self.queueHealthWrite(db, ids: changed, now: now)
         }
@@ -459,7 +414,7 @@ public struct DiaryRepository: Sendable {
                 copy.mealSlotID = slot
                 copy.loggedAt = now
                 copy.note = nil
-                copy.sortOrder = try Self.nextSortOrder(db, day: targetDay, slotID: slot)
+                copy.sortOrder = try DiaryEntry.nextSortOrder(db, day: targetDay, slotID: slot)
                 // A 0 g entry (legacy or imported) has no amount to re-snapshot: it keeps its own snapshot and name.
                 if !source.isQuickAdd, source.grams > 0, let foodID = source.foodID,
                    let food = try Food.fetchOne(db, key: foodID), food.deletedAt == nil
@@ -532,12 +487,5 @@ public struct DiaryRepository: Sendable {
             .map { DayDiary.Section(slot: $0, entries: grouped[$0.id] ?? []) }
         let note = try DayNote.filter(key: day).filter(DayNote.Columns.deletedAt == nil).fetchOne(db)
         return DayDiary(day: day, sections: sections, note: note)
-    }
-
-    static func nextSortOrder(_ db: Database, day: LocalDay, slotID: String) throws -> Int {
-        let max = try Int.fetchOne(db, sql: """
-        SELECT MAX(sort_order) FROM diary_entry WHERE day = ? AND meal_slot_id = ?
-        """, arguments: [day, slotID])
-        return (max ?? -1) + 1
     }
 }

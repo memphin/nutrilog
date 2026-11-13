@@ -57,17 +57,17 @@ struct WeightRepositoryTests {
         #expect(try f.healthLinks.pending().isEmpty)
     }
 
-    @Test func `entries in an interval, oldest first; profile weights go through the same path`() throws {
+    @Test func `entries in an interval, oldest first`() throws {
         let f = try Fixture()
         let repo = weights(f)
         let now = f.clock.now
         let old = try repo.add(kg: 82, measuredAt: now.addingTimeInterval(-86400 * 3))
         let recent = try repo.add(kg: 81, measuredAt: now.addingTimeInterval(-3600))
-        let fromProfile = try f.profiles.addWeight(kg: 80.5)
+        let latest = try repo.add(kg: 80.5)
         let window = DateInterval(start: now.addingTimeInterval(-86400), end: now.addingTimeInterval(1))
-        #expect(try repo.entries(in: window).map(\.id) == [recent.id, fromProfile.id])
-        #expect(try f.profiles.latestWeight()?.id == fromProfile.id)
-        #expect(try Set(queued(f)) == [old.id, recent.id, fromProfile.id])
+        #expect(try repo.entries(in: window).map(\.id) == [recent.id, latest.id])
+        #expect(try repo.latest()?.id == latest.id)
+        #expect(try Set(queued(f)) == [old.id, recent.id, latest.id])
     }
 
     @Test func `all entries are listed newest first, however old, without deleted ones`() async throws {
@@ -79,8 +79,6 @@ struct WeightRepositoryTests {
         let recent = try repo.add(kg: 81, measuredAt: now.addingTimeInterval(-3600))
         let deleted = try repo.add(kg: 83, measuredAt: now.addingTimeInterval(-86400 * 200))
         try repo.softDelete(ids: [deleted.id])
-        #expect(try repo.allEntries().map(\.id) == [recent.id, months.id, years.id])
-
         var iterator = repo.observeAllEntries().makeAsyncIterator()
         #expect(try await iterator.next()?.map(\.id) == [recent.id, months.id, years.id])
         try repo.update(id: years.id, kg: 89, bodyFatPct: nil, measuredAt: years.measuredAt)

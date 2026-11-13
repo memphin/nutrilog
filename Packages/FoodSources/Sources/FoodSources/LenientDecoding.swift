@@ -123,9 +123,4 @@ extension KeyedDecodingContainer {
     func lenientString(_ key: Key) -> String? {
         (try? decodeIfPresent(LenientString.self, forKey: key))?.value
     }
-
-    func lenientStrings(_ key: Key) -> [String] {
-        guard let items = try? decodeIfPresent([LenientString].self, forKey: key) else { return [] }
-        return items.compactMap(\.value)
-    }
 }

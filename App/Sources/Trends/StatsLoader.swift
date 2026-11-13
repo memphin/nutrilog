@@ -29,13 +29,11 @@ enum StatsBuilder {
         let metricsByDay = Dictionary(metrics.map { ($0.day, $0) }) { first, _ in first }
         let weightByDay = Dictionary(dayWeights.map { ($0.day, $0) }) { first, _ in first }
         let trend = WeightTrend.trendByDay(WeightTrend.samples(dayWeights), through: range.upperBound)
-        var result: [DayStats] = []
-        var day = range.lowerBound
-        while day <= range.upperBound {
+        return range.days.map { day in
             let summary = summaryByDay[day]
             let health = metricsByDay[day]
             let water = (loggedFluidMl[day] ?? 0) + (health?.waterMl ?? 0)
-            result.append(DayStats(
+            return DayStats(
                 day: day,
                 // A day marked complete without entries is a logged day with nothing eaten.
                 intake: summary.flatMap { $0.entryCount > 0 || $0.isComplete ? $0.totals : nil },
@@ -43,7 +41,7 @@ enum StatsBuilder {
                 isComplete: summary?.isComplete ?? false,
                 targetKcal: training.effectiveTarget(targets.value(on: day), on: day)?.kcal,
                 steps: health?.steps,
-                sleepMin: health?.sleepAsleepMin ?? health?.sleepInBedMin,
+                sleepMin: health?.shownSleepMinutes,
                 activeKcal: health?.activeKcal,
                 basalKcal: health?.basalKcal,
                 restingHR: health?.restingHR,
@@ -52,10 +50,8 @@ enum StatsBuilder {
                 weightKg: weightByDay[day]?.kg,
                 bodyFatPct: weightByDay[day]?.bodyFatPct,
                 trendKg: trend[day],
-            ))
-            day = day.next
+            )
         }
-        return result
     }
 }
 

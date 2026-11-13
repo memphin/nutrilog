@@ -331,7 +331,7 @@ final class OnlineSearchModel {
             case .missingAPIKey: .hidden
             case let .rateLimited(until): .paused(until: until)
             case .offline: .offline
-            case .invalidAPIKey: .failed(String(localized: "USDA rejected the API key. Check it in Settings → Food sources."))
+            case .invalidAPIKey: .failed(String(localized: "USDA rejected the API key, so USDA search is unavailable."))
             case .timedOut: .failed(String(localized: "USDA didn't answer in time."))
             default: .failed(String(localized: "USDA search failed."))
             }

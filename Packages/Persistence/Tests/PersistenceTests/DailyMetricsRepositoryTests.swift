@@ -84,29 +84,10 @@ struct DailyMetricsRepositoryTests {
         #expect(range.map(\.day.isoString) == ["2026-11-08", "2026-11-10"])
     }
 
-    @Test func `metrics with data`() throws {
+    @Test func `delete all`() throws {
         let f = try Fixture()
         let repo = DailyMetricsRepository(f.db, clock: f.clock.appClock)
-        let days = day("2026-11-01") ... day("2026-11-09")
-        #expect(try repo.metricsWithData(in: days).isEmpty)
-        try repo.upsert([DailyHealthMetrics(day: day("2026-11-02")), DailyHealthMetrics(day: day("2026-11-03"), waterMl: 250)])
-        #expect(try repo.metricsWithData(in: days) == [.water])
-        try repo.upsert([sample("2026-11-05", steps: nil, weight: nil)])
-        let found = try repo.metricsWithData(in: days)
-        #expect(!found.contains(.steps))
-        #expect(!found.contains(.weight))
-        #expect(found.contains(.sleep))
-        #expect(found.contains(.hrv))
-    }
-
-    @Test func `last fetched at and delete all`() throws {
-        let f = try Fixture()
-        let repo = DailyMetricsRepository(f.db, clock: f.clock.appClock)
-        #expect(try repo.lastFetchedAt() == nil)
-        try repo.upsert([sample("2026-11-08")])
-        f.clock.advance(120)
-        try repo.upsert([sample("2026-11-09")])
-        #expect(try repo.lastFetchedAt() == f.clock.now)
+        try repo.upsert([sample("2026-11-08"), sample("2026-11-09")])
         try repo.deleteAll()
         #expect(try repo.metrics(in: day("2026-11-01") ... day("2026-11-30")).isEmpty)
     }
@@ -173,5 +154,25 @@ struct DailyMetricsRepositoryTests {
         // A range after the last trend still carries it; one before any trend is empty.
         #expect(try repo.weightTrends(in: day("2026-11-20") ... day("2026-11-21")) == [day("2026-11-20"): 81, day("2026-11-21"): 81])
         #expect(try repo.weightTrends(in: day("2026-10-01") ... day("2026-11-02")).isEmpty)
+    }
+
+    @Test func `weight trend is stored on existing rows and survives a Health refresh`() throws {
+        let f = try Fixture()
+        let d = day("2026-11-05")
+        try f.metrics.upsert([DailyHealthMetrics(day: d, steps: 8000, weightKg: 80), DailyHealthMetrics(day: d.next, steps: 9000)])
+        f.clock.advance(60)
+        #expect(try f.metrics.setWeightTrends([d: 80, d.next: 80.1, d.adding(days: 2): 80.2]) == 2) // no row for the third day
+        let stored = try f.metrics.metrics(in: d ... d.adding(days: 2))
+        #expect(stored.map(\.weightTrendKg) == [80, 80.1])
+        #expect(stored.map(\.revision) == [2, 2])
+        #expect(stored[0].updatedAt == f.clock.now)
+        // Same values again: nothing changes.
+        f.clock.advance(60)
+        #expect(try f.metrics.setWeightTrends([d: 80, d.next: 80.1]) == 0)
+        #expect(try f.metrics.metrics(on: d)?.revision == 2)
+        // A Health refresh with new values keeps the trend.
+        try f.metrics.upsert([DailyHealthMetrics(day: d, steps: 8500, weightKg: 80)])
+        #expect(try f.metrics.metrics(on: d)?.weightTrendKg == 80)
+        #expect(try f.metrics.setWeightTrends([:]) == 0)
     }
 }

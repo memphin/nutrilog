@@ -165,8 +165,5 @@ struct CorrelationTests {
         #expect(DayStats(day: day, intake: meal, entryCount: 3).isLogged)
         #expect(DayStats(day: day, intake: meal, entryCount: 1, isComplete: true).isLogged)
         #expect(!DayStats(day: day).isLogged)
-        // The same rule as the maintenance estimate.
-        #expect(TDEEDay(day: day, kcalIn: 500, entryCount: 2, isComplete: false).isLogged
-            == DayStats(day: day, intake: meal, entryCount: 2).isLogged)
     }
 }

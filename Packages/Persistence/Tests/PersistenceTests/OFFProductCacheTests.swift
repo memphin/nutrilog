@@ -50,8 +50,7 @@ struct OFFProductCacheTests {
         #expect(try cache.entry(barcode: "1111111111116") == nil)
         #expect(try cache.entry(barcode: "2222222222222") == nil)
         #expect(try cache.entry(barcode: "3333333333338") != nil)
-        try cache.removeEntry(barcode: "3333333333338")
-        #expect(try cache.count() == 0)
+        #expect(try cache.count() == 1)
     }
 
     @Test func `schema enforces json exactly for found rows`() throws {

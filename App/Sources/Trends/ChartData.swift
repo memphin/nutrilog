@@ -273,13 +273,9 @@ enum ChartBuilder {
     static func hydrationGoals(
         in days: ClosedRange<LocalDay>, profile: Profile, trendsKg: [LocalDay: Double], training: TrainingDays,
     ) -> [LocalDay: Double] {
-        var goals: [LocalDay: Double] = [:]
-        var day = days.lowerBound
-        while day <= days.upperBound {
-            goals[day] = HydrationGoalResolver.goalMl(on: day, profile: profile, trendKg: trendsKg[day], training: training)
-            day = day.next
-        }
-        return goals
+        Dictionary(uniqueKeysWithValues: days.days.map { day in
+            (day, HydrationGoalResolver.goalMl(on: day, profile: profile, trendKg: trendsKg[day], training: training))
+        })
     }
 
     /// The goal of a bar: its day's, or for a weekly bar the mean of its days' goals; nil when none is known.
@@ -316,7 +312,7 @@ enum ChartBuilder {
         sentences.append(String(localized: "\(series.daysWithData) of \(series.range.days) days have data."))
         let trend = series.points.compactMap(\.reference)
         if series.metric == .weight, let first = trend.first, let last = trend.last {
-            sentences.append(String(localized: "Trend \(DashboardFormat.kgChange(last - first)) over the period."))
+            sentences.append(String(localized: "Trend \(Format.kgChange(last - first)) over the period."))
         }
         return sentences.joined(separator: " ")
     }

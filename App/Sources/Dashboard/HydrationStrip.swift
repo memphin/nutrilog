@@ -115,22 +115,9 @@ struct HydrationStrip: View {
         guard let longest = day.gaps.map({ $0.end.timeIntervalSince($0.start) }).max() else {
             return count == 0 ? String(localized: "No drinks yet") : String(localized: "\(count) drinks")
         }
-        let gap = gapDuration(longest)
+        let gap = Format.duration(minutes: Int(longest / 60))
         return count == 0
             ? String(localized: "No drinks yet, longest gap \(gap)")
             : String(localized: "\(count) drinks, longest gap \(gap)")
-    }
-
-    /// "4 h 30 min", "4 h", "45 min", in whole minutes.
-    nonisolated static func gapDuration(_ interval: TimeInterval) -> String {
-        let minutes = Int(interval / 60)
-        let hours = minutes / 60
-        let rest = minutes % 60
-        if hours == 0 {
-            return String(localized: "\(rest) min", comment: "Short duration in minutes")
-        }
-        return rest == 0
-            ? String(localized: "\(hours) h", comment: "Short duration in hours")
-            : String(localized: "\(hours) h \(rest) min", comment: "Short duration in hours and minutes")
     }
 }

@@ -64,7 +64,6 @@ final class MealEditorModel {
     var rows: [Row] = []
     /// nil for a new meal.
     private(set) var mealID: String?
-    private var savedName = ""
     private var savedItems: [MealTemplateRepository.NewItem] = []
 
     init(meal: MealTemplateDetail? = nil) {
@@ -72,7 +71,6 @@ final class MealEditorModel {
         mealID = meal.id
         name = meal.template.name
         rows = meal.items.map { Row(food: $0.food, amount: $0.item.grams, servingID: $0.item.servingID, isSaved: true) }
-        savedName = name
         savedItems = rows.compactMap(\.item)
     }
 
@@ -135,7 +133,7 @@ final class MealEditorModel {
 
     static let missingAmountMessage = String(localized: "Every food needs an amount greater than zero.")
     static var tooLargeAmountMessage: String {
-        String(localized: "An amount can't be more than \(EntryLimits.maxAmount.formatted(.number.precision(.fractionLength(0)))).")
+        String(localized: "An amount can't be more than \(Format.whole(EntryLimits.maxAmount)).")
     }
 
     /// Why the rows can't be saved; nil when every amount is valid. A missing or zero amount comes first: it is
@@ -143,11 +141,6 @@ final class MealEditorModel {
     private var amountError: String? {
         guard items == nil else { return nil }
         return rows.contains { $0.amount == nil && !$0.isTooLarge } ? Self.missingAmountMessage : Self.tooLargeAmountMessage
-    }
-
-    /// Whether saving would change anything.
-    var hasChanges: Bool {
-        isNew || name.trimmingCharacters(in: .whitespacesAndNewlines) != savedName || items != savedItems
     }
 
     /// Saves (creates the meal, or renames it and replaces its foods); returns the stored meal.
@@ -166,7 +159,6 @@ final class MealEditorModel {
         }
         guard let stored = try meals.detail(id: id) else { throw PersistenceError.notFound(id) }
         mealID = id
-        savedName = stored.template.name
         savedItems = items
         return stored
     }

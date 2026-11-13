@@ -161,16 +161,14 @@ struct CaffeineSettingsTests {
         #expect(CaffeineSettings.load(from: profiles) == .default)
         #expect(CaffeineSettings.default.thresholdMg == 50)
         #expect(CaffeineSettings.default.bedtimeMinutes == 23 * 60)
-        #expect(CaffeineSettings.default.quickAddDrinks == CaffeineDrink.defaultQuickAdd)
+        #expect(CaffeineSettings.default.quickAddDrinks == CaffeineDrink.defaultQuickAddIDs.compactMap(CaffeineDrink.preset(id:)))
 
         var settings = CaffeineSettings.default
         settings.thresholdMg = 263 // clamped, stepped
-        settings.bedtimeMinutes = -30 // 23:30
         settings.metabolism = CaffeineMetabolism(smoker: true, oralContraceptives: true, overrideHours: 7.3)
         settings.quickAddIDs = ["matcha", "unknown", "matcha", "cola", "espresso", "green_tea", "black_tea"]
         let saved = try settings.save(to: profiles)
         #expect(saved.thresholdMg == 200)
-        #expect(saved.bedtimeMinutes == 23 * 60 + 30)
         #expect(saved.metabolism.overrideHours == 7.5)
         #expect(saved.metabolism.halfLifeHours == 7.5)
         #expect(saved.quickAddIDs == ["matcha", "cola", "espresso", "green_tea"])
@@ -222,7 +220,7 @@ struct CaffeineDashboardTests {
 
     @Test func `the tile is ready without Health and is spoken with the amount and the outlook`() throws {
         let today = try #require(LocalDay("2026-11-09"))
-        let snapshot = DashboardSnapshot(DashboardData(today: today))
+        let snapshot = dashboardSnapshot(today: today)
         #expect(snapshot.state(of: .caffeine, access: .unavailable, isFirstSync: false) == .ready)
         let label = snapshot.accessibilityLabel(
             of: .caffeine,

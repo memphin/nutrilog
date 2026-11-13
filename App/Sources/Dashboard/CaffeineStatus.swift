@@ -4,8 +4,9 @@ import Persistence
 
 // MARK: - Settings
 
-/// Settings → Caffeine: the sleep-safe line, bedtime, what changes the half-life, and the quick-add drinks. Each value
-/// is its own `SettingKey`; missing or unusable values fall back to the defaults.
+/// Settings → Caffeine: the sleep-safe line, what changes the half-life, and the quick-add drinks, plus the bedtime
+/// set in Settings → Hydration (read only here). Each value is its own `SettingKey`; missing or unusable values fall
+/// back to the defaults.
 struct CaffeineSettings: Equatable {
     static let thresholdRange = 10.0 ... 200.0
     static let thresholdStep = 10.0
@@ -13,7 +14,7 @@ struct CaffeineSettings: Equatable {
     static let maximumQuickAdd = 4
 
     var thresholdMg = CaffeineDefaults.sleepSafeThresholdMg
-    /// Minutes from midnight.
+    /// Minutes from midnight. Saved by `HydrationSettings`, not by `save(to:)`.
     var bedtimeMinutes = CaffeineDefaults.defaultBedtimeMinutes
     var metabolism = CaffeineMetabolism()
     var quickAddIDs = CaffeineDrink.defaultQuickAddIDs
@@ -33,7 +34,7 @@ struct CaffeineSettings: Equatable {
     /// In `thresholdRange`, on a `thresholdStep` step.
     static func normalizedThreshold(_ mg: Double) -> Double {
         guard mg.isFinite else { return CaffeineDefaults.sleepSafeThresholdMg }
-        let stepped = (mg / thresholdStep).rounded() * thresholdStep
+        let stepped = mg.rounded(toMultipleOf: thresholdStep)
         return min(max(stepped, thresholdRange.lowerBound), thresholdRange.upperBound)
     }
 
@@ -46,7 +47,7 @@ struct CaffeineSettings: Equatable {
     static func normalizedHalfLife(_ hours: Double) -> Double {
         let range = CaffeineMetabolism.halfLifeRange
         guard hours.isFinite else { return CaffeineMetabolism.baseHalfLifeHours }
-        let stepped = (hours / halfLifeStep).rounded() * halfLifeStep
+        let stepped = hours.rounded(toMultipleOf: halfLifeStep)
         return min(max(stepped, range.lowerBound), range.upperBound)
     }
 
@@ -81,16 +82,14 @@ struct CaffeineSettings: Equatable {
         return result
     }
 
-    /// Saves every value, normalized; returns what was saved.
+    /// Saves every value but the bedtime, normalized; returns what was saved.
     @discardableResult
     func save(to settings: ProfileRepository) throws -> CaffeineSettings {
         var saved = self
         saved.thresholdMg = Self.normalizedThreshold(thresholdMg)
-        saved.bedtimeMinutes = Self.normalizedBedtime(bedtimeMinutes)
         saved.metabolism.overrideHours = metabolism.overrideHours.map(Self.normalizedHalfLife)
         saved.quickAddIDs = Self.normalizedQuickAdd(quickAddIDs)
         try settings.setSetting(SettingKey.caffeineThresholdMg, saved.thresholdMg)
-        try settings.setSetting(SettingKey.caffeineBedtimeMinutes, saved.bedtimeMinutes)
         try settings.setSetting(SettingKey.caffeineSmoker, saved.metabolism.smoker)
         try settings.setSetting(SettingKey.caffeinePill, saved.metabolism.oralContraceptives)
         try settings.setSetting(SettingKey.caffeinePregnant, saved.metabolism.pregnant)
@@ -213,7 +212,7 @@ struct CaffeineStatus: Equatable {
 
     /// "85" (whole mg).
     static func mgNumber(_ mg: Double) -> String {
-        max(mg, 0).formatted(.number.precision(.fractionLength(0)))
+        Format.whole(max(mg, 0))
     }
 
     /// "85 mg".

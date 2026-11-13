@@ -57,13 +57,7 @@ struct TrainingDaysSettingsView: View {
         }
         .navigationTitle("Training days")
         .task(id: environment.dataGeneration) { load() }
-        .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: {
-            if !$0 {
-                errorMessage = nil
-            }
-        })) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(errorMessage ?? "") }
+        .errorAlert($errorMessage)
     }
 
     /// The seven weekdays, numbered as `Calendar.weekday` (1 = Sunday), from `calendar`'s first weekday on, with

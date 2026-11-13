@@ -8,9 +8,6 @@ import SwiftUI
 // goal (`DashboardData.hydrationGoalMl(on:)`), boosted when that day was a training day.
 
 extension DashboardSnapshot {
-    /// The tiles that have a streak.
-    static let streakTiles: [DashboardTile] = [.steps, .sleep, .water]
-
     /// The tile's streak; nil for tiles without a daily goal.
     func streak(for tile: DashboardTile) -> Streak? {
         streaks[tile]
@@ -24,9 +21,8 @@ extension DashboardSnapshot {
         func streak(todayIsFinal: Bool = false, _ reached: (LocalDay) -> Bool) -> Streak {
             Streak.current(today: data.today, maxDays: DashboardData.historyDays, todayIsFinal: todayIsFinal, reached: reached)
         }
-        // Like the tile: time asleep, or time in bed when that is all Health has.
         func sleepMinutes(_ day: LocalDay) -> Int? {
-            metrics[day].flatMap { $0.sleepAsleepMin ?? $0.sleepInBedMin }
+            metrics[day]?.shownSleepMinutes
         }
         return [
             .steps: streak { day in

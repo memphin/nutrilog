@@ -176,7 +176,7 @@ struct HydrationTileTests {
         #expect(HydrationStrip.accessibilityLabel(day) == "8 drinks, longest gap 4 h 30 min")
         #expect(HydrationStrip.accessibilityLabel(self.day(data([]), now: at(8))) == "No drinks yet")
         #expect(HydrationStrip.accessibilityLabel(self.day(data([]), now: at(11))) == "No drinks yet, longest gap 4 h")
-        #expect(HydrationStrip.gapDuration(45 * 60) == "45 min")
+        #expect(Format.duration(minutes: 45) == "45 min")
     }
 
     // MARK: Builder

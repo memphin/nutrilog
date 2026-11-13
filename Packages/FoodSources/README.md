@@ -1,6 +1,6 @@
 # FoodSources
 
-Open Food Facts client, USDA FDC client, bundled food index, barcode lookup pipeline.
+Network clients for Open Food Facts and USDA FoodData Central, the mappers that turn their responses into `FoodDraft`s, and measure parsing. The bundled food index search lives in `Persistence` (`FoodSearch.swift`) and the barcode lookup pipeline in `FoodLookup` (`BarcodeLookup`).
 
 - `OpenFoodFactsClient` (protocol) / `OpenFoodFactsHTTPClient`: OFF v2 product lookup by barcode — fields
   allowlist, `User-Agent` from Info.plist `OFFUserAgentContact`, 8 s timeout, 2 retries with backoff,

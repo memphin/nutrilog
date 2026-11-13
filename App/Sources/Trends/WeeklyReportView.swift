@@ -70,13 +70,7 @@ struct WeeklyReportView: View {
             week: weekStart ?? currentWeek, today: environment.today, generation: environment.dataGeneration,
             unit: environment.energyUnit, synced: environment.healthSync?.lastSyncedAt,
         )) { load() }
-        .alert("Weekly report", isPresented: Binding(get: { errorMessage != nil }, set: {
-            if !$0 {
-                errorMessage = nil
-            }
-        })) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(errorMessage ?? "") }
+        .errorAlert($errorMessage, title: "Weekly report")
     }
 
     private struct Key: Hashable {
@@ -206,7 +200,7 @@ struct WeeklyReportCard: View {
                     Text("No expenditure estimate yet.").foregroundStyle(.secondary)
                 }
                 if let change = report.trendChangeKg, let end = report.trendEndKg {
-                    row("Weight trend", DashboardFormat.kgChange(change), detail: String(localized: "now \(DashboardFormat.kg(end))"))
+                    row("Weight trend", Format.kgChange(change), detail: String(localized: "now \(Format.kg(end))"))
                 } else {
                     row("Weight trend", "—")
                 }
@@ -214,13 +208,13 @@ struct WeeklyReportCard: View {
             if report.averageSteps != nil || report.averageSleepMin != nil || report.averageWaterMl != nil {
                 section("Activity & recovery") {
                     if let steps = report.averageSteps {
-                        row("Steps", steps.formatted(.number.precision(.fractionLength(0))), detail: String(localized: "per day"))
+                        row("Steps", Format.whole(steps), detail: String(localized: "per day"))
                     }
                     if let sleep = report.averageSleepMin {
-                        row("Sleep", DashboardFormat.duration(DisplayRounding.whole(sleep)), detail: String(localized: "per night"))
+                        row("Sleep", Format.duration(minutes: DisplayRounding.whole(sleep)), detail: String(localized: "per night"))
                     }
                     if let water = report.averageWaterMl {
-                        row("Hydration", DashboardFormat.ml(water), detail: String(localized: "per day"))
+                        row("Hydration", Format.ml(water), detail: String(localized: "per day"))
                     }
                 }
             }

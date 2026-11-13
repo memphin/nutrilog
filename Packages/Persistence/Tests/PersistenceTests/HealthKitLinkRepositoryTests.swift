@@ -73,8 +73,7 @@ struct HealthKitOutboxTests {
         #expect(try Set(queued(f)) == Set(copies))
         try clear(f)
 
-        // Notes and reordering never touch Health.
-        try f.diary.setNote(entryID: quick.id, note: "hi")
+        // Day notes and reordering never touch Health.
         try f.diary.reorder(day: today, slotID: "lunch", orderedIDs: [quick.id])
         try f.diary.setDayNote(day: today, text: "x")
         #expect(try queued(f).isEmpty)

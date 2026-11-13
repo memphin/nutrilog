@@ -1,4 +1,5 @@
 import DesignSystem
+import FoodSources
 import Persistence
 import Scanner
 import SwiftUI
@@ -50,9 +51,7 @@ struct ScanView: View {
                     Color.black
                 }
             }
-            .navigationTitle("Scan barcode")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.visible, for: .navigationBar)
+            .barcodeScannerBar()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button((model?.loggedCount ?? 0) > 0 ? "Done" : "Close") { close() }
@@ -182,7 +181,7 @@ struct ScanResultView: View {
     struct CompletionRequest: Identifiable {
         let id = UUID()
         let detail: FoodDetail
-        let missing: Set<FoodEditorModel.RequiredNutrient>
+        let missing: Set<FoodDraft.MandatoryNutrient>
     }
 
     var body: some View {
@@ -226,13 +225,7 @@ struct ScanResultView: View {
                 model.nutritionCompleted(saved)
             }
         }
-        .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: {
-            if !$0 {
-                errorMessage = nil
-            }
-        })) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(errorMessage ?? "") }
+        .errorAlert($errorMessage)
     }
 
     @ViewBuilder private var content: some View {
@@ -323,5 +316,15 @@ struct ScanResultView: View {
         case .close:
             onFinished()
         }
+    }
+}
+
+extension View {
+    /// The navigation bar of the barcode scanner screens (scan to log, scan into the food editor): "Scan barcode",
+    /// inline, on a solid bar above the camera.
+    func barcodeScannerBar() -> some View {
+        navigationTitle("Scan barcode")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.visible, for: .navigationBar)
     }
 }

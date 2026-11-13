@@ -79,7 +79,7 @@ public enum Correlation {
     public static let minimumWeeklyPairs = 6
 
     /// Ranks from 1, in the order of `values`; tied values share the average of the ranks they span.
-    public static func ranks(_ values: [Double]) -> [Double] {
+    static func ranks(_ values: [Double]) -> [Double] {
         let order = values.indices.sorted { values[$0] < values[$1] }
         var ranks = Array(repeating: 0.0, count: values.count)
         var start = 0
@@ -99,7 +99,7 @@ public enum Correlation {
     }
 
     /// Pearson's correlation of two equally long series; nil with fewer than 3 values or when either side is constant.
-    public static func pearson(_ xs: [Double], _ ys: [Double]) -> Double? {
+    static func pearson(_ xs: [Double], _ ys: [Double]) -> Double? {
         guard xs.count == ys.count, xs.count >= 3 else { return nil }
         let n = Double(xs.count)
         let meanX = xs.reduce(0, +) / n, meanY = ys.reduce(0, +) / n

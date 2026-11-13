@@ -47,18 +47,7 @@ private struct CaffeineMiniChart: View {
         let points = status.curve(in: window, step: 600)
         let top = max(points.map(\.mg).max() ?? 0, status.thresholdMg * 1.5)
         Chart {
-            ForEach(points, id: \.date) { point in
-                AreaMark(x: .value("Time", point.date), y: .value("Caffeine", point.mg))
-                    .foregroundStyle(LinearGradient(
-                        colors: [NL.Palette.caffeine.opacity(0.3), NL.Palette.caffeine.opacity(0.03)],
-                        startPoint: .top, endPoint: .bottom,
-                    ))
-                    .interpolationMethod(.monotone)
-                LineMark(x: .value("Time", point.date), y: .value("Caffeine", point.mg))
-                    .foregroundStyle(NL.Palette.caffeine)
-                    .interpolationMethod(.monotone)
-                    .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-            }
+            CaffeineCurveMarks(points: points, areaOpacity: 0.3, lineWidth: 2)
             RuleMark(y: .value("Sleep-safe", status.thresholdMg))
                 .foregroundStyle(Color.secondary.opacity(0.6))
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))

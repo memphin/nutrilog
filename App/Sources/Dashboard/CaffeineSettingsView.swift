@@ -2,8 +2,8 @@ import Core
 import DesignSystem
 import SwiftUI
 
-/// Settings → Caffeine: bedtime and the sleep-safe line, what changes the half-life (or a custom one), and the
-/// quick-add drinks of the Today tile.
+/// Settings → Caffeine: the sleep-safe line, what changes the half-life (or a custom one), and the quick-add drinks
+/// of the Today tile. Bedtime is set in Settings → Hydration.
 struct CaffeineSettingsView: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var settings = CaffeineSettings.default
@@ -12,7 +12,6 @@ struct CaffeineSettingsView: View {
     var body: some View {
         Form {
             Section {
-                DatePicker("Bedtime", selection: bedtime, displayedComponents: .hourAndMinute)
                 Stepper(
                     value: binding(\.thresholdMg),
                     in: CaffeineSettings.thresholdRange,
@@ -26,7 +25,7 @@ struct CaffeineSettingsView: View {
                 let threshold = CaffeineStatus.mg(CaffeineDefaults.sleepSafeThresholdMg)
                 Text("""
                 The tile says when the caffeine in your body drops below this line, and whether it will by bedtime. \
-                \(threshold) is a common rule of thumb.
+                \(threshold) is a common rule of thumb. Bedtime is set in Settings → Hydration.
                 """)
             }
 
@@ -41,10 +40,10 @@ struct CaffeineSettingsView: View {
                         in: CaffeineMetabolism.halfLifeRange,
                         step: CaffeineSettings.halfLifeStep,
                     ) {
-                        LabeledContent("Custom half-life", value: Self.hours(hours))
+                        LabeledContent("Custom half-life", value: Format.hours(hours))
                     }
                 }
-                LabeledContent("Caffeine half-life", value: Self.hours(settings.metabolism.halfLifeHours))
+                LabeledContent("Caffeine half-life", value: Format.hours(settings.metabolism.halfLifeHours))
             } header: {
                 Text("Metabolism")
             } footer: {
@@ -90,36 +89,11 @@ struct CaffeineSettingsView: View {
                 settings = CaffeineSettings.load(from: profiles)
             }
         }
-        .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: {
-            if !$0 {
-                errorMessage = nil
-            }
-        })) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(errorMessage ?? "") }
-    }
-
-    /// "5 h", "7.5 h".
-    static func hours(_ value: Double) -> String {
-        let number = value.formatted(.number.precision(.fractionLength(0 ... 1)))
-        return String(localized: "\(number) h", comment: "A duration in hours, e.g. “1.5 h”")
+        .errorAlert($errorMessage)
     }
 
     private func binding<Value>(_ keyPath: WritableKeyPath<CaffeineSettings, Value>) -> Binding<Value> {
         Binding(get: { settings[keyPath: keyPath] }, set: { value in update { $0[keyPath: keyPath] = value } })
-    }
-
-    private var bedtime: Binding<Date> {
-        Binding(
-            get: {
-                let minutes = settings.bedtimeMinutes
-                return Calendar.current.date(bySettingHour: minutes / 60, minute: minutes % 60, second: 0, of: Date()) ?? Date()
-            },
-            set: { date in
-                let parts = Calendar.current.dateComponents([.hour, .minute], from: date)
-                update { $0.bedtimeMinutes = (parts.hour ?? 0) * 60 + (parts.minute ?? 0) }
-            },
-        )
     }
 
     /// On: starts from the half-life in use; off: back to the one derived from the toggles.
@@ -157,13 +131,14 @@ struct CaffeineSettingsView: View {
         change(&updated)
         do {
             settings = try updated.save(to: profiles)
-            environment.refreshHydrationReminder() // bedtime is shared with hydration
         } catch {
             errorMessage = String(localized: "Couldn't save the caffeine settings: \(error.localizedDescription)")
         }
     }
 }
 
-#Preview {
-    NavigationStack { CaffeineSettingsView() }.environment(AppEnvironment.preview())
-}
+#if DEBUG
+    #Preview {
+        NavigationStack { CaffeineSettingsView() }.environment(AppEnvironment.preview())
+    }
+#endif

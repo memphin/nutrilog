@@ -2,7 +2,7 @@ import Foundation
 import UserNotifications
 
 /// The weekly check-in reminder: one repeating local notification on the check-in weekday (backlog #35).
-/// Off by default; the user turns it on in Settings → Weekly check-in.
+/// Off by default; the user turns it on in Trends → Check-in day & reminder.
 protocol CheckInReminderScheduling: Sendable {
     /// Asks for notification permission if needed; false when the user declined.
     func requestAuthorization() async -> Bool

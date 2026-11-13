@@ -10,14 +10,6 @@ import Testing
 struct HealthSyncServiceTests {
     let clock = ManualClock()
 
-    /// An environment whose fake Health has demo data but has not been authorized yet.
-    func makeEnvironment(authorized: Bool = false) -> (AppEnvironment, FakeHealthDataSource) {
-        let today = LocalDay.today(now: clock.appClock.now())
-        let fake = FakeHealthDataSource.demo(endingOn: today, days: 120)
-        fake.update { $0.authorizationRequested = authorized }
-        return (AppEnvironment.preview(clock: clock.appClock, health: fake), fake)
-    }
-
     /// Connects (permission sheet) and waits for the background sync it starts.
     func connect(_ sync: HealthSyncService) async throws {
         try await sync.connect()
@@ -33,7 +25,7 @@ struct HealthSyncServiceTests {
     }
 
     @Test func `nothing is read before the user is asked`() async throws {
-        let (env, fake) = makeEnvironment()
+        let (env, fake) = makeHealthEnvironment(clock: clock)
         let sync = try #require(env.healthSync)
         await sync.refresh(force: true)
         await env.systemTimeDidChange()
@@ -43,7 +35,7 @@ struct HealthSyncServiceTests {
     }
 
     @Test func `connect returns after the permission sheet and backfills 90 days in the background`() async throws {
-        let (env, fake) = makeEnvironment()
+        let (env, fake) = makeHealthEnvironment(clock: clock)
         let sync = try #require(env.healthSync)
         let today = sync.today
         try await sync.connect()
@@ -67,7 +59,7 @@ struct HealthSyncServiceTests {
     }
 
     @Test func `source summary records the device of each metric`() async throws {
-        let (env, _) = makeEnvironment()
+        let (env, _) = makeHealthEnvironment(clock: clock)
         let sync = try #require(env.healthSync)
         try await connect(sync)
         let row = try #require(try env.dailyMetrics?.metrics(on: sync.today))
@@ -81,7 +73,7 @@ struct HealthSyncServiceTests {
     }
 
     @Test func `automatic refresh reads the recent days and is throttled, forced refresh the full window`() async throws {
-        let (env, fake) = makeEnvironment()
+        let (env, fake) = makeHealthEnvironment(clock: clock)
         let sync = try #require(env.healthSync)
         try await connect(sync)
         let backfillFetches = fake.snapshot.fetchedRanges.count
@@ -100,7 +92,7 @@ struct HealthSyncServiceTests {
     }
 
     @Test func `the full window is re-read automatically once a day`() async throws {
-        let (env, fake) = makeEnvironment()
+        let (env, fake) = makeHealthEnvironment(clock: clock)
         let sync = try #require(env.healthSync)
         try await connect(sync)
         clock.advance(hours: 25)
@@ -111,12 +103,14 @@ struct HealthSyncServiceTests {
     }
 
     @Test func `read access granted after the backfill fills the history`() async throws {
-        let (env, fake) = makeEnvironment()
+        let (env, fake) = makeHealthEnvironment(clock: clock)
         fake.update { $0.readAllowed = false }
         let sync = try #require(env.healthSync)
         try await connect(sync)
         let repository = try #require(env.dailyMetrics)
-        #expect(try repository.metricsWithData(in: sync.window).isEmpty)
+        #expect(try repository.metrics(in: sync.window).allSatisfy { row in
+            !HealthMetric.allCases.contains { row.metrics.hasValue($0) }
+        })
 
         // The user allows reading in the Health app later.
         fake.update { $0.readAllowed = true }
@@ -132,7 +126,7 @@ struct HealthSyncServiceTests {
     }
 
     @Test func `a weight uploaded late for ten days ago is picked up by the daily full sync`() async throws {
-        let (env, fake) = makeEnvironment()
+        let (env, fake) = makeHealthEnvironment(clock: clock)
         let sync = try #require(env.healthSync)
         let lateDay = sync.today.adding(days: -10)
         let late = try #require(fake.snapshot.samples[.bodyMass]?.first { LocalDay($0.start) == lateDay })
@@ -154,7 +148,7 @@ struct HealthSyncServiceTests {
     }
 
     @Test func `access granted on a previous install triggers the backfill`() async throws {
-        let (env, fake) = makeEnvironment(authorized: true)
+        let (env, fake) = makeHealthEnvironment(clock: clock, authorized: true)
         let sync = try #require(env.healthSync)
         await sync.refresh()
         #expect(fake.snapshot.authorizationRequestCount == 0)
@@ -163,7 +157,7 @@ struct HealthSyncServiceTests {
     }
 
     @Test func `a failed sync is reported, never recorded as successful, and retried`() async throws {
-        let (env, fake) = makeEnvironment()
+        let (env, fake) = makeHealthEnvironment(clock: clock)
         let sync = try #require(env.healthSync)
         fake.update {
             $0.fetchError = HealthDataError.unavailable
@@ -175,8 +169,7 @@ struct HealthSyncServiceTests {
             return
         }
         let repository = try #require(env.dailyMetrics)
-        #expect(try repository.metrics(in: sync.window).count == 30)
-        #expect(try repository.lastFetchedAt() != nil) // rows were fetched…
+        #expect(try repository.metrics(in: sync.window).count == 30) // rows were fetched…
         #expect(sync.lastSyncedAt == nil) // …but the sync did not succeed
         #expect(!sync.isBackfillComplete)
         #expect(try env.profiles?.setting(SettingKey.healthLastSyncedAt, as: Date.self) == nil)
@@ -193,7 +186,7 @@ struct HealthSyncServiceTests {
     }
 
     @Test func `concurrent refreshes run one sync`() async throws {
-        let (env, fake) = makeEnvironment(authorized: true)
+        let (env, fake) = makeHealthEnvironment(clock: clock, authorized: true)
         let sync = try #require(env.healthSync)
         async let first: Void = sync.refresh()
         async let second: Void = sync.refresh()
@@ -202,7 +195,7 @@ struct HealthSyncServiceTests {
     }
 
     @Test func `days whose data disappeared from Health are emptied`() async throws {
-        let (env, fake) = makeEnvironment()
+        let (env, fake) = makeHealthEnvironment(clock: clock)
         let sync = try #require(env.healthSync)
         try await connect(sync)
         fake.update { $0.samples[.bodyMass] = [] }
@@ -238,7 +231,7 @@ struct HealthSyncServiceTests {
     }
 
     @Test func `a time or time zone change forces a full re-sync`() async throws {
-        let (env, fake) = makeEnvironment(authorized: true)
+        let (env, fake) = makeHealthEnvironment(clock: clock, authorized: true)
         let sync = try #require(env.healthSync)
         await sync.refresh()
         #expect(fake.snapshot.fetchedRanges.count == 3)

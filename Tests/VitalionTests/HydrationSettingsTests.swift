@@ -71,10 +71,11 @@ struct HydrationSettingsTests {
         try settings.save(to: profiles)
         #expect(CaffeineSettings.load(from: profiles).bedtimeMinutes == 22 * 60 + 30)
 
+        // Set in Hydration only: saving the caffeine settings leaves it alone.
         var caffeine = CaffeineSettings.load(from: profiles)
         caffeine.bedtimeMinutes = 60
         try caffeine.save(to: profiles)
-        #expect(HydrationSettings.load(from: profiles).bedtimeMinutes == 60)
+        #expect(HydrationSettings.load(from: profiles).bedtimeMinutes == 22 * 60 + 30)
     }
 
     @Test func `wake uses health then fallback`() {

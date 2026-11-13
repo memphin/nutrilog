@@ -65,23 +65,15 @@ public struct WeightRepository: Sendable {
     }
 
     public func observeEntries(in interval: DateInterval) -> AsyncValueObservation<[WeightEntry]> {
-        ValueObservation.tracking { db in try Self.request(interval).fetchAll(db) }
-            .removeDuplicates()
-            .values(in: database.reader)
+        database.observe { db in try Self.request(interval).fetchAll(db) }
     }
 
-    /// Every active entry, newest first (`measuredAt`, then `id` descending) — not limited to a window. For the
-    /// weight detail's "All weigh-ins" list, which is the only place an entry older than the dashboard's window can
-    /// be edited or deleted. Read on demand: the dashboard itself never loads it.
-    public func allEntries() throws -> [WeightEntry] {
-        try database.reader.read { db in try Self.allRequest.fetchAll(db) }
-    }
-
-    /// `allEntries()` as an observation (edits, deletes and undo show up while the list is open).
+    /// Every active entry, newest first (`measuredAt`, then `id` descending) — not limited to a window — now and after
+    /// every change (edits, deletes and undo show up while the list is open). For the weight detail's "All weigh-ins"
+    /// list, which is the only place an entry older than the dashboard's window can be edited or deleted; the
+    /// dashboard itself never loads it.
     public func observeAllEntries() -> AsyncValueObservation<[WeightEntry]> {
-        ValueObservation.tracking { db in try Self.allRequest.fetchAll(db) }
-            .removeDuplicates()
-            .values(in: database.reader)
+        database.observe { db in try Self.allRequest.fetchAll(db) }
     }
 
     public func latest() throws -> WeightEntry? {
@@ -93,13 +85,7 @@ public struct WeightRepository: Sendable {
     public func softDelete(ids: [String]) throws {
         let now = clock.now()
         try database.writer.write { db in
-            var changed: [String] = []
-            for id in ids {
-                guard var entry = try WeightEntry.fetchOne(db, key: id), entry.deletedAt == nil else { continue }
-                entry.stampDeleted(now)
-                try entry.update(db)
-                changed.append(id)
-            }
+            let changed = try WeightEntry.softDelete(db, ids: ids, now: now)
             try HealthKitLinkRepository.enqueue(db, owner: .weightEntry, ids: changed, now: now)
         }
     }
@@ -108,14 +94,7 @@ public struct WeightRepository: Sendable {
     public func restore(ids: [String]) throws {
         let now = clock.now()
         try database.writer.write { db in
-            var changed: [String] = []
-            for id in ids {
-                guard var entry = try WeightEntry.fetchOne(db, key: id), entry.deletedAt != nil else { continue }
-                entry.deletedAt = nil
-                entry.stampUpdated(now)
-                try entry.update(db)
-                changed.append(id)
-            }
+            let changed = try WeightEntry.restore(db, ids: ids, now: now)
             try HealthKitLinkRepository.enqueue(db, owner: .weightEntry, ids: changed, now: now)
         }
     }

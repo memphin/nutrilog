@@ -178,17 +178,6 @@ public enum HealthWriteType: String, CaseIterable, Sendable, Identifiable {
 }
 
 public extension HealthReadType {
-    /// The types summed per day by statistics queries.
-    var cumulativeMetric: CumulativeMetric? {
-        switch self {
-        case .stepCount: .steps
-        case .activeEnergyBurned: .activeEnergy
-        case .basalEnergyBurned: .basalEnergy
-        case .dietaryWater: .dietaryWater
-        default: nil
-        }
-    }
-
     /// The types read as individual samples.
     var sampledMetric: SampledMetric? {
         switch self {

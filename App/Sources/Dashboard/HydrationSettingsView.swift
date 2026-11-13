@@ -31,13 +31,7 @@ struct HydrationSettingsView: View {
             load()
             await checkNotifications()
         }
-        .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: {
-            if !$0 {
-                errorMessage = nil
-            }
-        })) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(errorMessage ?? "") }
+        .errorAlert($errorMessage)
     }
 
     // MARK: Sections
@@ -45,7 +39,7 @@ struct HydrationSettingsView: View {
     private var goalSection: some View {
         Section("Goal") {
             Picker("Daily goal", selection: Binding(get: { goalMode }, set: { saveGoal(mode: $0, fixedMl: fixedGoalMl) })) {
-                Text("Based on weight (\(Self.number(HydrationGoal.mlPerKg)) ml/kg)").tag(HydrationGoalMode.weight)
+                Text("Based on weight (\(Format.whole(HydrationGoal.mlPerKg)) ml/kg)").tag(HydrationGoalMode.weight)
                 Text("Fixed amount").tag(HydrationGoalMode.fixed)
             }
             switch goalMode {
@@ -55,7 +49,7 @@ struct HydrationSettingsView: View {
                     let goal = HydrationGoalResolver.goalMl(
                         on: environment.today, mode: .weight, fixedMl: fixedGoalMl, trendKg: trendKg, training: .none,
                     )
-                    Text("\(Self.number(goal)) ml at \(trendKg.formatted(.number.precision(.fractionLength(1)))) kg")
+                    Text("\(Format.whole(goal)) ml at \(Format.kgNumber(trendKg)) kg")
                         .monospacedDigit()
                 } else {
                     Text("Log your weight to personalise this goal").foregroundStyle(.secondary)
@@ -66,7 +60,7 @@ struct HydrationSettingsView: View {
                     in: Self.fixedGoalRange,
                     step: Self.fixedGoalStep,
                 ) {
-                    LabeledContent("Goal", value: "\(Self.number(fixedGoalMl)) ml")
+                    LabeledContent("Goal", value: "\(Format.whole(fixedGoalMl)) ml")
                 }
             }
         }
@@ -99,29 +93,16 @@ struct HydrationSettingsView: View {
                 in: HydrationSettings.gapRange,
                 step: HydrationSettings.gapStep,
             ) {
-                Text("Remind after \(Self.hours(settings.gapMinutes)) without a drink")
+                Text("Remind after \(Format.hours(Double(settings.gapMinutes) / 60)) without a drink")
             }
             Stepper(
                 value: binding(\.behindMarginMl),
                 in: HydrationSettings.marginRange,
                 step: HydrationSettings.marginStep,
             ) {
-                Text("Or when \(Self.number(settings.behindMarginMl)) ml behind pace")
+                Text("Or when \(Format.whole(settings.behindMarginMl)) ml behind pace")
             }
         }
-    }
-
-    // MARK: Formatting
-
-    /// "2,400" (whole number, grouped for the locale).
-    static func number(_ value: Double) -> String {
-        value.formatted(.number.precision(.fractionLength(0)))
-    }
-
-    /// "3 h", "1.5 h".
-    static func hours(_ minutes: Int) -> String {
-        let number = (Double(minutes) / 60).formatted(.number.precision(.fractionLength(0 ... 1)))
-        return String(localized: "\(number) h", comment: "A duration in hours, e.g. “1.5 h”")
     }
 
     // MARK: Bindings
@@ -324,6 +305,8 @@ private struct WaterQuickAddSizesSection: View {
     }
 }
 
-#Preview {
-    NavigationStack { HydrationSettingsView() }.environment(AppEnvironment.preview())
-}
+#if DEBUG
+    #Preview {
+        NavigationStack { HydrationSettingsView() }.environment(AppEnvironment.preview())
+    }
+#endif

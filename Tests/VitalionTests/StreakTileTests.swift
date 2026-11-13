@@ -97,7 +97,7 @@ struct StreakTileTests {
     }
 
     @Test func `only steps, water and sleep have streaks`() {
-        let snapshot = DashboardSnapshot(DashboardData(today: today))
+        let snapshot = dashboardSnapshot(today: today)
         #expect(snapshot.streak(for: .steps) == Streak.none)
         #expect(snapshot.streak(for: .weight) == nil)
         #expect(snapshot.streak(for: .caffeine) == nil)

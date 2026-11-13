@@ -110,6 +110,58 @@ struct MigrationTests {
         try f.portability.importJSON(export, mode: .merge)
         #expect(try f.foods.food(id: oats.id)?.source == .custom)
     }
+
+    @Test func `migration 007 adds the check-in detail columns to an existing database`() throws {
+        let queue = try DatabaseQueue()
+        var old = DatabaseMigrator()
+        for name in Migrator.migrations.prefix(6) {
+            old.registerMigration(name) { db in try db.execute(sql: Migrator.sql(named: name)) }
+        }
+        try old.migrate(queue)
+        try queue.write { db in
+            try db.execute(sql: """
+            INSERT INTO tdee_estimate (id, computed_for_day, window_days, logged_days, mean_intake_kcal, trend_start_kg,
+                trend_end_kg, tdee_kcal, confidence, created_at, updated_at)
+            VALUES ('old', '2026-11-02', 14, 12, 2100, 81, 80.5, 2380, 'medium', '2026-11-02T08:00:00.000Z', '2026-11-02T08:00:00.000Z')
+            """)
+        }
+        let db = try AppDatabase(queue)
+        let record = try #require(try CheckInRepository(db).latest())
+        #expect(record.id == "old")
+        #expect(record.tdeeKcal == 2380)
+        #expect(record.decision == nil)
+        #expect(record.estimate == nil)
+        #expect(record.rawTDEEKcal == nil)
+        #expect(DataPortability.schemaVersion >= 7)
+    }
+
+    @Test func `migration 016 drops the barcode scan log and keeps other data`() throws {
+        let queue = try DatabaseQueue()
+        var old = DatabaseMigrator()
+        let index = try #require(Migrator.migrations.firstIndex(of: "016_drop_barcode_scan_log"))
+        for name in Migrator.migrations.prefix(index) {
+            if let migrate = Migrator.codedMigration(named: name, deviceCalendar: .gregorian) {
+                old.registerMigration(name, migrate: migrate)
+            } else {
+                old.registerMigration(name) { db in try db.execute(sql: Migrator.sql(named: name)) }
+            }
+        }
+        try old.migrate(queue)
+        try queue.write { db in
+            try db.execute(sql: """
+            INSERT INTO barcode_scan_log (scanned_at, barcode, outcome) VALUES ('2026-11-01T08:00:00.000Z', '3017620422003', 'local')
+            """)
+            try db.execute(sql: """
+            INSERT INTO target (id, effective_from, kcal, protein_g, carbs_g, fat_g, origin, created_at, updated_at)
+            VALUES ('t1', '2026-01-01', 2000, 150, 200, 70, 'manual', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z')
+            """)
+        }
+        _ = try AppDatabase(queue)
+        #expect(try queue.read { try Migrator.make().appliedMigrations($0) } == Migrator.migrations)
+        #expect(try queue.read { try $0.tableExists("barcode_scan_log") } == false)
+        #expect(try queue.read { try Int.fetchOne($0, sql: "SELECT count(*) FROM sqlite_master WHERE name LIKE '%barcode_scan_log%'") } == 0)
+        #expect(try queue.read { try Int.fetchOne($0, sql: "SELECT kcal FROM target WHERE id = 't1'") } == 2000)
+    }
 }
 
 struct OnDiskDatabaseTests {

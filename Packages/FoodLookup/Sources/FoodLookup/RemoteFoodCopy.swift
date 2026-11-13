@@ -166,10 +166,6 @@ public enum ServingWeightError: LocalizedError, Hashable, Sendable {
 }
 
 public extension FoodDetail {
-    /// Highest believable energy density (pure fat is ~900 kcal/100 g).
-    static let maximumKcalPer100 = 900.0
-    /// Highest believable protein + carbs + fat per 100 g (a little over 100 for label rounding).
-    static let maximumMacroGramsPer100 = 105.0
     /// Serving weights (g/ml) accepted by ``convertingPerServingPlaceholder(servingWeight:missing:)``.
     static let servingWeightRange = 0.1 ... 100_000.0
 
@@ -202,9 +198,9 @@ public extension FoodDetail {
     /// - Quality comes from the stored food: complete when no mandatory value is missing, otherwise the stored
     ///   quality is kept. `missing` is what the source lacks when known; `nil` infers it from the stored food
     ///   (a mandatory value of 0 counts as missing — a real 0 just keeps the food partial).
-    /// - Throws ``ServingWeightError`` for a non-positive weight, one outside ``servingWeightRange``, or one that gives implausible values
-    /// per 100
-    ///   (energy above ``maximumKcalPer100``, protein + carbs + fat above ``maximumMacroGramsPer100``).
+    /// - Throws ``ServingWeightError`` for a non-positive weight, one outside ``servingWeightRange``, or one that gives
+    ///   implausible values per 100 (energy above `NutrientLimits.maxKcalPer100`, protein + carbs + fat above
+    ///   `NutrientLimits.maxMacroSumPer100`).
     func convertingPerServingPlaceholder(
         servingWeight: Double,
         missing: Set<FoodDraft.MandatoryNutrient>? = nil,
@@ -212,11 +208,11 @@ public extension FoodDetail {
         guard servingWeight > 0, servingWeight.isFinite else { throw ServingWeightError.notPositive }
         guard Self.servingWeightRange.contains(servingWeight) else { throw ServingWeightError.outOfRange }
         let per100 = Nutrients.per100(fromServing: food.per100, servingGrams: servingWeight)
-        guard per100.kcal <= Self.maximumKcalPer100 else {
+        guard per100.kcal <= NutrientLimits.maxKcalPer100 else {
             throw ServingWeightError.implausibleEnergy(kcalPer100: per100.kcal)
         }
         let macros = per100.proteinG + per100.carbsG + per100.fatG
-        guard macros <= Self.maximumMacroGramsPer100 else {
+        guard macros <= NutrientLimits.maxMacroSumPer100 else {
             throw ServingWeightError.implausibleMacros(gramsPer100: macros)
         }
 

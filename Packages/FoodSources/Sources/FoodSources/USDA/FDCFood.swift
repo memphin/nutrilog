@@ -13,9 +13,6 @@ public struct FDCFood: Hashable, Sendable, Codable {
     public var gtinUpc: String?
     public var brandOwner: String?
     public var brandName: String?
-    public var ingredients: String?
-    /// Package size as printed, e.g. "64 fl oz/2 Quart/1.89 L" (Branded).
-    public var packageWeight: String?
     /// Branded: serving amount in ``servingSizeUnit``.
     public var servingSize: Double?
     /// Branded: "g", "ml", "GRM", "MLT", …
@@ -32,8 +29,6 @@ public struct FDCFood: Hashable, Sendable, Codable {
         gtinUpc: String? = nil,
         brandOwner: String? = nil,
         brandName: String? = nil,
-        ingredients: String? = nil,
-        packageWeight: String? = nil,
         servingSize: Double? = nil,
         servingSizeUnit: String? = nil,
         householdServingFullText: String? = nil,
@@ -45,8 +40,6 @@ public struct FDCFood: Hashable, Sendable, Codable {
         self.gtinUpc = gtinUpc
         self.brandOwner = brandOwner
         self.brandName = brandName
-        self.ingredients = ingredients
-        self.packageWeight = packageWeight
         self.servingSize = servingSize
         self.servingSizeUnit = servingSizeUnit
         self.householdServingFullText = householdServingFullText
@@ -54,7 +47,7 @@ public struct FDCFood: Hashable, Sendable, Codable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case fdcId, dataType, gtinUpc, brandOwner, brandName, ingredients, packageWeight, servingSize, servingSizeUnit
+        case fdcId, dataType, gtinUpc, brandOwner, brandName, servingSize, servingSizeUnit
         case householdServingFullText, foodNutrients
         case name = "description"
     }
@@ -71,8 +64,6 @@ public struct FDCFood: Hashable, Sendable, Codable {
             gtinUpc: container.lenientString(.gtinUpc),
             brandOwner: container.lenientString(.brandOwner),
             brandName: container.lenientString(.brandName),
-            ingredients: container.lenientString(.ingredients),
-            packageWeight: container.lenientString(.packageWeight),
             servingSize: container.lenientDouble(.servingSize),
             servingSizeUnit: container.lenientString(.servingSizeUnit),
             householdServingFullText: container.lenientString(.householdServingFullText),

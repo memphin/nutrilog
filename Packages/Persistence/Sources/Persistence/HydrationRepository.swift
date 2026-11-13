@@ -19,9 +19,7 @@ public struct HydrationRepository: Sendable {
 
     /// ``intakes(in:)`` now and after every change to any of the three sources.
     public func observeIntakes(in days: ClosedRange<LocalDay>) -> AsyncValueObservation<[LocalDay: [FluidIntake]]> {
-        ValueObservation.tracking { db in try Self.intakes(db, in: days) }
-            .removeDuplicates()
-            .values(in: database.reader)
+        database.observe { db in try Self.intakes(db, in: days) }
     }
 
     /// Names of intakes that carry none of their own, in the app's language when read.

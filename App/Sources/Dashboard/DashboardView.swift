@@ -4,8 +4,7 @@ import Persistence
 import SwiftUI
 
 /// Today: intake, weight, steps, sleep and the other Health tiles (backlog #28, FR-41). Long-press a tile to edit the
-/// layout right here (drag to reorder, hide, show); Settings → Dashboard edits the same layout. Pull to refresh
-/// re-reads Health.
+/// layout right here (drag to reorder, hide, show). Pull to refresh re-reads Health.
 struct DashboardView: View {
     @Environment(AppEnvironment.self) private var environment
     /// Opens in edit mode (debug screens).
@@ -58,7 +57,7 @@ private struct DashboardContent: View {
                             systemImage: "square.grid.2x2",
                             message: model.isEditing
                                 ? String(localized: "Tap + on a hidden tile below to show it again.")
-                                : String(localized: "Edit Today to show them again, or use Settings → Dashboard."),
+                                : String(localized: "Edit Today to show them again."),
                         )
                         if !model.isEditing {
                             Button("Edit Today") { model.isEditing = true }
@@ -94,13 +93,7 @@ private struct DashboardContent: View {
                 TileDetailView(tile: tile, model: model)
             }
             .undoToast(model.undo)
-            .alert("Error", isPresented: Binding(get: { model.errorMessage != nil }, set: {
-                if !$0 {
-                    model.errorMessage = nil
-                }
-            })) {
-                Button("OK", role: .cancel) {}
-            } message: { Text(model.errorMessage ?? "") }
+            .errorAlert($model.errorMessage)
         }
         .task(id: environment.today) { await model.observe() }
         // A tap on the hydration reminder: show that tile's detail (also when Today opens because of it).
@@ -282,7 +275,7 @@ private struct TileContent: View {
             if let weight = snapshot.weight {
                 VStack(alignment: .leading, spacing: NL.Spacing.xxs) {
                     ValueText(
-                        weight.latestKg.formatted(.number.precision(.fractionLength(1))), unit: "kg",
+                        Format.kgNumber(weight.latestKg), unit: "kg",
                         color: snapshot.baselineColor(of: .weight) ?? .primary,
                     )
                     if weight.latest.day != snapshot.today {
@@ -362,7 +355,7 @@ private struct TotalEnergyContent: View {
     }
 
     private func number(_ kcal: Double) -> String {
-        unit.display(kcal).formatted(.number.precision(.fractionLength(0)))
+        Format.whole(unit.display(kcal))
     }
 
     var body: some View {
@@ -408,17 +401,17 @@ private struct EnergyTileContent: View {
 }
 
 /// Last night's sleep: just the time asleep, coloured by the sleep goal (#72). Time in bed, said so, when that is
-/// all Health has. Stages are in the detail (#62).
+/// all Health has.
 private struct SleepTileContent: View {
     let sleep: SleepValue?
     let goalMin: Int
 
     var body: some View {
         if let asleep = sleep?.asleepMin {
-            ValueText(DashboardFormat.duration(asleep), unit: "", color: GoalColor.sleep(minutes: Double(asleep), goal: goalMin))
+            ValueText(Format.duration(minutes: asleep), unit: "", color: GoalColor.sleep(minutes: Double(asleep), goal: goalMin))
         } else if let inBed = sleep?.inBedMin {
             ValueText(
-                DashboardFormat.duration(inBed), unit: String(localized: "in bed"),
+                Format.duration(minutes: inBed), unit: String(localized: "in bed"),
                 color: GoalColor.sleep(minutes: Double(inBed), goal: goalMin),
             )
         }
@@ -436,8 +429,8 @@ private struct BaselineContent: View {
     var body: some View {
         if let comparison {
             VStack(alignment: .leading, spacing: NL.Spacing.xxs) {
-                ValueText(comparison.value.formatted(.number.precision(.fractionLength(0))), unit: unit, color: color ?? .primary)
-                Text("7-day avg \(comparison.average7.formatted(.number.precision(.fractionLength(0)))) \(unit)")
+                ValueText(Format.whole(comparison.value), unit: unit, color: color ?? .primary)
+                Text("7-day avg \(Format.whole(comparison.average7)) \(unit)")
                     .font(.footnote).foregroundStyle(.secondary)
                 if showsDeviation {
                     Text(comparison.deviationText ?? String(localized: "30-day average after a week of data"))
@@ -484,6 +477,8 @@ struct WaterTileContent: View {
     }
 }
 
-#Preview {
-    DashboardView().environment(AppEnvironment.preview(sampleData: true))
-}
+#if DEBUG
+    #Preview {
+        DashboardView().environment(AppEnvironment.preview(sampleData: true))
+    }
+#endif

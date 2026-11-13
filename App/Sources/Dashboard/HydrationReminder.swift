@@ -96,20 +96,16 @@ enum HydrationReminderCopy {
     static func body(
         _ reason: HydrationReminder.Reason, totalMl: Double, goalMl: Double, calendar: Calendar, locale: Locale,
     ) -> String {
-        let total = number(totalMl, locale)
+        let total = Format.whole(totalMl, locale: locale)
         switch reason {
         case let .gap(since):
             let sinceText = time(since, calendar: calendar, locale: locale)
-            let goal = number(goalMl, locale)
+            let goal = Format.whole(goalMl, locale: locale)
             return String(localized: "No drink since \(sinceText) · \(total) of \(goal) ml", locale: locale)
         case let .behind(expectedMl):
-            let expected = number((expectedMl / 50).rounded() * 50, locale)
+            let expected = Format.whole(expectedMl.rounded(toMultipleOf: 50), locale: locale)
             return String(localized: "\(total) ml so far — about \(expected) by now keeps you on track", locale: locale)
         }
-    }
-
-    private static func number(_ ml: Double, _ locale: Locale) -> String {
-        ml.formatted(.number.precision(.fractionLength(0)).locale(locale))
     }
 
     /// Two-digit hours in `locale`'s hour cycle: "07:00" where the day has 24 hours, "07:00 AM" in the US.

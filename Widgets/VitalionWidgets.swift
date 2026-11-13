@@ -66,6 +66,10 @@ struct SnapshotProvider: TimelineProvider {
 
 // MARK: - Formatting
 
+// The widget extension links no packages (project.yml), so the few helpers it needs are local copies of the
+// canonical ones: `wholeNumber` is Core's `DisplayRounding.whole`, `kJPerKcal` Core's `Energy.kJPerKcal`, and the
+// texts follow the app's `Format` (App/Sources/Shared/Formatting.swift). Keep them in step.
+
 /// `value` rounded to a whole number for display, without trapping: non-finite → 0, beyond `Int` → clamped. The
 /// widget extension doesn't link Core, so this mirrors `DisplayRounding.whole`.
 private func wholeNumber(_ value: Double) -> Int {
@@ -82,6 +86,7 @@ private func wholeNumber(_ value: Double) -> Int {
 }
 
 extension WidgetSnapshot {
+    /// Core's `Energy.kJPerKcal`.
     static let kJPerKcal = 4.184
 
     private var factor: Double {

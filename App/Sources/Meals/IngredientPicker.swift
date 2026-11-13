@@ -32,22 +32,15 @@ struct IngredientPicker: View {
                         .listRowBackground(Color.clear)
                     }
                     ForEach(suggestions) { food in
-                        Button { pick(food) } label: { row(food.name, food.brand, food.per100, food.source, food.isLiquid) }
+                        Button { pick(.food(food)) } label: { FoodRow(food, unit: environment.energyUnit) }
                             .buttonStyle(.plain)
                     }
                 } else {
-                    if results.isEmpty {
-                        EmptyStateView(
-                            String(localized: "No matches"),
-                            systemImage: "magnifyingglass",
-                            message: String(localized: "Create the food with its nutrition, or scan its barcode."),
-                        )
-                        .listRowBackground(Color.clear)
-                    }
-                    ForEach(results) { result in
-                        Button { pick(result) } label: { row(result.name, result.brand, result.per100, result.source, result.isLiquid) }
-                            .buttonStyle(.plain)
-                    }
+                    LocalSearchResults(
+                        results: results,
+                        emptyMessage: String(localized: "Create the food with its nutrition, or scan its barcode."),
+                        unit: environment.energyUnit,
+                    ) { pick($0) }
                 }
             }
             .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search foods")
@@ -77,39 +70,24 @@ struct IngredientPicker: View {
                 suggestions = recents + mine.filter { food in !recents.contains { $0.id == food.id } }
             }
             .task(id: query) { await search() }
-            .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: {
-                if !$0 {
-                    errorMessage = nil
-                }
-            })) {
-                Button("OK", role: .cancel) {}
-            } message: { Text(errorMessage ?? "") }
+            .errorAlert($errorMessage)
         }
     }
 
     private func search() async {
-        let text = query
-        guard !text.trimmingCharacters(in: .whitespaces).isEmpty, let search = environment.search else {
+        do {
+            guard let found = try await LocalFoodSearch.results(for: query, in: environment) else { return }
+            results = found
+        } catch {
             results = []
-            return
         }
-        try? await Task.sleep(for: .milliseconds(150))
-        guard !Task.isCancelled else { return }
-        results = (try? search.search(text)) ?? []
-    }
-
-    private func row(_ name: String, _ brand: String?, _ per100: Nutrients, _ source: FoodSource, _ isLiquid: Bool) -> some View {
-        FoodRow(name: name, brand: brand, per100: per100, source: source, unit: environment.energyUnit, isLiquid: isLiquid)
     }
 
     /// Opens the food's amount step.
-    private func pick(_ food: Food) {
+    private func pick(_ result: FoodSearchResult) {
+        guard let foods = environment.foods else { return }
         do {
-            guard let detail = try environment.foods?.detail(id: food.id) else {
-                errorMessage = String(localized: "\(food.name) is no longer available.")
-                return
-            }
-            path.append(detail)
+            try path.append(foods.detail(for: result))
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -119,19 +97,5 @@ struct IngredientPicker: View {
         guard let detail = scanned else { return }
         scanned = nil
         path.append(detail)
-    }
-
-    private func pick(_ result: FoodSearchResult) {
-        switch result {
-        case let .food(food):
-            pick(food)
-        case let .bundled(item):
-            do {
-                guard let foods = environment.foods else { return }
-                try pick(foods.localCopy(of: item))
-            } catch {
-                errorMessage = error.localizedDescription
-            }
-        }
     }
 }

@@ -17,12 +17,12 @@ Thanks for your interest. Vitalion is a personal, spare-time project — contrib
 6. Fill in the PR template. PRs are squash-merged.
 
 ## Code style
-- SwiftFormat/SwiftLint configs will be added in Phase 0; until then follow the Swift API Design Guidelines.
+- SwiftFormat (`.swiftformat`) and SwiftLint (`.swiftlint.yml`) configs are in the repo root; otherwise follow the Swift API Design Guidelines.
 - Prefer value types, `actor`s for shared mutable state, `async/await` for I/O.
 - Persisted models live in `Packages/Persistence`; domain logic in `Packages/Core` (pure Swift, no Foundation networking, no HealthKit).
 
 ## Localization (English + Croatian)
-- The UI is English with a Croatian translation, in String Catalogs: `App/Resources/*.xcstrings`, `Widgets/Localizable.xcstrings` and `Packages/<Name>/Sources/<Name>/Localizable.xcstrings`. The language follows iOS (Settings → Vitalion → Language); there is no in-app switch.
+- The UI is English with a Croatian translation, in String Catalogs: `App/Resources/*.xcstrings`, `Widgets/Localizable.xcstrings` and `Packages/<Name>/Sources/<Name>/Localizable.xcstrings`. The UI language follows iOS (Settings → Vitalion → Language); there is no in-app switch for it. Built-in food names have their own language setting in the app (Settings → Food names).
 - SwiftUI literals (`Text("Save")`) are localized automatically. Any other `String` shown to the user goes through `String(localized: "…")` (in a package: `bundle: .module`). Counts are one interpolated `Int` (`String(localized: "\(count) foods")`) with plural forms in the catalog, never `count == 1 ? … : …`; Croatian has three forms (1, 2–4, 5+).
 - Numbers and dates on screen use the current locale (`FormatStyle`), never `String(format:)` or a fixed `en_US`.
 - New strings land in the catalogs when you build in Xcode, or run `xcodebuild -exportLocalizations -project Vitalion.xcodeproj -scheme Vitalion -localizationPath /tmp/loc -exportLanguage hr`. Add the Croatian (informal "ti") in Xcode's catalog editor, or write a JSON file and apply it with `tools/apply_translations.py <catalog> <translations.json>`. CI fails when a key has no Croatian.

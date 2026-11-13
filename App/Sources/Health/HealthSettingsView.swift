@@ -187,6 +187,8 @@ struct HealthWriteSection: View {
     }
 }
 
-#Preview {
-    NavigationStack { HealthSettingsView() }.environment(AppEnvironment.preview(sampleData: true))
-}
+#if DEBUG
+    #Preview {
+        NavigationStack { HealthSettingsView() }.environment(AppEnvironment.preview(sampleData: true))
+    }
+#endif

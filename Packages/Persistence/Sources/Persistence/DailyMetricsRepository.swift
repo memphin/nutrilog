@@ -204,30 +204,11 @@ public struct DailyMetricsRepository: Sendable {
     }
 
     public func observeMetrics(on day: LocalDay) -> AsyncValueObservation<DailyMetricsRecord?> {
-        ValueObservation.tracking { db in try DailyMetricsRecord.fetchOne(db, key: day) }
-            .removeDuplicates()
-            .values(in: database.reader)
+        database.observe { db in try DailyMetricsRecord.fetchOne(db, key: day) }
     }
 
     public func observeMetrics(in days: ClosedRange<LocalDay>) -> AsyncValueObservation<[DailyMetricsRecord]> {
-        ValueObservation.tracking { db in try Self.request(days).fetchAll(db) }
-            .removeDuplicates()
-            .values(in: database.reader)
-    }
-
-    /// Metrics with at least one value in `days`. Health read permission is opaque, so a metric missing here is
-    /// either not recorded or not shared — the UI says "No data found — check Health permissions".
-    public func metricsWithData(in days: ClosedRange<LocalDay>) throws -> Set<HealthMetric> {
-        let rows = try metrics(in: days).map(\.metrics)
-        return Set(HealthMetric.allCases.filter { metric in rows.contains { $0.hasValue(metric) } })
-    }
-
-    /// The most recent `fetched_at` of any row, or nil when Health was never read.
-    public func lastFetchedAt() throws -> Date? {
-        try database.reader.read { db in
-            try DailyMetricsRecord.select(max(DailyMetricsRecord.Columns.fetchedAt), as: String.self).fetchOne(db)
-        }
-        .flatMap(Timestamp.date)
+        database.observe { db in try Self.request(days).fetchAll(db) }
     }
 
     /// Empties the cache (it can always be rebuilt from Health).

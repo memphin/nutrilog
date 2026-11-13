@@ -44,20 +44,3 @@ public enum DisplayRounding {
         NumberFormatting.compact(grams(value), locale: locale)
     }
 }
-
-public extension Nutrients {
-    /// Copy rounded for display (kcal whole, grams per `DisplayRounding.grams`).
-    var displayRounded: Nutrients {
-        Nutrients(
-            kcal: Double(DisplayRounding.kcal(kcal)),
-            proteinG: DisplayRounding.grams(proteinG),
-            carbsG: DisplayRounding.grams(carbsG),
-            fatG: DisplayRounding.grams(fatG),
-            fiberG: fiberG.map(DisplayRounding.grams),
-            sugarG: sugarG.map(DisplayRounding.grams),
-            satFatG: satFatG.map(DisplayRounding.grams),
-            sodiumMg: sodiumMg.map { Double(DisplayRounding.milligrams($0)) },
-            caffeineMg: caffeineMg.map { Double(DisplayRounding.milligrams($0)) },
-        )
-    }
-}

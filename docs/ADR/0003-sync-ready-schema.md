@@ -12,4 +12,4 @@ Sync protocol (phase 4): pull rows with `updated_at > last_sync`; push dirty row
 
 ## Consequences
 - Slight overhead per row now; trivial sync later.
-- Queries must filter `deleted_at IS NULL`; a periodic purge removes tombstones older than 90 days once synced (or 30 days in local-only mode).
+- Queries must filter `deleted_at IS NULL`; a periodic purge of tombstones (older than 90 days once synced, or 30 days in local-only mode) was planned but is **not implemented**; it is deferred to the sync phase.

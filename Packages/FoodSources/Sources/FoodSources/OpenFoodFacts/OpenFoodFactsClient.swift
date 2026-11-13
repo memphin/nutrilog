@@ -73,13 +73,18 @@ public struct OpenFoodFactsHTTPClient: OpenFoodFactsClient {
         retryPolicy: RetryPolicy = .standard,
         sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) },
     ) {
-        let contact = contact.trimmingCharacters(in: .whitespacesAndNewlines)
-        assert(!contact.isEmpty, "OFF requires a contact in the User-Agent: set OFFUserAgentContact in Info.plist")
-        userAgent = contact.isEmpty ? "Vitalion/\(appVersion)" : "Vitalion/\(appVersion) (\(contact))"
+        assert(contact.trimmedNonEmpty != nil, "OFF requires a contact in the User-Agent: set OFFUserAgentContact in Info.plist")
+        userAgent = Self.userAgent(contact: contact, appVersion: appVersion)
         self.baseURL = baseURL
         self.transport = transport
         self.retryPolicy = retryPolicy
         self.sleep = sleep
+    }
+
+    /// The User-Agent of both OFF clients (OFF terms, SPEC §10): `Vitalion/<appVersion> (<contact>)`, or
+    /// `Vitalion/<appVersion>` when `contact` is blank.
+    static func userAgent(contact: String, appVersion: String) -> String {
+        contact.trimmedNonEmpty.map { "Vitalion/\(appVersion) (\($0))" } ?? "Vitalion/\(appVersion)"
     }
 
     public func product(barcode: String) async throws -> OFFProduct {
@@ -87,33 +92,10 @@ public struct OpenFoodFactsHTTPClient: OpenFoodFactsClient {
             throw OpenFoodFactsError.invalidBarcode
         }
         let request = request(barcode: barcode)
-        var retry = 0
-        while true {
-            try Task.checkCancellation()
-            let outcome: Outcome
-            do {
-                let (data, response) = try await transport.data(for: request)
-                outcome = self.outcome(data: data, response: response, barcode: barcode)
-            } catch let error as URLError {
-                if error.code == .cancelled {
-                    throw CancellationError()
-                }
-                outcome = Self.outcome(error)
-            } catch is CancellationError {
-                throw CancellationError()
-            } catch {
-                outcome = .failure(.network(.unknown))
-            }
-
-            switch outcome {
-            case let .success(product):
-                return product
-            case let .failure(error):
-                throw error
-            case let .retryable(error, retryAfter):
-                guard retry < retryPolicy.maxRetries else { throw error }
-                try await sleep(retryAfter ?? retryPolicy.delay(beforeRetry: retry))
-                retry += 1
+        return try await retryPolicy.run(sleep: sleep) {
+            switch try await transport.classifiedData(for: request) {
+            case let .success((data, response)): outcome(data: data, response: response, barcode: barcode)
+            case let .failure(failure): Self.outcome(failure)
             }
         }
     }
@@ -138,12 +120,7 @@ public struct OpenFoodFactsHTTPClient: OpenFoodFactsClient {
 
     // MARK: - Outcome
 
-    private enum Outcome {
-        case success(OFFProduct)
-        case failure(OpenFoodFactsError)
-        /// Worth another attempt, after `retryAfter` when the server said so, else after the backoff delay.
-        case retryable(OpenFoodFactsError, retryAfter: Duration?)
-    }
+    private typealias Outcome = HTTPAttempt<OFFProduct, OpenFoodFactsError>
 
     /// OFF signals "not found" with `status: 0`, with HTTP 200 or 404 — the body wins over the HTTP status (SPEC §3.1).
     private func outcome(data: Data, response: HTTPURLResponse, barcode: String) -> Outcome {
@@ -168,17 +145,17 @@ public struct OpenFoodFactsHTTPClient: OpenFoodFactsClient {
             }
             return .retryable(.rateLimited, retryAfter: retryAfter)
         case 500 ..< 600:
-            return .retryable(.server(status: response.statusCode), retryAfter: nil)
+            return .retryable(.server(status: response.statusCode))
         default:
             return .failure(.server(status: response.statusCode))
         }
     }
 
-    private static func outcome(_ error: URLError) -> Outcome {
-        switch HTTPFailure.classify(error) {
+    private static func outcome(_ failure: HTTPFailure) -> Outcome {
+        switch failure {
         case .offline: .failure(.offline)
         case .timedOut: .failure(.timedOut)
-        case .connectionDropped: .retryable(.offline, retryAfter: nil)
+        case .connectionDropped: .retryable(.offline)
         case let .other(code): .failure(.network(code))
         }
     }

@@ -40,9 +40,7 @@ struct TileStateTests {
 
     @Test func `snapshot maps each tile to its state`() throws {
         let today = try #require(LocalDay("2026-11-09"))
-        var data = DashboardData(today: today)
-        data.metrics = [DailyMetricsRecord(DailyHealthMetrics(day: today, steps: 1234), fetchedAt: Date())]
-        let snapshot = DashboardSnapshot(data)
+        let snapshot = dashboardSnapshot(today: today, metrics: [DailyHealthMetrics(day: today, steps: 1234)])
         #expect(snapshot.state(of: .steps, access: .requested, isFirstSync: false) == .ready)
         #expect(snapshot.state(of: .sleep, access: .requested, isFirstSync: false) == .noData(HealthKitClient.noDataMessage))
         #expect(snapshot.state(of: .weight, access: .notRequested, isFirstSync: false) == .needsAccess)
@@ -120,7 +118,11 @@ struct DashboardLayoutTests {
     @Test func `a saved layout with the old active energy tile loads without it`() throws {
         let env = AppEnvironment.preview()
         let profiles = try #require(env.profiles)
-        // Active energy was merged into Total energy (#66): a layout saved before still loads, in the user's order.
+        // Active energy was merged into Total energy, the one energy-burned tile and chart: a layout saved before
+        // still loads, in the user's order.
+        #expect(DashboardTile.allCases.map(\.title).count { $0.localizedCaseInsensitiveContains("energy") } == 1)
+        #expect(!ChartMetric.allCases.contains { $0.rawValue == "activeEnergy" })
+        #expect(ChartMetric(tile: .totalEnergy) == .totalEnergy)
         let saved = #"{"order":["weight","energy","water","sleep","bodyFat","steps","activeEnergy","totalEnergy","restingHeartRate","hrv"],"#
             + #""hidden":["hrv","activeEnergy"]}"#
         try profiles.setSetting(SettingKey.dashboardLayout, JSONDecoder().decode(OldLayout.self, from: Data(saved.utf8)))
@@ -150,7 +152,7 @@ struct DashboardLayoutTests {
             [.bodyFat],
             [.water],
             [.caffeine], // not in the order given: added after water, a wide tile
-            [.sleep, .hrv], // sleep shows one number now (#62), so it pairs up
+            [.sleep, .hrv], // sleep shows one number now, so it pairs up
             [.restingHeartRate, .totalEnergy],
         ])
         var hidden = layout
@@ -399,7 +401,6 @@ struct DashboardModelTests {
         // Immediately, before any Health write or read.
         #expect(await waitUntil { model.snapshot.weight?.latestKg == 79.4 })
         #expect(model.snapshot.bodyFat?.pct == 17.5)
-        #expect(model.snapshot.weight?.latest.isManual == true)
 
         // Written to Health, read back: our own sample is ignored, so daily_metrics has no weight for today.
         await env.refreshHealth()
@@ -424,7 +425,6 @@ struct DashboardModelTests {
         let entry = try #require(try env.weights?.latest())
         model.deleteWeight(entry)
         #expect(await waitUntil { model.snapshot.weight?.latestKg == 80.1 })
-        #expect(model.snapshot.weight?.latest.isManual == false)
     }
 
     @Test func `weigh-ins older than the history window can still be listed, edited, deleted and restored`() async throws {
@@ -463,9 +463,9 @@ struct DashboardModelTests {
         #expect(rows.count == TileHistory.days)
         #expect(rows.first?.day == today)
         #expect(rows.last?.day == today.adding(days: -13))
-        #expect(rows[0].value == DashboardFormat.ml(330))
+        #expect(rows[0].value == Format.ml(330))
         #expect(rows[1].value == nil)
-        #expect(rows[2].value == DashboardFormat.ml(250))
+        #expect(rows[2].value == Format.ml(250))
     }
 }
 
@@ -487,7 +487,7 @@ struct DashboardDemoTests {
         let snapshot = model.snapshot
         #expect(model.access == .requested)
         #expect(snapshot.steps != nil)
-        #expect(snapshot.sleep?.hasStages == true)
+        #expect(snapshot.sleep?.asleepMin != nil)
         #expect(snapshot.weight?.trendChange7d != nil)
         #expect(snapshot.bodyFat != nil)
         #expect(snapshot.hrv?.deviationText != nil)
@@ -539,11 +539,173 @@ struct WeightFormTests {
 
 struct DashboardFormatTests {
     @Test func `durations and changes`() {
-        #expect(DashboardFormat.duration(440) == "7h 20min")
-        #expect(DashboardFormat.duration(65) == "1h 5min")
-        #expect(DashboardFormat.duration(45) == "45min")
-        #expect(DashboardFormat.kgChange(-0.44).hasPrefix("−"))
-        #expect(DashboardFormat.kgChange(0.21).hasPrefix("+"))
-        #expect(DashboardFormat.kgChange(0.01).hasPrefix("±"))
+        #expect(Format.duration(minutes: 440) == "7 h 20 min")
+        #expect(Format.duration(minutes: 65) == "1 h 5 min")
+        #expect(Format.duration(minutes: 45) == "45 min")
+        #expect(Format.kgChange(-0.44).hasPrefix("−"))
+        #expect(Format.kgChange(0.21).hasPrefix("+"))
+        #expect(Format.kgChange(0.01).hasPrefix("±"))
+    }
+}
+
+// MARK: - Sparklines
+
+struct SparklineTests {
+    let today = LocalDay("2026-11-09")!
+
+    func days(_ values: [Int: Double]) -> [LocalDay: Double] {
+        Dictionary(uniqueKeysWithValues: values.map { (today.adding(days: -$0.key), $0.value) })
+    }
+
+    @Test func `uses the seven days ending today, oldest first, and leaves gaps`() {
+        // 7 days ago is outside the window; 2 and 4 days ago have no value.
+        let sparkline = Sparkline(days([7: 999, 6: 1, 5: 2, 3: 4, 1: 6, 0: 7]), today: today, mark: .bar)
+        #expect(sparkline.points.map(\.index) == [0, 1, 3, 5, 6])
+        #expect(sparkline.points.map(\.value) == [1, 2, 4, 6, 7])
+        #expect(sparkline.points.first?.day == today.adding(days: -6))
+        #expect(sparkline.points.last?.day == today)
+        #expect(sparkline.isDrawable)
+        #expect(sparkline.direction == .up)
+        #expect(sparkline.accessibilitySummary == "up over 7 days")
+    }
+
+    @Test func `no data or a single day draws nothing and says nothing`() {
+        let empty = Sparkline([:], today: today, mark: .line)
+        #expect(empty.points.isEmpty)
+        #expect(!empty.isDrawable)
+        #expect(empty.direction == nil)
+        #expect(empty.accessibilitySummary == nil)
+        let single = Sparkline(days([0: 80]), today: today, mark: .line)
+        #expect(!single.isDrawable)
+        #expect(single.accessibilitySummary == nil)
+        // A future day is not part of the window.
+        #expect(Sparkline([today.next: 1, today: 2], today: today, mark: .bar).points.count == 1)
+    }
+
+    @Test func `direction compares the slope with the average`() {
+        #expect(Sparkline(days([6: 82.0, 3: 81.5, 0: 81.0]), today: today, mark: .line).direction == .down)
+        #expect(Sparkline(days([6: 60, 5: 61, 4: 59, 3: 60, 2: 59, 1: 61, 0: 60]), today: today, mark: .line).direction == .steady)
+        #expect(Sparkline(days([2: 0, 1: 0, 0: 0]), today: today, mark: .bar).direction == .steady)
+        #expect(Sparkline(days([2: 0, 1: 5, 0: 0]), today: today, mark: .bar).accessibilitySummary == "up over 7 days")
+    }
+
+    @Test func `bar trends skip today's unfinished day, line trends include it`() {
+        // 8 a.m.: a steady week of steps and 500 so far today.
+        let morning = Sparkline(days([6: 8000, 5: 8100, 4: 7900, 3: 8000, 2: 8100, 1: 7900, 0: 500]), today: today, mark: .bar)
+        #expect(morning.isDrawable)
+        #expect(morning.points.count == 7) // today is still drawn
+        #expect(morning.trendPoints.count == 6)
+        #expect(morning.direction == .steady)
+        #expect(morning.accessibilitySummary == "steady over 7 days")
+        // Only yesterday complete: no trend to speak, the chart still shows.
+        let short = Sparkline(days([1: 8000, 0: 500]), today: today, mark: .bar)
+        #expect(short.isDrawable)
+        #expect(short.direction == nil)
+        // A level measured today counts.
+        let weight = Sparkline(days([2: 81.0, 1: 81.0, 0: 80.0]), today: today, mark: .line)
+        #expect(weight.trendPoints.count == 3)
+        #expect(weight.direction == .down)
+    }
+
+    @Test func `tiles get their series from one data set`() {
+        // 40 days, so the weight trend (which follows weigh-ins slowly) has settled into the 0.1 kg/day loss.
+        let metrics = (0 ..< 40).map { (offset: Int) -> DailyHealthMetrics in
+            let steps = 1000 * max(10 - offset, 1)
+            let active: Double? = offset == 2 ? nil : 400
+            let basal: Double? = offset == 3 ? nil : 1600
+            let sleep: Int? = offset == 0 ? 450 : nil
+            let weight: Double = 80 + Double(offset) * 0.1
+            let water: Double? = offset == 1 ? 500 : nil
+            return DailyHealthMetrics(
+                day: today.adding(days: -offset), steps: steps, activeKcal: active, basalKcal: basal,
+                sleepAsleepMin: sleep, weightKg: weight, restingHR: 55, waterMl: water,
+            )
+        }
+        let noon = today.date(atHour: 12)
+        let snapshot = dashboardSnapshot(today: today, metrics: metrics) { data in
+            data.hydrationIntakes = [
+                today: [
+                    FluidIntake(id: "w1", ml: 500, at: noon, kind: .water, source: .water, name: "Water"),
+                    FluidIntake(id: "d1", ml: 250, at: noon, kind: .other, source: .diary, name: "Cola"),
+                ],
+                today.adding(days: -5): [
+                    FluidIntake(id: "w2", ml: 250, at: today.adding(days: -5).date(atHour: 12), kind: .water, source: .water, name: "Water"),
+                ],
+            ]
+        }
+
+        let steps = snapshot.sparklines[.steps]
+        #expect(steps?.points.count == 7)
+        #expect(steps?.mark == .bar)
+        #expect(steps?.points.last?.value == 10000)
+        #expect(snapshot.sparkline(for: .steps)?.direction == .up)
+
+        // Total energy only on days with both parts.
+        let total = snapshot.sparklines[.totalEnergy]
+        #expect(total?.points.map(\.index) == [0, 1, 2, 5, 6])
+        #expect(total?.points.last?.value == 2000)
+        // Each bar is resting with active on top.
+        #expect(total?.points.allSatisfy { $0.base == 1600 } == true)
+        #expect(steps?.points.allSatisfy { $0.base == nil } == true)
+
+        // Hydration: every drink logged in Vitalion plus other apps' water, days with neither are gaps.
+        let water = snapshot.sparklines[.water]
+        #expect(water?.points.map(\.index) == [1, 5, 6])
+        #expect(water?.points.map(\.value) == [250, 500, 750])
+
+        // Weight is the trend (a line), falling as the weights do.
+        #expect(snapshot.sparklines[.weight]?.mark == .line)
+        #expect(snapshot.sparkline(for: .weight)?.direction == .down)
+        #expect(snapshot.accessibilityTrend(of: .weight, state: .ready) == "down over 7 days")
+        #expect(snapshot.accessibilityTrend(of: .weight, state: .needsAccess) == nil)
+
+        // Sleep: one night only, so nothing to draw yet; no HRV or body fat either.
+        #expect(snapshot.sparklines[.sleep]?.points.map(\.value) == [450])
+        #expect(snapshot.sparkline(for: .sleep) == nil)
+        #expect(snapshot.sparkline(for: .hrv) == nil)
+        #expect(snapshot.sparkline(for: .bodyFat) == nil)
+        #expect(snapshot.sparkline(for: .restingHeartRate)?.direction == .steady)
+        #expect(snapshot.sparkline(for: .energy) == nil)
+    }
+}
+
+// MARK: - Total energy
+
+struct TotalEnergyTests {
+    let today = LocalDay("2026-11-09")!
+
+    @Test func `with one part known it is shown under its own name, never as the total`() {
+        let activeOnly = dashboardSnapshot(today: today, metrics: [DailyHealthMetrics(day: today, activeKcal: 420)])
+        #expect(activeOnly.energyBurned?.totalKcal == nil)
+        #expect(activeOnly.energyBurned?.activeKcal == 420)
+        #expect(activeOnly.state(of: .totalEnergy, access: .requested, isFirstSync: false) == .ready)
+        #expect(activeOnly.accessibilityLabel(of: .totalEnergy, state: .ready, locale: .dashboardEnglish)
+            == "Total energy, active 420 calories, close to the active goal of 500, resting energy unknown, no total yet")
+
+        let restingOnly = dashboardSnapshot(today: today, metrics: [DailyHealthMetrics(day: today, basalKcal: 1650)])
+        #expect(restingOnly.energyBurned?.totalKcal == nil)
+        #expect(restingOnly.accessibilityLabel(of: .totalEnergy, state: .ready, locale: .dashboardEnglish)
+            == "Total energy, active energy unknown, resting 1,650 calories, no total yet")
+    }
+
+    @Test func `a partial day hides the total energy sparkline and its spoken trend`() {
+        let history = (1 ... 6).map { DailyHealthMetrics(day: today.adding(days: -$0), activeKcal: 400, basalKcal: 1600) }
+        let partial = dashboardSnapshot(today: today, metrics: history + [DailyHealthMetrics(day: today, activeKcal: 420)])
+        #expect(partial.sparklines[.totalEnergy]?.isDrawable == true) // the series exists…
+        #expect(partial.sparkline(for: .totalEnergy) == nil) // …but isn't shown next to a partial value
+        #expect(partial.accessibilityTrend(of: .totalEnergy, state: .ready) == nil)
+
+        let complete = dashboardSnapshot(
+            today: today, metrics: history + [DailyHealthMetrics(day: today, activeKcal: 420, basalKcal: 1600)],
+        )
+        #expect(complete.sparkline(for: .totalEnergy) != nil)
+        #expect(complete.accessibilityTrend(of: .totalEnergy, state: .ready) == "steady over 7 days")
+    }
+
+    @Test func `with neither part the tile has no value`() {
+        let none = dashboardSnapshot(today: today, metrics: [DailyHealthMetrics(day: today)])
+        #expect(none.energyBurned == nil)
+        #expect(none.state(of: .totalEnergy, access: .requested, isFirstSync: false) == .noData(HealthKitClient.noDataMessage))
+        #expect(none.state(of: .totalEnergy, access: .notRequested, isFirstSync: false) == .needsAccess)
     }
 }

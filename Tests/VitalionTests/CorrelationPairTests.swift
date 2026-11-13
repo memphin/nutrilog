@@ -299,7 +299,7 @@ struct CorrelationTextTests {
             CorrelationCard.hydrationSleep.spec, period: .threeMonths, stats: stats, today: today, unit: .kcal, firstWeekday: 2,
         )
         // Pairs: water of days 0–14 with the sleep of days 1–15; the thirds are ten days apart → 30 min shorter.
-        #expect(CorrelationText.sentence(analysis).contains("your sleep that night was 30min shorter than on days under"))
+        #expect(CorrelationText.sentence(analysis).contains("your sleep that night was 30 min shorter than on days under"))
     }
 
     @Test func `weekly weight sentences give both changes`() {
@@ -383,7 +383,7 @@ struct CorrelationTextTests {
         #expect(CorrelationText.format(2.29, .hydration, unit: .kcal) == "2\(sep)3 L")
         #expect(CorrelationText.format(1.84, .hydration, unit: .kcal) == "1\(sep)85 L")
         #expect(CorrelationText.format(0.85, .hydration, unit: .kcal) == "850 ml")
-        #expect(CorrelationText.format(7 + 20.0 / 60, .sleep, unit: .kcal) == "7h 20min")
+        #expect(CorrelationText.format(7 + 20.0 / 60, .sleep, unit: .kcal) == "7 h 20 min")
         #expect(CorrelationText.format(48.4, .hrv, unit: .kcal) == "48 ms")
         #expect(CorrelationText.format(2100, .calories, unit: .kilojoules) == "\(whole(2100)) kJ")
         #expect(CorrelationText.format(0.14, .weightTrendChange, unit: .kcal) == "+0\(sep)1 kg/week")

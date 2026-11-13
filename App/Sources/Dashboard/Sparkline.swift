@@ -118,15 +118,6 @@ extension DashboardSnapshot {
         let today = data.today
         let first = today.adding(days: -(Sparkline.days - 1))
         let recent = rows.filter { $0.day >= first && $0.day <= today }
-        func series(_ value: (DailyHealthMetrics) -> Double?) -> [LocalDay: Double] {
-            var result: [LocalDay: Double] = [:]
-            for row in recent {
-                if let value = value(row) {
-                    result[row.day] = value
-                }
-            }
-            return result
-        }
 
         var weightByDay: [LocalDay: Double] = [:]
         var bodyFatByDay: [LocalDay: Double] = [:]
@@ -140,12 +131,11 @@ extension DashboardSnapshot {
         let otherAppsMl = Dictionary(recent.compactMap { row in row.waterMl.map { (row.day, $0) } }, uniquingKeysWith: +)
         let water = HydrationTotals.byDay(intakes: data.hydrationIntakes, otherAppsMl: otherAppsMl)
 
-        let steps = series { $0.steps.map(Double.init) }
-        let total = series { EnergyBurned(activeKcal: $0.activeKcal, restingKcal: $0.basalKcal).totalKcal }
+        let steps = recent.byDay { $0.steps.map(Double.init) }
+        let total = recent.byDay(\.energyBurned.totalKcal)
         // Each total is drawn as resting + active (#66).
-        let resting = series { EnergyBurned(activeKcal: $0.activeKcal, restingKcal: $0.basalKcal).totalKcal == nil ? nil : $0.basalKcal }
-        // Like the tile's value: time asleep, or time in bed when that is all Health has (#72).
-        let sleep = series { ($0.sleepAsleepMin ?? $0.sleepInBedMin).map(Double.init) }
+        let resting = recent.byDay { $0.energyBurned.totalKcal == nil ? nil : $0.basalKcal }
+        let sleep = recent.byDay { $0.shownSleepMinutes.map(Double.init) }
         return [
             .steps: Sparkline(steps, today: today, mark: .bar),
             .sleep: Sparkline(sleep, today: today, mark: .bar),
@@ -153,8 +143,8 @@ extension DashboardSnapshot {
             .water: Sparkline(water, today: today, mark: .bar),
             .weight: Sparkline(WeightTrend.trendByDay(weightByDay, through: today), today: today, mark: .line),
             .bodyFat: Sparkline(bodyFatByDay, today: today, mark: .line),
-            .restingHeartRate: Sparkline(series(\.restingHR), today: today, mark: .line),
-            .hrv: Sparkline(series(\.hrvSDNNms), today: today, mark: .line),
+            .restingHeartRate: Sparkline(recent.byDay(\.restingHR), today: today, mark: .line),
+            .hrv: Sparkline(recent.byDay(\.hrvSDNNms), today: today, mark: .line),
         ]
     }
 }

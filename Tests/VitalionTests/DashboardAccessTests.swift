@@ -40,7 +40,6 @@ struct DashboardAccessTests {
         let model = DashboardModel(environment: env)
         await model.reloadAccess()
         #expect(sync.requestStatus == .shouldRequest)
-        #expect(sync.hasNewTypesToAllow)
         #expect(sync.isConnected)
         #expect(model.access == .requested)
         #expect(model.state(of: .steps) == .noData(HealthKitClient.noDataMessage))
@@ -137,18 +136,15 @@ struct DashboardAccessibilityTests {
     let today = LocalDay("2026-11-30")!
 
     @Test func `weight reads as one sentence`() {
-        var data = DashboardData(today: today)
-        for offset in (0 ..< 10).reversed() {
-            let day = today.adding(days: -offset)
-            data.metrics.append(DailyMetricsRecord(DailyHealthMetrics(day: day, weightKg: 80 + Double(offset) / 10), fetchedAt: Date()))
-        }
-        let label = DashboardSnapshot(data).accessibilityLabel(of: .weight, state: .ready, locale: .dashboardEnglish)
-        // Like the tile: the weight only (#73).
+        let weights = (0 ..< 10).reversed().map { DailyHealthMetrics(day: today.adding(days: -$0), weightKg: 80 + Double($0) / 10) }
+        let label = dashboardSnapshot(today: today, metrics: weights)
+            .accessibilityLabel(of: .weight, state: .ready, locale: .dashboardEnglish)
+        // Like the tile: the weight only.
         #expect(label == "Weight, 80.0 kilograms, below the weekly average")
     }
 
     @Test func `tiles without data say no data and why`() {
-        let snapshot = DashboardSnapshot(DashboardData(today: today))
+        let snapshot = dashboardSnapshot(today: today)
         #expect(snapshot.accessibilityLabel(of: .steps, state: .noData(HealthKitClient.noDataMessage), locale: .dashboardEnglish)
             == "Steps, no data. No data found — check Health permissions")
         #expect(snapshot

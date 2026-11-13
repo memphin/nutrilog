@@ -56,20 +56,10 @@ private struct DiaryContent: View {
     @State private var plannedAction: PlannedEntry?
     @State private var editingPlanned: PlannedEntry?
     @State private var movingPlanned: PlannedEntry?
-    @State private var repeatRequest: RepeatRequest?
     @State private var showMealPlan = false
 
     struct CopyRequest: Identifiable {
         let slotID: String?
-        var id: String {
-            slotID ?? "day"
-        }
-    }
-
-    /// "Plan for the next days…" of one meal, or of the whole day when `slotID` is nil.
-    struct RepeatRequest: Identifiable {
-        let slotID: String?
-        let title: String
         var id: String {
             slotID ?? "day"
         }
@@ -255,11 +245,6 @@ private struct DiaryContent: View {
                 model.movePlanned(planned, toSlot: slotID, day: day)
             }
         }
-        .sheet(item: $repeatRequest) { request in
-            RepeatPlanSheet(title: request.title, from: model.day) { days in
-                model.repeatOnNextDays(slotID: request.slotID, days: days)
-            }
-        }
         .sheet(isPresented: $showMealPlan) {
             MealPlanView { day in
                 model.day = day
@@ -273,15 +258,7 @@ private struct DiaryContent: View {
                 model.saveNote(text: text, isComplete: complete)
             }
         }
-        .alert("Diary", isPresented: Binding(get: { model.errorMessage != nil }, set: {
-            if !$0 {
-                model.errorMessage = nil
-            }
-        })) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(model.errorMessage ?? "")
-        }
+        .errorAlert($model.errorMessage, title: "Diary")
     }
 
     // MARK: Pieces
@@ -307,28 +284,16 @@ private struct DiaryContent: View {
                     Button("Quick add calories", systemImage: "bolt") {
                         quickAddTarget = AddTarget(slotID: section.slot.id, day: model.day)
                     }
-                    if model.isToday {
-                        Button("Plan for later today", systemImage: "calendar.badge.plus") {
-                            addTarget = AddTarget(slotID: section.slot.id, day: model.day, planned: true)
-                        }
-                    }
                 }
                 if !model.isFuture, !model.planned(in: section.slot.id).isEmpty {
                     Button("Mark planned as eaten", systemImage: "checkmark.circle") { model.confirmAll(slotID: section.slot.id) }
                 }
-                Button("Plan for the next days…", systemImage: "calendar.badge.clock") {
-                    repeatRequest = RepeatRequest(slotID: section.slot.id, title: String(localized: "Plan \(section.slot.displayName)"))
-                }
-                .disabled(section.entries.isEmpty && model.planned(in: section.slot.id).isEmpty)
                 Divider()
                 Button("Save as meal…", systemImage: "square.and.arrow.down.on.square") {
                     mealName = section.slot.displayName
                     savingMealSlot = section.slot
                 }
                 .disabled(!section.entries.contains { !$0.isQuickAdd })
-                Button("Copy from yesterday", systemImage: "arrow.uturn.backward") {
-                    model.copy(from: model.day.previous, slotID: section.slot.id)
-                }
                 Button("Copy from date…", systemImage: "calendar") { copyRequest = CopyRequest(slotID: section.slot.id) }
             } label: {
                 Image(systemName: "ellipsis.circle")
@@ -395,19 +360,12 @@ private struct DiaryContent: View {
             }
             Button("Meal plan", systemImage: "calendar.badge.clock") { showMealPlan = true }
             Menu("Day options", systemImage: "ellipsis") {
-                Button("Copy whole day from yesterday", systemImage: "doc.on.doc") {
-                    model.copy(from: model.day.previous, slotID: nil)
-                }
                 Button("Copy whole day from date…", systemImage: "calendar") { copyRequest = CopyRequest(slotID: nil) }
                 Divider()
                 if !model.isFuture, !model.planned.isEmpty {
                     Button("Mark all planned as eaten", systemImage: "checkmark.circle") { model.confirmAll(slotID: nil) }
+                    Divider()
                 }
-                Button("Plan this day for the next days…", systemImage: "calendar.badge.clock") {
-                    repeatRequest = RepeatRequest(slotID: nil, title: String(localized: "Plan whole day"))
-                }
-                .disabled((model.diary?.entryCount ?? 0) == 0 && model.planned.isEmpty)
-                Divider()
                 Button(
                     model.diary?.note?.isComplete == true ? "Unmark fully logged" : "Mark day as fully logged",
                     systemImage: "checkmark.seal",
@@ -516,6 +474,8 @@ struct DaySummaryHeader: View {
     }
 }
 
-#Preview {
-    DiaryView().environment(AppEnvironment.preview(sampleData: true))
-}
+#if DEBUG
+    #Preview {
+        DiaryView().environment(AppEnvironment.preview(sampleData: true))
+    }
+#endif

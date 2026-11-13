@@ -11,14 +11,12 @@ struct ProfileRepositoryTests {
         #expect(profile.activityLevel == .light)
         #expect(profile.goalMode == .maintain)
         #expect(profile.waterGoalMl == 2500)
-        #expect(!profile.isCompleteForFormula)
         profile.heightCm = 180
         profile.birthDate = day("1990-05-01")
         profile.sex = .male
         profile.activityLevel = .veryActive
         try f.profiles.save(profile)
         let saved = try f.profiles.profile()
-        #expect(saved.isCompleteForFormula)
         #expect(saved.activityLevel == .veryActive)
         #expect(saved.birthDate == day("1990-05-01"))
         #expect(saved.revision == 2)
@@ -45,11 +43,11 @@ struct ProfileRepositoryTests {
 
     @Test func `manual weights`() throws {
         let f = try Fixture()
-        #expect(try f.profiles.latestWeight() == nil)
-        try f.profiles.addWeight(kg: 82.4, at: f.clock.now.addingTimeInterval(-86400))
-        try f.profiles.addWeight(kg: 82.0, bodyFatPct: 18)
-        #expect(try f.profiles.latestWeight()?.kg == 82.0)
-        #expect(throws: PersistenceError.validation("weight out of range")) { try f.profiles.addWeight(kg: 0) }
+        #expect(try f.weights.latest() == nil)
+        try f.weights.add(kg: 82.4, measuredAt: f.clock.now.addingTimeInterval(-86400))
+        try f.weights.add(kg: 82.0, bodyFatPct: 18)
+        #expect(try f.weights.latest()?.kg == 82.0)
+        #expect(throws: PersistenceError.validation("weight out of range")) { try f.weights.add(kg: 0) }
     }
 
     @Test func `settings round trip`() throws {
@@ -88,6 +86,17 @@ struct ProfileRepositoryTests {
         ))
         #expect(try await targets.next()??.kcal == 1800)
     }
+
+    @Test func `target timeline resolves the target of any day`() throws {
+        let f = try Fixture()
+        let macros = MacroTargets(proteinG: 100, carbsG: 200, fatG: 60)
+        try f.profiles.setTarget(Target(effectiveFrom: day("2026-10-01"), kcal: 2200, macros: macros, origin: .manual))
+        try f.profiles.setTarget(Target(effectiveFrom: day("2026-11-01"), kcal: 2000, macros: macros, origin: .adaptive))
+        let timeline = try f.profiles.targetTimeline()
+        #expect(timeline.value(on: day("2026-09-30")) == nil)
+        #expect(timeline.value(on: day("2026-10-20"))?.kcal == 2200)
+        #expect(timeline.value(on: day("2026-11-09"))?.kcal == 2000)
+    }
 }
 
 struct DataPortabilityTests {
@@ -113,7 +122,7 @@ struct DataPortabilityTests {
             day: day("2026-11-08"),
         )
         try f.diary.setDayNote(day: day("2026-11-08"), text: "line1\nline2", isComplete: true)
-        try f.profiles.addWeight(kg: 81.25, bodyFatPct: 17.5)
+        try f.weights.add(kg: 81.25, bodyFatPct: 17.5)
         try f.profiles.setTarget(Target(
             effectiveFrom: day("2026-11-01"),
             kcal: 2100,
@@ -391,5 +400,64 @@ struct DataPortabilityTests {
         #expect(Timestamp.date("nope") == nil)
         let d = Date(timeIntervalSince1970: 1_794_200_000.5)
         #expect(Timestamp.string(d) == "2026-11-09T04:53:20.500Z")
+    }
+}
+
+struct PortabilityFixesTests {
+    @Test func `merge into a fresh install takes the edited profile and slots over the seeds`() throws {
+        let source = try Fixture()
+        var profile = try source.profiles.profile()
+        profile.heightCm = 182
+        profile.birthDate = day("1988-03-14")
+        profile.sex = .female
+        profile.goalMode = .lose
+        profile.waterGoalMl = 3000
+        profile.checkinWeekday = 7
+        try source.profiles.save(profile)
+        var slots = try source.diary.mealSlots()
+        slots[0].name = "Morning"
+        slots.swapAt(1, 2)
+        try source.profiles.saveMealSlots(slots)
+        let json = try DataPortability(source.db, clock: source.clock.appClock).exportJSON()
+
+        // A brand-new install: its seeds carry a later `updated_at` than every row of the file.
+        let fresh = try Fixture()
+        try fresh.db.writer.write { db in
+            try db.execute(sql: "UPDATE profile SET updated_at = '2099-01-01T00:00:00.000Z'")
+            try db.execute(sql: "UPDATE meal_slot SET updated_at = '2099-01-01T00:00:00.000Z'")
+        }
+        let summary = try DataPortability(fresh.db).importJSON(json, mode: .merge)
+        #expect(summary.updated == 4) // the profile, the renamed slot and the two swapped ones
+
+        let merged = try fresh.profiles.profile()
+        #expect(merged.heightCm == 182)
+        #expect(merged.birthDate == day("1988-03-14"))
+        #expect(merged.sex == .female)
+        #expect(merged.goalMode == .lose)
+        #expect(merged.waterGoalMl == 3000)
+        #expect(merged.checkinWeekday == 7)
+        #expect(try fresh.diary.mealSlots().map(\.name) == ["Morning", "Dinner", "Lunch", "Snacks"])
+    }
+
+    @Test func `an edited local profile still wins over an older file`() throws {
+        let source = try Fixture()
+        var profile = try source.profiles.profile()
+        profile.heightCm = 182
+        try source.profiles.save(profile)
+        let json = try DataPortability(source.db, clock: source.clock.appClock).exportJSON()
+
+        let local = try Fixture()
+        local.clock.advance(3600)
+        var mine = try local.profiles.profile()
+        mine.heightCm = 170
+        try local.profiles.save(mine) // revision 2, newer than the file
+        try DataPortability(local.db).importJSON(json, mode: .merge)
+        #expect(try local.profiles.profile().heightCm == 170)
+    }
+
+    @Test func `csv quotes fields with windows line breaks`() {
+        #expect(DataPortability.csv([["a\r\nb", "c"]]) == "\"a\r\nb\",c\r\n")
+        #expect(DataPortability.csv([["a\rb"]]) == "\"a\rb\"\r\n")
+        #expect(DataPortability.csv([["plain"]]) == "plain\r\n")
     }
 }

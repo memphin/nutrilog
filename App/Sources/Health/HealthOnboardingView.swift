@@ -65,13 +65,7 @@ struct HealthOnboardingView: View {
                 }
             }
             .interactiveDismissDisabled(isConnecting)
-            .alert("Apple Health", isPresented: Binding(get: { errorMessage != nil }, set: {
-                if !$0 {
-                    errorMessage = nil
-                }
-            })) {
-                Button("OK", role: .cancel) {}
-            } message: { Text(errorMessage ?? "") }
+            .errorAlert($errorMessage, title: "Apple Health")
         }
     }
 
@@ -103,6 +97,8 @@ private struct TypeRow: View {
     }
 }
 
-#Preview {
-    HealthOnboardingView().environment(AppEnvironment.preview())
-}
+#if DEBUG
+    #Preview {
+        HealthOnboardingView().environment(AppEnvironment.preview())
+    }
+#endif

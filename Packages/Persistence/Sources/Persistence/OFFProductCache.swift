@@ -70,10 +70,6 @@ public struct OFFProductCache: Sendable {
         }
     }
 
-    public func removeEntry(barcode: String) throws {
-        _ = try database.writer.write { db in try Row.deleteOne(db, key: barcode) }
-    }
-
     public func count() throws -> Int {
         try database.reader.read { db in try Row.fetchCount(db) }
     }

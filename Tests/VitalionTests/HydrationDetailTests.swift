@@ -127,7 +127,7 @@ struct HydrationDetailTests {
         let model = DashboardModel(environment: env)
         let rows = model.history(for: .water)
         #expect(rows.count == TileHistory.days)
-        #expect(rows[0].value == DashboardFormat.ml(1200))
+        #expect(rows[0].value == Format.ml(1200))
         #expect(rows[0].amountMl == 1200)
         #expect(rows[1].value == nil)
         #expect(rows[2].amountMl == 2100)
@@ -139,9 +139,9 @@ struct HydrationDetailTests {
             for: .water, data: data, loggedFluidByDay: [today: 1200, today.adding(days: -2): 2100],
         )
         #expect(pure[0].goalMl == 2400)
-        #expect(pure[0].detail == "of \(DashboardFormat.ml(2400))")
+        #expect(pure[0].detail == "of \(Format.ml(2400))")
         #expect(pure[2].goalMl == 2100)
-        #expect(pure[2].detail == "of \(DashboardFormat.ml(2100))")
+        #expect(pure[2].detail == "of \(Format.ml(2100))")
         #expect(pure[1].value == nil)
         #expect(pure[1].detail == nil)
     }

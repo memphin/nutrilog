@@ -125,3 +125,52 @@ struct FoodSearchTests {
         #expect(try index.search("banana raw", limit: 5).contains { $0.name == "Bananas, raw" })
     }
 }
+
+/// The bundled index and online USDA search share FDC ids: one food, stored once.
+struct BundledUSDADeduplicationTests {
+    private let raw = BundledFood(
+        id: "b1", sourceID: "171705", name: "Bananas, raw", per100: Nutrients(kcal: 89, proteinG: 1.1, carbsG: 22.8, fatG: 0.3),
+    )
+
+    private func usda() -> FoodDetail {
+        FoodDetail(food: Food(name: "Bananas, raw", source: .usda, sourceID: "171705", per100: raw.per100))
+    }
+
+    private func activeFoods(_ f: Fixture) throws -> Int {
+        try f.db.reader.read { db in try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM food WHERE deleted_at IS NULL") ?? 0 }
+    }
+
+    @Test func `online USDA copy reuses the local bundled food`() throws {
+        let f = try Fixture()
+        let bundled = try f.foods.localCopy(of: raw)
+        let saved = try f.foods.saveCopy(usda())
+        #expect(saved.food.id == bundled.id)
+        #expect(try activeFoods(f) == 1)
+    }
+
+    @Test func `bundled copy reuses the online USDA food`() throws {
+        let f = try Fixture()
+        let saved = try f.foods.saveCopy(usda())
+        let copy = try f.foods.localCopy(of: raw)
+        #expect(copy.id == saved.food.id)
+        #expect(try activeFoods(f) == 1)
+
+        // A deleted bundled copy isn't revived while the USDA food is active.
+        let other = try Fixture()
+        let old = try other.foods.localCopy(of: raw)
+        try other.foods.softDelete(id: old.id)
+        let online = try other.foods.saveCopy(usda())
+        #expect(online.food.id != old.id)
+        #expect(try other.foods.localCopy(of: raw).id == online.food.id)
+        #expect(try activeFoods(other) == 1)
+    }
+
+    @Test func `search hides the bundled row once the USDA food is local`() throws {
+        let f = try Fixture()
+        let index = try makeBundledIndex(rows: [("b1", "171705", "Bananas, raw", 89)])
+        let search = FoodSearch(f.db, bundled: index)
+        try f.foods.saveCopy(usda())
+        let results = try search.search("banana")
+        #expect(results.map(\.source) == [.usda])
+    }
+}

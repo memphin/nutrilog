@@ -6,7 +6,6 @@ Vitalion is built for one person's private use. The design rule is simple: **dat
 - Your food diary, custom foods, saved meals, targets and profile — in an SQLite database inside the app's sandbox, protected by iOS Data Protection (encrypted at rest).
 - A local cache of Open Food Facts product records you scanned (so repeat scans work offline).
 - A daily snapshot of Apple Health values you granted access to (steps, sleep, weight, body fat %, energy, resting heart rate, HRV, water). Apple Health remains the system of record; the snapshot can be deleted and recomputed at any time.
-- Your optional USDA API key — in the iOS Keychain.
 - A meal photo you take or choose for "Snap or describe a meal" is not stored: it is used for that one estimate and dropped.
 - Automatic backups: about once a week a full export is written to a folder inside the app's sandbox (the newest seven are kept). They never leave the device unless you share one.
 - Today's totals for the widgets (calories, macros, steps, sleep, weight, water) — in the app's App Group container on the device, readable only by Vitalion and its own widget extension.
@@ -16,12 +15,12 @@ Vitalion is built for one person's private use. The design rule is simple: **dat
 |---|---|---|
 | `world.openfoodfacts.org` | You scan a barcode not already cached, or search packaged foods online | The barcode / search text and a `User-Agent` header identifying the app |
 | `images.openfoodfacts.org` | A scanned product's card shows its photo | The image address (which names the product's barcode) |
-| `api.nal.usda.gov` | Only if you added a USDA key and search online | The search text and your key |
+| `api.nal.usda.gov` | You search online, in builds that include a USDA key (set at build time; there is no key field in the app) | The search text and the build's key |
 | Apple Health (on-device) | You log food or water, or enter weight | Nutrient / water / weight samples, written only with your permission |
 
 "Snap or describe a meal" works on the device: the photo or text is read by the on-device Apple Intelligence model, or, where that isn't available, matched to foods already on the device. Neither is sent anywhere.
 
-Siri and Shortcuts actions, the widgets, the weekly check-in reminder (a local notification, off by default) and the weekly report image all work on the device; the report image goes only where you share it.
+Siri and Shortcuts actions, the widgets, the weekly check-in reminder and hydration reminders (local notifications) and the weekly report image all work on the device; the report image goes only where you share it.
 
 Nothing else. There is no account, no server, no analytics, no crash-reporting SDK, no advertising SDK, and no third-party library that performs network requests.
 
@@ -31,6 +30,7 @@ Nothing else. There is no account, no server, no analytics, no crash-reporting S
 
 ## Your data
 - Export everything as JSON or CSV at any time (Settings → Export).
+- Leftovers of removed features are deleted on the first launch of the version that removed them: a USDA API key saved in the Keychain by earlier versions, and the device-local barcode scan log.
 - Deleting the app deletes all app data. Samples written to Apple Health remain in Health until you delete them there.
 
 ## Contact

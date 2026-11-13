@@ -115,3 +115,16 @@ public struct LocalDay: Hashable, Comparable, Sendable, Codable, CustomStringCon
         try container.encode(isoString)
     }
 }
+
+public extension ClosedRange<LocalDay> {
+    /// Every day of the range, oldest first.
+    var days: [LocalDay] {
+        var result: [LocalDay] = []
+        var day = lowerBound
+        while day <= upperBound {
+            result.append(day)
+            day = day.next
+        }
+        return result
+    }
+}

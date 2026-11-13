@@ -2190,45 +2190,6 @@
         }
       }
     },
-    "%lldh" : {
-      "comment" : "Short duration in hours",
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld h"
-          }
-        }
-      }
-    },
-    "%lldh %lldmin" : {
-      "comment" : "Short duration in hours and minutes",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$lldh %2$lldmin"
-          }
-        },
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld h %2$lld min"
-          }
-        }
-      }
-    },
-    "%lldmin" : {
-      "comment" : "Short duration in minutes",
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld min"
-          }
-        }
-      }
-    },
     "+%lld ml" : {
       "localizations" : {
         "hr" : {
@@ -2421,17 +2382,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Povezanost ne dokazuje da jedno uzrokuje drugo."
-          }
-        }
-      }
-    },
-    "A meal always uses the current values of its foods. Swipe to remove a food, hold and drag to reorder." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Obrok uvijek koristi trenutačne vrijednosti svojih namirnica. Povuci prstom za uklanjanje namirnice, zadrži i povuci za promjenu redoslijeda."
           }
         }
       }
@@ -2965,22 +2915,6 @@
         }
       }
     },
-    "Adds it to the plan from %@ to %@. Nothing is logged until you mark it as eaten on the day." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Adds it to the plan from %1$@ to %2$@. Nothing is logged until you mark it as eaten on the day."
-          }
-        },
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dodaje ga u plan od %1$@ do %2$@. Ništa se ne zapisuje dok ga tog dana ne označiš kao pojedenog."
-          }
-        }
-      }
-    },
     "After logging a food, return to the camera instead of closing." : {
       "localizations" : {
         "hr" : {
@@ -3007,26 +2941,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sve pojedeno"
-          }
-        }
-      }
-    },
-    "All scans" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sva skeniranja"
-          }
-        }
-      }
-    },
-    "All scans, without excusing them" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sva skeniranja, bez izuzetaka"
           }
         }
       }
@@ -3393,17 +3307,6 @@
         }
       }
     },
-    "Awake %@" : {
-      "comment" : "Sleep stage and its duration",
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Budno %@"
-          }
-        }
-      }
-    },
     "BMR (Mifflin-St Jeor)" : {
       "localizations" : {
         "hr" : {
@@ -3476,16 +3379,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Barkod %@ nije valjan."
-          }
-        }
-      }
-    },
-    "Barcode resolution" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prepoznavanje barkodova"
           }
         }
       }
@@ -3658,16 +3551,6 @@
         }
       }
     },
-    "Below the %@ target for regularly bought products." : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ispod cilja od %@ za redovito kupovane proizvode."
-          }
-        }
-      }
-    },
     "Birth date" : {
       "localizations" : {
         "hr" : {
@@ -3734,16 +3617,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gumb %lld"
-          }
-        }
-      }
-    },
-    "By outcome" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Po ishodu"
           }
         }
       }
@@ -3988,26 +3861,6 @@
         }
       }
     },
-    "Clear log" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Očisti zapisnik"
-          }
-        }
-      }
-    },
-    "Clear the scan log?" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Očistiti zapisnik skeniranja?"
-          }
-        }
-      }
-    },
     "Close" : {
       "localizations" : {
         "hr" : {
@@ -4204,16 +4057,6 @@
         }
       }
     },
-    "Copy from yesterday" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kopiraj s jučerašnjeg dana"
-          }
-        }
-      }
-    },
     "Copy meal" : {
       "localizations" : {
         "hr" : {
@@ -4250,27 +4093,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kopiraj cijeli dan s datuma…"
-          }
-        }
-      }
-    },
-    "Copy whole day from yesterday" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kopiraj cijeli jučerašnji dan"
-          }
-        }
-      }
-    },
-    "Core %@" : {
-      "comment" : "Sleep stage and its duration",
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Osnovni %@"
           }
         }
       }
@@ -4435,16 +4257,6 @@
         }
       }
     },
-    "Couldn't remove the USDA API key: %@" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Uklanjanje USDA API ključa nije uspjelo: %@"
-          }
-        }
-      }
-    },
     "Couldn't remove the drink: %@" : {
       "localizations" : {
         "hr" : {
@@ -4497,16 +4309,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Spremanje nije uspjelo"
-          }
-        }
-      }
-    },
-    "Couldn't save the USDA API key: %@" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spremanje USDA API ključa nije uspjelo: %@"
           }
         }
       }
@@ -4721,17 +4523,6 @@
         }
       }
     },
-    "Create the food first in Foods, or scan it once." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Najprije napravi namirnicu u Namirnicama ili je jednom skeniraj."
-          }
-        }
-      }
-    },
     "Create the food to log it now, or search online." : {
       "localizations" : {
         "hr" : {
@@ -4748,16 +4539,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Napravi namirnicu s njezinim nutritivnim vrijednostima ili skeniraj njezin barkod."
-          }
-        }
-      }
-    },
-    "Created after not found" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Napravljeno nakon neuspjele pretrage"
           }
         }
       }
@@ -4878,16 +4659,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dnevni cilj"
-          }
-        }
-      }
-    },
-    "Dashboard" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nadzorna ploča"
           }
         }
       }
@@ -5054,17 +4825,6 @@
         }
       }
     },
-    "Deep %@" : {
-      "comment" : "Sleep stage and its duration",
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Duboki %@"
-          }
-        }
-      }
-    },
     "Default" : {
       "localizations" : {
         "hr" : {
@@ -5171,26 +4931,6 @@
         }
       }
     },
-    "Details" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pojedinosti"
-          }
-        }
-      }
-    },
-    "Diagnostics" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dijagnostika"
-          }
-        }
-      }
-    },
     "Diary" : {
       "localizations" : {
         "hr" : {
@@ -5231,16 +4971,6 @@
         }
       }
     },
-    "Distinct barcodes" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Različiti barkodovi"
-          }
-        }
-      }
-    },
     "Done" : {
       "localizations" : {
         "hr" : {
@@ -5257,16 +4987,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Povuci za promjenu redoslijeda. Neaktivni termini su skriveni, ali zadržavaju svoje prijašnje unose."
-          }
-        }
-      }
-    },
-    "Drag to reorder. Remove a tile to hide it." : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Povuci za promjenu redoslijeda. Ukloni pločicu da je sakriješ."
           }
         }
       }
@@ -5461,12 +5181,12 @@
         }
       }
     },
-    "Edit Today to show them again, or use Settings → Dashboard." : {
+    "Edit Today to show them again." : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Uredi Danas da ih ponovno prikažeš ili otvori Postavke → Nadzorna ploča."
+            "value" : "Uredi Danas da ih ponovno prikažeš."
           }
         }
       }
@@ -5693,16 +5413,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Unesi veličinu porcije."
-          }
-        }
-      }
-    },
-    "Entered in Vitalion" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Uneseno u Vitalionu"
           }
         }
       }
@@ -6054,16 +5764,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nazivi namirnica"
-          }
-        }
-      }
-    },
-    "Food sources" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Izvori namirnica"
           }
         }
       }
@@ -6486,16 +6186,6 @@
         }
       }
     },
-    "If you saved a USDA API key, it can't be read until this iPhone is unlocked. It then loads automatically." : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spremljeni USDA API ključ ne može se pročitati dok se ovaj iPhone ne otključa. Nakon toga učitava se automatski."
-          }
-        }
-      }
-    },
     "Import" : {
       "localizations" : {
         "hr" : {
@@ -6744,26 +6434,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Čuva se samo na ovom iPhoneu, kao referenca za vrijednosti koje upisuješ."
-          }
-        }
-      }
-    },
-    "Keychain error %@" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pogreška privjeska ključeva %@"
-          }
-        }
-      }
-    },
-    "Keychain locked" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Privjesak ključeva je zaključan"
           }
         }
       }
@@ -7912,52 +7582,6 @@
         }
       }
     },
-    "Next %lld days" : {
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Next %lld day"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Next %lld days"
-                }
-              }
-            }
-          }
-        },
-        "hr" : {
-          "variations" : {
-            "plural" : {
-              "few" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Sljedeća %lld dana"
-                }
-              },
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Sljedeći %lld dan"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Sljedećih %lld dana"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "Next day" : {
       "localizations" : {
         "hr" : {
@@ -8170,16 +7794,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nema spremljenih obroka"
-          }
-        }
-      }
-    },
-    "No tiles shown" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nema prikazanih pločica"
           }
         }
       }
@@ -8444,26 +8058,6 @@
         }
       }
     },
-    "Nothing to plan — this day is empty." : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nema se što planirati — ovaj dan je prazan."
-          }
-        }
-      }
-    },
-    "Nothing to plan — this meal is empty." : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nema se što planirati — ovaj obrok je prazan."
-          }
-        }
-      }
-    },
     "Nothing was imported: the backup of your current data couldn't be written. %@" : {
       "localizations" : {
         "hr" : {
@@ -8570,16 +8164,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Isključeno"
-          }
-        }
-      }
-    },
-    "Offline" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Izvan mreže"
           }
         }
       }
@@ -8724,16 +8308,6 @@
         }
       }
     },
-    "On target: at least %@ of regularly bought products resolve." : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cilj postignut: prepoznaje se barem %@ redovito kupovanih proizvoda."
-          }
-        }
-      }
-    },
     "On this day Vitalion shows your week and proposes a calorie target. You can also open it any time from Trends." : {
       "localizations" : {
         "hr" : {
@@ -8764,26 +8338,6 @@
         }
       }
     },
-    "Online USDA FoodData Central search uses the key built into this version. Save your own to use it instead." : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Online pretraživanje USDA FoodData Central koristi ključ ugrađen u ovu verziju. Spremi vlastiti ključ da bi se koristio umjesto njega."
-          }
-        }
-      }
-    },
-    "Online USDA FoodData Central search uses your key, stored in this iPhone's Keychain." : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Online pretraživanje USDA FoodData Central koristi tvoj ključ, spremljen u privjesku ključeva ovog iPhonea."
-          }
-        }
-      }
-    },
     "Only the energy is known for this product." : {
       "localizations" : {
         "hr" : {
@@ -8800,26 +8354,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Open Food Facts"
-          }
-        }
-      }
-    },
-    "Open Food Facts (cached)" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open Food Facts (iz predmemorije)"
-          }
-        }
-      }
-    },
-    "Open Food Facts (outdated cache)" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open Food Facts (zastarjela predmemorija)"
           }
         }
       }
@@ -8850,26 +8384,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pretraživanje baze Open Food Facts nije uspjelo."
-          }
-        }
-      }
-    },
-    "Open Food Facts unavailable" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open Food Facts nije dostupan"
-          }
-        }
-      }
-    },
-    "Open Food Facts, %@" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open Food Facts, %@"
           }
         }
       }
@@ -8930,16 +8444,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Neobavezno, npr. „Ručak vani”."
-          }
-        }
-      }
-    },
-    "Optional. With a free key from api.data.gov you can also search USDA FoodData Central online. It's stored only in this iPhone's Keychain." : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Neobavezno. S besplatnim ključem s api.data.gov možeš pretraživati i USDA FoodData Central na mreži. Sprema se samo u privjesak ključeva ovog iPhonea."
           }
         }
       }
@@ -9158,12 +8662,12 @@
         }
       }
     },
-    "Plan a day by opening it in the diary and adding food. To prep the same meal for several days, use “Plan for the next days…” in a meal's menu. Planned food counts only once you mark it as eaten." : {
+    "Plan a future day by opening it in the diary and adding food. Planned food counts only once you mark it as eaten." : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Planiraj dan tako da ga otvoriš u dnevniku i dodaš hranu. Da isti obrok pripremiš za više dana, u izborniku obroka odaberi „Planiraj za sljedeće dane…“. Planirana hrana računa se tek kad je označiš kao pojedenu."
+            "value" : "Planiraj budući dan tako da ga otvoriš u dnevniku i dodaš hranu. Planirana hrana računa se tek kad je označiš kao pojedenu."
           }
         }
       }
@@ -9198,52 +8702,12 @@
         }
       }
     },
-    "Plan for later today" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Planiraj za kasnije danas"
-          }
-        }
-      }
-    },
-    "Plan for the next days…" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Planiraj za sljedeće dane…"
-          }
-        }
-      }
-    },
     "Plan this day" : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Planiraj ovaj dan"
-          }
-        }
-      }
-    },
-    "Plan this day for the next days…" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Planiraj ovaj dan za sljedeće dane…"
-          }
-        }
-      }
-    },
-    "Plan whole day" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Planiraj cijeli dan"
           }
         }
       }
@@ -9310,64 +8774,6 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "Planned %lld entries over %lld days" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Planned %#@entries@ over %#@days@"
-          },
-          "substitutions" : {
-            "days" : {
-              "argNum" : 2,
-              "formatSpecifier" : "lld",
-              "variations" : {
-                "plural" : {
-                  "one" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg day"
-                    }
-                  },
-                  "other" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg days"
-                    }
-                  }
-                }
-              }
-            },
-            "entries" : {
-              "argNum" : 1,
-              "formatSpecifier" : "lld",
-              "variations" : {
-                "plural" : {
-                  "one" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg entry"
-                    }
-                  },
-                  "other" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg entries"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Planirano unosa: %1$lld tijekom %2$lld dana"
           }
         }
       }
@@ -9632,17 +9038,6 @@
         }
       }
     },
-    "REM %@" : {
-      "comment" : "Sleep stage and its duration",
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "REM %@"
-          }
-        }
-      }
-    },
     "Raises this day's calorie and hydration goals" : {
       "localizations" : {
         "hr" : {
@@ -9703,26 +9098,6 @@
         }
       }
     },
-    "Regularly bought (scanned 2+ times)" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Redovito kupljeno (skenirano 2+ puta)"
-          }
-        }
-      }
-    },
-    "Regularly bought products" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Redovito kupljeni proizvodi"
-          }
-        }
-      }
-    },
     "Remaining Calories" : {
       "localizations" : {
         "hr" : {
@@ -9779,16 +9154,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ukloni"
-          }
-        }
-      }
-    },
-    "Remove USDA API key" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ukloni USDA API ključ"
           }
         }
       }
@@ -9985,54 +9350,6 @@
         }
       }
     },
-    "Reset to default" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vrati na zadano"
-          }
-        }
-      }
-    },
-    "Resolved means a food on this iPhone or Open Food Facts had the barcode. A miss is not counted when a food with that barcode was added afterwards (anywhere in the app, or by an import): that's the one-time manual entry, and later scans find it on this iPhone. Offline scans aren't counted either." : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prepoznato znači da je namirnica na ovom iPhoneu ili u Open Food Facts imala taj barkod. Promašaj se ne računa ako je namirnica s tim barkodom dodana nakon toga (bilo gdje u aplikaciji ili uvozom): to je jednokratni ručni unos, a kasnija skeniranja pronalaze je na ovom iPhoneu. Ne računaju se ni skeniranja bez veze."
-          }
-        }
-      }
-    },
-    "Resolved, last %lld days" : {
-      "localizations" : {
-        "hr" : {
-          "variations" : {
-            "plural" : {
-              "few" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Prepoznato, zadnja %lld dana"
-                }
-              },
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Prepoznato, zadnji %lld dan"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Prepoznato, zadnjih %lld dana"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "Resting" : {
       "comment" : "Resting energy",
       "localizations" : {
@@ -10040,16 +9357,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "U mirovanju"
-          }
-        }
-      }
-    },
-    "Resting %@" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "U mirovanju %@"
           }
         }
       }
@@ -10210,16 +9517,6 @@
         }
       }
     },
-    "Save USDA API key" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spremi USDA API ključ"
-          }
-        }
-      }
-    },
     "Save as meal" : {
       "localizations" : {
         "hr" : {
@@ -10317,26 +9614,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Skeniraj barkod za popunjavanje"
-          }
-        }
-      }
-    },
-    "Scan products you buy more than once to measure the %@ target." : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skeniraj proizvode koje kupuješ više puta kako bi se mogao izmjeriti cilj od %@."
-          }
-        }
-      }
-    },
-    "Scans before a manual entry" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skeniranja prije ručnog unosa"
           }
         }
       }
@@ -10673,16 +9950,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Prikaži: %@"
-          }
-        }
-      }
-    },
-    "Shown on Today" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prikazano na zaslonu Danas"
           }
         }
       }
@@ -11221,16 +10488,6 @@
         }
       }
     },
-    "The log stays on this iPhone, isn't part of exports and is trimmed to 90 days." : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zapisnik ostaje na ovom iPhoneu, nije dio izvoza i skraćuje se na 90 dana."
-          }
-        }
-      }
-    },
     "The maintenance estimate uses days that are fully logged or have at least 3 entries." : {
       "localizations" : {
         "hr" : {
@@ -11279,16 +10536,6 @@
         }
       }
     },
-    "The scan log can't be read." : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zapisnik skeniranja ne može se pročitati."
-          }
-        }
-      }
-    },
     "The suggested target is above %@ kcal. Check your height, or set calories manually." : {
       "localizations" : {
         "hr" : {
@@ -11309,12 +10556,12 @@
         }
       }
     },
-    "The tile says when the caffeine in your body drops below this line, and whether it will by bedtime. %@ is a common rule of thumb." : {
+    "The tile says when the caffeine in your body drops below this line, and whether it will by bedtime. %@ is a common rule of thumb. Bedtime is set in Settings → Hydration." : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pločica pokazuje kad kofein u tvom tijelu padne ispod ove granice i hoće li se to dogoditi do odlaska na spavanje. %@ često je pravilo."
+            "value" : "Pločica pokazuje kad kofein u tvom tijelu padne ispod ove granice i hoće li se to dogoditi do odlaska na spavanje. %@ često je pravilo. Vrijeme spavanja postavlja se u Postavkama → Hidracija."
           }
         }
       }
@@ -11738,16 +10985,6 @@
         }
       }
     },
-    "Trend %@" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trend %@"
-          }
-        }
-      }
-    },
     "Trend %@ over the period." : {
       "localizations" : {
         "hr" : {
@@ -11894,16 +11131,6 @@
         }
       }
     },
-    "USDA API key" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "USDA API ključ"
-          }
-        }
-      }
-    },
     "USDA didn't answer in time." : {
       "localizations" : {
         "hr" : {
@@ -11914,12 +11141,12 @@
         }
       }
     },
-    "USDA rejected the API key. Check it in Settings → Food sources." : {
+    "USDA rejected the API key, so USDA search is unavailable." : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "USDA je odbio API ključ. Provjeri ga u Postavkama → Izvori namirnica."
+            "value" : "USDA je odbio API ključ pa USDA pretraga nije dostupna."
           }
         }
       }
@@ -13250,17 +12477,6 @@
         }
       }
     },
-    "complete" : {
-      "comment" : "Data quality of a food's nutrition values",
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "potpuno"
-          }
-        }
-      }
-    },
     "database unavailable" : {
       "localizations" : {
         "hr" : {
@@ -13297,16 +12513,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "npr. kriška"
-          }
-        }
-      }
-    },
-    "energy only" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "samo energija"
           }
         }
       }
@@ -13741,16 +12947,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "iznad dnevnog limita"
-          }
-        }
-      }
-    },
-    "partial macros" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "nepotpuni makronutrijenti"
           }
         }
       }
@@ -14260,17 +13456,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "trend %@ kg"
-          }
-        }
-      }
-    },
-    "unknown" : {
-      "comment" : "An energy value Apple Health has no data for",
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "nepoznato"
           }
         }
       }

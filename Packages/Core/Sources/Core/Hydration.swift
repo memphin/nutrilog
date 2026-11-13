@@ -97,7 +97,7 @@ public enum HydrationGoal {
             return fixedMl
         case .weight:
             guard let weightKg, weightKg > 0, weightKg.isFinite else { return fallbackMl }
-            return (mlPerKg * weightKg / 50).rounded() * 50
+            return (mlPerKg * weightKg).rounded(toMultipleOf: 50)
         }
     }
 }

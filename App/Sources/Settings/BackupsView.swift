@@ -66,13 +66,7 @@ struct BackupsView: View {
                 Text("Everything on this iPhone is replaced with the backup from then. A backup of the current data is made first.")
             }
         }
-        .alert("Backups", isPresented: Binding(get: { message != nil }, set: {
-            if !$0 {
-                message = nil
-            }
-        })) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(message ?? "") }
+        .errorAlert($message, title: "Backups")
     }
 
     private func reload() {

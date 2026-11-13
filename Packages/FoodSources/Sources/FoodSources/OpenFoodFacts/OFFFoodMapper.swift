@@ -14,24 +14,15 @@ import Foundation
 /// - Negative, non-finite and physically impossible values count as missing (see ``NutrientValues``), so a
 ///   product with a typo is never classified complete.
 public enum OFFFoodMapper {
-    public static let kJPerKcal = 4.184
     /// Servings lighter than this (g/ml) are not scaled to 100 g: a rounded "10 kcal" on "1 tablet (500 mg)"
     /// would become 2000 kcal/100 g.
     public static let minimumScalableServing = 1.0
-    /// Servings heavier than this (g/ml) are garbage ("serving_quantity": 1e19) and count as no serving at all.
-    public static let maximumServing = 100_000.0
-
-    /// `amount` when it is a usable serving weight (finite, above 0, at most ``maximumServing``), else `nil`.
-    static func usableServing(_ amount: Double?) -> Double? {
-        guard let amount, amount > 0, amount <= maximumServing else { return nil }
-        return amount
-    }
 
     /// - Parameter language: the food name language (Settings → Food names, resolved); see ``names(_:language:)``.
     public static func map(_ product: OFFProduct, language: FoodNameLanguage = .english) -> FoodDraft {
         let isLiquid = isLiquid(product)
         let servingAmount = servingAmount(product)
-        let servingDescription = clean(product.servingSize)
+        let servingDescription = product.servingSize.trimmedNonEmpty
 
         let scalableServing = servingAmount.flatMap { $0 >= minimumScalableServing ? $0 : nil }
         let per100 = NutrientValues(per100From: product.nutriments, servingAmount: scalableServing).plausiblePer100()
@@ -64,12 +55,9 @@ public enum OFFFoodMapper {
             isLiquid: isLiquid,
             serving: serving,
             servingDescription: servingDescription,
-            packageDescription: clean(product.quantity),
             imageURL: httpURL(product.imageFrontSmallURL),
             nutriscore: nutriscore(product.nutriscoreGrade),
             productURL: code.isEmpty ? nil : URL(string: "https://world.openfoodfacts.org/product/\(code)"),
-            ingredientsText: clean(product.ingredientsText),
-            allergens: product.allergensTags,
             lastModified: product.lastModified,
         )
     }
@@ -80,9 +68,9 @@ public enum OFFFoodMapper {
     /// the local one when it differs. In Croatian (`language`) the two swap: the Croatian name first, the main
     /// name as the local one.
     static func names(_ product: OFFProduct, language: FoodNameLanguage = .english) -> (name: String?, local: String?) {
-        let name = clean(product.productName) ?? clean(product.productNameEN) ?? clean(product.productNameHR)
-            ?? clean(product.genericName)
-        guard let croatian = clean(product.productNameHR),
+        let name = product.productName.trimmedNonEmpty ?? product.productNameEN.trimmedNonEmpty
+            ?? product.productNameHR.trimmedNonEmpty ?? product.genericName.trimmedNonEmpty
+        guard let croatian = product.productNameHR.trimmedNonEmpty,
               croatian.compare(name ?? "", options: [.caseInsensitive, .diacriticInsensitive]) != .orderedSame
         else {
             return (name, nil)
@@ -91,7 +79,7 @@ public enum OFFFoodMapper {
     }
 
     static func firstBrand(_ brands: String?) -> String? {
-        brands?.split(separator: ",").lazy.compactMap { clean(String($0)) }.first
+        brands?.split(separator: ",").lazy.compactMap { String($0).trimmedNonEmpty }.first
     }
 
     // MARK: - Serving & liquid
@@ -102,17 +90,17 @@ public enum OFFFoodMapper {
     /// A serving in ml on a food measured in g (or the other way round) is used as is: like the rest of the app we
     /// accept a density of ≈ 1.
     ///
-    /// Amounts that aren't finite, above 0 and at most ``maximumServing`` count as missing at each step.
+    /// Amounts that aren't above 0 and at most ``SourceServing/maximumAmount`` count as missing at each step.
     static func servingAmount(_ product: OFFProduct) -> Double? {
-        if let quantity = usableServing(product.servingQuantity) {
+        if let quantity = SourceServing.usable(product.servingQuantity) {
             guard let unit = product.servingQuantityUnit?.lowercased(), unit != "g", unit != "ml" else {
                 return quantity
             }
-            if let converted = usableServing(MeasureParser.convert(quantity, unit: unit)?.amount) {
+            if let converted = SourceServing.usable(MeasureParser.convert(quantity, unit: unit)?.amount) {
                 return converted
             }
         }
-        return usableServing(product.servingSize.flatMap(MeasureParser.parse)?.amount)
+        return SourceServing.usable(product.servingSize.flatMap(MeasureParser.parse)?.amount)
     }
 
     static func isLiquid(_ product: OFFProduct) -> Bool {
@@ -132,22 +120,17 @@ public enum OFFFoodMapper {
     // MARK: - Misc fields
 
     static func nutriscore(_ grade: String?) -> String? {
-        guard let grade = clean(grade)?.lowercased(), ["a", "b", "c", "d", "e"].contains(grade) else { return nil }
+        guard let grade = grade.trimmedNonEmpty?.lowercased(), ["a", "b", "c", "d", "e"].contains(grade) else { return nil }
         return grade
     }
 
     static func httpURL(_ text: String?) -> URL? {
-        guard let text = clean(text), let url = URL(string: text), let scheme = url.scheme?.lowercased(),
+        guard let text = text.trimmedNonEmpty, let url = URL(string: text), let scheme = url.scheme?.lowercased(),
               scheme == "https" || scheme == "http", url.host != nil
         else {
             return nil
         }
         return url
-    }
-
-    static func clean(_ text: String?) -> String? {
-        guard let trimmed = text?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else { return nil }
-        return trimmed
     }
 }
 
@@ -187,8 +170,8 @@ extension NutrientValues {
     /// kcal, else kJ ÷ 4.184. When kcal ≈ kJ the contributor typed the kJ figure into the kcal field: use kJ ÷ 4.184.
     static func energy(kcal: Double?, kJ: Double?) -> Double? {
         if let kcal, let kJ, kJ > 0, abs(kcal - kJ) <= kJ * 0.1 {
-            return kJ / OFFFoodMapper.kJPerKcal
+            return kJ / Energy.kJPerKcal
         }
-        return kcal ?? kJ.map { $0 / OFFFoodMapper.kJPerKcal }
+        return kcal ?? kJ.map { $0 / Energy.kJPerKcal }
     }
 }

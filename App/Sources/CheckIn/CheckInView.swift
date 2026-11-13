@@ -83,13 +83,7 @@ private struct CheckInContent: View {
         } message: {
             Text("Daily calorie target from today, in kcal.")
         }
-        .alert("Check-in", isPresented: Binding(get: { model.errorMessage != nil }, set: {
-            if !$0 {
-                model.errorMessage = nil
-            }
-        })) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(model.errorMessage ?? "") }
+        .errorAlert($model.errorMessage, title: "Check-in")
     }
 
     @ViewBuilder
@@ -258,7 +252,7 @@ struct EstimateDaysView: View {
         } else {
             parts.append(String(localized: "\(day.entryCount) entries"))
         }
-        parts.append(day.weightKg.map { String(localized: "weighed \(DashboardFormat.kg($0))") } ?? String(localized: "no weigh-in"))
+        parts.append(day.weightKg.map { String(localized: "weighed \(Format.kg($0))") } ?? String(localized: "no weigh-in"))
         if let trend = day.trendKg {
             let kg = "\(trend.formatted(.number.precision(.fractionLength(2)))) kg"
             parts.append(String(localized: "trend \(kg)", comment: "The weight trend of one day, e.g. \"trend 72.35 kg\"."))
@@ -381,7 +375,7 @@ struct CheckInRecordView: View {
 
 // MARK: - Settings
 
-/// Settings → Weekly check-in: the weekday and the opt-in reminder.
+/// Check-in day & reminder (from Trends): the weekday and the opt-in reminder.
 struct CheckInSettingsView: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var weekday = 2
@@ -411,13 +405,7 @@ struct CheckInSettingsView: View {
         .task(id: environment.dataGeneration) { load() }
         .onChange(of: weekday) { save() }
         .onChange(of: reminderOn) { save() }
-        .alert("Weekly check-in", isPresented: Binding(get: { message != nil }, set: {
-            if !$0 {
-                message = nil
-            }
-        })) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(message ?? "") }
+        .errorAlert($message, title: "Weekly check-in")
     }
 
     /// Monday first, numbered as `Calendar.weekday` (1 = Sunday). Names in the user's language.

@@ -116,7 +116,7 @@ struct MealPlanRepositoryTests {
         #expect(try repo.pending(in: d ... d.next).map(\.id) == [breakfast.id, breakfast2.id, dinner.id, tomorrow.id])
     }
 
-    @Test func `copy a day into the plan of several days`() throws {
+    @Test func `copy a day into the plan of another day`() throws {
         let f = try Fixture()
         let rice = try f.makeFood("Rice", kcal: 130)
         let chicken = try f.makeFood("Chicken", kcal: 165)
@@ -124,18 +124,18 @@ struct MealPlanRepositoryTests {
         try f.diary.log(food: rice, quantity: .base(200), slotID: "lunch", day: source)
         try f.diary.log(food: chicken, quantity: .base(150), slotID: "dinner", day: source)
         let repo = plans(f)
-        let targets = [day("2026-11-12"), day("2026-11-13"), day("2026-11-14")]
+        let target = day("2026-11-12")
 
-        let lunchOnly = try repo.copyToPlan(from: source, slotID: "lunch", to: targets)
-        #expect(lunchOnly.count == 3)
-        let whole = try repo.copyToPlan(from: source, to: [targets[0]])
+        let lunchOnly = try repo.copyToPlan(from: source, slotID: "lunch", to: target)
+        #expect(lunchOnly.count == 1)
+        let whole = try repo.copyToPlan(from: source, to: target)
         #expect(whole.count == 2)
-        #expect(try repo.pending(for: targets[0]).count == 3)
+        #expect(try repo.pending(for: target).count == 3)
         // Nothing was logged.
-        #expect(try f.diary.diary(for: targets[0]).entryCount == 0)
+        #expect(try f.diary.diary(for: target).entryCount == 0)
 
-        // A planned day copies its pending plan.
-        let fromPlan = try repo.copyToPlan(from: targets[1], to: [day("2026-11-15")], targetSlotID: "dinner")
+        // A planned day copies its pending plan, into the same slots.
+        let fromPlan = try repo.copyToPlan(from: target, slotID: "dinner", to: day("2026-11-15"))
         #expect(fromPlan.count == 1)
         #expect(try repo.pending(for: day("2026-11-15")).first?.mealSlotID == "dinner")
     }

@@ -15,29 +15,29 @@ struct WeightTrendTests {
         #expect(WeightTrend.alpha(days: 1) == 1)
     }
 
-    @Test func `EMA starts at the first weigh-in and moves by alpha`() {
-        let weights: [LocalDay: Double] = [day("2026-11-01"): 80, day("2026-11-02"): 84, day("2026-11-03"): 76]
-        let trend = WeightTrend.ema(weights, through: day("2026-11-03"), alpha: 0.25)
+    @Test func `trend starts at the first weigh-in and moves by alpha`() {
+        let weights: [LocalDay: Double] = [day("2026-11-01"): 80, day("2026-11-02"): 80.8, day("2026-11-03"): 80.4]
+        let trend = WeightTrend.trendByDay(weights, through: day("2026-11-03"), alpha: 0.25)
         #expect(trend[day("2026-11-01")] == 80)
-        #expect(trend[day("2026-11-02")] == 81) // 80 + 0.25 × 4
-        #expect(trend[day("2026-11-03")] == 79.75) // 81 + 0.25 × −5
+        #expect(close(trend[day("2026-11-02")], 80.2)) // 80 + 0.25 × 0.8
+        #expect(close(trend[day("2026-11-03")], 80.25)) // 80.2 + 0.25 × 0.2
         #expect(trend.count == 3)
     }
 
     @Test func `missing days carry the trend forward`() {
-        let weights: [LocalDay: Double] = [day("2026-11-01"): 80, day("2026-11-04"): 88]
-        let trend = WeightTrend.ema(weights, through: day("2026-11-06"), alpha: 0.25)
+        let weights: [LocalDay: Double] = [day("2026-11-01"): 80, day("2026-11-04"): 81]
+        let trend = WeightTrend.trendByDay(weights, through: day("2026-11-06"), alpha: 0.25)
         #expect(trend[day("2026-11-02")] == 80)
         #expect(trend[day("2026-11-03")] == 80)
         // Three days after the previous weigh-in: moved by 1 − 0.75³ = 57.8 % of the difference, not 25 %.
-        #expect(close(trend[day("2026-11-04")], 80 + (1 - 0.421875) * 8))
-        #expect(close(trend[day("2026-11-06")], 84.625))
+        #expect(close(trend[day("2026-11-04")], 80 + (1 - 0.421875) * 1))
+        #expect(close(trend[day("2026-11-06")], 80.578125))
         #expect(trend[day("2026-10-31")] == nil)
     }
 
-    @Test func `EMA of nothing or of future days is empty`() {
-        #expect(WeightTrend.ema([:], through: day("2026-11-01")).isEmpty)
-        #expect(WeightTrend.ema([day("2026-11-05"): 80], through: day("2026-11-01")).isEmpty)
+    @Test func `trend of nothing or of future days is empty`() {
+        #expect(WeightTrend.trendByDay([:], through: day("2026-11-01")).isEmpty)
+        #expect(WeightTrend.trendByDay([day("2026-11-05"): 80], through: day("2026-11-01")).isEmpty)
     }
 
     @Test func `a constant weight has a constant trend`() {
@@ -45,7 +45,7 @@ struct WeightTrendTests {
         for offset in 0 ..< 20 {
             weights[day("2026-11-20").adding(days: -offset)] = 75.5
         }
-        let trend = WeightTrend.ema(weights, through: day("2026-11-20"))
+        let trend = WeightTrend.trendByDay(weights, through: day("2026-11-20"))
         #expect(trend.values.allSatisfy { close($0, 75.5) })
     }
 
@@ -57,13 +57,12 @@ struct WeightTrendTests {
                 day: day("2026-11-01").adding(days: offset),
                 kg: 90 - Double(offset),
                 bodyFatPct: nil,
-                isManual: false,
             ))
         }
         let summary = try #require(WeightTrend.summary(weights, today: day("2026-11-10")))
         #expect(summary.latestKg == 81)
         #expect(summary.latest.day == day("2026-11-10"))
-        let trend = WeightTrend.ema(Dictionary(uniqueKeysWithValues: weights.map { ($0.day, $0.kg!) }), through: day("2026-11-10"))
+        let trend = WeightTrend.trendByDay(WeightTrend.samples(weights), through: day("2026-11-10"))
         #expect(summary.trendKg == trend[day("2026-11-10")])
         let expected = try #require(trend[day("2026-11-10")]) - #require(trend[day("2026-11-03")])
         #expect(close(summary.trendChange7d, expected))
@@ -71,14 +70,14 @@ struct WeightTrendTests {
     }
 
     @Test func `summary without a week of history has no change`() throws {
-        let weights = [DayWeight(day: day("2026-11-08"), kg: 80, bodyFatPct: nil, isManual: true)]
+        let weights = [DayWeight(day: day("2026-11-08"), kg: 80, bodyFatPct: nil)]
         let summary = try #require(WeightTrend.summary(weights, today: day("2026-11-10")))
         #expect(summary.trendKg == 80)
         #expect(summary.trendChange7d == nil)
         #expect(WeightTrend.summary([], today: day("2026-11-10")) == nil)
         // Body fat only: no weight to summarize.
         #expect(WeightTrend.summary(
-            [DayWeight(day: day("2026-11-08"), kg: nil, bodyFatPct: 18, isManual: false)],
+            [DayWeight(day: day("2026-11-08"), kg: nil, bodyFatPct: 18)],
             today: day("2026-11-10"),
         ) == nil)
     }
@@ -99,9 +98,9 @@ struct WeightReconcilerTests {
         ]
         let days = WeightReconciler.daily(health: health, manual: manual, calendar: zagreb)
         #expect(days.map(\.day) == [day("2026-11-08"), day("2026-11-09")])
-        #expect(days[0] == DayWeight(day: day("2026-11-08"), kg: 81, bodyFatPct: 19, isManual: false))
+        #expect(days[0] == DayWeight(day: day("2026-11-08"), kg: 81, bodyFatPct: 19))
         // Latest entered manual of the day; body fat falls back to Health's when the manual entries have none.
-        #expect(days[1] == DayWeight(day: day("2026-11-09"), kg: 80.2, bodyFatPct: 18.5, isManual: true))
+        #expect(days[1] == DayWeight(day: day("2026-11-09"), kg: 80.2, bodyFatPct: 18.5))
         // Without entry times, the later measurement counts as entered later.
         let plain = manual.map { ManualWeight(measuredAt: $0.measuredAt, kg: $0.kg) }
         #expect(WeightReconciler.daily(health: [], manual: plain, calendar: zagreb).first?.kg == 81.2)
@@ -120,7 +119,7 @@ struct WeightReconcilerTests {
         let health = [DailyHealthMetrics(day: day("2026-11-09"), bodyFatPct: 19)]
         let days = WeightReconciler.daily(health: health, manual: manual, calendar: zagreb)
         // The 00:30 entry was made last and wins; its missing body fat comes from the other manual entry.
-        #expect(days == [DayWeight(day: day("2026-11-09"), kg: 80, bodyFatPct: 17, isManual: true)])
+        #expect(days == [DayWeight(day: day("2026-11-09"), kg: 80, bodyFatPct: 17)])
         // 00:30 in Zagreb is still Nov 8 in New York.
         let ny = WeightReconciler.daily(health: [], manual: [manual[0]], calendar: HealthFixtures.newYork)
         #expect(ny.map(\.day) == [day("2026-11-08")])
@@ -150,7 +149,6 @@ struct WeightReconcilerTests {
         let manual = [ManualWeight(measuredAt: time("2026-11-10 07:00", zagreb), kg: 79, bodyFatPct: 17)]
         let days = WeightReconciler.daily(health: rows, manual: manual, calendar: zagreb)
         #expect(days.map(\.kg) == [81, 79])
-        #expect(days.map(\.isManual) == [false, true])
     }
 }
 

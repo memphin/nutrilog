@@ -127,8 +127,7 @@ public struct OpenFoodFactsSearchHTTPClient: OpenFoodFactsSearchClient {
         now: @escaping @Sendable () -> Date = { Date() },
         sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) },
     ) {
-        let contact = contact.trimmingCharacters(in: .whitespacesAndNewlines)
-        userAgent = contact.isEmpty ? "Vitalion/\(appVersion)" : "Vitalion/\(appVersion) (\(contact))"
+        userAgent = OpenFoodFactsHTTPClient.userAgent(contact: contact, appVersion: appVersion)
         self.baseURL = baseURL
         self.pageSize = min(max(pageSize, 1), 100)
         self.transport = transport
@@ -160,20 +159,9 @@ public struct OpenFoodFactsSearchHTTPClient: OpenFoodFactsSearchClient {
             guard let later = throttle.claim(slot, now: now()) else { break }
             slot = later
         }
-        let data: Data
-        let response: HTTPURLResponse
-        do {
-            (data, response) = try await transport.data(for: request(query: query))
-        } catch let error as URLError {
-            if error.code == .cancelled {
-                throw CancellationError()
-            }
-            throw Self.error(error)
-        } catch is CancellationError {
-            throw CancellationError()
-        } catch {
-            throw OpenFoodFactsError.network(.unknown)
-        }
+        let (data, response) = try await transport.classifiedData(for: request(query: query))
+            .mapError(Self.error)
+            .get()
 
         switch response.statusCode {
         case 200 ..< 300:
@@ -221,8 +209,8 @@ public struct OpenFoodFactsSearchHTTPClient: OpenFoodFactsSearchClient {
         return draft
     }
 
-    private static func error(_ error: URLError) -> OpenFoodFactsError {
-        switch HTTPFailure.classify(error) {
+    private static func error(_ failure: HTTPFailure) -> OpenFoodFactsError {
+        switch failure {
         case .offline, .connectionDropped: .offline
         case .timedOut: .timedOut
         case let .other(code): .network(code)

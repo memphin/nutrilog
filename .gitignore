@@ -3,9 +3,6 @@ Config/Secrets.xcconfig
 *.mobileprovision
 *.p12
 *.p8
-fastlane/report.xml
-fastlane/*.ipa
-fastlane/*.dSYM.zip
 
 # Xcode
 build/
@@ -41,5 +38,3 @@ __pycache__/
 # Generated bundled index is committed on purpose:
 !Resources/FoodIndex/bundled_foods.sqlite
 
-# Local-only originals (pre-scaffold docs and zip)
-archive/
