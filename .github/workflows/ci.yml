@@ -5,7 +5,14 @@ on:
     branches: [main]
     tags: ["v*"]  # a version tag also runs the TestFlight job (docs/RELEASING.md)
   pull_request:
+    # `labeled`: adding the `run-tests` label to a PR starts a run that includes the build & test jobs.
+    types: [opened, synchronize, reopened, labeled]
   workflow_dispatch:
+    inputs:
+      build-and-test:
+        description: Build & test the packages and the app (macOS runners)
+        type: boolean
+        default: false
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -46,6 +53,12 @@ jobs:
   packages:
     name: Swift packages — build & test (${{ matrix.group.name }})
     runs-on: macos-26
+    # Temporarily opt-in to save macOS runner time: runs for release tags (TestFlight needs it), for PRs labelled
+    # `run-tests`, and for manual runs with "Build & test" ticked. Skipped jobs count as passed for required checks.
+    if: >-
+      startsWith(github.ref, 'refs/tags/v') ||
+      (github.event_name == 'workflow_dispatch' && inputs.build-and-test) ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'run-tests'))
     # Two jobs, not one per package: a run then takes 3 macOS runners instead of 8, so runs no longer wait for each
     # other's runners (the repo gets 5 macOS runners at a time). The packages that build GRDB go together.
     strategy:
@@ -114,6 +127,12 @@ jobs:
   app:
     name: iOS app — build & test (simulator)
     runs-on: macos-26
+    # Temporarily opt-in to save macOS runner time: runs for release tags (TestFlight needs it), for PRs labelled
+    # `run-tests`, and for manual runs with "Build & test" ticked. Skipped jobs count as passed for required checks.
+    if: >-
+      startsWith(github.ref, 'refs/tags/v') ||
+      (github.event_name == 'workflow_dispatch' && inputs.build-and-test) ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'run-tests'))
     # No `needs: packages`: runs alongside the package jobs instead of waiting for them.
     env:
       DERIVED_DATA: ${{ github.workspace }}/DerivedData
@@ -189,6 +208,20 @@ jobs:
       - name: Shut down the simulator
         if: always()
         run: xcrun simctl shutdown all || true
+
+  # The one required check for build & test (branch protection): a skipped matrix job never reports its per-group
+  # checks, so requiring those would block every PR without the `run-tests` label. Passes when both jobs passed or
+  # were skipped, fails otherwise.
+  build-and-test:
+    name: Build & test
+    if: always()
+    needs: [packages, app]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check build & test results
+        run: |
+          echo "packages: ${{ needs.packages.result }}, app: ${{ needs.app.result }}"
+          [[ "${{ needs.packages.result }}" =~ ^(success|skipped)$ && "${{ needs.app.result }}" =~ ^(success|skipped)$ ]]
 
   # Archives, signs (automatic, cloud-managed, via an App Store Connect API key: no certificates or profiles in the
   # repo) and uploads to TestFlight. Runs only for `v*` tags, after the tests passed. One-time setup and the secrets
