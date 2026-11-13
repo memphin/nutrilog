@@ -17,6 +17,7 @@ struct VitalionApp: App {
         // background and is delivered to this delegate.
         NotificationDelegate.install(environment: environment)
         environment.startHydrationReminders()
+        environment.refreshSupplementReminders()
         Self.deleteLegacyUSDAKey()
     }
 

@@ -68,11 +68,11 @@ struct LocalNotificationHydrationReminder: HydrationReminderScheduling {
 
     /// The `HYDRATION` category with its add-water action, which runs in the background (no app launch to the
     /// foreground). Registered at every launch, since iOS keeps categories only while the app runs, and with each
-    /// reminder. The app has no other category.
+    /// reminder. Registering replaces every category, so the supplement reminders' one is registered with it.
     static func registerCategory(actionTitle: String) {
         let add = UNNotificationAction(identifier: addActionIdentifier, title: actionTitle, options: [])
         let category = UNNotificationCategory(identifier: categoryIdentifier, actions: [add], intentIdentifiers: [], options: [])
-        UNUserNotificationCenter.current().setNotificationCategories([category])
+        UNUserNotificationCenter.current().setNotificationCategories([category, LocalNotificationSupplementReminder.category])
     }
 }
 

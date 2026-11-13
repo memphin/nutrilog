@@ -75,6 +75,10 @@ final class AppEnvironment {
     let hydrationReminder: any HydrationReminderScheduling
     /// Keeps the hydration reminder in line with today's drinks; nil when the database could not be opened.
     let hydrationReminderService: HydrationReminderService?
+    /// The opt-out supplement reminders (local notifications); a no-op in tests and previews.
+    let supplementReminder: any SupplementReminderScheduling
+    /// Plans the supplement reminders from the supplements and logged doses; nil when the database could not be opened.
+    let supplementReminderService: SupplementReminderService?
     /// Folder of the automatic local backups (FR-62); nil turns them off (tests, previews).
     let backupsDirectory: URL?
 
@@ -104,6 +108,9 @@ final class AppEnvironment {
         hydrationReminder: any HydrationReminderScheduling = NoHydrationReminder(),
         // Where the hydration reminder remembers its last plan across launches; nil keeps it in memory.
         hydrationReminderDefaults: UserDefaults? = nil,
+        supplementReminder: any SupplementReminderScheduling = NoSupplementReminder(),
+        // Where the supplement reminders remember snoozes across launches; nil keeps them in memory.
+        supplementReminderDefaults: UserDefaults? = nil,
         // Where the prep list's ticks are kept across launches; nil keeps them in memory.
         prepTickDefaults: UserDefaults? = nil,
         backupsDirectory: URL? = nil,
@@ -114,6 +121,7 @@ final class AppEnvironment {
         prepTicks = PrepTickStore(defaults: prepTickDefaults)
         self.checkInReminder = checkInReminder
         self.hydrationReminder = hydrationReminder
+        self.supplementReminder = supplementReminder
         self.backupsDirectory = backupsDirectory
         self.database = database
         self.config = config
@@ -140,10 +148,14 @@ final class AppEnvironment {
             hydrationReminderService = HydrationReminderService(
                 database: db, scheduler: hydrationReminder, clock: clock, defaults: hydrationReminderDefaults,
             )
+            supplementReminderService = SupplementReminderService(
+                database: db, scheduler: supplementReminder, clock: clock, defaults: supplementReminderDefaults,
+            )
         } else {
             healthSync = nil
             healthWrites = nil
             hydrationReminderService = nil
+            supplementReminderService = nil
         }
         self.imageLabeler = imageLabeler
         self.mealEstimator = mealEstimator
@@ -272,6 +284,7 @@ final class AppEnvironment {
         refreshToday()
         await healthSync?.refresh(force: true)
         refreshHydrationReminder() // the reminder's time of day may have moved
+        refreshSupplementReminders()
     }
 
     /// Re-reads the clock; returns true when the local day changed (the hydration reminder then plans the new day).
@@ -281,6 +294,7 @@ final class AppEnvironment {
         guard current != today else { return false }
         today = current
         refreshHydrationReminder()
+        refreshSupplementReminders()
         return true
     }
 
@@ -358,6 +372,7 @@ final class AppEnvironment {
         healthWrites?.reloadStoredSetting()
         reconcileCheckInReminder()
         refreshHydrationReminder()
+        refreshSupplementReminders()
         defer { widgetDataDidChange() }
         try reloadSettings()
         try applyFoodNameLanguage()
@@ -426,6 +441,8 @@ final class AppEnvironment {
             checkInReminder: LocalNotificationCheckInReminder(),
             hydrationReminder: LocalNotificationHydrationReminder(),
             hydrationReminderDefaults: .standard,
+            supplementReminder: LocalNotificationSupplementReminder(),
+            supplementReminderDefaults: .standard,
             prepTickDefaults: .standard,
             backupsDirectory: try? FileManager.default
                 .url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
@@ -476,6 +493,8 @@ enum SettingKey {
     static let hydrationBehindMarginMl = "hydrationBehindMarginMl"
     /// Bool: hydration reminder notifications are on; missing means off.
     static let hydrationRemindersEnabled = "hydrationRemindersEnabled"
+    /// Bool: supplement reminder notifications are on; missing means on (each supplement also has its own switch).
+    static let supplementRemindersEnabled = "supplementRemindersEnabled"
 }
 
 /// kcal or kJ for display (Settings → Units). Storage is always kcal.
@@ -519,6 +538,7 @@ enum EnergyUnit: String, CaseIterable, Identifiable {
             labelPhotos: LabelPhotoStore? = nil,
             checkInReminder: (any CheckInReminderScheduling)? = nil,
             hydrationReminder: (any HydrationReminderScheduling)? = nil,
+            supplementReminder: (any SupplementReminderScheduling)? = nil,
             backupsDirectory: URL? = nil,
             appFoodNameLanguage: FoodNameLanguage? = nil,
         ) -> AppEnvironment {
@@ -541,6 +561,7 @@ enum EnergyUnit: String, CaseIterable, Identifiable {
                 offSearch: StubOpenFoodFactsSearchClient(),
                 checkInReminder: checkInReminder ?? NoCheckInReminder(),
                 hydrationReminder: hydrationReminder ?? NoHydrationReminder(),
+                supplementReminder: supplementReminder ?? NoSupplementReminder(),
                 backupsDirectory: backupsDirectory,
                 appFoodNameLanguage: appFoodNameLanguage
                     ?? FoodNameLanguage(localization: Bundle.main.preferredLocalizations.first),
@@ -585,6 +606,32 @@ enum EnergyUnit: String, CaseIterable, Identifiable {
             insertSampleHistory(oats: oats, milk: milk)
             insertSamplePlan(oats: oats, milk: milk)
             insertSampleCaffeine()
+            insertSampleSupplements()
+        }
+
+        /// A morning and an evening supplement (the morning one taken) and an as-needed painkiller.
+        private func insertSampleSupplements() {
+            guard let supplements else { return }
+            let d3 = try? supplements.save(Supplement(
+                name: "Vitamin D3", dose: "2000 IU", schedule: SupplementSchedule(times: [8 * 60]), startDay: today.adding(days: -30),
+            ))
+            _ = try? supplements.save(Supplement(
+                name: "Omega-3", dose: "2 caps", note: "with food", schedule: SupplementSchedule(times: [8 * 60]),
+                startDay: today.adding(days: -30),
+            ))
+            _ = try? supplements.save(Supplement(
+                name: "Magnesium", dose: "400 mg", schedule: SupplementSchedule(times: [21 * 60]), startDay: today.adding(days: -30),
+            ))
+            _ = try? supplements.save(Supplement(
+                name: "Ibuprofen", dose: "400 mg", schedule: .asNeeded, startDay: today.adding(days: -30),
+            ))
+            if let d3 {
+                let slot = SupplementSlot(day: today, minute: 8 * 60)
+                try? supplements.markTaken(
+                    [SupplementDoseKey(supplementID: d3.id, slot: slot)],
+                    at: slot.date(calendar: .autoupdatingCurrent).addingTimeInterval(12 * 60),
+                )
+            }
         }
 
         /// A meal plan for the coming days: tonight's dinner, and the same prepped lunch for the rest of the week.

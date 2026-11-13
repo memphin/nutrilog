@@ -137,6 +137,8 @@ private struct DiaryContent: View {
                     }
                 }
 
+                DiarySupplementsSection(model: model)
+
                 Section("Notes") {
                     Button {
                         showNoteEditor = true
@@ -173,6 +175,7 @@ private struct DiaryContent: View {
         .task(id: model.day) { await model.observeTarget() }
         .task(id: model.day) { await model.observeTraining() }
         .task(id: model.day) { await model.observePlan() }
+        .task(id: model.day) { await model.observeSupplements() }
         .task(id: model.day) { model.reloadEstimate() }
         .onChange(of: environment.dataGeneration) { model.dataDidChangeExternally() }
         // The history calendar (or anything else) asked for a day.

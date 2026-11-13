@@ -238,12 +238,12 @@ public struct CaffeineDrink: Hashable, Sendable, Identifiable {
     public let name: String
     /// Caffeine per serving in mg.
     public let mg: Double
-    /// The serving the amount refers to, in ml.
-    public let servingMl: Double
+    /// The serving the amount refers to, in ml; nil for what isn't a drink (a pill), which adds no fluid.
+    public let servingMl: Double?
     /// SF Symbol for the UI.
     public let symbolName: String
 
-    public init(id: String, name: String, mg: Double, servingMl: Double, symbolName: String) {
+    public init(id: String, name: String, mg: Double, servingMl: Double?, symbolName: String) {
         self.id = id
         self.name = name
         self.mg = mg
@@ -291,7 +291,15 @@ public struct CaffeineDrink: Hashable, Sendable, Identifiable {
     )
 
     /// Every preset, in display order.
-    public static let all: [CaffeineDrink] = [espresso, filterCoffee, blackTea, greenTea, cola, colaZero, energyDrink, matcha]
+    /// A caffeine tablet (200 mg, the common strength). Not a drink: it adds no fluid.
+    public static let caffeinePill = CaffeineDrink(
+        id: "caffeine_pill", name: String(localized: "Caffeine pill", bundle: .module),
+        mg: 200, servingMl: nil, symbolName: "pill.fill",
+    )
+
+    public static let all: [CaffeineDrink] = [
+        espresso, filterCoffee, blackTea, greenTea, cola, colaZero, energyDrink, matcha, caffeinePill,
+    ]
 
     /// The quick-add buttons shown until the user picks their own.
     public static let defaultQuickAddIDs: [String] = [espresso.id, filterCoffee.id, blackTea.id, energyDrink.id]
