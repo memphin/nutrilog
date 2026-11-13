@@ -210,9 +210,9 @@ Unit tests cover: perfect-logging synthetic data (recovers the true TDEE within 
 
 ### 5.6 Analytics & history (SHOULD)
 - FR-50 Calendar/history view with per-day kcal and adherence color.
-- FR-51 Charts (Swift Charts): weight (raw + trend), daily kcal vs. target, macro distribution, steps, sleep — 1w / 1m / 3m / 1y.
+- FR-51 Charts (Swift Charts): weight (raw + trend), daily kcal vs. target, macro distribution, steps, sleep — 1w / 1m / 3m / 1y. Each opens from its Today tile's detail (macros from the calories tile); Trends has no chart list.
 - FR-52 Weekly report: averages, best/worst day, intake vs. estimated expenditure.
-- FR-53 Correlations (COULD, done): Trends → Correlations over 1 month / 3 months / 6 months (default 3 months), from the same per-day stats as the charts. Four cards — hydration → next-day HRV, hydration → that night's sleep, weekly steps → weight-trend change, weekly calories → weight-trend change — each with a plain sentence (mean of the top third by the first measure against the bottom third, e.g. "On days you drank 2.5 L or more, your HRV the next day was 6 ms higher than on days under 1.8 L"), a strength from Spearman's rank correlation (|ρ| < 0.1 no clear link, < 0.3 weak, < 0.5 moderate, else strong; positive or negative) and the sample size; a detail with a scatter plot and least-squares line; and "Compare any two" of calories, protein, carbs, fat, steps, total and active energy, sleep, hydration, HRV, resting heart rate and weight-trend change, same day or next day, daily or weekly (weight-trend change is weekly only). Today is left out, and intake counts only on fully logged days (≥ 3 entries or marked complete, as §5.4.1). A week counts when it lies wholly in the period, starts on the user's first weekday, has ≥ 4 days with each value and a trend on the day before it and on its last day (change = kg/week). A strength needs ≥ 14 days or ≥ 6 weeks with both values; below that the card says how many are needed. Every view notes that a link doesn't prove cause.
+- FR-53 Correlations (COULD): removed in 1.13 (owner request).
 
 ### 5.7 Data portability (MUST)
 - FR-60 Export all data as JSON (full fidelity, versioned schema) and CSV (diary, weights); share sheet / Files.
@@ -427,6 +427,7 @@ All blocking decisions are made (D1–D9). The following defaults may be changed
 ---
 
 *Change log*
+- 1.13 — owner request: Trends no longer lists the charts (each opens from its Today tile, FR-51); correlations (FR-53) removed entirely (2026-11-13)
 - 1.12 — after app 1.2.0, removed: Settings → Dashboard (the dashboard is edited in place via Edit on Today); the caffeine bedtime picker (the bedtime is set in Hydration); the check-in entries in Settings; "Plan for later today" (only future days are planned); repeat planning ("plan for the next days"); the "Copy from yesterday" menu items (copy from a date remains); the barcode resolution diagnostics screen and its scan log (migration 016 drops it); the user-entered USDA key (build-time only; a key saved earlier is deleted from the Keychain on launch); the tiles' detail "Last 14 days" lists and inline weigh-in lists (2026-11-13)
 - 1.11 — owner request: Settings → Food names (FR-74) — built-in food names in English or Croatian apart from the app language; saved copies and past diary and planned entries switch with it unless renamed, new Open Food Facts products take their Croatian name in Croatian (2026-11-12)
 - 1.10 — FR-53 Correlations done (owner-approved design): four insight cards on Trends (hydration → next-day HRV and sleep, steps and calories → weekly weight-trend change) and "Compare any two", with Spearman's rank correlation, a top-against-bottom-third sentence and a scatter plot with a least-squares line; replaces the earlier "sleep vs. next-day intake, steps vs. weight trend" scope, which "Compare any two" still covers (2026-11-12)
