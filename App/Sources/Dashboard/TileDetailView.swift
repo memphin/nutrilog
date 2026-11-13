@@ -17,7 +17,7 @@ struct TileDetailView: View {
         case .water:
             HydrationDetailView(model: model)
         case .weeklyReport:
-            WeeklyReportView(weekStart: model.lastWeekStart)
+            WeeklyReportView(weekStart: model.thisWeekStart)
         default:
             MetricDetailView(tile: tile, model: model)
         }

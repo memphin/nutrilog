@@ -107,14 +107,14 @@ private struct DashboardContent: View {
             model.reloadSettings()
             model.undo.dismiss()
         }
-        .task(id: LastWeekKey(
+        .task(id: ThisWeekKey(
             today: environment.today, generation: environment.dataGeneration, unit: environment.energyUnit,
             synced: environment.healthSync?.lastSyncedAt,
-        )) { model.reloadLastWeek() }
+        )) { model.reloadThisWeek() }
     }
 
-    /// What last week's tile is re-read on: diary edits, a new day, the energy unit, Health syncs (weights, steps).
-    private struct LastWeekKey: Hashable {
+    /// What this week's tile is re-read on: diary edits, a new day, the energy unit, Health syncs (weights, steps).
+    private struct ThisWeekKey: Hashable {
         var today: LocalDay
         var generation: Int
         var unit: EnergyUnit
@@ -175,7 +175,7 @@ struct DashboardTileView: View {
 
     private func spokenLabel(state: TileState, now: Date) -> String {
         if tile == .weeklyReport {
-            return LastWeekTileText.spoken(model.lastWeek, unit: model.energyUnit)
+            return ThisWeekTileText.spoken(model.thisWeek, unit: model.energyUnit)
         }
         return model.snapshot.accessibilityLabel(of: tile, state: state, energyUnit: model.energyUnit, now: now)
     }
@@ -337,13 +337,13 @@ private struct TileContent: View {
                 status: model.caffeineStatus(at: now), drinks: snapshot.caffeineSettings.quickAddDrinks,
             ) { model.addCaffeine(drink: $0) }
         case .weeklyReport:
-            LastWeekTileContent(report: model.lastWeek, unit: model.energyUnit)
+            ThisWeekTileContent(report: model.thisWeek, unit: model.energyUnit)
         }
     }
 }
 
-/// Last week on Today: the average intake per logged day, the average target and the weight trend's change.
-private struct LastWeekTileContent: View {
+/// This week on Today: the average intake per logged day, the average target and the weight trend's change.
+private struct ThisWeekTileContent: View {
     let report: WeeklyReport?
     let unit: EnergyUnit
 
@@ -369,8 +369,8 @@ private struct LastWeekTileContent: View {
     }
 }
 
-/// VoiceOver for the Last week tile: "Last week, 1,950 calories a day, target 2,100, weight −0.3 kg".
-enum LastWeekTileText {
+/// VoiceOver for the This week tile: "This week, 1,950 calories a day, target 2,100, weight −0.3 kg".
+enum ThisWeekTileText {
     static func spoken(_ report: WeeklyReport?, unit: EnergyUnit) -> String {
         let title = DashboardTile.weeklyReport.title
         guard let report else { return title }

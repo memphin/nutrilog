@@ -4,7 +4,7 @@ import Persistence
 
 /// The app's tabs.
 enum AppTab: String, Hashable, CaseIterable {
-    case today, diary, training, foods, settings
+    case today, diary, foods, training, settings
 }
 
 extension AppEnvironment {

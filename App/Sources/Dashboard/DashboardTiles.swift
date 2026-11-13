@@ -36,7 +36,7 @@ enum DashboardTile: String, CaseIterable, Codable, Identifiable, Hashable {
     case totalEnergy
     case restingHeartRate
     case hrv
-    /// Last week's averages; opens the weekly report.
+    /// This week's averages so far; opens the weekly report.
     case weeklyReport
 
     var id: String {
@@ -55,7 +55,7 @@ enum DashboardTile: String, CaseIterable, Codable, Identifiable, Hashable {
         case .hrv: String(localized: "HRV", comment: "Heart rate variability, tile title")
         case .water: String(localized: "Hydration")
         case .caffeine: String(localized: "Caffeine")
-        case .weeklyReport: String(localized: "Last week")
+        case .weeklyReport: String(localized: "This week")
         }
     }
 

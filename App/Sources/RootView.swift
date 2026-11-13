@@ -104,11 +104,11 @@ struct RootView: View {
             Tab("Diary", systemImage: "book.pages", value: AppTab.diary) {
                 DiaryView()
             }
-            Tab("Training", systemImage: "dumbbell", value: AppTab.training) {
-                TrainingView()
-            }
             Tab(FoodsListView.title, systemImage: "fork.knife", value: AppTab.foods) {
                 FoodsListView()
+            }
+            Tab("Training", systemImage: "dumbbell", value: AppTab.training) {
+                TrainingView()
             }
             Tab("Settings", systemImage: "gearshape", value: AppTab.settings) {
                 SettingsView()
