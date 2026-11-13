@@ -46,7 +46,7 @@ struct SupplementsListView: View {
     var body: some View {
         List {
             Section {
-                Toggle(isOn: Binding(get: { remindersOn }, set: setReminders)) {
+                Toggle(isOn: Binding(get: { remindersOn }, set: { on in setReminders(on) })) {
                     Label("Reminders", systemImage: "bell")
                 }
             } footer: {
@@ -75,7 +75,9 @@ struct SupplementsListView: View {
                 }
                 .onDelete { offsets in
                     let ids = offsets.map { active[$0].id }
-                    perform { repo in for id in ids { try repo.delete(id: id) } }
+                    perform { repo in for id in ids {
+                        try repo.delete(id: id)
+                    } }
                 }
                 Button {
                     editing = EditorTarget(supplement: nil)
@@ -91,7 +93,9 @@ struct SupplementsListView: View {
                     }
                     .onDelete { offsets in
                         let ids = offsets.map { inactive[$0].id }
-                        perform { repo in for id in ids { try repo.delete(id: id) } }
+                        perform { repo in for id in ids {
+                            try repo.delete(id: id)
+                        } }
                     }
                 }
             }
@@ -109,7 +113,7 @@ struct SupplementsListView: View {
         .task {
             remindersOn = environment.supplementRemindersEnabled
             if remindersOn {
-                permissionDenied = !(await environment.supplementReminder.isAuthorized()) && hasReminded
+                permissionDenied = await !(environment.supplementReminder.isAuthorized()) && hasReminded
             }
         }
         .errorAlert($errorMessage, title: "Supplements")

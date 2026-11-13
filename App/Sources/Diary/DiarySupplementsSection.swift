@@ -114,7 +114,9 @@ struct SupplementDoseRow: View {
 
     var body: some View {
         HStack(spacing: NL.Spacing.m) {
-            Button(action: toggle) {
+            Button {
+                toggle()
+            } label: {
                 Image(systemName: symbol)
                     .font(.title2)
                     .foregroundStyle(color)
