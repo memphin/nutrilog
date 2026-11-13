@@ -89,7 +89,7 @@ jobs:
             JSON=$(cd "Packages/$package" && swift test --show-codecov-path)
             PCT=$(jq '[.data[0].files[] | select(.filename | test("/Sources/"))] | (map(.summary.lines.covered) | add) * 100 / (map(.summary.lines.count) | add) | floor' "$JSON")
             echo "$package line coverage: ${PCT}%" | tee -a "$GITHUB_STEP_SUMMARY"
-            # Core holds the nutrient/TDEE/date math: keep it ≥ 70 % (NFR-7, backlog #16).
+            # Core holds the nutrient/TDEE/date math: keep it ≥ 70 % (NFR-7).
             if [ "$package" = "Core" ] && [ "$PCT" -lt 70 ]; then
               echo "::error::Core coverage ${PCT}% is below 70%"
               failed+=("Core coverage")

@@ -10,6 +10,10 @@ Used by the TestFlight job: `snapshot STATE.json` before the archive lists the t
 CI machine). Needs `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_KEY_PATH`, like `versions.py`; never exits with an error.
 See `docs/RELEASING.md`, Troubleshooting.
 
+## apply_translations.py
+Writes Croatian translations into a String Catalog: `python3 tools/apply_translations.py <catalog.xcstrings> <translations.json>`
+(see `CONTRIBUTING.md`, Localization).
+
 ## build_food_index.py
 Generates `Resources/FoodIndex/bundled_foods.sqlite` — the offline generic-food index (USDA FoodData Central *Foundation* + *SR Legacy*, filtered to a curated allowlist of common whole foods). CC0 data; the output is committed.
 
