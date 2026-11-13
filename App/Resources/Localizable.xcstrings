@@ -6318,16 +6318,6 @@
         }
       }
     },
-    "Last week" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prošli tjedan"
-          }
-        }
-      }
-    },
     "Leave empty to use your usual amount." : {
       "localizations" : {
         "hr" : {
