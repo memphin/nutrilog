@@ -96,7 +96,6 @@ struct HealthSettingsView: View {
                     Task { await environment.healthSync?.refresh(force: true) }
                 }
                 .disabled(isSyncing)
-                Button("What Vitalion reads and writes") { showOnboarding = true }
             } else {
                 Button("Connect Apple Health") { showOnboarding = true }
             }
