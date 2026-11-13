@@ -11331,16 +11331,6 @@
         }
       }
     },
-    "What Vitalion reads and writes" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Što Vitalion čita i zapisuje"
-          }
-        }
-      }
-    },
     "When" : {
       "localizations" : {
         "hr" : {
