@@ -176,6 +176,26 @@ enum ChartBuilder {
         }
     }
 
+    /// Top of the Y axis for bar charts: the tallest mark (stacked bars summed, target, average and goal lines
+    /// included) rounded up to the next of 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8 × a power of ten — so a 21,805-step peak
+    /// tops out at 25,000 instead of the automatic 30,000. Nil when nothing is plotted.
+    static func barAxisTop(_ series: ChartSeries, goal: Double?) -> Double? {
+        let marks = series.points.flatMap { point -> [Double?] in
+            let macros = [point.proteinG, point.carbsG, point.fatG].compactMap(\.self)
+            return [
+                point.value,
+                point.reference,
+                macros.isEmpty ? nil : macros.reduce(0, +),
+                point.resting.flatMap { resting in point.active.map { resting + $0 } },
+            ]
+        }
+        let tallest = (marks + [series.average, goal]).compactMap(\.self).max() ?? 0
+        guard tallest > 0 else { return nil }
+        let magnitude = pow(10, floor(log10(tallest)))
+        let step = [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].first { $0 * magnitude >= tallest } ?? 10
+        return step * magnitude
+    }
+
     static func unitLabel(_ metric: ChartMetric, unit: EnergyUnit) -> String {
         switch metric {
         case .weight: "kg"
