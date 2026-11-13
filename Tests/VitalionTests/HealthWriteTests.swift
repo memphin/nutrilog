@@ -573,12 +573,12 @@ struct HealthObserverTests {
         let (env, _, observer) = makeEnvironment(authorized: false)
         let sync = try #require(env.healthSync)
         await sync.startObserving()
-        #expect(!sync.isObserving)
+        #expect(!observer.isObserving)
         #expect(observer.snapshot.startCount == 0)
 
         try await sync.connect()
         await sync.waitForSync()
-        #expect(sync.isObserving)
+        #expect(observer.isObserving)
         #expect(observer.snapshot.observedTypes == HealthReadType.observedTypes)
         #expect(observer.snapshot.backgroundDeliveryTypes == Set(HealthReadType.observedTypes))
         await sync.startObserving() // idempotent
@@ -639,7 +639,7 @@ struct HealthObserverTests {
         #expect(sync.observerRefreshCount < 1 + 9)
 
         await sync.stopObserving()
-        #expect(!sync.isObserving)
+        #expect(!observer.isObserving)
         #expect(observer.fire(.bodyMass) == nil) // queries stopped
     }
 

@@ -8,9 +8,6 @@ import SwiftUI
 // goal (`DashboardData.hydrationGoalMl(on:)`), boosted when that day was a training day.
 
 extension DashboardSnapshot {
-    /// The tiles that have a streak.
-    static let streakTiles: [DashboardTile] = [.steps, .sleep, .water]
-
     /// The tile's streak; nil for tiles without a daily goal.
     func streak(for tile: DashboardTile) -> Streak? {
         streaks[tile]

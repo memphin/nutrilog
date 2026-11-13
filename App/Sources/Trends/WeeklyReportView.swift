@@ -70,13 +70,7 @@ struct WeeklyReportView: View {
             week: weekStart ?? currentWeek, today: environment.today, generation: environment.dataGeneration,
             unit: environment.energyUnit, synced: environment.healthSync?.lastSyncedAt,
         )) { load() }
-        .alert("Weekly report", isPresented: Binding(get: { errorMessage != nil }, set: {
-            if !$0 {
-                errorMessage = nil
-            }
-        })) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(errorMessage ?? "") }
+        .errorAlert($errorMessage, title: "Weekly report")
     }
 
     private struct Key: Hashable {

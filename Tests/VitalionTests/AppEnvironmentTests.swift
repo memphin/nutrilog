@@ -32,7 +32,10 @@ struct AppEnvironmentTests {
     }
 
     @Test func `the build-time key makes USDA available`() {
-        let env = AppEnvironment(database: .failed("unused"), config: AppConfig(usdaAPIKey: "build-key"), bundledIndex: nil)
+        let env = AppEnvironment(
+            database: .failed("unused"), config: AppConfig(usdaAPIKey: "build-key"), bundledIndex: nil,
+            openFoodFacts: StubOpenFoodFactsClient(), offSearch: StubOpenFoodFactsSearchClient(),
+        )
         #expect(env.usda.isAvailable)
     }
 

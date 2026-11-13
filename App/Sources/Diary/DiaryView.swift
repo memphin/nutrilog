@@ -258,15 +258,7 @@ private struct DiaryContent: View {
                 model.saveNote(text: text, isComplete: complete)
             }
         }
-        .alert("Diary", isPresented: Binding(get: { model.errorMessage != nil }, set: {
-            if !$0 {
-                model.errorMessage = nil
-            }
-        })) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(model.errorMessage ?? "")
-        }
+        .errorAlert($model.errorMessage, title: "Diary")
     }
 
     // MARK: Pieces
@@ -482,6 +474,8 @@ struct DaySummaryHeader: View {
     }
 }
 
-#Preview {
-    DiaryView().environment(AppEnvironment.preview(sampleData: true))
-}
+#if DEBUG
+    #Preview {
+        DiaryView().environment(AppEnvironment.preview(sampleData: true))
+    }
+#endif

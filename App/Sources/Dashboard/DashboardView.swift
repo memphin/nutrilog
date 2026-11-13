@@ -93,13 +93,7 @@ private struct DashboardContent: View {
                 TileDetailView(tile: tile, model: model)
             }
             .undoToast(model.undo)
-            .alert("Error", isPresented: Binding(get: { model.errorMessage != nil }, set: {
-                if !$0 {
-                    model.errorMessage = nil
-                }
-            })) {
-                Button("OK", role: .cancel) {}
-            } message: { Text(model.errorMessage ?? "") }
+            .errorAlert($model.errorMessage)
         }
         .task(id: environment.today) { await model.observe() }
         // A tap on the hydration reminder: show that tile's detail (also when Today opens because of it).
@@ -483,6 +477,8 @@ struct WaterTileContent: View {
     }
 }
 
-#Preview {
-    DashboardView().environment(AppEnvironment.preview(sampleData: true))
-}
+#if DEBUG
+    #Preview {
+        DashboardView().environment(AppEnvironment.preview(sampleData: true))
+    }
+#endif

@@ -148,13 +148,7 @@ struct MealLogSheet: View {
                     Button(target.planned ? "Plan" : "Log") { log() }.disabled(draft.logItems == nil)
                 }
             }
-            .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: {
-                if !$0 {
-                    errorMessage = nil
-                }
-            })) {
-                Button("OK", role: .cancel) {}
-            } message: { Text(errorMessage ?? "") }
+            .errorAlert($errorMessage)
         }
     }
 

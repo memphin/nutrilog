@@ -89,13 +89,7 @@ struct CaffeineSettingsView: View {
                 settings = CaffeineSettings.load(from: profiles)
             }
         }
-        .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: {
-            if !$0 {
-                errorMessage = nil
-            }
-        })) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(errorMessage ?? "") }
+        .errorAlert($errorMessage)
     }
 
     /// "5 h", "7.5 h".
@@ -149,6 +143,8 @@ struct CaffeineSettingsView: View {
     }
 }
 
-#Preview {
-    NavigationStack { CaffeineSettingsView() }.environment(AppEnvironment.preview())
-}
+#if DEBUG
+    #Preview {
+        NavigationStack { CaffeineSettingsView() }.environment(AppEnvironment.preview())
+    }
+#endif

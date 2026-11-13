@@ -41,11 +41,6 @@ struct DashboardData: Equatable {
         today.adding(days: -(Self.historyDays - 1)) ... today
     }
 
-    /// The days of the tiles' sparklines, today included.
-    var sparklineWindow: ClosedRange<LocalDay> {
-        today.adding(days: -(Sparkline.days - 1)) ... today
-    }
-
     /// Yesterday and today: the caffeine doses the curve needs.
     var caffeineWindow: ClosedRange<LocalDay> {
         today.adding(days: -1) ... today
@@ -128,14 +123,6 @@ enum HydrationTileText {
 struct SleepValue: Equatable {
     var asleepMin: Int?
     var inBedMin: Int?
-    var coreMin: Int?
-    var deepMin: Int?
-    var remMin: Int?
-    var awakeMin: Int?
-
-    var hasStages: Bool {
-        coreMin != nil || deepMin != nil || remMin != nil
-    }
 }
 
 /// Energy burned on one day: active (exercise, movement) plus resting (basal). The total is shown only when both are
@@ -285,10 +272,7 @@ struct DashboardSnapshot: Equatable {
     /// Last night (the night ending today).
     var sleep: SleepValue? {
         guard let metrics = todayMetrics, metrics.hasValue(.sleep) else { return nil }
-        return SleepValue(
-            asleepMin: metrics.sleepAsleepMin, inBedMin: metrics.sleepInBedMin, coreMin: metrics.sleepCoreMin,
-            deepMin: metrics.sleepDeepMin, remMin: metrics.sleepRemMin, awakeMin: metrics.sleepAwakeMin,
-        )
+        return SleepValue(asleepMin: metrics.sleepAsleepMin, inBedMin: metrics.sleepInBedMin)
     }
 
     func hasValue(_ tile: DashboardTile) -> Bool {

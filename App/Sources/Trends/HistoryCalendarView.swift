@@ -111,13 +111,7 @@ struct HistoryCalendarView: View {
         // Rebuilt when the day changes too, so a calendar left open overnight moves "today" along; and whenever the
         // training days change (a day's switch here or in the diary, Settings).
         .task(id: CalendarKey(today: environment.today, generation: environment.dataGeneration)) { await observe() }
-        .alert("History", isPresented: Binding(get: { errorMessage != nil }, set: {
-            if !$0 {
-                errorMessage = nil
-            }
-        })) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(errorMessage ?? "") }
+        .errorAlert($errorMessage, title: "History")
     }
 
     private struct CalendarKey: Hashable {
@@ -201,11 +195,8 @@ struct HistoryCalendarView: View {
 
     /// A day's "Training day" / "Not a training day": the observation rebuilds the months.
     private func toggleTraining(_ day: LocalDay) {
-        guard let repo = environment.trainingDays else { return }
-        do {
-            try repo.toggleTraining(on: day)
-        } catch {
-            errorMessage = String(localized: "Couldn't change the training day: \(error.localizedDescription)")
+        if let message = environment.toggleTrainingDay(day) {
+            errorMessage = message
         }
     }
 }

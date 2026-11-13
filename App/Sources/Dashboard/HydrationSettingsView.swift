@@ -31,13 +31,7 @@ struct HydrationSettingsView: View {
             load()
             await checkNotifications()
         }
-        .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: {
-            if !$0 {
-                errorMessage = nil
-            }
-        })) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(errorMessage ?? "") }
+        .errorAlert($errorMessage)
     }
 
     // MARK: Sections
@@ -324,6 +318,8 @@ private struct WaterQuickAddSizesSection: View {
     }
 }
 
-#Preview {
-    NavigationStack { HydrationSettingsView() }.environment(AppEnvironment.preview())
-}
+#if DEBUG
+    #Preview {
+        NavigationStack { HydrationSettingsView() }.environment(AppEnvironment.preview())
+    }
+#endif

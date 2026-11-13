@@ -72,13 +72,7 @@ struct FoodEditorView: View {
         } message: { presented in
             Text(FoodEditorModel.conflictMessage(presented) + "\n\n" + String(localized: "It will be removed from the other food."))
         }
-        .alert("Couldn't save", isPresented: Binding(get: { errorMessage != nil }, set: {
-            if !$0 {
-                errorMessage = nil
-            }
-        })) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(errorMessage ?? "") }
+        .errorAlert($errorMessage, title: "Couldn't save")
     }
 
     /// Asks before taking a barcode from another food (saving would otherwise fail on it), then saves.

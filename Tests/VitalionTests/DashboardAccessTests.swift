@@ -40,7 +40,6 @@ struct DashboardAccessTests {
         let model = DashboardModel(environment: env)
         await model.reloadAccess()
         #expect(sync.requestStatus == .shouldRequest)
-        #expect(sync.hasNewTypesToAllow)
         #expect(sync.isConnected)
         #expect(model.access == .requested)
         #expect(model.state(of: .steps) == .noData(HealthKitClient.noDataMessage))

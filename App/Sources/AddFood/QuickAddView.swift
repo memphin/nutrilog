@@ -100,13 +100,7 @@ struct QuickAddView: View {
                 }
             }
             .onAppear(perform: prefill)
-            .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: {
-                if !$0 {
-                    errorMessage = nil
-                }
-            })) {
-                Button("OK", role: .cancel) {}
-            } message: { Text(errorMessage ?? "") }
+            .errorAlert($errorMessage)
         }
         .presentationDetents([.medium, .large])
     }

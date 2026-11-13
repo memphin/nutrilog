@@ -113,11 +113,6 @@ final class HealthSyncService {
         requestStatus == .unnecessary || isBackfillComplete
     }
 
-    /// Connected, but Health has types the user was never asked about (added by an app update).
-    var hasNewTypesToAllow: Bool {
-        isBackfillComplete && requestStatus == .shouldRequest
-    }
-
     /// Re-reads whether Health would show the permission sheet.
     func reloadAuthorization() async {
         let status = await source.authorizationRequestStatus()
@@ -133,11 +128,6 @@ final class HealthSyncService {
         await reloadAuthorization()
         startSync(.full)
         await startObserving()
-    }
-
-    /// True while observer queries are registered.
-    var isObserving: Bool {
-        dispatcher != nil
     }
 
     /// Registers the observer queries and background delivery (launch, and after `connect`). Does nothing before the

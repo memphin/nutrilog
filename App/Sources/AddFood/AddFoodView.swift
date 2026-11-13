@@ -112,13 +112,8 @@ struct AddFoodView: View {
                         }
                     }
                     ForEach(foods) { food in
-                        Button { open(food) } label: {
-                            FoodRow(
-                                name: food.name, brand: food.brand, per100: food.per100, source: food.source,
-                                unit: environment.energyUnit, isLiquid: food.isLiquid,
-                            )
-                        }
-                        .buttonStyle(.plain)
+                        Button { open(.food(food)) } label: { FoodRow(food, unit: environment.energyUnit) }
+                            .buttonStyle(.plain)
                     }
                 } else {
                     Picker("Search in", selection: $scope) {
@@ -131,23 +126,11 @@ struct AddFoodView: View {
                     if scope == .online {
                         OnlineResultsView(model: online, text: query, unit: environment.energyUnit) { openOnline($0) }
                     } else {
-                        if results.isEmpty, !searchFailed {
-                            EmptyStateView(
-                                String(localized: "No matches"),
-                                systemImage: "magnifyingglass",
-                                message: String(localized: "Create the food to log it now, or search online."),
-                            )
-                            .listRowBackground(Color.clear)
-                        }
-                        ForEach(results) { result in
-                            Button { open(result) } label: {
-                                FoodRow(
-                                    name: result.name, brand: result.brand, per100: result.per100, source: result.source,
-                                    unit: environment.energyUnit, isLiquid: result.isLiquid,
-                                )
-                            }
-                            .buttonStyle(.plain)
-                        }
+                        LocalSearchResults(
+                            results: results, showsEmptyState: !searchFailed,
+                            emptyMessage: String(localized: "Create the food to log it now, or search online."),
+                            unit: environment.energyUnit,
+                        ) { open($0) }
                     }
                 }
             }
@@ -210,13 +193,7 @@ struct AddFoodView: View {
             .sheet(isPresented: $showQuickAdd) {
                 QuickAddView(mode: .create(slotID: target.slotID, day: target.day, planned: target.planned)) { dismiss() }
             }
-            .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: {
-                if !$0 {
-                    errorMessage = nil
-                }
-            })) {
-                Button("OK", role: .cancel) {}
-            } message: { Text(errorMessage ?? "") }
+            .errorAlert($errorMessage)
             .undoToast(undo)
         }
         .onChange(of: environment.dataGeneration) { undo.dismiss() }
@@ -309,16 +286,9 @@ struct AddFoodView: View {
     }
 
     private func runSearch() async {
-        let text = query
-        guard !text.trimmingCharacters(in: .whitespaces).isEmpty, let search = environment.search else {
-            results = []
-            searchFailed = false
-            return
-        }
-        try? await Task.sleep(for: .milliseconds(150)) // debounce typing
-        guard !Task.isCancelled else { return }
         do {
-            results = try search.search(text)
+            guard let found = try await LocalFoodSearch.results(for: query, in: environment) else { return }
+            results = found
             searchFailed = false
         } catch {
             results = []
@@ -327,13 +297,10 @@ struct AddFoodView: View {
         }
     }
 
-    private func open(_ food: Food) {
+    private func open(_ result: FoodSearchResult) {
+        guard let foods = environment.foods else { return }
         do {
-            guard let detail = try environment.foods?.detail(id: food.id) else {
-                errorMessage = String(localized: "\(food.name) is no longer available.")
-                return
-            }
-            path.append(detail)
+            try path.append(foods.detail(for: result))
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -349,20 +316,6 @@ struct AddFoodView: View {
             }
         } catch {
             errorMessage = error.localizedDescription
-        }
-    }
-
-    private func open(_ result: FoodSearchResult) {
-        switch result {
-        case let .food(food):
-            open(food)
-        case let .bundled(item):
-            do {
-                guard let foods = environment.foods else { return }
-                try open(foods.localCopy(of: item))
-            } catch {
-                errorMessage = error.localizedDescription
-            }
         }
     }
 }
@@ -384,6 +337,26 @@ struct FoodRow: View {
     let source: FoodSource
     let unit: EnergyUnit
     let isLiquid: Bool
+
+    init(name: String, brand: String?, per100: Nutrients, source: FoodSource, unit: EnergyUnit, isLiquid: Bool) {
+        self.name = name
+        self.brand = brand
+        self.per100 = per100
+        self.source = source
+        self.unit = unit
+        self.isLiquid = isLiquid
+    }
+
+    init(_ food: Food, unit: EnergyUnit) {
+        self.init(name: food.name, brand: food.brand, per100: food.per100, source: food.source, unit: unit, isLiquid: food.isLiquid)
+    }
+
+    init(_ result: FoodSearchResult, unit: EnergyUnit) {
+        self.init(
+            name: result.name, brand: result.brand, per100: result.per100, source: result.source, unit: unit,
+            isLiquid: result.isLiquid,
+        )
+    }
 
     var body: some View {
         HStack(alignment: .firstTextBaseline) {

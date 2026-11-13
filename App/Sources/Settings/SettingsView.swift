@@ -91,13 +91,7 @@ struct SettingsView: View {
                 sleepGoal = environment.profiles.map(SleepGoal.load(from:)) ?? SleepGoal.defaultMinutes
                 activeEnergyGoal = environment.profiles.map(ActiveEnergyGoal.load(from:)) ?? ActiveEnergyGoal.defaultKcal
             }
-            .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: {
-                if !$0 {
-                    errorMessage = nil
-                }
-            })) {
-                Button("OK", role: .cancel) {}
-            } message: { Text(errorMessage ?? "") }
+            .errorAlert($errorMessage)
         }
     }
 
@@ -204,13 +198,7 @@ struct MealSlotsEditor: View {
                 save()
             }
         }
-        .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: {
-            if !$0 {
-                errorMessage = nil
-            }
-        })) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(errorMessage ?? "") }
+        .errorAlert($errorMessage)
     }
 
     private func show(_ stored: [MealSlot]) {
@@ -308,13 +296,7 @@ struct DataSettingsView: View {
         } message: { _ in
             Text("How should the file be imported?")
         }
-        .alert("Export & import", isPresented: Binding(get: { message != nil }, set: {
-            if !$0 {
-                message = nil
-            }
-        })) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(message ?? "") }
+        .errorAlert($message, title: "Export & import")
     }
 
     private func prepareExport() {

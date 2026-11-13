@@ -192,11 +192,8 @@ final class DiaryModel {
 
     /// The day's training switch: makes it a training day or a rest day (`TrainingDayRepository.toggleTraining`).
     func toggleTrainingDay() {
-        guard let repo = environment.trainingDays else { return }
-        do {
-            try repo.toggleTraining(on: day)
-        } catch {
-            errorMessage = String(localized: "Couldn't change the training day: \(error.localizedDescription)")
+        if let message = environment.toggleTrainingDay(day) {
+            errorMessage = message
         }
     }
 

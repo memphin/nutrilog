@@ -226,13 +226,7 @@ struct ScanResultView: View {
                 model.nutritionCompleted(saved)
             }
         }
-        .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: {
-            if !$0 {
-                errorMessage = nil
-            }
-        })) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(errorMessage ?? "") }
+        .errorAlert($errorMessage)
     }
 
     @ViewBuilder private var content: some View {

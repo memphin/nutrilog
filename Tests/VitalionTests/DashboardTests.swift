@@ -485,7 +485,7 @@ struct DashboardDemoTests {
         let snapshot = model.snapshot
         #expect(model.access == .requested)
         #expect(snapshot.steps != nil)
-        #expect(snapshot.sleep?.hasStages == true)
+        #expect(snapshot.sleep?.asleepMin != nil)
         #expect(snapshot.weight?.trendChange7d != nil)
         #expect(snapshot.bodyFat != nil)
         #expect(snapshot.hrv?.deviationText != nil)

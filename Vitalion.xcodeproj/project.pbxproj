@@ -43,6 +43,7 @@
 		3A1F5417ABC547BE4E353C4D /* StubOpenFoodFactsSearchClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F442D68C2027C87F84FC6F0 /* StubOpenFoodFactsSearchClient.swift */; };
 		3ABB524E4E3F01D5E84C2ECE /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 0E14387951485665908455D5 /* Localizable.xcstrings */; };
 		3D96B40690DBB4753FEC9D30 /* HydrationSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42D866798F0ED1775651F94E /* HydrationSettings.swift */; };
+		3E099C1DF4DB3B2A5031F56E /* LocalFoodSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5B971B4B1501C6925BBCF3D /* LocalFoodSearch.swift */; };
 		3ECFC0DA93A20EDA8A972387 /* Sparkline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01EE353FF2D90F6EFF2F3B3B /* Sparkline.swift */; };
 		421CEB7BA2BE3816DB3899C1 /* FoodEditorLookupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E2F70519A059DDAC9177C03 /* FoodEditorLookupTests.swift */; };
 		466BB6D6405885DDB5039427 /* DashboardEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEFCCA68F0A67ECF0B040E21 /* DashboardEditing.swift */; };
@@ -102,6 +103,7 @@
 		C05C8B9A5A3AC01597866772 /* QuickAddView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55EC2E5E56394F5A6918F97A /* QuickAddView.swift */; };
 		C2C2999B0A08A5486739FC6D /* StreakTileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 431A0E3AA578CECD1896931A /* StreakTileTests.swift */; };
 		C6922607667AD4E517BFBCE8 /* CorrelationSpec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53780CEC1A741F465F9A8513 /* CorrelationSpec.swift */; };
+		C6AD470F4D498F89F58AC4FD /* ErrorAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01B64FF4C33F4F0B53AE62F7 /* ErrorAlert.swift */; };
 		C752D515FA30C2B855B481E7 /* WeeklyReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 169CFAAE31AD51A338310634 /* WeeklyReportView.swift */; };
 		C8B442427C7C78DC75B0D3F9 /* AppleMealEstimator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8A212470BB71FD1A31EB4E0 /* AppleMealEstimator.swift */; };
 		CA198D75AB48BEC1DE37F7AA /* MetricChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B635EC1EE150FFE724B4A62D /* MetricChartView.swift */; };
@@ -178,6 +180,7 @@
 		00A71BA2FB94437522BC7E68 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
 		00DA0585BCECB7C3CF0878AF /* CheckInReminder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckInReminder.swift; sourceTree = "<group>"; };
 		0132070C8E481EA07DAC3BCA /* AppEnvironment+Phase3.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppEnvironment+Phase3.swift"; sourceTree = "<group>"; };
+		01B64FF4C33F4F0B53AE62F7 /* ErrorAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorAlert.swift; sourceTree = "<group>"; };
 		01EE353FF2D90F6EFF2F3B3B /* Sparkline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sparkline.swift; sourceTree = "<group>"; };
 		0583A6CE45E2E519F019A6FF /* BackupsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupsView.swift; sourceTree = "<group>"; };
 		09BAC3A8F9E799BDA94D4974 /* HydrationTileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HydrationTileTests.swift; sourceTree = "<group>"; };
@@ -269,6 +272,7 @@
 		AEFCCA68F0A67ECF0B040E21 /* DashboardEditing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardEditing.swift; sourceTree = "<group>"; };
 		B2562F6E4540C9C32B3D5E43 /* MealPlanViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPlanViews.swift; sourceTree = "<group>"; };
 		B2F38B07CDBC88FC4F971C55 /* MealPhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPhoto.swift; sourceTree = "<group>"; };
+		B5B971B4B1501C6925BBCF3D /* LocalFoodSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalFoodSearch.swift; sourceTree = "<group>"; };
 		B635EC1EE150FFE724B4A62D /* MetricChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricChartView.swift; sourceTree = "<group>"; };
 		B676A848F8A4FD5E187A9F63 /* TestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSupport.swift; sourceTree = "<group>"; };
 		B6F1000F849D9C825042F5BC /* HealthSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSyncService.swift; sourceTree = "<group>"; };
@@ -641,6 +645,7 @@
 			isa = PBXGroup;
 			children = (
 				3F5613F997C8E4249B281438 /* AddFoodView.swift */,
+				B5B971B4B1501C6925BBCF3D /* LocalFoodSearch.swift */,
 				EBFC8A195B20CF85237483E9 /* OnlineResultsView.swift */,
 				4AE5D0EAEEDB279344EE6A38 /* OnlineSearchModel.swift */,
 				912A68A271BB201D964BA3DD /* QuantitySheet.swift */,
@@ -656,6 +661,7 @@
 			children = (
 				0132070C8E481EA07DAC3BCA /* AppEnvironment+Phase3.swift */,
 				398357AEBA3E46B5F2975E21 /* DebugScreens.swift */,
+				01B64FF4C33F4F0B53AE62F7 /* ErrorAlert.swift */,
 				EA071653A47DC8AB30CF4395 /* Formatting.swift */,
 				AD5EADB32DB99D13A3D5328D /* NotificationDelegate.swift */,
 				BB60D34B0BA52D272B8B20C8 /* TrainingDayViews.swift */,
@@ -884,6 +890,7 @@
 				B6AB84B938F35F68C4F5AF1F /* DiarySheets.swift in Sources */,
 				101DB5A7A0CDCB1ACD5C9E0D /* DiaryView.swift in Sources */,
 				6D194374FD4F19E37CBF2910 /* DuplicateFoodsView.swift in Sources */,
+				C6AD470F4D498F89F58AC4FD /* ErrorAlert.swift in Sources */,
 				D33EC33651141E5B8CBC4B74 /* Expenditure.swift in Sources */,
 				FA2619CC0F0FF26AC076FAF2 /* FoodEditorModel.swift in Sources */,
 				0DC0BB505D9E18E992924738 /* FoodEditorView.swift in Sources */,
@@ -907,6 +914,7 @@
 				1A5D56FF536B75EAEC9ABF78 /* IngredientPicker.swift in Sources */,
 				D1EDC409D6C35023BB9FC5F8 /* IntentActions.swift in Sources */,
 				D966635131B7160864F40550 /* LabelPhotoStore.swift in Sources */,
+				3E099C1DF4DB3B2A5031F56E /* LocalFoodSearch.swift in Sources */,
 				11AB9D2D171F045F86CCC74A /* MealEditorModel.swift in Sources */,
 				66C1DDA4C05D84E5E41D2D0B /* MealEditorView.swift in Sources */,
 				0016A64F9BA490E7FBA59272 /* MealLogSheet.swift in Sources */,

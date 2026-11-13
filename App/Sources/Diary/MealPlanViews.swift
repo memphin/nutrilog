@@ -191,15 +191,7 @@ struct MealPlanView: View {
             .task(id: today) { await observeTraining() }
             .task(id: today) { loadTargetsAndSlots() }
             .task(id: today) { environment.prepTicks.prune(before: today) }
-            .alert("Meal plan", isPresented: Binding(get: { errorMessage != nil }, set: {
-                if !$0 {
-                    errorMessage = nil
-                }
-            })) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(errorMessage ?? "")
-            }
+            .errorAlert($errorMessage, title: "Meal plan")
         }
     }
 
@@ -255,11 +247,8 @@ struct MealPlanView: View {
 
     /// The header's dumbbell: makes `day` a training day or a rest day.
     private func toggleTraining(_ day: LocalDay) {
-        guard let repo = environment.trainingDays else { return }
-        do {
-            try repo.toggleTraining(on: day)
-        } catch {
-            errorMessage = String(localized: "Couldn't change the training day: \(error.localizedDescription)")
+        if let message = environment.toggleTrainingDay(day) {
+            errorMessage = message
         }
     }
 

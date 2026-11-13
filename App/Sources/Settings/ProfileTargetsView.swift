@@ -26,13 +26,7 @@ struct ProfileTargetsView: View {
         }
         .navigationTitle("Profile & targets")
         .task { load() }
-        .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: {
-            if !$0 {
-                errorMessage = nil
-            }
-        })) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(errorMessage ?? "") }
+        .errorAlert($errorMessage)
         .alert("Saved", isPresented: Binding(get: { savedMessage != nil }, set: {
             if !$0 {
                 savedMessage = nil

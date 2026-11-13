@@ -90,11 +90,6 @@ final class ScanFlowModel {
     /// (``retryLabelPhoto()``) or dismisses the message (``discardLabelPhoto()``).
     private(set) var labelPhotoFailure: LabelPhotoFailure?
 
-    /// The message of ``labelPhotoFailure``.
-    var labelPhotoError: String? {
-        labelPhotoFailure?.message
-    }
-
     /// The food the pending label photo belongs to once that food was created.
     private var labelPhotoFoodID: String?
 

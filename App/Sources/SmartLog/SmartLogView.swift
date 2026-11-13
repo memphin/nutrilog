@@ -76,13 +76,7 @@ struct SmartLogView: View {
                     pickedPhoto = nil
                 }
             }
-            .alert("Couldn't estimate", isPresented: Binding(get: { model.errorMessage != nil }, set: {
-                if !$0 {
-                    model.errorMessage = nil
-                }
-            })) {
-                Button("OK", role: .cancel) {}
-            } message: { Text(model.errorMessage ?? "") }
+            .errorAlert($model.errorMessage, title: "Couldn't estimate")
         }
     }
 

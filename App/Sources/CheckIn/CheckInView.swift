@@ -83,13 +83,7 @@ private struct CheckInContent: View {
         } message: {
             Text("Daily calorie target from today, in kcal.")
         }
-        .alert("Check-in", isPresented: Binding(get: { model.errorMessage != nil }, set: {
-            if !$0 {
-                model.errorMessage = nil
-            }
-        })) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(model.errorMessage ?? "") }
+        .errorAlert($model.errorMessage, title: "Check-in")
     }
 
     @ViewBuilder
@@ -411,13 +405,7 @@ struct CheckInSettingsView: View {
         .task(id: environment.dataGeneration) { load() }
         .onChange(of: weekday) { save() }
         .onChange(of: reminderOn) { save() }
-        .alert("Weekly check-in", isPresented: Binding(get: { message != nil }, set: {
-            if !$0 {
-                message = nil
-            }
-        })) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(message ?? "") }
+        .errorAlert($message, title: "Weekly check-in")
     }
 
     /// Monday first, numbered as `Calendar.weekday` (1 = Sunday). Names in the user's language.

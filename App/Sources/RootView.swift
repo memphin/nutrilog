@@ -126,6 +126,8 @@ enum CheckInPrompt {
     }
 }
 
-#Preview {
-    RootView().environment(AppEnvironment.preview(sampleData: true))
-}
+#if DEBUG
+    #Preview {
+        RootView().environment(AppEnvironment.preview(sampleData: true))
+    }
+#endif

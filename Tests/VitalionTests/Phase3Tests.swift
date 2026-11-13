@@ -495,7 +495,6 @@ struct DiaryPhase3Tests {
 
         let saved = try model.save(to: meals)
         #expect(!model.isNew)
-        #expect(!model.hasChanges)
         #expect(saved.template.name == "Rice pudding")
         #expect(saved.items.map(\.food.id) == [milk.id, rice.id])
         #expect(saved.items.map(\.item.grams) == [200, 50])
@@ -503,7 +502,6 @@ struct DiaryPhase3Tests {
         #expect(try meals.templates().map(\.id) == [saved.id])
         // Saving again updates the same meal.
         model.name = "Pudding"
-        #expect(model.hasChanges)
         #expect(try model.save(to: meals).id == saved.id)
         #expect(try meals.templates().map(\.template.name) == ["Pudding"])
     }
@@ -546,7 +544,7 @@ struct DiaryPhase3Tests {
         ])
 
         let model = try MealEditorModel(meal: #require(try meals.detail(id: meal.id)))
-        #expect(!model.isNew && !model.hasChanges)
+        #expect(!model.isNew)
         #expect(model.name == "Porridge")
         #expect(model.rows.map(\.amountText) == ["80", "250", "10"])
         #expect(abs(model.totals.kcal - (304 + 150 + 30)) < 0.001)
@@ -554,7 +552,6 @@ struct DiaryPhase3Tests {
 
         model.rows[1].amountText = "300"
         model.remove(atOffsets: [2])
-        #expect(model.hasChanges)
         #expect(abs(model.totals.kcal - (304 + 180)) < 0.001)
         let saved = try model.save(to: meals)
         #expect(saved.id == meal.id)
@@ -991,6 +988,8 @@ struct IntentActionsTests {
             database: .failed("x"),
             config: AppConfig(usdaAPIKey: nil),
             bundledIndex: nil,
+            openFoodFacts: StubOpenFoodFactsClient(),
+            offSearch: StubOpenFoodFactsSearchClient(),
         ))
         await #expect(throws: IntentActions.Failure.databaseUnavailable) { try await broken.logWater(ml: 100) }
         #expect(throws: IntentActions.Failure.databaseUnavailable) { try broken.remaining() }

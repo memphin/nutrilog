@@ -1,9 +1,24 @@
+import Core
 import DesignSystem
 import Foundation
 import SwiftUI
 
 // Training days: a day's calorie target and hydration goal go up by the schedule's boost (Settings → Training days).
 // The dumbbell marks them: filled on a training day, outlined on a rest day.
+
+extension AppEnvironment {
+    /// Makes `day` a training day or a rest day (`TrainingDayRepository.toggleTraining`). Returns the message to
+    /// show when that failed.
+    func toggleTrainingDay(_ day: LocalDay) -> String? {
+        guard let trainingDays else { return nil }
+        do {
+            try trainingDays.toggleTraining(on: day)
+            return nil
+        } catch {
+            return String(localized: "Couldn't change the training day: \(error.localizedDescription)")
+        }
+    }
+}
 
 /// Texts of the training-day marks.
 enum TrainingDayFormat {

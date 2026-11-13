@@ -28,10 +28,7 @@ struct DuplicateFoodsView: View {
                                 Image(systemName: isKept ? "checkmark.circle.fill" : "circle")
                                     .foregroundStyle(isKept ? Color.accentColor : .secondary)
                                 VStack(alignment: .leading, spacing: NL.Spacing.xxs) {
-                                    FoodRow(
-                                        name: detail.food.name, brand: detail.food.brand, per100: detail.food.per100,
-                                        source: detail.food.source, unit: environment.energyUnit, isLiquid: detail.food.isLiquid,
-                                    )
+                                    FoodRow(detail.food, unit: environment.energyUnit)
                                     Text(Self.facts(detail)).font(.caption).foregroundStyle(.secondary)
                                 }
                             }
@@ -47,13 +44,7 @@ struct DuplicateFoodsView: View {
         }
         .navigationTitle("Duplicate foods")
         .task(id: environment.dataGeneration) { reload() }
-        .alert("Duplicate foods", isPresented: Binding(get: { message != nil }, set: {
-            if !$0 {
-                message = nil
-            }
-        })) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(message ?? "") }
+        .errorAlert($message, title: "Duplicate foods")
     }
 
     /// "Logged 12 times · 1 barcode · 2 servings".

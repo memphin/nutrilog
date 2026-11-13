@@ -3,7 +3,8 @@ import Core
 import DesignSystem
 import SwiftUI
 
-/// Where the correlation screens read their days: the database, or fixed sample days (`-uiScreen correlations`).
+/// Where the correlation screens read their days: the database, or in debug builds fixed sample days
+/// (`-uiScreen correlations`).
 struct CorrelationSource: Sendable {
     var load: @MainActor @Sendable (ClosedRange<LocalDay>, AppEnvironment) -> [DayStats]
 
@@ -11,10 +12,12 @@ struct CorrelationSource: Sendable {
         (try? StatsLoader.load(range, environment: environment)) ?? []
     }
 
-    /// `days` cut to the requested range.
-    static func fixed(_ days: [DayStats]) -> CorrelationSource {
-        CorrelationSource { range, _ in days.filter { range.contains($0.day) } }
-    }
+    #if DEBUG
+        /// `days` cut to the requested range.
+        static func fixed(_ days: [DayStats]) -> CorrelationSource {
+            CorrelationSource { range, _ in days.filter { range.contains($0.day) } }
+        }
+    #endif
 }
 
 extension EnvironmentValues {

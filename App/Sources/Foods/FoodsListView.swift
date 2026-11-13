@@ -114,13 +114,7 @@ private struct FoodsListContent: View {
         } message: {
             Text("Saves the foods you logged today so you can log them all at once from Add food → Meals.")
         }
-        .alert("Error", isPresented: Binding(get: { model.errorMessage != nil }, set: {
-            if !$0 {
-                model.errorMessage = nil
-            }
-        })) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(model.errorMessage ?? "") }
+        .errorAlert($model.errorMessage)
     }
 
     /// Breakfast, lunch, dinner, snacks… as logged today, each one tap away from becoming a saved meal.
@@ -143,14 +137,7 @@ private struct FoodsListContent: View {
     private func foodRow(_ food: Food) -> some View {
         Button { editing = model.detail(for: food) } label: {
             HStack {
-                FoodRow(
-                    name: food.name,
-                    brand: food.brand,
-                    per100: food.per100,
-                    source: food.source,
-                    unit: environment.energyUnit,
-                    isLiquid: food.isLiquid,
-                )
+                FoodRow(food, unit: environment.energyUnit)
                 if food.isFavorite {
                     Image(systemName: "star.fill").foregroundStyle(.yellow).accessibilityLabel("Favorite")
                 }
