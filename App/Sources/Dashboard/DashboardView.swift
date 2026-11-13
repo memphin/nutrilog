@@ -401,7 +401,7 @@ private struct EnergyTileContent: View {
 }
 
 /// Last night's sleep: just the time asleep, coloured by the sleep goal (#72). Time in bed, said so, when that is
-/// all Health has. Stages are in the detail (#62).
+/// all Health has.
 private struct SleepTileContent: View {
     let sleep: SleepValue?
     let goalMin: Int

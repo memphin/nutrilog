@@ -192,7 +192,7 @@ extension DashboardSnapshot {
         return [String(localized: "\(steps) steps", locale: locale), goal]
     }
 
-    /// Like the tile: time asleep only; time in bed when that is all Health has. Stages are in the detail (#62).
+    /// Like the tile: time asleep only; time in bed when that is all Health has.
     private func sleepParts(locale: Locale) -> [String] {
         guard let minutes = sleepMinutes else { return [] }
         let goalText = Self.spokenDuration(sleepGoalMin, locale: locale)

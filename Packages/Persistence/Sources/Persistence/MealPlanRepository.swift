@@ -231,13 +231,13 @@ public struct MealPlanRepository: Sendable {
 
     public func softDelete(plannedIDs: [String]) throws {
         let now = clock.now()
-        try database.writer.write { db in try PlannedEntry.softDelete(db, ids: plannedIDs, now: now) }
+        _ = try database.writer.write { db in try PlannedEntry.softDelete(db, ids: plannedIDs, now: now) }
     }
 
     /// Undo for `softDelete`.
     public func restore(plannedIDs: [String]) throws {
         let now = clock.now()
-        try database.writer.write { db in try PlannedEntry.restore(db, ids: plannedIDs, now: now) }
+        _ = try database.writer.write { db in try PlannedEntry.restore(db, ids: plannedIDs, now: now) }
     }
 
     // MARK: Confirming

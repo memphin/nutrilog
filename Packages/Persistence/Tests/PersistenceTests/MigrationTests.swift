@@ -134,6 +134,34 @@ struct MigrationTests {
         #expect(record.rawTDEEKcal == nil)
         #expect(DataPortability.schemaVersion >= 7)
     }
+
+    @Test func `migration 016 drops the barcode scan log and keeps other data`() throws {
+        let queue = try DatabaseQueue()
+        var old = DatabaseMigrator()
+        let index = try #require(Migrator.migrations.firstIndex(of: "016_drop_barcode_scan_log"))
+        for name in Migrator.migrations.prefix(index) {
+            if let migrate = Migrator.codedMigration(named: name, deviceCalendar: .gregorian) {
+                old.registerMigration(name, migrate: migrate)
+            } else {
+                old.registerMigration(name) { db in try db.execute(sql: Migrator.sql(named: name)) }
+            }
+        }
+        try old.migrate(queue)
+        try queue.write { db in
+            try db.execute(sql: """
+            INSERT INTO barcode_scan_log (scanned_at, barcode, outcome) VALUES ('2026-11-01T08:00:00.000Z', '3017620422003', 'local')
+            """)
+            try db.execute(sql: """
+            INSERT INTO target (id, effective_from, kcal, protein_g, carbs_g, fat_g, origin, created_at, updated_at)
+            VALUES ('t1', '2026-01-01', 2000, 150, 200, 70, 'manual', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z')
+            """)
+        }
+        _ = try AppDatabase(queue)
+        #expect(try queue.read { try Migrator.make().appliedMigrations($0) } == Migrator.migrations)
+        #expect(try queue.read { try $0.tableExists("barcode_scan_log") } == false)
+        #expect(try queue.read { try Int.fetchOne($0, sql: "SELECT count(*) FROM sqlite_master WHERE name LIKE '%barcode_scan_log%'") } == 0)
+        #expect(try queue.read { try Int.fetchOne($0, sql: "SELECT kcal FROM target WHERE id = 't1'") } == 2000)
+    }
 }
 
 struct OnDiskDatabaseTests {

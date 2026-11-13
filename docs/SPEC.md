@@ -151,7 +151,7 @@ Single user (the owner). Representative daily flows:
 - FR-1 Diary organized by day and meal slot (Breakfast, Lunch, Dinner, Snacks; slots configurable).
 - FR-2 Each entry = food reference + quantity + unit (g, ml, serving, piece); nutrients computed from per-100 g base.
 - FR-3 Edit, delete, move entry between meals/days; swipe actions.
-- FR-4 "Copy meal from yesterday / from date" and "copy whole day".
+- FR-4 "Copy meal from a date" and "copy whole day".
 - FR-5 Quick-add calories (and optional macros) without a food.
 - FR-6 Day summary: kcal consumed, remaining, P/C/F grams and % of target; fiber, sugar, sodium (sat. fat SHOULD).
 - FR-7 Notes per day (free text, e.g. "cheat day", "sick").
@@ -427,7 +427,7 @@ All blocking decisions are made (D1–D9). The following defaults may be changed
 ---
 
 *Change log*
-- 1.12 — after app 1.2.0: removed the user-entered USDA key (build-time only), repeat planning ("plan for the next days"), Settings → Dashboard (edit in place on Today) and the barcode resolution diagnostics screen (2026-11-13)
+- 1.12 — after app 1.2.0, removed: Settings → Dashboard (the dashboard is edited in place via Edit on Today); the caffeine bedtime picker (the bedtime is set in Hydration); the check-in entries in Settings; "Plan for later today" (only future days are planned); repeat planning ("plan for the next days"); the "Copy from yesterday" menu items (copy from a date remains); the barcode resolution diagnostics screen and its scan log (migration 016 drops it); the user-entered USDA key (build-time only; a key saved earlier is deleted from the Keychain on launch); the tiles' detail "Last 14 days" lists and inline weigh-in lists (2026-11-13)
 - 1.11 — owner request: Settings → Food names (FR-74) — built-in food names in English or Croatian apart from the app language; saved copies and past diary and planned entries switch with it unless renamed, new Open Food Facts products take their Croatian name in Croatian (2026-11-12)
 - 1.10 — FR-53 Correlations done (owner-approved design): four insight cards on Trends (hydration → next-day HRV and sleep, steps and calories → weekly weight-trend change) and "Compare any two", with Spearman's rank correlation, a top-against-bottom-third sentence and a scatter plot with a least-squares line; replaces the earlier "sleep vs. next-day intake, steps vs. weight trend" scope, which "Compare any two" still covers (2026-11-12)
 - 1.9 — owner request: the Total energy tile is coloured by an active energy goal (Settings → Daily goals, default 500 kcal, 100–3000 in steps of 50): only the active part is read, green at the goal, orange from 80 % of it, red below; on the tile the total number (the active number when only active energy is known) and on the sparkline the active part of each bar carry the colour, the "Active …" line stays grey (2026-11-12)

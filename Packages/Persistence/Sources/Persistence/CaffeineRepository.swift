@@ -151,13 +151,13 @@ public struct CaffeineRepository: Sendable {
 
     public func softDelete(ids: [String]) throws {
         let now = clock.now()
-        try database.writer.write { db in try CaffeineEntry.softDelete(db, ids: ids, now: now) }
+        _ = try database.writer.write { db in try CaffeineEntry.softDelete(db, ids: ids, now: now) }
     }
 
     /// Undo for `softDelete`.
     public func restore(ids: [String]) throws {
         let now = clock.now()
-        try database.writer.write { db in try CaffeineEntry.restore(db, ids: ids, now: now) }
+        _ = try database.writer.write { db in try CaffeineEntry.restore(db, ids: ids, now: now) }
     }
 
     // MARK: Reads

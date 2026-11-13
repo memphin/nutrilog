@@ -30,6 +30,7 @@ Nothing else. There is no account, no server, no analytics, no crash-reporting S
 
 ## Your data
 - Export everything as JSON or CSV at any time (Settings → Export).
+- Leftovers of removed features are deleted on the first launch of the version that removed them: a USDA API key saved in the Keychain by earlier versions, and the device-local barcode scan log.
 - Deleting the app deletes all app data. Samples written to Apple Health remain in Health until you delete them there.
 
 ## Contact

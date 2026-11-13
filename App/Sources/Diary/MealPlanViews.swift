@@ -217,17 +217,20 @@ struct MealPlanView: View {
                     }
                     .accessibilityElement(children: .combine)
                 }
-                Button {
-                    open(day)
-                } label: {
-                    Label(entries.isEmpty ? "Plan this day" : "Open in diary", systemImage: entries.isEmpty ? "plus" : "arrow.right")
+                // Food added to today's diary is logged as eaten, so only a future day can be planned.
+                if !entries.isEmpty || day > today {
+                    Button {
+                        open(day)
+                    } label: {
+                        Label(entries.isEmpty ? "Plan this day" : "Open in diary", systemImage: entries.isEmpty ? "plus" : "arrow.right")
+                    }
                 }
             } header: {
                 dayHeader(day, entries: entries)
             }
         }
         Section {} footer: {
-            Text("Plan a day by opening it in the diary and adding food. Planned food counts only once you mark it as eaten.")
+            Text("Plan a future day by opening it in the diary and adding food. Planned food counts only once you mark it as eaten.")
         }
     }
 

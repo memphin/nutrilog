@@ -8662,12 +8662,12 @@
         }
       }
     },
-    "Plan a day by opening it in the diary and adding food. Planned food counts only once you mark it as eaten." : {
+    "Plan a future day by opening it in the diary and adding food. Planned food counts only once you mark it as eaten." : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Planiraj dan tako da ga otvoriš u dnevniku i dodaš hranu. Planirana hrana računa se tek kad je označiš kao pojedenu."
+            "value" : "Planiraj budući dan tako da ga otvoriš u dnevniku i dodaš hranu. Planirana hrana računa se tek kad je označiš kao pojedenu."
           }
         }
       }
@@ -11141,12 +11141,12 @@
         }
       }
     },
-    "USDA rejected the API key. Check it in Settings → Food sources." : {
+    "USDA rejected the API key, so USDA search is unavailable." : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "USDA je odbio API ključ. Provjeri ga u Postavkama → Izvori namirnica."
+            "value" : "USDA je odbio API ključ pa USDA pretraga nije dostupna."
           }
         }
       }

@@ -17,7 +17,7 @@ Log what you eat (barcode scan, search, saved meals) and see it next to how your
 - Today dashboard edited in place (Edit on Today): calories, macros, weight, sleep, steps, energy, water, **caffeine** tiles
 - **Hydration**: daily goal, intake timeline and local reminders; **training days** raise that day's calorie target and hydration goal
 - **Streaks**, and **correlations** on Trends over 1, 3 or 6 months (e.g. hydration vs next-day HRV and sleep)
-- Apple Health: reads steps, sleep (with stages), weight, body fat %, active and resting energy, resting HR, HRV, water; writes nutrients, water and manual weights
+- Apple Health: reads steps, sleep, weight, body fat %, active and resting energy, resting HR, HRV, water; writes nutrients, water and manual weights
 - Works with any scale/watch that syncs to Apple Health (built and tested with a Withings scale + Apple Watch)
 - History calendar colored by adherence, charts (1W / 1M / 3M / 1Y) for weight and trend, body fat, calories vs target, macros, steps, sleep, heart rate, HRV, water and energy burned, and a shareable weekly report
 - Siri / Shortcuts: log a favorite, quick-add calories, remaining calories, log water; Home Screen and Lock Screen widgets

@@ -352,6 +352,10 @@ struct ScanFlowTests {
         #expect(ProductCardView.servingTitle(label: "1 portion (30g)", amount: 30, unit: "g") == "Per 1 portion (30g)")
         #expect(ProductCardView.servingTitle(label: "2 biscuits 25,5 g", amount: 25.5, unit: "g") == "Per 2 biscuits 25,5 g")
         #expect(ProductCardView.servingTitle(label: "1 can (33 cl)", amount: 330, unit: "ml") == "Per 1 can (33 cl)")
+        #expect(ProductCardView.servingTitle(label: "100 ml (105 g)", amount: 105, unit: "g") == "Per 100 ml (105 g)")
+        #expect(ProductCardView.servingTitle(label: "2 x 125 ml", amount: 125, unit: "ml") == "Per 2 x 125 ml")
+        // An imperial label gets the metric weight next to it.
+        #expect(ProductCardView.servingTitle(label: "1 oz", amount: 28.3495, unit: "g") == "Per 1 oz (28 g)")
         // The label doesn't state this weight: append it.
         #expect(ProductCardView.servingTitle(label: "1 shot", amount: 60, unit: "ml") == "Per 1 shot (60 ml)")
         #expect(ProductCardView.servingTitle(label: "2 biscuits (25 g)", amount: 50, unit: "g") == "Per 2 biscuits (25 g) (50 g)")

@@ -184,13 +184,13 @@ public struct MealTemplateRepository: Sendable {
 
     public func softDelete(id: String) throws {
         let now = clock.now()
-        try database.writer.write { db in try MealTemplate.softDelete(db, ids: [id], now: now) }
+        _ = try database.writer.write { db in try MealTemplate.softDelete(db, ids: [id], now: now) }
     }
 
     /// Undo for `softDelete`.
     public func restore(id: String) throws {
         let now = clock.now()
-        try database.writer.write { db in try MealTemplate.restore(db, ids: [id], now: now) }
+        _ = try database.writer.write { db in try MealTemplate.restore(db, ids: [id], now: now) }
     }
 
     /// Logs `items` (the meal's items, possibly with changed amounts or some left out) into one slot and counts the
