@@ -220,7 +220,7 @@ struct CaffeineDashboardTests {
 
     @Test func `the tile is ready without Health and is spoken with the amount and the outlook`() throws {
         let today = try #require(LocalDay("2026-11-09"))
-        let snapshot = DashboardSnapshot(DashboardData(today: today))
+        let snapshot = dashboardSnapshot(today: today)
         #expect(snapshot.state(of: .caffeine, access: .unavailable, isFirstSync: false) == .ready)
         let label = snapshot.accessibilityLabel(
             of: .caffeine,

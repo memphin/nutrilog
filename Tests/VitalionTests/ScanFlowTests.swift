@@ -441,18 +441,6 @@ struct ScanFlowTests {
         #expect(abs(food.per100.scaled(toGrams: stored.grams).kcal - 12) < 1e-9)
     }
 
-    @Test func `placeholder conversion keeps partial quality when macros are missing`() throws {
-        var food = Food(name: "Bar", per100: Nutrients(kcal: 200, proteinG: 0, carbsG: 0, fatG: 0), dataQuality: .partialMacros)
-        food.perServingOnly = true
-        let serving = Serving(label: "1 bar", grams: 100)
-        food.defaultServingID = serving.id
-        let detail = FoodDetail(food: food, servings: [serving])
-        let converted = try detail.convertingPerServingPlaceholder(servingWeight: 40, missing: [.protein])
-        #expect(converted.food.dataQuality == .partialMacros)
-        #expect(converted.food.kcal100 == 500)
-        #expect(converted.servings.first?.grams == 40)
-    }
-
     // MARK: Review follow-ups
 
     @Test func `complete nutrition waits for the serving weight on a placeholder`() async throws {

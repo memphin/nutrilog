@@ -179,3 +179,35 @@ extension TrainingDayRepository {
         try database.reader.read { db in try Self.timeline(db) }
     }
 }
+
+extension Fixture {
+    var meals: MealTemplateRepository {
+        MealTemplateRepository(db, clock: clock.appClock)
+    }
+
+    var checkIns: CheckInRepository {
+        CheckInRepository(db, clock: clock.appClock)
+    }
+
+    var metrics: DailyMetricsRepository {
+        DailyMetricsRepository(db, clock: clock.appClock)
+    }
+
+    var portability: DataPortability {
+        DataPortability(db, clock: clock.appClock)
+    }
+}
+
+/// 30 days of perfect logging at 2,000 kcal against a true TDEE of 2,500, ending on `end`.
+func sampleEstimate(end: LocalDay = day("2026-11-08"), baseline: Double? = 2500, previous: Double? = nil) throws -> TDEEEstimate {
+    var samples: [LocalDay: Double] = [:]
+    for index in 0 ..< 30 {
+        samples[end.adding(days: index - 29)] = 85 - Double(index) * 500 / 7700
+    }
+    let trend = WeightTrend.trendByDay(samples, through: end)
+    let history = (0 ..< 30).map { index -> TDEEDay in
+        let date = end.adding(days: index - 29)
+        return TDEEDay(day: date, kcalIn: 2000, entryCount: 5, isComplete: false, weightKg: samples[date], trendKg: trend[date])
+    }
+    return try AdaptiveTDEE.estimate(history: history, endDay: end, baselineKcal: baseline, previousKcal: previous).get()
+}

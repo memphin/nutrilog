@@ -561,16 +561,10 @@ struct HealthWriteServiceTests {
 struct HealthObserverTests {
     let clock = ManualClock()
 
-    func makeEnvironment(authorized: Bool) -> (AppEnvironment, FakeHealthDataSource, FakeHealthObserver) {
-        let today = LocalDay.today(now: clock.appClock.now())
-        let fake = FakeHealthDataSource.demo(endingOn: today, days: 30)
-        fake.update { $0.authorizationRequested = authorized }
-        let observer = FakeHealthObserver()
-        return (AppEnvironment.preview(clock: clock.appClock, health: fake, healthObserver: observer), fake, observer)
-    }
+    let observer = FakeHealthObserver()
 
     @Test func `observers are registered only after the user was asked`() async throws {
-        let (env, _, observer) = makeEnvironment(authorized: false)
+        let (env, _) = makeHealthEnvironment(clock: clock, days: 30, authorized: false, observer: observer)
         let sync = try #require(env.healthSync)
         await sync.startObserving()
         #expect(!observer.isObserving)
@@ -586,7 +580,7 @@ struct HealthObserverTests {
     }
 
     @Test func `launch registers observers when access was granted before`() async {
-        let (env, _, observer) = makeEnvironment(authorized: true)
+        let (env, _) = makeHealthEnvironment(clock: clock, days: 30, authorized: true, observer: observer)
         env.startHealthBackgroundWork()
         defer { env.healthWrites?.stop() }
         #expect(await waitUntil { observer.isObserving })
@@ -594,7 +588,7 @@ struct HealthObserverTests {
     }
 
     @Test func `a new weigh-in reaches daily metrics and the observer is completed`() async throws {
-        let (env, fake, observer) = makeEnvironment(authorized: true)
+        let (env, fake) = makeHealthEnvironment(clock: clock, days: 30, authorized: true, observer: observer)
         let sync = try #require(env.healthSync)
         await sync.refresh()
         await sync.startObserving()
@@ -617,7 +611,7 @@ struct HealthObserverTests {
 
     @Test func `observer completion is called on errors, failed refreshes and after stopping`() async throws {
         struct QueryFailed: Error {}
-        let (env, fake, observer) = makeEnvironment(authorized: true)
+        let (env, fake) = makeHealthEnvironment(clock: clock, days: 30, authorized: true, observer: observer)
         let sync = try #require(env.healthSync)
         await sync.startObserving()
 
@@ -644,7 +638,7 @@ struct HealthObserverTests {
     }
 
     @Test func `pull to refresh reads the full window and drains pending writes`() async throws {
-        let (env, fake, _) = makeEnvironment(authorized: true)
+        let (env, fake) = makeHealthEnvironment(clock: clock, days: 30, authorized: true, observer: observer)
         let sync = try #require(env.healthSync)
         await sync.refresh()
         let today = sync.today

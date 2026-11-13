@@ -372,4 +372,77 @@ struct DiaryRepositoryTests {
         liqueur.countsAsFluid = true
         #expect(DiaryRepository.fluidMl(for: liqueur, baseAmount: 40) == 40)
     }
+
+    @Test func `day summaries: totals, entry counts and the complete mark`() throws {
+        let f = try Fixture()
+        let d = day("2026-11-05")
+        let rice = try f.makeFood("Rice", kcal: 130, protein: 2.7, carbs: 28, fat: 0.3)
+        try f.diary.log(food: rice, quantity: .base(200), slotID: "lunch", day: d)
+        let removed = try f.diary.log(food: rice, quantity: .base(100), slotID: "dinner", day: d)
+        try f.diary.softDelete(entryIDs: [removed.id])
+        try f.diary.logQuickAdd(name: nil, nutrients: Nutrients(kcal: 240, proteinG: 0, carbsG: 0, fatG: 0), slotID: "snacks", day: d)
+        try f.diary.log(food: rice, quantity: .base(100), slotID: "lunch", day: d.adding(days: 2))
+        try f.diary.setDayNote(day: d.adding(days: 2), text: "", isComplete: true)
+        try f.diary.setDayNote(day: d.adding(days: 3), text: "fasting", isComplete: true) // complete with no entries
+        try f.diary.setDayNote(day: d.adding(days: 4), text: "just a note") // not a logged day
+        try f.diary.log(food: rice, quantity: .base(100), slotID: "lunch", day: d.adding(days: 30)) // outside the range
+
+        let rows = try f.diary.daySummaries(in: d.previous ... d.adding(days: 10))
+        #expect(rows.map(\.day) == [d, d.adding(days: 2), d.adding(days: 3)])
+        #expect(rows[0].totals.kcal == 500)
+        #expect(rows[0].entryCount == 2)
+        #expect(!rows[0].isComplete)
+        #expect(try rows[0].totals == (f.diary.totals(for: d)))
+        #expect(rows[1].isComplete)
+        #expect(rows[1].entryCount == 1)
+        #expect(rows[2] == DiaryDaySummary(day: d.adding(days: 3), totals: .zero, entryCount: 0, isComplete: true))
+    }
+}
+
+/// Food entries stored with 0 g (legacy or imported) keep their own snapshot when copied, planned or confirmed.
+struct ZeroGramEntryTests {
+    private func plans(_ f: Fixture) -> MealPlanRepository {
+        MealPlanRepository(f.db, clock: f.clock.appClock)
+    }
+
+    private func zeroGramEntry(_ f: Fixture, day d: LocalDay) throws -> DiaryEntry {
+        let soup = try f.makeFood("Soup", kcal: 50)
+        let entry = try f.diary.log(food: soup, quantity: .base(300), slotID: "lunch", day: d) // 150 kcal
+        try f.db.writer.write { db in
+            try db.execute(sql: "UPDATE diary_entry SET grams = 0, display_name = 'Old soup' WHERE id = ?", arguments: [entry.id])
+        }
+        return try #require(try f.diary.entry(id: entry.id))
+    }
+
+    @Test func `copying a 0 g entry keeps its snapshot`() throws {
+        let f = try Fixture()
+        let source = try zeroGramEntry(f, day: day("2026-11-09"))
+        let ids = try f.diary.copy(from: day("2026-11-09"), to: day("2026-11-10"))
+        let copy = try #require(try f.diary.entry(id: ids[0]))
+        #expect(copy.kcal == 150)
+        #expect(copy.nutrients == source.nutrients)
+        #expect(copy.displayName == "Old soup")
+    }
+
+    @Test func `planning from a 0 g entry keeps its snapshot`() throws {
+        let f = try Fixture()
+        _ = try zeroGramEntry(f, day: day("2026-11-09"))
+        let ids = try plans(f).copyToPlan(from: day("2026-11-09"), to: day("2026-11-12"))
+        let planned = try #require(try plans(f).entry(id: ids[0]))
+        #expect(planned.kcal == 150)
+        #expect(planned.displayName == "Old soup")
+    }
+
+    @Test func `confirming a 0 g plan keeps its estimate`() throws {
+        let f = try Fixture()
+        let soup = try f.makeFood("Soup", kcal: 50)
+        let planned = try plans(f).plan(food: soup, quantity: .base(300), slotID: "lunch", day: day("2026-11-12"))
+        try f.db.writer.write { db in
+            try db.execute(sql: "UPDATE planned_entry SET grams = 0 WHERE id = ?", arguments: [planned.id])
+        }
+        let ids = try plans(f).confirm(plannedIDs: [planned.id])
+        let entry = try #require(try f.diary.entry(id: ids[0]))
+        #expect(entry.kcal == 150)
+        #expect(entry.grams == 0)
+    }
 }

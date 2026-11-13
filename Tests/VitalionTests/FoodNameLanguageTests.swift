@@ -22,15 +22,10 @@ struct FoodNameLanguageTests {
         return food
     }
 
-    @Test func `same as app follows the app language`() throws {
-        let english = AppEnvironment.preview(appFoodNameLanguage: .english)
-        #expect(english.foodNamePreference == .sameAsApp)
-        #expect(english.foodNameLanguage == .english)
-        #expect(try bundledSalmon(english).name == Self.salmonEN)
-
-        let croatian = AppEnvironment.preview(appFoodNameLanguage: .croatian)
-        #expect(croatian.foodNameLanguage == .croatian)
-        #expect(try bundledSalmon(croatian).name == Self.salmonHR)
+    /// How "same as app" resolves is tested in Core; here: the environment names built-in foods that way by default.
+    @Test func `built-in names follow the app language by default`() throws {
+        #expect(try bundledSalmon(AppEnvironment.preview(appFoodNameLanguage: .english)).name == Self.salmonEN)
+        #expect(try bundledSalmon(AppEnvironment.preview(appFoodNameLanguage: .croatian)).name == Self.salmonHR)
     }
 
     @Test func `choosing croatian in an english app switches search, saved foods and the diary, and back`() throws {
