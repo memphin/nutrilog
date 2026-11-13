@@ -427,7 +427,7 @@ All blocking decisions are made (D1–D9). The following defaults may be changed
 ---
 
 *Change log*
-- 1.12 — app 1.2.0: removed the user-entered USDA key (build-time only), repeat planning ("plan for the next days"), Settings → Dashboard (edit in place on Today) and the barcode resolution diagnostics screen (2026-11-13)
+- 1.12 — after app 1.2.0: removed the user-entered USDA key (build-time only), repeat planning ("plan for the next days"), Settings → Dashboard (edit in place on Today) and the barcode resolution diagnostics screen (2026-11-13)
 - 1.11 — owner request: Settings → Food names (FR-74) — built-in food names in English or Croatian apart from the app language; saved copies and past diary and planned entries switch with it unless renamed, new Open Food Facts products take their Croatian name in Croatian (2026-11-12)
 - 1.10 — FR-53 Correlations done (owner-approved design): four insight cards on Trends (hydration → next-day HRV and sleep, steps and calories → weekly weight-trend change) and "Compare any two", with Spearman's rank correlation, a top-against-bottom-third sentence and a scatter plot with a least-squares line; replaces the earlier "sleep vs. next-day intake, steps vs. weight trend" scope, which "Compare any two" still covers (2026-11-12)
 - 1.9 — owner request: the Total energy tile is coloured by an active energy goal (Settings → Daily goals, default 500 kcal, 100–3000 in steps of 50): only the active part is read, green at the goal, orange from 80 % of it, red below; on the tile the total number (the active number when only active energy is known) and on the sparkline the active part of each bar carry the colour, the "Active …" line stays grey (2026-11-12)
