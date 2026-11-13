@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Document version | 1.14 (app 1.2.0 shipped) |
+| Document version | 1.15 (app 1.2.0 shipped) |
 | Date | 2026-11-10 |
 | Status | **Approved** — phases 1–3 shipped (app 1.2.0); phase 4 not started. Changes go through PRs to `docs/SPEC.md` with a change-log entry. |
 | Name | **Vitalion** (called Nutrilog until November 2026; the bundle ID `hr.ivanjuric.nutrilog` stays) |
@@ -211,8 +211,8 @@ Unit tests cover: perfect-logging synthetic data (recovers the true TDEE within 
 
 ### 5.6 Analytics & history (SHOULD)
 - FR-50 Calendar/history view with per-day kcal and adherence color.
-- FR-51 Charts (Swift Charts): weight (raw + trend), daily kcal vs. target, macro distribution, steps, sleep — 1w / 1m / 3m / 1y. Each opens from its Today tile's detail (macros from the calories tile); Trends has no chart list.
-- FR-52 Weekly report: averages, best/worst day, intake vs. estimated expenditure.
+- FR-51 Charts (Swift Charts): weight (raw + trend), daily kcal vs. target, macro distribution, steps, sleep — 1w / 1m / 3m / 1y. Each opens from its Today tile's detail (macros from the calories tile).
+- FR-52 Weekly report: averages, best/worst day, intake vs. estimated expenditure. Opens from Today's "Last week" tile (last week's average intake, average target and weight-trend change).
 - FR-53 Correlations (COULD): removed in 1.13 (owner request).
 
 ### 5.7 Data portability (MUST)
@@ -428,6 +428,7 @@ All blocking decisions are made (D1–D9). The following defaults may be changed
 ---
 
 *Change log*
+- 1.15 — owner request: the Trends tab is replaced by an empty Training tab; the maintenance estimate, weekly check-in, check-in history and check-in day & reminder move to Settings → Maintenance & check-in; the weekly report opens from a new "Last week" Today tile (FR-52); the diary's toolbar opens the history calendar instead of the meal plan, which moves to the Foods tab, renamed Food (2026-11-13)
 - 1.14 — owner request: Supplements & medications in the diary with reminders (FR-83); a 200 mg caffeine pill among the caffeine presets (FR-49), which adds no fluid (2026-11-13)
 - 1.13 — owner request: Trends no longer lists the charts (each opens from its Today tile, FR-51); correlations (FR-53) removed entirely (2026-11-13)
 - 1.12 — after app 1.2.0, removed: Settings → Dashboard (the dashboard is edited in place via Edit on Today); the caffeine bedtime picker (the bedtime is set in Hydration); the check-in entries in Settings; "Plan for later today" (only future days are planned); repeat planning ("plan for the next days"); the "Copy from yesterday" menu items (copy from a date remains); the barcode resolution diagnostics screen and its scan log (migration 016 drops it); the user-entered USDA key (build-time only; a key saved earlier is deleted from the Keychain on launch); the tiles' detail "Last 14 days" lists and inline weigh-in lists (2026-11-13)

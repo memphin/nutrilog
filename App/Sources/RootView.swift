@@ -65,7 +65,7 @@ struct RootView: View {
     }
 
     /// On the check-in weekday, opens the check-in sheet by itself — once that day, only when there is an estimate
-    /// to show and no check-in was made yet (SPEC §5.4.1 step 6). Any other time it is in Trends.
+    /// to show and no check-in was made yet (SPEC §5.4.1 step 6). Any other time it is in Settings.
     private func offerCheckInIfDue() {
         guard isShowingTabs, !showHealthOnboarding, !showCheckIn, let profiles = environment.profiles,
               let snapshot = try? Expenditure.snapshot(environment: environment),
@@ -104,10 +104,10 @@ struct RootView: View {
             Tab("Diary", systemImage: "book.pages", value: AppTab.diary) {
                 DiaryView()
             }
-            Tab("Trends", systemImage: "chart.xyaxis.line", value: AppTab.trends) {
-                TrendsView()
+            Tab("Training", systemImage: "dumbbell", value: AppTab.training) {
+                TrainingView()
             }
-            Tab("Foods", systemImage: "fork.knife", value: AppTab.foods) {
+            Tab(FoodsListView.title, systemImage: "fork.knife", value: AppTab.foods) {
                 FoodsListView()
             }
             Tab("Settings", systemImage: "gearshape", value: AppTab.settings) {

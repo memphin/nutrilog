@@ -37,12 +37,33 @@
         }
       }
     },
+    "%@ / day" : {
+      "comment" : "Energy unit per day, e.g. “kcal / day”",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ / dan"
+          }
+        }
+      }
+    },
     "%@ / week" : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ / tjedan"
+          }
+        }
+      }
+    },
+    "%@ a day" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ dnevno"
           }
         }
       }
@@ -6297,6 +6318,16 @@
         }
       }
     },
+    "Last week" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prošli tjedan"
+          }
+        }
+      }
+    },
     "Leave empty to use your usual amount." : {
       "localizations" : {
         "hr" : {
@@ -6761,6 +6792,16 @@
         }
       }
     },
+    "Maintenance & check-in" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Održavanje i provjera"
+          }
+        }
+      }
+    },
     "Maintenance (measured)" : {
       "localizations" : {
         "hr" : {
@@ -6807,7 +6848,7 @@
         }
       }
     },
-    "Maintenance is your average total energy burned (active + resting, Apple Health) over the last %lld days. The weekly check-in (Trends) refines this with your real intake and weight trend." : {
+    "Maintenance is your average total energy burned (active + resting, Apple Health) over the last %lld days. The weekly check-in (Settings) refines this with your real intake and weight trend." : {
       "localizations" : {
         "hr" : {
           "variations" : {
@@ -6815,19 +6856,19 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Održavanje je tvoja prosječna ukupna potrošena energija (aktivna + u mirovanju, iz aplikacije Zdravlje) tijekom zadnja %lld dana. Tjedna provjera (Trendovi) to precizira tvojim stvarnim unosom i trendom težine."
+                  "value" : "Održavanje je tvoja prosječna ukupna potrošena energija (aktivna + u mirovanju, iz aplikacije Zdravlje) tijekom zadnja %lld dana. Tjedna provjera (Postavke) to precizira tvojim stvarnim unosom i trendom težine."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Održavanje je tvoja prosječna ukupna potrošena energija (aktivna + u mirovanju, iz aplikacije Zdravlje) tijekom zadnjeg %lld dana. Tjedna provjera (Trendovi) to precizira tvojim stvarnim unosom i trendom težine."
+                  "value" : "Održavanje je tvoja prosječna ukupna potrošena energija (aktivna + u mirovanju, iz aplikacije Zdravlje) tijekom zadnjeg %lld dana. Tjedna provjera (Postavke) to precizira tvojim stvarnim unosom i trendom težine."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "Održavanje je tvoja prosječna ukupna potrošena energija (aktivna + u mirovanju, iz aplikacije Zdravlje) tijekom zadnjih %lld dana. Tjedna provjera (Trendovi) to precizira tvojim stvarnim unosom i trendom težine."
+                  "value" : "Održavanje je tvoja prosječna ukupna potrošena energija (aktivna + u mirovanju, iz aplikacije Zdravlje) tijekom zadnjih %lld dana. Tjedna provjera (Postavke) to precizira tvojim stvarnim unosom i trendom težine."
                 }
               }
             }
@@ -7149,16 +7190,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pomakni gore"
-          }
-        }
-      }
-    },
-    "My foods" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Moje namirnice"
           }
         }
       }
@@ -9565,6 +9596,16 @@
         }
       }
     },
+    "Shows the weekly report" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prikazuje tjedni izvještaj"
+          }
+        }
+      }
+    },
     "Skip" : {
       "localizations" : {
         "hr" : {
@@ -9951,6 +9992,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dodirni zvjezdicu na namirnici da je zadržiš ovdje."
+          }
+        }
+      }
+    },
+    "Target %@" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cilj %@"
           }
         }
       }
@@ -10586,6 +10637,16 @@
         }
       }
     },
+    "Training" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trening"
+          }
+        }
+      }
+    },
     "Training day" : {
       "localizations" : {
         "hr" : {
@@ -10632,16 +10693,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Trend: %@ u tom razdoblju."
-          }
-        }
-      }
-    },
-    "Trends" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trendovi"
           }
         }
       }
@@ -11210,6 +11261,16 @@
         }
       }
     },
+    "Weight %@" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Težina %@"
+          }
+        }
+      }
+    },
     "Weight comes from your weigh-ins: add one on Today → Weight, or allow Vitalion to read weight from Apple Health." : {
       "localizations" : {
         "hr" : {
@@ -11306,12 +11367,12 @@
         }
       }
     },
-    "Without at least %lld days of active and resting energy in Apple Health, maintenance is estimated from your activity level. The weekly check-in (Trends) refines this with your real intake and weight trend." : {
+    "Without at least %lld days of active and resting energy in Apple Health, maintenance is estimated from your activity level. The weekly check-in (Settings) refines this with your real intake and weight trend." : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bez barem %lld dana aktivne energije i energije u mirovanju u aplikaciji Zdravlje potrošnja za održavanje procjenjuje se prema razini aktivnosti. Tjedna provjera (Trendovi) to precizira tvojim stvarnim unosom i trendom težine."
+            "value" : "Bez barem %lld dana aktivne energije i energije u mirovanju u aplikaciji Zdravlje potrošnja za održavanje procjenjuje se prema razini aktivnosti. Tjedna provjera (Postavke) to precizira tvojim stvarnim unosom i trendom težine."
           }
         }
       }
@@ -12320,6 +12381,16 @@
         }
       }
     },
+    "nothing logged" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ništa nije zapisano"
+          }
+        }
+      }
+    },
     "now %@" : {
       "localizations" : {
         "hr" : {
@@ -12828,6 +12899,24 @@
         }
       }
     },
+    "tab.food" : {
+      "comment" : "Tab and screen with your foods, meals and meal plan",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Food"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hrana"
+          }
+        }
+      }
+    },
     "taken %@" : {
       "localizations" : {
         "hr" : {
@@ -12895,6 +12984,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "vaganje %@"
+          }
+        }
+      }
+    },
+    "weight %@" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "težina %@"
           }
         }
       }

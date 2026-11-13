@@ -302,7 +302,7 @@ struct DashboardSnapshot: Equatable {
 
     func hasValue(_ tile: DashboardTile) -> Bool {
         switch tile {
-        case .energy, .water, .caffeine: true
+        case .energy, .water, .caffeine, .weeklyReport: true
         case .steps: steps != nil
         case .sleep: sleep != nil
         case .weight: weight != nil

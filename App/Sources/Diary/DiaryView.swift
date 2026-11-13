@@ -56,7 +56,7 @@ private struct DiaryContent: View {
     @State private var plannedAction: PlannedEntry?
     @State private var editingPlanned: PlannedEntry?
     @State private var movingPlanned: PlannedEntry?
-    @State private var showMealPlan = false
+    @State private var showHistory = false
 
     struct CopyRequest: Identifiable {
         let slotID: String?
@@ -248,9 +248,15 @@ private struct DiaryContent: View {
                 model.movePlanned(planned, toSlot: slotID, day: day)
             }
         }
-        .sheet(isPresented: $showMealPlan) {
-            MealPlanView { day in
-                model.day = day
+        .sheet(isPresented: $showHistory) {
+            NavigationStack {
+                HistoryCalendarView { day in
+                    model.day = day
+                    showHistory = false
+                }
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) { Button("Done") { showHistory = false } }
+                }
             }
         }
         .sheet(isPresented: $showDatePicker) {
@@ -361,7 +367,7 @@ private struct DiaryContent: View {
             if !model.isToday {
                 Button("Today") { model.goToToday() }
             }
-            Button("Meal plan", systemImage: "calendar.badge.clock") { showMealPlan = true }
+            Button("History calendar", systemImage: "calendar") { showHistory = true }
             Menu("Day options", systemImage: "ellipsis") {
                 Button("Copy whole day from date…", systemImage: "calendar") { copyRequest = CopyRequest(slotID: nil) }
                 Divider()

@@ -245,6 +245,21 @@ final class DashboardModel {
         await reloadAccess()
     }
 
+    // MARK: Last week
+
+    /// Last week's report for its tile; nil until loaded or when it can't be read.
+    private(set) var lastWeek: WeeklyReport?
+
+    /// The first day of the week before this one (the user's first weekday).
+    var lastWeekStart: LocalDay {
+        environment.today.weekStart(firstWeekday: calendar.firstWeekday).adding(days: -7)
+    }
+
+    /// Re-reads last week's report; the view calls it when the day, the data, the unit or Health change.
+    func reloadLastWeek() {
+        lastWeek = try? WeeklyReportLoader.load(weekStart: lastWeekStart, environment: environment)
+    }
+
     /// Onboarding "Connect" from a tile that needs access.
     func connectHealth() async {
         do {

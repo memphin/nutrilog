@@ -44,14 +44,14 @@
                         QuantitySheet(detail: detail, mode: .log(slotID: "breakfast", day: environment.today)) {}
                     }
                 }
-            case "trends":
-                TrendsView()
+            case "training":
+                TrainingView()
             case "checkIn":
                 CheckInView()
             case "checkInHistory":
                 NavigationStack { CheckInHistoryView() }
             case "history":
-                NavigationStack { HistoryCalendarView() }
+                NavigationStack { HistoryCalendarView { environment.openDiary(on: $0) } }
             case "weeklyReport":
                 NavigationStack { WeeklyReportView() }
             case "chartWeight":

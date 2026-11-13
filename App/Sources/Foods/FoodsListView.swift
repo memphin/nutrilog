@@ -3,8 +3,12 @@ import DesignSystem
 import Persistence
 import SwiftUI
 
-/// "Foods" tab: your saved meals, custom foods and favorites — create, edit, favorite, delete (with undo).
+/// "Food" tab: your saved meals, custom foods and favorites — create, edit, favorite, delete (with undo) — and the
+/// meal plan.
 struct FoodsListView: View {
+    /// The tab's and the screen's title. Its own key: "Food" alone is the Siri food entity ("Namirnica").
+    static let title = String(localized: "tab.food", defaultValue: "Food", comment: "Tab and screen with your foods, meals and meal plan")
+
     @Environment(AppEnvironment.self) private var environment
     @State private var model: FoodsListModel?
 
@@ -33,6 +37,7 @@ private struct FoodsListContent: View {
     @State private var editingMeal: MealSelection?
     @State private var savingSlot: MealSlot?
     @State private var mealName = ""
+    @State private var showMealPlan = false
 
     var body: some View {
         List {
@@ -73,8 +78,11 @@ private struct FoodsListContent: View {
             }
         }
         .searchable(text: $model.query, prompt: "Filter my foods")
-        .navigationTitle("My foods")
+        .navigationTitle(FoodsListView.title)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("Meal plan", systemImage: "calendar.badge.clock") { showMealPlan = true }
+            }
             ToolbarItem(placement: .primaryAction) {
                 Menu("New", systemImage: "plus") {
                     Button("New food", systemImage: "fork.knife") { showCreate = true }
@@ -87,6 +95,9 @@ private struct FoodsListContent: View {
         .refreshable { model.reload() }
         .onChange(of: environment.dataGeneration) { model.dataDidChangeExternally() }
         .undoToast(model.undo)
+        .sheet(isPresented: $showMealPlan) {
+            MealPlanView { environment.openDiary(on: $0) }
+        }
         .sheet(isPresented: $showCreate, onDismiss: reload) {
             FoodEditorView()
         }

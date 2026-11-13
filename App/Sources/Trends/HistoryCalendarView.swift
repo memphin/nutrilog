@@ -88,6 +88,9 @@ extension Adherence {
 /// Month grid of the last two years; each day is colored by how close its calories were to that day's target.
 /// Tapping a day opens it in the diary.
 struct HistoryCalendarView: View {
+    /// A tap on a day: shows it in the diary.
+    let onOpenDay: (LocalDay) -> Void
+
     @Environment(AppEnvironment.self) private var environment
     @State private var months: [HistoryMonth] = []
     @State private var errorMessage: String?
@@ -131,7 +134,7 @@ struct HistoryCalendarView: View {
                 ForEach(month.days) { day in
                     DayCell(
                         day: day, isToday: day.day == environment.today, unit: environment.energyUnit,
-                        open: { environment.openDiary(on: day.day) },
+                        open: { onOpenDay(day.day) },
                         toggleTraining: { toggleTraining(day.day) },
                     )
                 }
