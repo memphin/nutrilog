@@ -142,21 +142,20 @@ struct DashboardLayoutTests {
         var hidden: [String]
     }
 
-    @Test func `last week's tile reads the week before this one and opens the report`() throws {
+    @Test func `this week's tile reads the current week and opens the report`() throws {
         let env = AppEnvironment.preview(sampleData: true)
         let model = DashboardModel(environment: env)
         let thisWeek = env.today.weekStart(firstWeekday: Calendar.current.firstWeekday)
-        #expect(model.lastWeekStart == thisWeek.adding(days: -7))
-        #expect(model.lastWeek == nil)
-        model.reloadLastWeek()
-        let report = try #require(model.lastWeek)
-        #expect(report.start == model.lastWeekStart)
-        #expect(report.loggedDays > 0) // the sample data has weeks of history
+        #expect(model.thisWeekStart == thisWeek)
+        #expect(model.thisWeek == nil)
+        model.reloadThisWeek()
+        let report = try #require(model.thisWeek)
+        #expect(report.start == model.thisWeekStart)
         #expect(!DashboardTile.weeklyReport.usesHealth)
         #expect(model.state(of: .weeklyReport) == .ready)
-        let spoken = LastWeekTileText.spoken(report, unit: .kcal)
+        let spoken = ThisWeekTileText.spoken(report, unit: .kcal)
         #expect(spoken.hasPrefix(DashboardTile.weeklyReport.title + ", "))
-        #expect(LastWeekTileText.spoken(nil, unit: .kcal) == DashboardTile.weeklyReport.title)
+        #expect(ThisWeekTileText.spoken(nil, unit: .kcal) == DashboardTile.weeklyReport.title)
     }
 
     @Test func `rows pair narrow tiles and give wide tiles a row`() {
@@ -511,7 +510,7 @@ struct DashboardDemoTests {
         #expect(snapshot.hrv?.deviationText != nil)
         #expect(snapshot.restingHR != nil)
         #expect(snapshot.energyBurned?.totalKcal != nil)
-        // A week of demo history: every tile but calories, caffeine (whose tile draws today's curve) and last week
+        // A week of demo history: every tile but calories, caffeine (whose tile draws today's curve) and this week
         // has a sparkline and a spoken trend.
         for tile in DashboardTile.allCases where ![.energy, .caffeine, .weeklyReport].contains(tile) {
             #expect(snapshot.sparkline(for: tile) != nil, "\(tile)")
