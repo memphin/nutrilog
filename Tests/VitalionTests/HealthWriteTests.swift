@@ -584,7 +584,8 @@ struct HealthObserverTests {
         env.startHealthBackgroundWork()
         defer { env.healthWrites?.stop() }
         #expect(await waitUntil { observer.isObserving })
-        #expect(observer.snapshot.observedTypes.count == 9)
+        #expect(observer.snapshot.observedTypes.count == 10)
+        #expect(observer.snapshot.observedTypes.contains(.workout))
     }
 
     @Test func `a new weigh-in reaches daily metrics and the observer is completed`() async throws {
@@ -628,9 +629,9 @@ struct HealthObserverTests {
         // A burst (as on launch, one update per type) is coalesced and every update completed.
         fake.update { $0.fetchError = nil }
         let burst = HealthReadType.observedTypes.compactMap { observer.fire($0) }
-        #expect(burst.count == 9)
+        #expect(burst.count == 10)
         #expect(await waitUntil { burst.allSatisfy(\.isCompleted) })
-        #expect(sync.observerRefreshCount < 1 + 9)
+        #expect(sync.observerRefreshCount < 1 + 10)
 
         await sync.stopObserving()
         #expect(!observer.isObserving)

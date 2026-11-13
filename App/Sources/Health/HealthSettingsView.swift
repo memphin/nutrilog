@@ -36,6 +36,9 @@ final class HealthSettingsModel {
             if let metric = type.metric {
                 let latest = rows.last { $0.hasValue(metric) }
                 result[type] = latest.map { .found(source: $0.sources[metric]) } ?? .noData
+            } else if type == .workout {
+                let latest = try? environment.workouts?.latestWorkout(in: sync.window)
+                result[type] = latest.map { .found(source: $0.source.name) } ?? .noData
             } else {
                 result[type] = characteristics?.hasValue(for: type) == true ? .found(source: nil) : .noData
             }

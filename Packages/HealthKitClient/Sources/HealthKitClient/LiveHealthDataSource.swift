@@ -15,6 +15,7 @@
     ///   carries its `HKMetadataKeyExternalUUID`, so Core can tell the app's own samples that still have a local row.
     /// - the app's own water samples (with external ids), for the same reason (`HealthDataBatch.waterSamples`).
     /// - sleep: category samples whose end date falls inside the nights' windows.
+    /// - workouts: every `HKWorkout` that started on the days, with its duration, active energy and distance.
     ///
     /// Statistics buckets follow the device calendar (`Calendar.current`), so pass that calendar in production.
     public final class LiveHealthDataSource: HealthDataSource {
@@ -81,6 +82,7 @@
             async let hrv = samples(.heartRateVariabilitySDNN, plan: plan)
             async let sleep = sleepSamples(plan: plan)
             async let ownWater = ownWaterSamples(plan: plan)
+            async let workouts = workouts(plan: plan)
 
             return try await HealthDataBatch(
                 days: days,
@@ -93,6 +95,7 @@
                 ],
                 sleep: sleep,
                 waterSamples: ownWater,
+                workouts: workouts,
             )
         }
 
@@ -195,6 +198,41 @@
             }
         }
 
+        /// The workouts that started on the plan's days, oldest first. Energy is the workout's active energy; the
+        /// distance is the first of the distance types the workout has, else its total distance (workouts saved the
+        /// old way carry only that).
+        private func workouts(plan: HealthFetchPlan) async throws -> [HealthWorkout] {
+            let descriptor = HKSampleQueryDescriptor(
+                predicates: [.workout(HKQuery.predicateForSamples(
+                    withStart: plan.dayInterval.start, end: plan.dayInterval.end, options: .strictStartDate,
+                ))],
+                sortDescriptors: [SortDescriptor(\.startDate)],
+            )
+            return try await descriptor.result(for: store).map { workout in
+                let energy = workout.statistics(for: HKQuantityType(.activeEnergyBurned))?.sumQuantity()
+                let distance = Self.distanceTypes.lazy
+                    .compactMap { workout.statistics(for: HKQuantityType($0))?.sumQuantity() }
+                    .first ?? workout.totalDistance
+                return HealthWorkout(
+                    id: workout.uuid.uuidString.lowercased(),
+                    day: LocalDay(workout.startDate, calendar: plan.calendar),
+                    activityType: Int(workout.workoutActivityType.rawValue),
+                    start: workout.startDate,
+                    end: workout.endDate,
+                    durationSec: workout.duration,
+                    activeKcal: energy?.doubleValue(for: .kilocalorie()),
+                    distanceM: distance?.doubleValue(for: .meter()),
+                    source: HealthSource(workout.sourceRevision),
+                )
+            }
+        }
+
+        /// The distance a workout may carry, most common first.
+        private static let distanceTypes: [HKQuantityTypeIdentifier] = [
+            .distanceWalkingRunning, .distanceCycling, .distanceSwimming, .distanceWheelchair, .distanceDownhillSnowSports,
+            .distanceCrossCountrySkiing, .distanceRowing, .distancePaddleSports, .distanceSkatingSports,
+        ]
+
         // MARK: Characteristics
 
         public func fetchCharacteristics() async throws -> HealthCharacteristics {
@@ -240,6 +278,7 @@
             case .restingHeartRate: HKQuantityType(.restingHeartRate)
             case .heartRateVariabilitySDNN: HKQuantityType(.heartRateVariabilitySDNN)
             case .dietaryWater: HKQuantityType(.dietaryWater)
+            case .workout: HKObjectType.workoutType()
             case .height: HKQuantityType(.height)
             case .dateOfBirth: HKCharacteristicType(.dateOfBirth)
             case .biologicalSex: HKCharacteristicType(.biologicalSex)

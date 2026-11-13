@@ -6,6 +6,7 @@ Vitalion is built for one person's private use. The design rule is simple: **dat
 - Your food diary, custom foods, saved meals, targets and profile — in an SQLite database inside the app's sandbox, protected by iOS Data Protection (encrypted at rest).
 - A local cache of Open Food Facts product records you scanned (so repeat scans work offline).
 - A daily snapshot of Apple Health values you granted access to (steps, sleep, weight, body fat %, energy, resting heart rate, HRV, water). Apple Health remains the system of record; the snapshot can be deleted and recomputed at any time.
+- The workouts Apple Health has, if you granted access to them (kind, start and end, duration, active energy, distance and the name of the app or device that recorded them) — for the Training tab and training days. No route, heart rate or other detail of a workout is read.
 - A meal photo you take or choose for "Snap or describe a meal" is not stored: it is used for that one estimate and dropped.
 - Automatic backups: about once a week a full export is written to a folder inside the app's sandbox (the newest seven are kept). They never leave the device unless you share one.
 - Today's totals for the widgets (calories, macros, steps, sleep, weight, water) — in the app's App Group container on the device, readable only by Vitalion and its own widget extension.

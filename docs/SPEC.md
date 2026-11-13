@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Document version | 1.15 (app 1.2.0 shipped) |
+| Document version | 1.16 (app 1.2.0 shipped) |
 | Date | 2026-11-10 |
 | Status | **Approved** — phases 1–3 shipped (app 1.2.0); phase 4 not started. Changes go through PRs to `docs/SPEC.md` with a change-log entry. |
 | Name | **Vitalion** (called Nutrilog until November 2026; the bundle ID `hr.ivanjuric.nutrilog` stays) |
@@ -114,7 +114,7 @@ Commonly cited pain points with incumbents that this project should avoid:
 
 ### 3.4 Apple HealthKit
 - Capability + `NSHealthShareUsageDescription` (read) and `NSHealthUpdateUsageDescription` (write) in Info.plist. Available on iOS; iPadOS 17+; not on macOS (relevant for the web/desktop story — Health data on the web will only come via sync from the phone).
-- **Read types needed**: `stepCount`, `bodyMass`, `bodyFatPercentage`, `activeEnergyBurned`, `basalEnergyBurned`, `sleepAnalysis` (category; stages asleepCore/Deep/REM, awake, inBed), `restingHeartRate`, `heartRateVariabilitySDNN`, `dietaryWater` (to show water logged by other apps), `height`, `dateOfBirth`, `biologicalSex` (characteristics, for BMR).
+- **Read types needed**: `stepCount`, `bodyMass`, `bodyFatPercentage`, `activeEnergyBurned`, `basalEnergyBurned`, `sleepAnalysis` (category; stages asleepCore/Deep/REM, awake, inBed), `restingHeartRate`, `heartRateVariabilitySDNN`, `dietaryWater` (to show water logged by other apps), workouts (`HKWorkoutType`, for the Training tab — FR-54), `height`, `dateOfBirth`, `biologicalSex` (characteristics, for BMR).
 - **Write types**: `dietaryEnergyConsumed`, `dietaryProtein`, `dietaryCarbohydrates`, `dietaryFatTotal`, `dietaryFiber`, `dietarySugar`, `dietarySodium`, `dietaryWater`, `bodyMass` and `bodyFatPercentage` (only when weight — and optionally body fat — is entered manually in our app; our own body samples are ignored when reading, so a manual weigh-in is never counted twice).
 - **Resting HR / HRV**: Apple Watch writes one `restingHeartRate` sample per day and several `heartRateVariabilitySDNN` samples (mostly overnight); show the day's resting HR and the overnight HRV average, plus a 7-day trend — these are recovery context, not targets.
 - **Behaviors to design for**:
@@ -177,7 +177,7 @@ Single user (the owner). Representative daily flows:
 ### 5.4 Targets & profile (MUST)
 - FR-30 Profile: height, date of birth, sex, activity level; weight read from Health (manual fallback).
 - FR-31 Calorie target: computed (maintenance ± goal rate) or manual override. Maintenance is the 30-day average of Health total energy (active + resting; at least 7 usable days, days below 60 % of the median dropped as partial wear); without it, Mifflin-St Jeor BMR × activity.
-- FR-32 Macro targets as grams or % with validation that % sum to 100; training days (SHOULD, done): default training weekdays and a boost % (default 10) in Settings → Training days, any day switched on or off in the diary, meal plan or calendar. On a training day the calorie target and the hydration goal go up by the boost; protein, fat and fiber stay, the extra calories are carbs. Changes apply from today; past days keep their training status and boost (migration 015).
+- FR-32 Macro targets as grams or % with validation that % sum to 100; training days (SHOULD, done): default training weekdays and a boost % (default 10) in Settings → Training days, any day switched on or off in the diary, meal plan or calendar. On a training day the calorie target and the hydration goal go up by the boost; protein, fat and fiber stay, the extra calories are carbs. Changes apply from today; past days keep their training status and boost (migration 015). A day with a workout from Apple Health that counts as training (FR-54) is a training day too, unless it was switched off by hand.
 - FR-33 Goal modes: lose / maintain / gain with weekly rate; app shows implied deficit/surplus.
 - FR-34 (**MUST**, phase 3) **Adaptive expenditure**: estimate TDEE from logged intake and smoothed weight change; surface as "estimated maintenance" with a confidence indicator; weekly check-in proposes a new calorie target with one-tap apply. Algorithm in §5.4.1.
 
@@ -198,7 +198,7 @@ Inputs: daily `kcalIn` (diary totals; days with < 3 entries and no "complete day
 Unit tests cover: perfect-logging synthetic data (recovers the true TDEE within ±50 kcal), missing days, water-weight spikes, under-logging detection (if intake is implausibly low vs. estimate, warn rather than lower the target), a new user, weekly and every-third-day weigh-ins and a restart after a 60-day gap (within ±120 kcal from the first estimate; ±150 after the gap from day 14), seeded scale noise, and partly logged days.
 
 ### 5.5 Health & body data (MUST)
-- FR-40 Request HealthKit read permissions for steps, weight, body fat %, sleep, active energy, basal energy; write permission for dietary nutrients and body mass.
+- FR-40 Request HealthKit read permissions for steps, weight, body fat %, sleep, active energy, basal energy, workouts; write permission for dietary nutrients and body mass.
 - FR-41 Dashboard tiles for today: steps, sleep duration (hours:minutes, plus in-bed vs. asleep and stage breakdown), weight (latest + trend + trend Δ vs. 7 days ago; the trend is the EMA of §5.4.1 step 1, the same one the charts and the adaptive TDEE use), body fat %, active energy, resting heart rate, overnight HRV, water. Tiles are reorderable/hideable.
 - FR-42 Manual weight entry (writes to Health unless disabled).
 - FR-43 Write each diary entry's nutrients to Health as `dietary*` samples; keep in sync on edit/delete; global toggle to disable writing.
@@ -214,6 +214,7 @@ Unit tests cover: perfect-logging synthetic data (recovers the true TDEE within 
 - FR-51 Charts (Swift Charts): weight (raw + trend), daily kcal vs. target, macro distribution, steps, sleep — 1w / 1m / 3m / 1y. Each opens from its Today tile's detail (macros from the calories tile).
 - FR-52 Weekly report: averages, best/worst day, intake vs. estimated expenditure. Opens from Today's "Last week" tile (last week's average intake, average target and weight-trend change).
 - FR-53 Correlations (COULD): removed in 1.13 (owner request).
+- FR-54 (SHOULD, owner request) **Training tab**: the workouts Apple Health has (from the watch or a training app), read-only — nothing is logged in Vitalion. Each workout kind (`HKWorkoutActivityType`) either counts as training or is everyday activity; walking is activity by default, every other kind training, set per kind found in Health in Settings → Training days → Counts as training. Like targets the choice is history: a change applies from today. The tab shows this week (days trained of days planned, time trained, a mark per day: trained / planned), training sessions per week for the last 12 weeks, this week's fuel (average intake against the average target, protein per kg of the weight trend, weight-trend change — the weekly report's numbers, which it opens), the training sessions of the last 4 weeks and, apart from them, this week's walks and other activity. A session recorded twice (watch and training app: workouts overlapping for at least half of the shorter one) counts once; the one shown is a training workout if there is one, then the watch's, then the longest. From the first workout read on, a workout that counts as training makes its day a training day (FR-32); earlier days keep their status. Workouts are kept one by one in `health_workout` (migration 018), beyond the 90 days a sync reads; one deleted in Health is deleted here. Users who connected Health before this are asked once for the new type, from the tab. No load or readiness score, no workout detail, no Today tile.
 
 ### 5.7 Data portability (MUST)
 - FR-60 Export all data as JSON (full fidelity, versioned schema) and CSV (diary, weights); share sheet / Files.
@@ -323,6 +324,10 @@ DailyMetrics (from HealthKit, one row per date)
   weightKg? (first of day), bodyFatPct?, weightTrendKg? (EMA, computed), restingHR?, hrvSDNNms? (overnight avg),
   waterMl? (sum incl. other apps), sourceSummary, fetchedAt
 
+HealthWorkout (from HealthKit, one row per workout; FR-54)
+  id (HKWorkout UUID), day, activityType (HKWorkoutActivityType raw value), startAt, endAt, durationSec (without pauses),
+  activeKcal?, distanceM?, sourceName, sourceBundleId, sourceProductType?, createdAt, updatedAt, deletedAt?, revision
+
 WaterEntry { id, timestamp, ml, healthKitUUID?, createdAt, updatedAt, deletedAt?, revision }
 
 WeightEntry (manual or imported) { id, timestamp, kg, bodyFatPct?, source, healthKitUUID? }
@@ -428,6 +433,7 @@ All blocking decisions are made (D1–D9). The following defaults may be changed
 ---
 
 *Change log*
+- 1.16 — owner request: the Training tab shows the workouts from Apple Health (FR-54) — training apart from walks and other everyday activity, this week against the planned training days, 12 weeks of sessions, this week's fuel — and a workout that counts as training makes its day a training day (FR-32); workouts are a new Health read type (migration 018) (2026-11-13)
 - 1.15 — owner request: the Trends tab is replaced by an empty Training tab; the maintenance estimate, weekly check-in, check-in history and check-in day & reminder move to Settings → Maintenance & check-in; the weekly report opens from a new "Last week" Today tile (FR-52); the diary's toolbar opens the history calendar instead of the meal plan, which moves to the Foods tab, renamed Food (2026-11-13)
 - 1.14 — owner request: Supplements & medications in the diary with reminders (FR-83); a 200 mg caffeine pill among the caffeine presets (FR-49), which adds no fluid (2026-11-13)
 - 1.13 — owner request: Trends no longer lists the charts (each opens from its Today tile, FR-51); correlations (FR-53) removed entirely (2026-11-13)

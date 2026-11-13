@@ -16,7 +16,7 @@ public struct DataPortability: Sendable {
     static let tables = [
         "meal_slot", "food", "serving", "food_barcode", "recipe_ingredient", "meal_template", "meal_template_item",
         "diary_entry", "planned_entry", "healthkit_link", "day_note", "water_entry", "caffeine_entry", "weight_entry",
-        "daily_metrics", "profile", "target", "training_schedule", "training_day", "tdee_estimate", "setting",
+        "daily_metrics", "health_workout", "profile", "target", "training_schedule", "training_day", "tdee_estimate", "setting",
         "supplement", "supplement_dose",
     ]
 

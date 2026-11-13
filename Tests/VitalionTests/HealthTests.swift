@@ -409,7 +409,8 @@ struct HealthKitMappingTests {
             #expect(metric.quantityType.is(compatibleWith: metric.unit), "\(metric)")
         }
         #expect(SampledMetric.bodyFatPercentage.valueScale == 100)
-        #expect(LiveHealthDataSource.readTypes.count == 12)
+        #expect(LiveHealthDataSource.readTypes.count == 13)
+        #expect(HealthReadType.workout.objectType == HKObjectType.workoutType())
         #expect(LiveHealthDataSource.shareTypes.count == 10)
     }
 

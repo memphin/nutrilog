@@ -61,9 +61,10 @@ public final class HealthObserverCompletion: Sendable {
 }
 
 public extension HealthReadType {
-    /// The types worth observing: everything that feeds `daily_metrics` (not the profile characteristics).
+    /// The types worth observing: everything that feeds `daily_metrics`, and workouts (not height and the profile
+    /// characteristics, which are read when the profile needs them).
     static var observedTypes: [HealthReadType] {
-        allCases.filter { $0.metric != nil }
+        allCases.filter { $0.metric != nil || $0.kind == .workout }
     }
 }
 

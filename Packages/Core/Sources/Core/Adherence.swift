@@ -65,6 +65,16 @@ public struct EffectiveTimeline<Value: Sendable>: Sendable {
         }
         return low > 0 ? entries[low - 1].value : nil
     }
+
+    /// The earliest entry; nil when there is none.
+    public var first: (from: LocalDay, value: Value)? {
+        entries.first
+    }
+
+    /// The latest entry; nil when there is none.
+    public var last: (from: LocalDay, value: Value)? {
+        entries.last
+    }
 }
 
 extension EffectiveTimeline: Equatable where Value: Equatable {

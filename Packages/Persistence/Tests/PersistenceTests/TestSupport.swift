@@ -56,6 +56,10 @@ struct Fixture {
         TrainingDayRepository(db, clock: clock.appClock)
     }
 
+    var workouts: WorkoutRepository {
+        WorkoutRepository(db, clock: clock.appClock)
+    }
+
     var healthLinks: HealthKitLinkRepository {
         HealthKitLinkRepository(db, clock: clock.appClock)
     }

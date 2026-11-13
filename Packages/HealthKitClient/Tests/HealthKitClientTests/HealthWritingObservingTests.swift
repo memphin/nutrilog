@@ -171,7 +171,8 @@ struct HealthObserverDispatcherTests {
 
     @Test func `observes every metric type and enables background delivery`() async throws {
         let observer = try await start(HealthObserverDispatcher { _ in })
-        #expect(HealthReadType.observedTypes.count == 9)
+        #expect(HealthReadType.observedTypes.count == 10)
+        #expect(HealthReadType.observedTypes.contains(.workout))
         #expect(!HealthReadType.observedTypes.contains(.dateOfBirth))
         #expect(observer.snapshot.observedTypes.allSatisfy { $0.kind != .characteristic })
         #expect(observer.snapshot.backgroundDeliveryTypes.contains(.bodyMass))

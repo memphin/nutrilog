@@ -26,11 +26,13 @@ private func at(_ dayString: String, _ hour: Int, _ minute: Int = 0) -> Date {
 
 struct HealthTypeCatalogTests {
     @Test func `catalog lists the SPEC read and write types`() {
-        #expect(HealthReadType.allCases.count == 12)
+        #expect(HealthReadType.allCases.count == 13)
         #expect(HealthWriteType.allCases.count == 10)
         #expect(Set(HealthReadType.allCases.compactMap(\.metric)) == Set(HealthMetric.allCases))
         #expect(HealthReadType.allCases.filter { $0.kind == .characteristic } == [.dateOfBirth, .biologicalSex])
         #expect(HealthReadType.allCases.filter { $0.kind == .category } == [.sleepAnalysis])
+        #expect(HealthReadType.allCases.filter { $0.kind == .workout } == [.workout])
+        #expect(HealthReadType.workout.metric == nil) // kept one by one, not in daily_metrics
         #expect(Set(HealthReadType.allCases.compactMap(\.sampledMetric)) == Set(SampledMetric.allCases))
     }
 
@@ -50,7 +52,7 @@ struct HealthTypeCatalogTests {
         for type in nutrients {
             #expect(type.explanation == "The \(type.title.lowercased()) of each diary entry, updated when you edit or delete it.")
         }
-        #expect(Set(HealthReadType.allCases.map(\.title)).count == 12)
+        #expect(Set(HealthReadType.allCases.map(\.title)).count == 13)
     }
 
     @Test func `identifiers match HealthKit`() {
@@ -69,6 +71,7 @@ struct HealthTypeCatalogTests {
                 .restingHeartRate: HKQuantityTypeIdentifier.restingHeartRate.rawValue,
                 .heartRateVariabilitySDNN: HKQuantityTypeIdentifier.heartRateVariabilitySDNN.rawValue,
                 .dietaryWater: HKQuantityTypeIdentifier.dietaryWater.rawValue,
+                .workout: HKObjectType.workoutType().identifier,
                 .height: HKQuantityTypeIdentifier.height.rawValue,
                 .dateOfBirth: HKCharacteristicTypeIdentifier.dateOfBirth.rawValue,
                 .biologicalSex: HKCharacteristicTypeIdentifier.biologicalSex.rawValue,
@@ -175,6 +178,31 @@ struct FakeHealthDataSourceTests {
         #expect(batch.sleep.count == 1)
     }
 
+    @Test func `workouts are returned for the days they start on, oldest first`() async throws {
+        func workout(_ id: String, _ dayString: String, _ hour: Int, _ minute: Int = 0) -> HealthWorkout {
+            let start = at(dayString, hour, minute)
+            return HealthWorkout(
+                id: id, day: day(dayString), activityType: WorkoutKind.strength.rawValue, start: start,
+                end: start.addingTimeInterval(3600), source: watch,
+            )
+        }
+        var state = FakeHealthDataSource.State()
+        state.workouts = [
+            workout("evening", "2026-11-09", 18),
+            workout("morning", "2026-11-09", 7),
+            workout("late", "2026-11-09", 23, 30), // ends after midnight: still Monday's
+            workout("before", "2026-11-08", 23, 59),
+            workout("after", "2026-11-10", 0),
+        ]
+        let fake = FakeHealthDataSource(state: state)
+        let batch = try await fake.fetchDailyData(for: day("2026-11-09") ... day("2026-11-09"), calendar: zagreb)
+        #expect(batch.workouts.map(\.id) == ["morning", "evening", "late"])
+
+        fake.update { $0.readAllowed = false }
+        let denied = try await fake.fetchDailyData(for: day("2026-11-09") ... day("2026-11-09"), calendar: zagreb)
+        #expect(denied.workouts.isEmpty)
+    }
+
     @Test func `after a reinstall, own samples with no local row are read like any other source`() async throws {
         let own = HealthSource(name: "Vitalion", bundleIdentifier: "hr.ivanjuric.nutrilog", productType: "iPhone17,1")
         var state = FakeHealthDataSource.State()
@@ -262,5 +290,12 @@ struct FakeHealthDataSourceTests {
         let characteristics = try await fake.fetchCharacteristics()
         #expect(characteristics.heightCm == 181)
         #expect(characteristics.sex == .male)
+        // A workout every day: strength (recorded twice: watch and gym app) on Monday, Wednesday and Friday, a run on
+        // Saturday, a walk otherwise. 1–9 November 2026 is Sunday to Monday.
+        let sessions = WorkoutSessions.merged(batch.workouts, rules: .none)
+        #expect(batch.workouts.count == 13)
+        #expect(sessions.count == 9)
+        #expect(sessions.map(\.kind) == [.walking, .strength, .walking, .strength, .walking, .strength, .running, .walking, .strength])
+        #expect(sessions.allSatisfy { $0.source.kind == .appleWatch && $0.activeKcal != nil })
     }
 }

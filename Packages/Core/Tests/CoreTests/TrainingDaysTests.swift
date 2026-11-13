@@ -56,6 +56,34 @@ struct TrainingDaysTests {
         #expect(days.boost(on: tuesday) == 10)
     }
 
+    @Test func `a training workout makes its day a training day`() {
+        let tuesday = monday.next
+        let days = TrainingDays(schedules: [schedule("2026-01-01", [2], boost: 15)], overrides: [:], workoutDays: [tuesday])
+        #expect(days.isTraining(tuesday))
+        #expect(!days.scheduledTraining(tuesday))
+        #expect(days.defaultTraining(tuesday))
+        #expect(days.boost(on: tuesday) == 15)
+        // A workout is not a plan; the schedule is.
+        #expect(!days.isPlanned(tuesday))
+        #expect(days.isPlanned(monday))
+        #expect(!days.isTraining(tuesday.next))
+        // Without a schedule the default boost applies.
+        #expect(TrainingDays(schedules: [], overrides: [:], workoutDays: [tuesday]).boost(on: tuesday) == 10)
+        #expect(TrainingDays(schedules: [], overrides: [:], workoutDays: [tuesday]) != .none)
+    }
+
+    @Test func `the user's switch beats a workout`() {
+        let tuesday = monday.next
+        let days = TrainingDays(schedules: [], overrides: [tuesday: false, monday: true], workoutDays: [tuesday])
+        #expect(!days.isTraining(tuesday))
+        #expect(days.defaultTraining(tuesday))
+        #expect(days.boost(on: tuesday) == nil)
+        #expect(!days.isPlanned(tuesday))
+        // A day switched on by hand is planned.
+        #expect(days.isPlanned(monday))
+        #expect(!days.defaultTraining(monday))
+    }
+
     @Test func `an override works without any schedule`() {
         let days = TrainingDays(schedules: [], overrides: [monday: true])
         #expect(days.isTraining(monday))
