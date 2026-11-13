@@ -419,7 +419,7 @@ All blocking decisions are made (D1–D9). The following defaults may be changed
 | Source | Endpoint | Auth | Limits | License |
 |---|---|---|---|---|
 | Open Food Facts | `https://world.openfoodfacts.org/api/v2/product/{barcode}.json?fields=…` | None (User-Agent) | Fair use; ~100 req/min for product reads documented | ODbL 1.0 + DbCL |
-| Open Food Facts search (full text) | `https://world.openfoodfacts.org/cgi/search.pl?search_terms=…&json=1` (v1) | None | ~10 req/min for search | ODbL |
+| Open Food Facts search (full text) | `https://search.openfoodfacts.org/search?q=…` (Search-a-licious; no nutrition in hits — fetched by barcode when picked) | None | None published (client spaces requests 0.5 s; 429 → cool-down) | ODbL |
 | Open Food Facts write | `POST /cgi/product_jqm2.pl` (v2) / v3 product write | OFF user/password | — | Contributions ODbL |
 | USDA FDC | `https://api.nal.usda.gov/fdc/v1/foods/search?query=…&api_key=…` | API key (free) | 1,000/h/IP; DEMO_KEY 30/h, 50/day | CC0 1.0 |
 | Apple HealthKit | `HKHealthStore` (on-device) | User permission | — | — |

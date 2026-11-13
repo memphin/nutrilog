@@ -6,48 +6,99 @@ import Observation
 import Persistence
 import SwiftUI
 
-/// One online search hit (FR-20): an unsaved food from Open Food Facts or USDA, with names already title-cased.
+/// One online search hit (FR-20), names already title-cased: a USDA food with its nutrition, or an Open Food Facts
+/// product whose nutrition is fetched by barcode when it is picked (Search-a-licious doesn't return nutrition).
 struct OnlineFoodResult: Identifiable, Hashable {
-    let draft: FoodDraft
+    enum Content: Hashable {
+        /// An unsaved food with its nutrition (USDA).
+        case food(FoodDraft)
+        /// An Open Food Facts product known only by barcode, names and brand.
+        case offProduct(OFFSearchHit)
+    }
+
+    let content: Content
 
     init(_ draft: FoodDraft) {
-        self.draft = draft.displayCased
+        content = .food(draft.displayCased)
+    }
+
+    init(_ hit: OFFSearchHit) {
+        content = .offProduct(hit.displayCased)
+    }
+
+    /// The food with its nutrition; `nil` for an Open Food Facts product until it is fetched.
+    var draft: FoodDraft? {
+        if case let .food(draft) = content {
+            return draft
+        }
+        return nil
+    }
+
+    var origin: FoodDraft.Origin {
+        switch content {
+        case let .food(draft): draft.origin
+        case .offProduct: .off
+        }
     }
 
     var id: String {
-        "\(draft.origin.rawValue):\(draft.sourceID)"
+        switch content {
+        case let .food(draft): "\(draft.origin.rawValue):\(draft.sourceID)"
+        case let .offProduct(hit): "\(FoodDraft.Origin.off.rawValue):\(hit.code)"
+        }
     }
 
     var source: FoodSource {
-        FoodSource(draft.origin)
+        FoodSource(origin)
+    }
+
+    private var rawName: String? {
+        switch content {
+        case let .food(draft): draft.name
+        case let .offProduct(hit): hit.name
+        }
+    }
+
+    private var rawBrand: String? {
+        switch content {
+        case let .food(draft): draft.brand
+        case let .offProduct(hit): hit.brand
+        }
     }
 
     /// Name, else brand, else a generic label (OFF products sometimes have neither).
     var name: String {
-        draft.name ?? draft.brand ?? String(localized: "Unnamed product")
+        rawName ?? rawBrand ?? String(localized: "Unnamed product")
     }
 
     /// Brand shown under the name; `nil` when it already is the name.
     var brand: String? {
-        draft.name == nil ? nil : draft.brand
+        rawName == nil ? nil : rawBrand
     }
 
     /// Product page for OFF hits ("View on Open Food Facts", ODbL attribution); `nil` for USDA.
     var offProductURL: URL? {
-        draft.origin == .off ? draft.productURL : nil
+        switch content {
+        case let .food(draft): draft.origin == .off ? draft.productURL : nil
+        case let .offProduct(hit): hit.productURL
+        }
     }
 
     /// Barcode compared across sources: normalized (UPC-A → EAN-13, …) when valid, else as given.
     var barcodeKey: String? {
-        draft.barcode.map { Barcode.normalize($0) ?? $0 }
+        switch content {
+        case let .food(draft): draft.barcode.map { Barcode.normalize($0) ?? $0 }
+        case let .offProduct(hit): hit.code
+        }
     }
 }
 
 /// State behind the "Online" segment of Add Food (backlog #22, FR-20): debounced, cancellable parallel searches of
 /// Open Food Facts (packaged) and USDA FoodData Central (generic + branded), merged into one list as each source
-/// answers.
+/// answers. A source paused by a rate limit, or busy, is asked again by itself when the pause ends (a few times at
+/// most per query).
 ///
-/// Call ``search(_:offSearch:usda:)`` from `.task(id:)` keyed on the query: SwiftUI cancels the previous call when
+/// Call ``search(_:offSearch:usda:nameLanguage:)`` from `.task(id:)` keyed on the query: SwiftUI cancels the previous call when
 /// the text changes, which cancels its debounce wait or its in-flight requests, and a cancelled call never writes
 /// its (stale) results.
 @MainActor
@@ -62,9 +113,10 @@ final class OnlineSearchModel {
         case loading
         case loaded(count: Int)
         case offline
-        /// Rate-limit cool-down (USDA 429: 1 h, OFF 429/503: 60 s): no request until `until`.
+        /// Rate-limit cool-down (USDA 429: 1 h, OFF 429: `Retry-After` or 60 s): no request until `until`, then
+        /// the search runs again by itself.
         case paused(until: Date)
-        /// OFF answered with a server error.
+        /// OFF answered with a server error (503: overloaded); retried after ``busyRetryDelay``.
         case busy
         case failed(String)
 
@@ -73,8 +125,12 @@ final class OnlineSearchModel {
         }
     }
 
-    /// Queries shorter than this (after trimming) don't go online: OFF allows ~10 searches a minute.
+    /// Queries shorter than this (after trimming) don't go online.
     static let minimumQueryLength = 2
+    /// How long to wait before asking a busy Open Food Facts again.
+    static let busyRetryDelay: Duration = .seconds(5)
+    /// Automatic retries of paused or busy sources per query, so a source that stays throttled isn't asked forever.
+    static let maxAutomaticRetries = 3
     static let defaultDebounce: Duration = .milliseconds(400)
     /// Answers (per source and query) remembered while Add Food is open, so going back a character doesn't search
     /// again.
@@ -93,6 +149,8 @@ final class OnlineSearchModel {
     /// barcode (normalized) appears once, and OFF wins over USDA Branded — a USDA row is replaced in place when OFF
     /// arrives later with the same barcode.
     private(set) var results: [OnlineFoodResult] = []
+    /// The Open Food Facts result whose product is being fetched after a tap; its row shows a spinner.
+    private(set) var fetchingResultID: String?
 
     private var cache: [CacheKey: [OnlineFoodResult]] = [:]
     private var cacheOrder: [CacheKey] = []
@@ -102,13 +160,17 @@ final class OnlineSearchModel {
         let query: String
     }
 
+    private let now: @Sendable () -> Date
+
     init(
         debounce: Duration = OnlineSearchModel.defaultDebounce,
         sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) },
+        now: @escaping @Sendable () -> Date = { Date() },
         announce: @escaping @MainActor (String) -> Void = { AccessibilityNotification.Announcement($0).post() },
     ) {
         self.debounce = debounce
         self.sleep = sleep
+        self.now = now
         self.announce = announce
     }
 
@@ -167,17 +229,45 @@ final class OnlineSearchModel {
                 pending.append(origin)
             }
         }
-        guard !pending.isEmpty else { return }
+        await run(pending, query: query, offSearch: offSearch, usda: usda, nameLanguage: nameLanguage)
 
+        // Paused or busy sources are asked again when the pause ends, while the query stays.
+        for _ in 0 ..< Self.maxAutomaticRetries {
+            guard let (origins, wait) = retryPlan() else { return }
+            do {
+                try await sleep(wait)
+            } catch {
+                return
+            }
+            guard !Task.isCancelled, self.query == query else { return }
+            var retrying: [FoodDraft.Origin] = []
+            for origin in origins {
+                let status = origin == .off ? initialOFFStatus(offSearch) : initialUSDAStatus(usda)
+                setStatus(status, for: origin)
+                if status == .loading {
+                    retrying.append(origin)
+                }
+            }
+            await run(retrying, query: query, offSearch: offSearch, usda: usda, nameLanguage: nameLanguage)
+        }
+    }
+
+    /// Queries `origins` in parallel and publishes each one's results as they arrive (unless a newer query took over).
+    private func run(
+        _ origins: [FoodDraft.Origin], query: String,
+        offSearch: any OpenFoodFactsSearchClient, usda: any USDAClient, nameLanguage: FoodNameLanguage,
+    ) async {
+        guard !origins.isEmpty else { return }
         await withTaskGroup(of: (FoodDraft.Origin, Result<[OnlineFoodResult], any Error>).self) { group in
-            for origin in pending {
+            for origin in origins {
                 group.addTask {
                     do {
-                        let drafts = switch origin {
+                        let found = switch origin {
                         case .off: try await offSearch.search(query: query, nameLanguage: nameLanguage)
-                        case .usda: try await usda.search(query: query)
+                            .map(OnlineFoodResult.init)
+                        case .usda: try await usda.search(query: query).map(OnlineFoodResult.init)
                         }
-                        return (origin, .success(drafts.map(OnlineFoodResult.init)))
+                        return (origin, .success(found))
                     } catch {
                         return (origin, .failure(error))
                     }
@@ -195,6 +285,26 @@ final class OnlineSearchModel {
         }
     }
 
+    /// The sources to ask again and how long to wait first: paused ones when their pause ends (only pauses still
+    /// ahead), busy Open Food Facts after ``busyRetryDelay``. `nil` when no source needs it.
+    private func retryPlan() -> (origins: [FoodDraft.Origin], wait: Duration)? {
+        let now = now()
+        var waits: [(FoodDraft.Origin, TimeInterval)] = []
+        for origin in [FoodDraft.Origin.off, .usda] {
+            switch status(of: origin) {
+            case let .paused(until) where until > now:
+                waits.append((origin, until.timeIntervalSince(now)))
+            case .busy:
+                waits.append((origin, Double(Self.busyRetryDelay.components.seconds)))
+            default:
+                break
+            }
+        }
+        guard let longest = waits.map(\.1).max() else { return nil }
+        // One wait for both, so a short busy retry doesn't run before a long pause ends twice over.
+        return (waits.map(\.0), .milliseconds(Int((longest * 1000).rounded(.up)) + 100))
+    }
+
     /// What to do after picking a result.
     enum Selection {
         /// Open the quantity sheet for this stored copy.
@@ -203,12 +313,54 @@ final class OnlineSearchModel {
         case askServingWeight(PendingServingWeight)
     }
 
-    /// Saves a local copy of `result` (source off/usda) so it can be logged, and later found by local search.
-    /// Idempotent: picking the same result again returns the same food.
-    func select(_ result: OnlineFoodResult, in foods: FoodRepository) throws -> Selection {
-        let detail = try foods.saveRemoteCopy(result.draft)
-        guard detail.isPerServingPlaceholder else { return .open(detail) }
-        return .askServingWeight(PendingServingWeight(detail: detail))
+    /// Why picking an Open Food Facts result failed; the message is shown in an alert.
+    enum SelectionError: LocalizedError, Equatable {
+        /// OFF no longer has the product.
+        case productGone
+        case offline
+        /// OFF couldn't answer (rate limit, server error, timeout).
+        case unavailable
+
+        var errorDescription: String? {
+            switch self {
+            case .productGone: String(localized: "Open Food Facts no longer has this product.")
+            case .offline: String(localized: "You're offline. Connect to load this product from Open Food Facts.")
+            case .unavailable: String(localized: "Open Food Facts didn't answer. Try again in a moment.")
+            }
+        }
+    }
+
+    /// Saves a local copy of `result` so it can be logged, and later found by local search. Idempotent: picking the
+    /// same result again returns the same food. An Open Food Facts result is fetched by barcode first (`lookup`:
+    /// a food already saved with the code, the product cache, then OFF), with a spinner on its row meanwhile.
+    ///
+    /// Throws ``SelectionError``, `CancellationError`, or a database error.
+    func select(_ result: OnlineFoodResult, in foods: FoodRepository, lookup: BarcodeLookup?) async throws -> Selection {
+        switch result.content {
+        case let .food(draft):
+            return try Self.selection(for: foods.saveRemoteCopy(draft))
+        case let .offProduct(hit):
+            guard let lookup else { throw SelectionError.unavailable }
+            fetchingResultID = result.id
+            defer { fetchingResultID = nil }
+            let resolved: BarcodeLookupResult
+            do {
+                resolved = try await lookup.resolve(hit.code)
+            } catch BarcodeLookupError.offline {
+                throw SelectionError.offline
+            } catch is BarcodeLookupError {
+                throw SelectionError.unavailable
+            }
+            switch resolved {
+            case let .local(detail): return Self.selection(for: detail)
+            case let .remote(product): return try Self.selection(for: foods.saveRemoteCopy(product.draft.displayCased))
+            case .notFound: throw SelectionError.productGone
+            }
+        }
+    }
+
+    private static func selection(for detail: FoodDetail) -> Selection {
+        detail.isPerServingPlaceholder ? .askServingWeight(PendingServingWeight(detail: detail)) : .open(detail)
     }
 
     // MARK: - Private
@@ -270,7 +422,7 @@ final class OnlineSearchModel {
         }
         for result in found where !ids.contains(result.id) {
             if let key = result.barcodeKey, let index = indexByBarcode[key] {
-                if result.draft.origin == .off, results[index].draft.origin == .usda {
+                if result.origin == .off, results[index].origin == .usda {
                     ids.remove(results[index].id)
                     results[index] = result
                     ids.insert(result.id)
@@ -289,7 +441,7 @@ final class OnlineSearchModel {
     private func refreshCounts() {
         for origin in [FoodDraft.Origin.off, .usda] {
             if case .loaded = status(of: origin) {
-                setStatus(.loaded(count: results.count(where: { $0.draft.origin == origin })), for: origin)
+                setStatus(.loaded(count: results.count(where: { $0.origin == origin })), for: origin)
             }
         }
     }
