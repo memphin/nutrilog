@@ -68,17 +68,6 @@
         }
       }
     },
-    "%@ a week" : {
-      "comment" : "Average training sessions per week, e.g. “3.2 a week”",
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ tjedno"
-          }
-        }
-      }
-    },
     "%@ active" : {
       "comment" : "Energy unit, e.g. “kcal active”",
       "localizations" : {
@@ -116,17 +105,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Grafikon: %@"
-          }
-        }
-      }
-    },
-    "%@ g/kg" : {
-      "comment" : "Protein per kilogram of body weight, e.g. “1.7 g/kg”",
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ g/kg"
           }
         }
       }
@@ -1084,16 +1062,6 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "%lld g a day" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld g dnevno"
           }
         }
       }
@@ -6454,16 +6422,6 @@
         }
       }
     },
-    "Last %lld weeks" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zadnjih %lld tjedana"
-          }
-        }
-      }
-    },
     "Last 4 weeks" : {
       "localizations" : {
         "hr" : {
@@ -10697,16 +10655,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ovaj tjedan dosad"
-          }
-        }
-      }
-    },
-    "This week's fuel" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prehrana ovaj tjedan"
           }
         }
       }
