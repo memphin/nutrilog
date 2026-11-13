@@ -193,12 +193,17 @@ struct TrainingTabTests {
     // MARK: Fuel
 
     @Test func `fuel shows last days' intake, protein per kg and the weight trend`() throws {
-        let stats = (0 ..< 7).map { offset in
-            DayStats(
-                day: monday.adding(days: offset),
-                intake: offset < 2 ? Nutrients(kcal: 2300, proteinG: 160, carbsG: 250, fatG: 70) : nil,
-                entryCount: offset < 2 ? 3 : 0, targetKcal : 2400, trendKg: offset < 2 ? 80 - 0.1 * Double(offset): nil,
-            )
+        // Two logged days (Monday, Tuesday) with a weight trend; the rest of the week is empty.
+        let eaten = Nutrients(kcal: 2300, proteinG: 160, carbsG: 250, fatG: 70)
+        var stats: [DayStats] = []
+        for offset in 0 ..< 7 {
+            var stat = DayStats(day: monday.adding(days: offset), targetKcal: 2400)
+            if offset < 2 {
+                stat.intake = eaten
+                stat.entryCount = 3
+                stat.trendKg = 80 - 0.1 * Double(offset)
+            }
+            stats.append(stat)
         }
         let fuel = TrainingFuel(report: WeeklyReport(days: stats, trendBefore: 80.2), weightKg: 85)
         #expect(fuel.averageKcal == 2300)
