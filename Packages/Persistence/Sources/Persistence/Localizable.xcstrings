@@ -236,6 +236,16 @@
         }
       }
     },
+    "name must not be empty" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "naziv ne smije biti prazan"
+          }
+        }
+      }
+    },
     "not a quick-add entry" : {
       "localizations" : {
         "hr" : {

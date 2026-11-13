@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Document version | 1.12 (app 1.2.0 shipped) |
+| Document version | 1.14 (app 1.2.0 shipped) |
 | Date | 2026-11-10 |
 | Status | **Approved** — phases 1–3 shipped (app 1.2.0); phase 4 not started. Changes go through PRs to `docs/SPEC.md` with a change-log entry. |
 | Name | **Vitalion** (called Nutrilog until November 2026; the bundle ID `hr.ivanjuric.nutrilog` stays) |
@@ -156,6 +156,7 @@ Single user (the owner). Representative daily flows:
 - FR-6 Day summary: kcal consumed, remaining, P/C/F grams and % of target; fiber, sugar, sodium (sat. fat SHOULD).
 - FR-7 Notes per day (free text, e.g. "cheat day", "sick").
 - FR-8 Snap or describe a meal (SHOULD): a photo and/or a sentence becomes a list of foods with amounts to review, correct and log in one tap. The estimate is made on the device by the Apple Intelligence model (Foundation Models; a photo needs iOS 27) and logged as foods of their own (marked "Estimated by Apple Intelligence", reused when the same estimate comes again), so an entry's amount can be edited later and the meal saved as a meal. Where the model isn't available, the text, or the labels of the on-device image classifier, are matched to foods on the phone and logged as those foods. Nothing is sent anywhere.
+- FR-83 (SHOULD, owner request) **Supplements & medications**: the user lists what they take (name, free-text dose, note) with fixed times of day, every day or on chosen weekdays, or as needed (migration 017). The diary shows a Supplements section with the day's doses to tick as taken (tap), skip or undo, with the time taken editable, plus extra doses; future days show the schedule only. Local notifications per dose time (doses due together share one) with Taken and Snooze 15 min actions, and one follow-up an hour later while a dose is still open; ticking a dose before its time cancels its reminders. Planned 7 days ahead and topped up whenever the app opens; on by default, switchable globally and per item. No pill counts, refills or interaction checks; not written to Health.
 
 ### 5.2 Barcode scanning (MUST)
 - FR-10 Scan EAN-13, EAN-8, UPC-A/E, Code-128 using **VisionKit `DataScannerViewController`**; continuous scanning, haptic on detect, torch toggle. (AVFoundation fallback not needed on iOS 26 hardware.)
@@ -206,7 +207,7 @@ Unit tests cover: perfect-logging synthetic data (recovers the true TDEE within 
 - FR-46 (**MUST**, D9) **Water intake**: quick-add buttons (e.g. 200 / 330 / 500 ml, configurable), daily goal, written to Health as `dietaryWater`; also sums water logged by other Health apps.
 - FR-47 (**MUST**, D9) **Body fat %** from Withings via Health: latest value + trend chart alongside weight.
 - FR-48 (**MUST**, D9) **Resting HR & HRV (SDNN)** from Apple Watch via Health: today's value, 7-day average and deviation (e.g. "HRV 12% below your 30-day average"). Informational only; no medical interpretation.
-- FR-49 (SHOULD, owner request) **Caffeine**: a wide Today tile with the caffeine estimated in the body now, when it drops below a sleep-safe level (default 50 mg) and whether it will by bedtime, today's total against 400 mg, a small curve and quick-add drinks (espresso, filter coffee, black tea, energy drink by default; configurable). Caffeine also comes from diary foods that carry a caffeine value (Open Food Facts `caffeine_100g`, USDA nutrient 1057, or entered in the food editor), timed at the entry's log time. Model: one compartment, first-order absorption (ka = 4.6/h, peak ≈ 45 min) and elimination, doses summed; half-life 5 h, changed by Settings → Caffeine (smoker ×0.6; the pill ×2; pregnant ×2.5; or a custom value; 1.5–15 h). The detail shows the curve from the morning into the night, bedtime, and today's drinks and foods. An estimate, not medical advice; not written to Health.
+- FR-49 (SHOULD, owner request) **Caffeine**: a wide Today tile with the caffeine estimated in the body now, when it drops below a sleep-safe level (default 50 mg) and whether it will by bedtime, today's total against 400 mg, a small curve and quick-add drinks (espresso, filter coffee, black tea, energy drink by default; configurable; a 200 mg caffeine pill is also offered and adds no fluid). Caffeine also comes from diary foods that carry a caffeine value (Open Food Facts `caffeine_100g`, USDA nutrient 1057, or entered in the food editor), timed at the entry's log time. Model: one compartment, first-order absorption (ka = 4.6/h, peak ≈ 45 min) and elimination, doses summed; half-life 5 h, changed by Settings → Caffeine (smoker ×0.6; the pill ×2; pregnant ×2.5; or a custom value; 1.5–15 h). The detail shows the curve from the morning into the night, bedtime, and today's drinks and foods. An estimate, not medical advice; not written to Health.
 
 ### 5.6 Analytics & history (SHOULD)
 - FR-50 Calendar/history view with per-day kcal and adherence color.
@@ -427,6 +428,7 @@ All blocking decisions are made (D1–D9). The following defaults may be changed
 ---
 
 *Change log*
+- 1.14 — owner request: Supplements & medications in the diary with reminders (FR-83); a 200 mg caffeine pill among the caffeine presets (FR-49), which adds no fluid (2026-11-13)
 - 1.13 — owner request: Trends no longer lists the charts (each opens from its Today tile, FR-51); correlations (FR-53) removed entirely (2026-11-13)
 - 1.12 — after app 1.2.0, removed: Settings → Dashboard (the dashboard is edited in place via Edit on Today); the caffeine bedtime picker (the bedtime is set in Hydration); the check-in entries in Settings; "Plan for later today" (only future days are planned); repeat planning ("plan for the next days"); the "Copy from yesterday" menu items (copy from a date remains); the barcode resolution diagnostics screen and its scan log (migration 016 drops it); the user-entered USDA key (build-time only; a key saved earlier is deleted from the Keychain on launch); the tiles' detail "Last 14 days" lists and inline weigh-in lists (2026-11-13)
 - 1.11 — owner request: Settings → Food names (FR-74) — built-in food names in English or Croatian apart from the app language; saved copies and past diary and planned entries switch with it unless renamed, new Open Food Facts products take their Croatian name in Croatian (2026-11-12)

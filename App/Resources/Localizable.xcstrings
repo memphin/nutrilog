@@ -374,6 +374,16 @@
         }
       }
     },
+    "%@ · every day" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · svaki dan"
+          }
+        }
+      }
+    },
     "%@ · from the diary" : {
       "localizations" : {
         "hr" : {
@@ -517,6 +527,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld"
+          }
+        }
+      }
+    },
+    "%lld / %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld / %2$lld"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld / %lld"
           }
         }
       }
@@ -1791,6 +1817,22 @@
         }
       }
     },
+    "%lld of %lld taken" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld taken"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uzeto: %lld od %lld"
+          }
+        }
+      }
+    },
     "%lld of the last %lld days are logged and %lld have a weigh-in." : {
       "localizations" : {
         "en" : {
@@ -2253,6 +2295,16 @@
         }
       }
     },
+    "A notification at each dose time, and one more an hour later if a dose is still not taken. Open the app at least once a week to keep them coming." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obavijest u vrijeme svake doze i još jedna sat kasnije ako doza još nije uzeta. Otvori aplikaciju barem jednom tjedno da podsjetnici i dalje stižu."
+          }
+        }
+      }
+    },
     "A straight line through your weigh-ins goes from %@ on %@ to %@ on %@: %@ in %lld days, which is %@ per week." : {
       "localizations" : {
         "en" : {
@@ -2484,6 +2536,16 @@
         }
       }
     },
+    "Add a time" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dodaj vrijeme"
+          }
+        }
+      }
+    },
     "Add a weight (Today → Weight) and fill in height, birth date and sex — or set calories manually." : {
       "localizations" : {
         "hr" : {
@@ -2580,6 +2642,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dodaj veličinu"
+          }
+        }
+      }
+    },
+    "Add supplement or medication" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dodaj dodatak ili lijek"
+          }
+        }
+      }
+    },
+    "Add supplements or medications" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dodaj dodatke ili lijekove"
+          }
+        }
+      }
+    },
+    "Add the supplements and medications you take, with the times you take them." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dodaj dodatke prehrani i lijekove koje uzimaš, s vremenima kad ih uzimaš."
           }
         }
       }
@@ -3018,12 +3110,42 @@
         }
       }
     },
+    "As needed" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Po potrebi"
+          }
+        }
+      }
+    },
     "At bedtime (%@)" : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "U vrijeme spavanja (%@)"
+          }
+        }
+      }
+    },
+    "At each time, and once more an hour later if not taken." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "U svako vrijeme i još jednom sat kasnije ako nije uzeto."
+          }
+        }
+      }
+    },
+    "At set times" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "U zadano vrijeme"
           }
         }
       }
@@ -3572,6 +3694,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Odaberi iz galerije"
+          }
+        }
+      }
+    },
+    "Clear" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Poništi"
           }
         }
       }
@@ -4530,6 +4662,16 @@
         }
       }
     },
+    "Delete %@?" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Izbrisati %@?"
+          }
+        }
+      }
+    },
     "Delete meal" : {
       "localizations" : {
         "hr" : {
@@ -4666,6 +4808,26 @@
         }
       }
     },
+    "Dose %lld" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doza %lld"
+          }
+        }
+      }
+    },
+    "Dose, e.g. 1 tablet or 500 mg" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doza, npr. 1 tableta ili 500 mg"
+          }
+        }
+      }
+    },
     "Drag to reorder. Inactive slots are hidden but keep their past entries." : {
       "localizations" : {
         "hr" : {
@@ -4702,6 +4864,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Na redu"
+          }
+        }
+      }
+    },
+    "Due at %@: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Due at %1$@: %2$@"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "U %@: %@"
           }
         }
       }
@@ -4892,6 +5070,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Uredi brzi unos"
+          }
+        }
+      }
+    },
+    "Edit supplement" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uredi dodatak"
           }
         }
       }
@@ -5202,6 +5390,16 @@
         }
       }
     },
+    "Every day" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svaki dan"
+          }
+        }
+      }
+    },
     "Every drink counts: water, drinks in your diary and caffeine drinks. Oils, and foods you switch off as a drink, don't. The pace line runs from when you woke up (from Apple Health sleep, or your wake-up time) to an hour before bedtime. A gap is a stretch of more than %@ without a drink, as set in Hydration settings." : {
       "localizations" : {
         "hr" : {
@@ -5278,6 +5476,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Izvoz i uvoz"
+          }
+        }
+      }
+    },
+    "Extra" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dodatno"
           }
         }
       }
@@ -5913,6 +6121,16 @@
         }
       }
     },
+    "Its logged doses are no longer shown. To keep them, switch it off instead." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Njegove zapisane doze više se neće prikazivati. Da ih zadržiš, radije ga isključi."
+          }
+        }
+      }
+    },
     "JSON contains everything and can be restored. CSV (diary, weights) opens in Numbers or Excel." : {
       "localizations" : {
         "hr" : {
@@ -6165,6 +6383,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zapiši vodu"
+          }
+        }
+      }
+    },
+    "Log a dose" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zapiši dozu"
+          }
+        }
+      }
+    },
+    "Log a dose from the diary whenever you take one. No reminders." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zapiši dozu u dnevniku kad god je uzmeš. Bez podsjetnika."
+          }
+        }
+      }
+    },
+    "Log an extra dose" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zapiši dodatnu dozu"
           }
         }
       }
@@ -6613,6 +6861,16 @@
         }
       }
     },
+    "Manage supplements…" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upravljaj dodacima…"
+          }
+        }
+      }
+    },
     "Mark %@ as eaten" : {
       "localizations" : {
         "hr" : {
@@ -6623,12 +6881,32 @@
         }
       }
     },
+    "Mark all as taken" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Označi sve kao uzeto"
+          }
+        }
+      }
+    },
     "Mark all planned as eaten" : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Označi sve planirano kao pojedeno"
+          }
+        }
+      }
+    },
+    "Mark as taken" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Označi kao uzeto"
           }
         }
       }
@@ -6915,6 +7193,16 @@
         }
       }
     },
+    "Name, e.g. Vitamin D3" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Naziv, npr. Vitamin D3"
+          }
+        }
+      }
+    },
     "Named portions like \"1 slice = 25 g\" make logging faster." : {
       "localizations" : {
         "hr" : {
@@ -6971,6 +7259,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Novi obrok"
+          }
+        }
+      }
+    },
+    "New supplement" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Novi dodatak"
           }
         }
       }
@@ -7161,6 +7459,16 @@
         }
       }
     },
+    "No reminders" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bez podsjetnika"
+          }
+        }
+      }
+    },
     "No resting energy yet — no total" : {
       "localizations" : {
         "hr" : {
@@ -7301,12 +7609,32 @@
         }
       }
     },
+    "Not taken yet" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Još nije uzeto"
+          }
+        }
+      }
+    },
     "Not within 2 days" : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ne u sljedeća 2 dana"
+          }
+        }
+      }
+    },
+    "Note, e.g. with food" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Napomena, npr. uz obrok"
           }
         }
       }
@@ -7437,6 +7765,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Obavijesti za Vitalion su isključene"
+          }
+        }
+      }
+    },
+    "Notifications are off for Vitalion. Turn them on in the iOS Settings app." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obavijesti za Vitalion su isključene. Uključi ih u aplikaciji Postavke."
           }
         }
       }
@@ -8851,6 +9189,16 @@
         }
       }
     },
+    "Schedule" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Raspored"
+          }
+        }
+      }
+    },
     "Search above or create a food — it shows up here after you log it." : {
       "localizations" : {
         "hr" : {
@@ -9237,6 +9585,16 @@
         }
       }
     },
+    "Skipped" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preskočeno"
+          }
+        }
+      }
+    },
     "Sleep" : {
       "localizations" : {
         "hr" : {
@@ -9313,6 +9671,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fotografiraj ili opiši obrok"
+          }
+        }
+      }
+    },
+    "Snooze %lld min" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odgodi %lld min"
           }
         }
       }
@@ -9447,12 +9815,102 @@
         }
       }
     },
+    "Supplements" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dodaci"
+          }
+        }
+      }
+    },
+    "Supplements & medications" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dodaci i lijekovi"
+          }
+        }
+      }
+    },
+    "Supplements options" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opcije dodataka"
+          }
+        }
+      }
+    },
+    "Switch off what you stopped taking: it leaves the diary and the reminders, and the doses you logged stay." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Isključi ono što više ne uzimaš: nestaje iz dnevnika i podsjetnika, a zapisane doze ostaju."
+          }
+        }
+      }
+    },
+    "Switched off" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Isključeno"
+          }
+        }
+      }
+    },
     "Take a photo" : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fotografiraj"
+          }
+        }
+      }
+    },
+    "Taken" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uzeto"
+          }
+        }
+      }
+    },
+    "Taken at" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uzeto u"
+          }
+        }
+      }
+    },
+    "Taken at…" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uzeto u…"
+          }
+        }
+      }
+    },
+    "Taking it now" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trenutno uzimam"
           }
         }
       }
@@ -9981,6 +10439,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vrijeme je za piće"
+          }
+        }
+      }
+    },
+    "Time to take" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrijeme je za uzimanje"
           }
         }
       }
@@ -10788,6 +11256,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Što Vitalion čita i zapisuje"
+          }
+        }
+      }
+    },
+    "When" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kada"
           }
         }
       }
@@ -12346,6 +12824,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "koraka"
+          }
+        }
+      }
+    },
+    "taken %@" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "uzeto %@"
           }
         }
       }

@@ -175,7 +175,9 @@ struct CaffeineDrinkTests {
     @Test func `presets are unique and the defaults resolve`() {
         let ids = CaffeineDrink.all.map(\.id)
         #expect(Set(ids).count == ids.count)
-        #expect(CaffeineDrink.all.allSatisfy { $0.mg > 0 && $0.servingMl > 0 && !$0.symbolName.isEmpty })
+        #expect(CaffeineDrink.all.allSatisfy { $0.mg > 0 && ($0.servingMl ?? 1) > 0 && !$0.symbolName.isEmpty })
+        #expect(CaffeineDrink.preset(id: "caffeine_pill")?.mg == 200)
+        #expect(CaffeineDrink.preset(id: "caffeine_pill")?.servingMl == nil) // a pill adds no fluid
         #expect(CaffeineDrink.defaultQuickAddIDs.allSatisfy { CaffeineDrink.preset(id: $0) != nil })
         #expect((3 ... 4).contains(CaffeineDrink.defaultQuickAddIDs.count))
         #expect(CaffeineDrink.preset(id: "espresso")?.mg == 64)

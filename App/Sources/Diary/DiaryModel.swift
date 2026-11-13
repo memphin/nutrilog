@@ -26,12 +26,14 @@ final class DiaryModel {
     private(set) var training: TrainingDays = .none
     /// Foods in the current day (entries and plan) measured in ml (entries only store the amount).
     private(set) var liquidFoodIDs: Set<String> = []
+    /// The day's supplements and doses (`DiaryModel+Supplements`).
+    var supplementDay: SupplementDay?
     var errorMessage: String?
     let undo = UndoCenter()
     /// The adaptive maintenance estimate, for the under-logging hint (backlog #36); nil until there is one.
     private(set) var estimateKcal: Double?
 
-    private let environment: AppEnvironment
+    let environment: AppEnvironment
     private var pinnedDay: LocalDay
     private var followsToday: Bool
 

@@ -86,6 +86,10 @@
                 DiaryView()
             case "caffeine":
                 NavigationStack { TileDetailDebugScreen(tile: .caffeine) }
+            case "supplements":
+                NavigationStack { SupplementsListView() }
+            case "supplementEditor":
+                SupplementEditorView(supplement: nil)
             case "caffeineSettings":
                 NavigationStack { CaffeineSettingsView() }
             default:

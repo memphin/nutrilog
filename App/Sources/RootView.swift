@@ -22,6 +22,7 @@ struct RootView: View {
                         environment.refreshHydrationReminder() // drinks may have been logged in other apps
                     }
                     Task { await environment.healthDidEnterForeground() }
+                    environment.refreshSupplementReminders() // tops up the next days' reminders
                     environment.backupIfDue()
                     offerCheckInIfDue()
                 }

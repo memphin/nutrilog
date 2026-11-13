@@ -23,7 +23,8 @@ public enum Migrator {
         "014_caffeine_ml", // Swift-coded, see `codedMigration`
         "015_training_days",
         "016_drop_barcode_scan_log",
-        // "017_<description>",
+        "017_supplements",
+        // "018_<description>",
     ]
 
     /// `deviceCalendar`: the calendar the device uses now, which migration 011 needs to tell which calendar the

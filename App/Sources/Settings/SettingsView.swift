@@ -18,6 +18,7 @@ struct SettingsView: View {
                 Section {
                     NavigationLink("Profile & targets") { ProfileTargetsView() }
                     NavigationLink("Training days") { TrainingDaysSettingsView() }
+                    NavigationLink("Supplements & medications") { SupplementsListView() }
                     NavigationLink("Meal slots") { MealSlotsEditor() }
                     NavigationLink("Apple Health") { HealthSettingsView() }
                 }

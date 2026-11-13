@@ -8,7 +8,7 @@ enum CaffeineMlMigration {
     @discardableResult
     static func run(_ db: Database) throws -> Int {
         var changes = 0
-        for drink in CaffeineDrink.all {
+        for drink in CaffeineDrink.all where drink.servingMl != nil { // a pill has no volume
             try db.execute(
                 sql: "UPDATE caffeine_entry SET ml = ? WHERE drink_id = ? AND ml IS NULL",
                 arguments: [drink.servingMl, drink.id],
