@@ -1,4 +1,5 @@
 import DesignSystem
+import FoodSources
 import Persistence
 import Scanner
 import SwiftUI
@@ -182,7 +183,7 @@ struct ScanResultView: View {
     struct CompletionRequest: Identifiable {
         let id = UUID()
         let detail: FoodDetail
-        let missing: Set<FoodEditorModel.RequiredNutrient>
+        let missing: Set<FoodDraft.MandatoryNutrient>
     }
 
     var body: some View {

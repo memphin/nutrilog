@@ -74,7 +74,7 @@ private struct ManualWeightRow: View {
     var body: some View {
         Button(action: edit) {
             LabeledContent {
-                Text([DashboardFormat.kg(entry.kg), entry.bodyFatPct.map(DashboardFormat.percent)]
+                Text([Format.kg(entry.kg), entry.bodyFatPct.map(Format.percent)]
                     .compactMap(\.self).joined(separator: " · "))
                     .monospacedDigit()
             } label: {

@@ -500,7 +500,7 @@ enum EnergyUnit: String, CaseIterable, Identifiable {
     }
 
     func format(_ kcal: Double) -> String {
-        "\(display(kcal).formatted(.number.precision(.fractionLength(0)))) \(symbol)"
+        "\(Format.whole(display(kcal))) \(symbol)"
     }
 }
 

@@ -7,21 +7,21 @@ import Foundation
 enum CorrelationText {
     // MARK: Values
 
-    /// A value of `metric` in display units: "2.5 L", "1.75 L", "850 ml", "7h 20min", "9,800 steps", "2,350 kcal", "−0.3 kg/week".
+    /// A value of `metric` in display units: "2.5 L", "1.75 L", "850 ml", "7 h 20 min", "9,800 steps", "2,350 kcal", "−0.3 kg/week".
     static func format(_ value: Double, _ metric: CorrelationMetric, unit: EnergyUnit) -> String {
         switch metric {
-        case .calories, .totalEnergy, .activeEnergy: "\(whole(value)) \(unit.symbol)"
-        case .protein, .carbs, .fat: "\(whole(value)) g"
-        case .steps: "\(whole(value)) \(ChartBuilder.unitLabel(.steps, unit: unit))"
-        case .sleep: DashboardFormat.duration(Int((value * 60).rounded()))
+        case .calories, .totalEnergy, .activeEnergy: "\(Format.whole(value)) \(unit.symbol)"
+        case .protein, .carbs, .fat: "\(Format.whole(value)) g"
+        case .steps: "\(Format.whole(value)) \(ChartBuilder.unitLabel(.steps, unit: unit))"
+        case .sleep: Format.duration(minutes: Int((value * 60).rounded()))
         case .hydration: litres(value)
-        case .hrv: DashboardFormat.ms(value)
-        case .restingHeartRate: DashboardFormat.bpm(value)
+        case .hrv: Format.ms(value)
+        case .restingHeartRate: Format.bpm(value)
         case .weightTrendChange: perWeek(value)
         }
     }
 
-    /// The size of a difference of `metric`, without a sign: "6 ms", "25min", "300 ml".
+    /// The size of a difference of `metric`, without a sign: "6 ms", "25 min", "300 ml".
     static func amount(_ difference: Double, _ metric: CorrelationMetric, unit: EnergyUnit) -> String {
         format(abs(difference), metric, unit: unit)
     }
@@ -55,21 +55,17 @@ enum CorrelationText {
         }
     }
 
-    private static func whole(_ value: Double) -> String {
-        value.formatted(.number.precision(.fractionLength(0)))
-    }
-
     /// Litres from 1 L to the nearest 50 ml ("2.3 L", "1.75 L": quarter litres stay exact), millilitres below ("850 ml").
     private static func litres(_ value: Double) -> String {
         let rounded = (value * 20).rounded() / 20
         return rounded >= 1
             ? "\(rounded.formatted(.number.precision(.fractionLength(1 ... 2)))) L"
-            : DashboardFormat.ml(value * 1000)
+            : Format.ml(value * 1000)
     }
 
     /// "−0.3 kg/week", "+0.1 kg/week".
     private static func perWeek(_ value: Double) -> String {
-        String(localized: "\(DashboardFormat.kgChange(value))/week", comment: "A weekly weight change: \"−0.3 kg/week\"")
+        String(localized: "\(Format.kgChange(value))/week", comment: "A weekly weight change: \"−0.3 kg/week\"")
     }
 
     // MARK: Strength and sample
@@ -174,7 +170,7 @@ enum CorrelationText {
         }
     }
 
-    /// The bottom third: "on days under 1.8 L", "in weeks under 6,200 steps", "after nights under 6h 30min".
+    /// The bottom third: "on days under 1.8 L", "in weeks under 6,200 steps", "after nights under 6 h 30 min".
     static func lowCondition(_ spec: CorrelationSpec, _ value: String) -> String {
         if spec.granularity == .weekly {
             return String(localized: "in weeks under \(value)")

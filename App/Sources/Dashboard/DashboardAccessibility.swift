@@ -29,10 +29,9 @@ extension DashboardSnapshot {
     }
 
     /// A whole number to speak, rounded like `.number.precision(.fractionLength(0))` (half to even), as an `Int` so
-    /// the localized phrase can pick its plural form.
+    /// the localized phrase can pick its plural form. `DisplayRounding.whole` clamps what `Int` can't hold.
     private static func count(_ value: Double) -> Int {
-        guard value.isFinite else { return 0 }
-        return Int(value.rounded(.toNearestOrEven))
+        DisplayRounding.whole(value.rounded(.toNearestOrEven))
     }
 
     private func accessibilityParts(of tile: DashboardTile, energyUnit: EnergyUnit, locale: Locale) -> [String] {

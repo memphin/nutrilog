@@ -90,9 +90,9 @@ struct HydrationDetailView: View {
 
     private func breakdown(_ day: HydrationDay) -> some View {
         Section {
-            LabeledContent("Water", value: DashboardFormat.ml(day.waterMl))
-            LabeledContent("Other drinks", value: DashboardFormat.ml(day.otherDrinksMl))
-            LabeledContent("Water from other apps", value: DashboardFormat.ml(day.otherAppsMl))
+            LabeledContent("Water", value: Format.ml(day.waterMl))
+            LabeledContent("Other drinks", value: Format.ml(day.otherDrinksMl))
+            LabeledContent("Water from other apps", value: Format.ml(day.otherAppsMl))
         } header: {
             Text("Breakdown")
         } footer: {
@@ -107,7 +107,7 @@ struct HydrationDetailView: View {
             Section {
                 ForEach(Array(intakes)) { intake in
                     LabeledContent {
-                        Text(DashboardFormat.ml(intake.ml)).monospacedDigit()
+                        Text(Format.ml(intake.ml)).monospacedDigit()
                     } label: {
                         Text(intake.name)
                         Text([intake.at.formatted(date: .omitted, time: .shortened), mealNames[intake.id]]
@@ -148,7 +148,7 @@ struct HydrationDetailView: View {
 
     /// "How this works": what counts, the pace line, the gaps.
     static func explanation(gapThreshold: TimeInterval) -> String {
-        let gap = HydrationStrip.gapDuration(gapThreshold)
+        let gap = Format.duration(minutes: Int(gapThreshold / 60))
         return String(localized: """
         Every drink counts: water, drinks in your diary and caffeine drinks. Oils, and foods you switch off as a \
         drink, don't. The pace line runs from when you woke up (from Apple Health sleep, or your wake-up time) \
@@ -164,8 +164,8 @@ enum HydrationStatusText {
         switch status {
         case .goalReached: String(localized: "Goal reached")
         case .onPace: String(localized: "On pace")
-        case let .behind(byMl): String(localized: "\(DashboardFormat.ml(byMl)) behind pace")
-        case let .inGap(since): String(localized: "No drink for \(HydrationStrip.gapDuration(now.timeIntervalSince(since)))")
+        case let .behind(byMl): String(localized: "\(Format.ml(byMl)) behind pace")
+        case let .inGap(since): String(localized: "No drink for \(Format.duration(minutes: Int(now.timeIntervalSince(since) / 60)))")
         }
     }
 }

@@ -76,7 +76,7 @@ private struct TargetsForm: View {
                 LabeledContent("Weight") {
                     if let weight = model.weightKg {
                         VStack(alignment: .trailing, spacing: NL.Spacing.xxs) {
-                            Text(DashboardFormat.kg(weight)).monospacedDigit()
+                            Text(Format.kg(weight)).monospacedDigit()
                             if let day = model.weightDay {
                                 Text(Format.day(day, today: model.today)).font(.caption).foregroundStyle(.secondary)
                             }

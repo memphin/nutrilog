@@ -72,7 +72,7 @@ struct HydrationChart: View {
                 AxisGridLine()
                 AxisValueLabel {
                     if let ml = value.as(Double.self) {
-                        Text(ml.formatted(.number.precision(.fractionLength(0))))
+                        Text(Format.whole(ml))
                     }
                 }
             }

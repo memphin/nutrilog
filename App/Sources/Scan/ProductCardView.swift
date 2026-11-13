@@ -1,5 +1,6 @@
 import Core
 import DesignSystem
+import FoodSources
 import Persistence
 import PhotosUI
 import SwiftUI
@@ -102,31 +103,11 @@ struct ProductCardView: View {
         return String(localized: "Per \(label) (\(NutrientRow.format(amount, unit: unit)) \(unit))")
     }
 
-    /// Amounts with a unit written in serving labels, e.g. "30 g", "30g", "25,5 ml", "33 cl".
-    private static let labelAmountPattern = try? NSRegularExpression(
-        pattern: #"(?<![\d.,])(\d+(?:[.,]\d+)?)\s*(grams|gram|gr|g|kg|ml|cl|l)(?![a-z])"#,
-        options: [.caseInsensitive],
-    )
-
-    /// Whether `label` contains `amount` in `unit` ("g" or "ml"), allowing for label rounding.
+    /// Whether `label` states `amount` in `unit` ("g" or "ml"), read the way OFF serving texts are
+    /// (`MeasureParser`: "30g", "25,5 g", "33 cl", "2 x 125 ml"), allowing for label rounding.
     static func labelStates(_ amount: Double, unit: String, in label: String) -> Bool {
-        guard let pattern = labelAmountPattern, amount > 0, amount.isFinite else { return false }
-        let text = label as NSString
-        for match in pattern.matches(in: label, range: NSRange(location: 0, length: text.length)) where match.numberOfRanges == 3 {
-            let number = text.substring(with: match.range(at: 1)).replacingOccurrences(of: ",", with: ".")
-            guard let value = Double(number) else { continue }
-            let factor: Double? = switch (text.substring(with: match.range(at: 2)).lowercased(), unit) {
-            case ("g", "g"), ("gr", "g"), ("gram", "g"), ("grams", "g"), ("ml", "ml"): 1
-            case ("kg", "g"), ("l", "ml"): 1000
-            case ("cl", "ml"): 10
-            default: nil
-            }
-            guard let factor else { continue }
-            if abs(value * factor - amount) <= max(0.01, amount * 0.005) {
-                return true
-            }
-        }
-        return false
+        guard amount > 0, amount.isFinite, let stated = MeasureParser.parse(label), stated.unit.symbol == unit else { return false }
+        return abs(stated.amount - amount) <= max(0.01, amount * 0.005)
     }
 
     private var header: some View {

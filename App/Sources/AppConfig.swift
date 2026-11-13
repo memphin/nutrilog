@@ -1,3 +1,4 @@
+import Core
 import Foundation
 
 /// Build-time configuration read from Info.plist (populated from Config/*.xcconfig).
@@ -24,8 +25,7 @@ struct AppConfig: Sendable {
             .trimmingCharacters(in: .whitespaces)
         usdaAPIKey = (key?.isEmpty ?? true) ? nil : key
         appVersion = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.1"
-        let contact = ((bundle.object(forInfoDictionaryKey: "OFFUserAgentContact") as? String) ?? "")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        offContact = contact.isEmpty ? Self.defaultOFFContact : contact
+        offContact = (bundle.object(forInfoDictionaryKey: "OFFUserAgentContact") as? String).trimmedNonEmpty
+            ?? Self.defaultOFFContact
     }
 }

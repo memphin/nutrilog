@@ -238,7 +238,7 @@ final class ScanFlowModel {
     ///
     /// Not for a per-serving placeholder: its values are per serving, which the editor would show as per 100 (and
     /// editing the stand-in serving would break "1 serving"). Set the serving weight first (``setServingWeight(_:)``).
-    func foodForCompletingNutrition() throws -> (detail: FoodDetail, missing: Set<FoodEditorModel.RequiredNutrient>) {
+    func foodForCompletingNutrition() throws -> (detail: FoodDetail, missing: Set<FoodDraft.MandatoryNutrient>) {
         guard product?.needsServingWeight != true else {
             throw PersistenceError.validation(String(localized: "enter the serving weight first"))
         }
@@ -266,7 +266,7 @@ final class ScanFlowModel {
               amount.isFinite else { throw PersistenceError.validation(String(localized: "serving weight must be greater than zero")) }
         var product = try ensureSaved()
         guard product.detail.isPerServingPlaceholder else { return product.detail }
-        let missing = product.missing.map { Set($0.compactMap { FoodDraft.MandatoryNutrient(rawValue: $0.rawValue) }) }
+        let missing = product.missing
         let converted = try product.detail.convertingPerServingPlaceholder(servingWeight: amount, missing: missing)
         // Also rescales what was logged, planned or saved with the placeholder, so it stays "1 serving".
         let saved = try foods.saveConvertedPlaceholder(converted)
@@ -367,7 +367,7 @@ struct ScannedProduct: Equatable {
     var remote: RemoteProduct?
     /// Required nutrients the source doesn't have (shown empty by "Complete nutrition"); nil when unknown (a
     /// per-serving placeholder found locally, whose zeros may be real).
-    var missing: Set<FoodEditorModel.RequiredNutrient>?
+    var missing: Set<FoodDraft.MandatoryNutrient>?
 
     init(local detail: FoodDetail) {
         self.detail = detail
@@ -381,7 +381,7 @@ struct ScannedProduct: Equatable {
         detail = FoodDetail(draft: remote.draft)
         isSaved = false
         self.remote = remote
-        missing = Set(remote.draft.missingNutrients.compactMap { FoodEditorModel.RequiredNutrient(rawValue: $0.rawValue) })
+        missing = remote.draft.missingNutrients
     }
 
     var food: Food {
@@ -414,7 +414,7 @@ struct ScannedProduct: Equatable {
     }
 
     /// Whether a required value is known to be missing (shown as "—").
-    func isMissing(_ nutrient: FoodEditorModel.RequiredNutrient) -> Bool {
+    func isMissing(_ nutrient: FoodDraft.MandatoryNutrient) -> Bool {
         food.dataQuality != .complete && missing?.contains(nutrient) == true
     }
 
@@ -441,14 +441,14 @@ struct ScannedProduct: Equatable {
 
     /// Mandatory values that are 0 on a partial local food: the source didn't have them (an energy-only food is
     /// missing all three macros). A real 0 must then be typed in again, which is cheap.
-    static func inferredMissing(_ food: Food) -> Set<FoodEditorModel.RequiredNutrient> {
+    static func inferredMissing(_ food: Food) -> Set<FoodDraft.MandatoryNutrient> {
         switch food.dataQuality {
         case .complete:
             return []
         case .energyOnly:
             return [.protein, .carbs, .fat]
         case .partialMacros:
-            var missing: Set<FoodEditorModel.RequiredNutrient> = []
+            var missing: Set<FoodDraft.MandatoryNutrient> = []
             if food.kcal100 == 0 {
                 missing.insert(.energy)
             }

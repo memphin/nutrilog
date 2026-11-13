@@ -1,5 +1,6 @@
 import Core
 import DesignSystem
+import FoodSources
 import Persistence
 import Scanner
 import SwiftUI
@@ -9,7 +10,7 @@ struct FoodEditorView: View {
     var editing: FoodDetail?
     var initialName: String = ""
     var barcode: String?
-    var completing: Set<FoodEditorModel.RequiredNutrient>?
+    var completing: Set<FoodDraft.MandatoryNutrient>?
     var onSaved: (FoodDetail) -> Void = { _ in }
 
     @Environment(AppEnvironment.self) private var environment
@@ -24,7 +25,7 @@ struct FoodEditorView: View {
         editing: FoodDetail? = nil,
         initialName: String = "",
         barcode: String? = nil,
-        completing: Set<FoodEditorModel.RequiredNutrient>? = nil,
+        completing: Set<FoodDraft.MandatoryNutrient>? = nil,
         onSaved: @escaping (FoodDetail) -> Void = { _ in },
     ) {
         self.editing = editing

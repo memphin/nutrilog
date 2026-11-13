@@ -284,7 +284,7 @@ final class DashboardModel {
             guard let water = environment.water else { return }
             do {
                 try water.softDelete(ids: [intake.id])
-                offerUndo(String(localized: "Removed \(DashboardFormat.ml(intake.ml)) water")) { try water.restore(ids: [intake.id]) }
+                offerUndo(String(localized: "Removed \(Format.ml(intake.ml)) water")) { try water.restore(ids: [intake.id]) }
             } catch {
                 errorMessage = String(localized: "Couldn't remove water: \(error.localizedDescription)")
             }
@@ -404,7 +404,7 @@ final class DashboardModel {
             try weights.softDelete(ids: [entry.id])
             environment.refreshStoredWeightTrend()
             environment.widgetDataDidChange()
-            offerUndo(String(localized: "Deleted \(DashboardFormat.kg(entry.kg))")) { [environment] in
+            offerUndo(String(localized: "Deleted \(Format.kg(entry.kg))")) { [environment] in
                 try weights.restore(ids: [entry.id])
                 environment.refreshStoredWeightTrend()
                 environment.widgetDataDidChange()

@@ -40,10 +40,10 @@ struct CaffeineSettingsView: View {
                         in: CaffeineMetabolism.halfLifeRange,
                         step: CaffeineSettings.halfLifeStep,
                     ) {
-                        LabeledContent("Custom half-life", value: Self.hours(hours))
+                        LabeledContent("Custom half-life", value: Format.hours(hours))
                     }
                 }
-                LabeledContent("Caffeine half-life", value: Self.hours(settings.metabolism.halfLifeHours))
+                LabeledContent("Caffeine half-life", value: Format.hours(settings.metabolism.halfLifeHours))
             } header: {
                 Text("Metabolism")
             } footer: {
@@ -90,12 +90,6 @@ struct CaffeineSettingsView: View {
             }
         }
         .errorAlert($errorMessage)
-    }
-
-    /// "5 h", "7.5 h".
-    static func hours(_ value: Double) -> String {
-        let number = value.formatted(.number.precision(.fractionLength(0 ... 1)))
-        return String(localized: "\(number) h", comment: "A duration in hours, e.g. “1.5 h”")
     }
 
     private func binding<Value>(_ keyPath: WritableKeyPath<CaffeineSettings, Value>) -> Binding<Value> {

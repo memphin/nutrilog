@@ -34,14 +34,14 @@ struct HydrationSettings: Equatable {
 
     /// In `gapRange`, on a `gapStep` step.
     static func normalizedGap(_ minutes: Int) -> Int {
-        let stepped = Int((Double(minutes) / Double(gapStep)).rounded()) * gapStep
+        let stepped = Int(Double(minutes).rounded(toMultipleOf: Double(gapStep)))
         return min(max(stepped, gapRange.lowerBound), gapRange.upperBound)
     }
 
     /// In `marginRange`, on a `marginStep` step.
     static func normalizedMargin(_ ml: Double) -> Double {
         guard ml.isFinite else { return HydrationSettings.default.behindMarginMl }
-        let stepped = (ml / marginStep).rounded() * marginStep
+        let stepped = ml.rounded(toMultipleOf: marginStep)
         return min(max(stepped, marginRange.lowerBound), marginRange.upperBound)
     }
 

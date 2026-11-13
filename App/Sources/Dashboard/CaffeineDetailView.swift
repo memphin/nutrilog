@@ -317,9 +317,8 @@ struct CaffeineEntrySheet: View {
     private func add() {
         guard let mg else { return }
         let preset = drinkID.flatMap(CaffeineDrink.preset(id:))
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         model.addCaffeine(
-            mg: mg, at: min(time, model.now), drinkID: preset?.id, name: preset?.name ?? (trimmed.isEmpty ? nil : trimmed),
+            mg: mg, at: min(time, model.now), drinkID: preset?.id, name: preset?.name ?? name.trimmedNonEmpty,
             ml: Self.volumeMl(mlText),
         )
         dismiss()

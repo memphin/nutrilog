@@ -136,7 +136,7 @@ final class CheckInModel {
         var facts = [
             CheckInFact(
                 kind: .weeklyChange, title: String(localized: "Weight trend"),
-                value: String(localized: "\(DashboardFormat.kgChange(estimate.weeklyChangeKg)) / week"),
+                value: String(localized: "\(Format.kgChange(estimate.weeklyChangeKg)) / week"),
                 explanation: trendExplanation(estimate),
             ),
             CheckInFact(
@@ -200,10 +200,10 @@ final class CheckInModel {
 
     /// Each method gets its own whole sentence, so a translation can reorder it freely.
     static func trendExplanation(_ estimate: TDEEEstimate) -> String {
-        let startKg = kg2(estimate.trendStartKg), startDay = date(estimate.trendStartDay)
-        let endKg = kg2(estimate.trendEndKg), endDay = date(estimate.day)
-        let change = DashboardFormat.kgChange(estimate.trendChangeKg), days = estimate.trendSpanDays
-        let weekly = DashboardFormat.kgChange(estimate.weeklyChangeKg)
+        let startKg = Format.kg(estimate.trendStartKg, fractionDigits: 2), startDay = date(estimate.trendStartDay)
+        let endKg = Format.kg(estimate.trendEndKg, fractionDigits: 2), endDay = date(estimate.day)
+        let change = Format.kgChange(estimate.trendChangeKg), days = estimate.trendSpanDays
+        let weekly = Format.kgChange(estimate.weeklyChangeKg)
         let measured = switch estimate.resolvedWeightMethod {
         case .trend:
             String(localized: """
@@ -258,7 +258,7 @@ final class CheckInModel {
 
     static func estimateExplanation(_ estimate: TDEEEstimate, unit: EnergyUnit) -> String {
         let balance = estimate.dailyBalanceKcal
-        let change = DashboardFormat.kgChange(estimate.trendChangeKg), days = estimate.trendSpanDays
+        let change = Format.kgChange(estimate.trendChangeKg), days = estimate.trendSpanDays
         let perDay = unit.format(abs(balance))
         let stored = balance < 0
             ? String(localized: """
@@ -337,10 +337,6 @@ final class CheckInModel {
     /// "−0.25 kg": goal rates come in steps of 0.05.
     static func goalRate(_ value: Double) -> String {
         "\(value < 0 ? "−" : "+")\(abs(value).formatted(.number.precision(.fractionLength(1 ... 2)))) kg"
-    }
-
-    private static func kg2(_ value: Double) -> String {
-        "\(value.formatted(.number.precision(.fractionLength(2)))) kg"
     }
 
     private static func date(_ day: LocalDay) -> String {

@@ -116,7 +116,7 @@ enum HydrationTileText {
     }
 
     private static func number(_ ml: Double, _ locale: Locale) -> String {
-        ml.formatted(.number.precision(.fractionLength(0)).locale(locale))
+        Format.whole(ml, locale: locale)
     }
 }
 
@@ -360,49 +360,8 @@ enum TileHistory {
         guard totalMl > 0 else { return TileHistoryRow(day: day) }
         let goal = data.hydrationGoalMl(on: day)
         return TileHistoryRow(
-            day: day, value: DashboardFormat.ml(totalMl), detail: String(localized: "of \(DashboardFormat.ml(goal))"),
+            day: day, value: Format.ml(totalMl), detail: String(localized: "of \(Format.ml(goal))"),
             amountMl: totalMl, goalMl: goal,
         )
-    }
-}
-
-// MARK: - Formatting
-
-enum DashboardFormat {
-    /// "7h 5min", "8h", "45min" (#72); the unit abbreviations come from the string catalog.
-    static func duration(_ minutes: Int) -> String {
-        let hours = minutes / 60
-        let rest = minutes % 60
-        guard hours > 0 else { return String(localized: "\(rest)min", comment: "Short duration in minutes") }
-        return rest == 0
-            ? String(localized: "\(hours)h", comment: "Short duration in hours")
-            : String(localized: "\(hours)h \(rest)min", comment: "Short duration in hours and minutes")
-    }
-
-    static func kg(_ value: Double) -> String {
-        "\(value.formatted(.number.precision(.fractionLength(1)))) kg"
-    }
-
-    /// "−0.4 kg", "+0.2 kg", "±0.0 kg".
-    static func kgChange(_ value: Double) -> String {
-        let rounded = (value * 10).rounded() / 10
-        let sign = rounded > 0 ? "+" : rounded < 0 ? "−" : "±"
-        return "\(sign)\(abs(rounded).formatted(.number.precision(.fractionLength(1)))) kg"
-    }
-
-    static func percent(_ value: Double) -> String {
-        "\(value.formatted(.number.precision(.fractionLength(1)))) %"
-    }
-
-    static func bpm(_ value: Double) -> String {
-        "\(value.formatted(.number.precision(.fractionLength(0)))) bpm"
-    }
-
-    static func ms(_ value: Double) -> String {
-        "\(value.formatted(.number.precision(.fractionLength(0)))) ms"
-    }
-
-    static func ml(_ value: Double) -> String {
-        "\(value.formatted(.number.precision(.fractionLength(0)))) ml"
     }
 }

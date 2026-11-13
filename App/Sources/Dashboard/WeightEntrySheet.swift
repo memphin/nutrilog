@@ -74,7 +74,7 @@ struct WeightEntrySheet: View {
                             form = WeightForm(entry: existing)
                         }
                     } footer: {
-                        let kg = DashboardFormat.kg(existing.kg)
+                        let kg = Format.kg(existing.kg)
                         let time = existing.measuredAt.formatted(date: .omitted, time: .shortened)
                         Text("""
                         You already entered \(kg) at \(time) today. A new entry for today replaces it on the \

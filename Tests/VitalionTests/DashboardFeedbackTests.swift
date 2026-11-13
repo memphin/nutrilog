@@ -185,9 +185,9 @@ struct DashboardFeedbackTests {
     // MARK: Sleep goal, weight, baselines (#72–#74)
 
     @Test func `sleep is written plainly and coloured by the sleep goal`() throws {
-        #expect(DashboardFormat.duration(425) == "7h 5min")
-        #expect(DashboardFormat.duration(480) == "8h")
-        #expect(DashboardFormat.duration(45) == "45min")
+        #expect(Format.duration(minutes: 425) == "7 h 5 min")
+        #expect(Format.duration(minutes: 480) == "8 h")
+        #expect(Format.duration(minutes: 45) == "45 min")
         // Green at the goal, orange up to an hour short, red further below.
         #expect(SleepGoal.band(minutes: 480, goal: 480) == .reached)
         #expect(SleepGoal.band(minutes: 479, goal: 480) == .near)

@@ -134,7 +134,7 @@ struct MaintenanceCard: View {
     /// (`TDEEEstimate.resolvedWeightMethod`, explained in full by `TDEEWeightMethod.explanation` in the sheet):
     /// "weigh-ins −0.3 kg / week" when it comes from a straight line through the weigh-ins.
     static func summary(_ estimate: TDEEEstimate) -> String {
-        let change = DashboardFormat.kgChange(estimate.weeklyChangeKg)
+        let change = Format.kgChange(estimate.weeklyChangeKg)
         return switch estimate.resolvedWeightMethod {
         case .trend: String(localized: "\(estimate.loggedDays) of \(estimate.windowDays) days logged · trend \(change) / week")
         case .weighInLine: String(localized: "\(estimate.loggedDays) of \(estimate.windowDays) days logged · weigh-ins \(change) / week")

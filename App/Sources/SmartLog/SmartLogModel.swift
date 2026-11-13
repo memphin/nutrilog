@@ -93,12 +93,10 @@ struct OnDeviceMealMatcher {
         return fallback
     }
 
-    /// Lowercased words without diacritics and without a plural "s".
+    /// Lowercased words without diacritics (`FoodDuplicates.normalize`) and without a plural "s".
     private static func wordStems(_ text: String) -> [String] {
-        text.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil)
-            .components(separatedBy: CharacterSet.alphanumerics.inverted)
-            .filter { !$0.isEmpty }
-            .map { $0.count > 3 && $0.hasSuffix("s") ? String($0.dropLast()) : $0 }
+        FoodDuplicates.normalize(text).split(separator: " ")
+            .map { $0.count > 3 && $0.hasSuffix("s") ? String($0.dropLast()) : String($0) }
     }
 }
 

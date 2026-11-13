@@ -252,7 +252,7 @@ struct EstimateDaysView: View {
         } else {
             parts.append(String(localized: "\(day.entryCount) entries"))
         }
-        parts.append(day.weightKg.map { String(localized: "weighed \(DashboardFormat.kg($0))") } ?? String(localized: "no weigh-in"))
+        parts.append(day.weightKg.map { String(localized: "weighed \(Format.kg($0))") } ?? String(localized: "no weigh-in"))
         if let trend = day.trendKg {
             let kg = "\(trend.formatted(.number.precision(.fractionLength(2)))) kg"
             parts.append(String(localized: "trend \(kg)", comment: "The weight trend of one day, e.g. \"trend 72.35 kg\"."))

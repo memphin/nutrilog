@@ -275,7 +275,7 @@ private struct TileContent: View {
             if let weight = snapshot.weight {
                 VStack(alignment: .leading, spacing: NL.Spacing.xxs) {
                     ValueText(
-                        weight.latestKg.formatted(.number.precision(.fractionLength(1))), unit: "kg",
+                        Format.kgNumber(weight.latestKg), unit: "kg",
                         color: snapshot.baselineColor(of: .weight) ?? .primary,
                     )
                     if weight.latest.day != snapshot.today {
@@ -355,7 +355,7 @@ private struct TotalEnergyContent: View {
     }
 
     private func number(_ kcal: Double) -> String {
-        unit.display(kcal).formatted(.number.precision(.fractionLength(0)))
+        Format.whole(unit.display(kcal))
     }
 
     var body: some View {
@@ -408,10 +408,10 @@ private struct SleepTileContent: View {
 
     var body: some View {
         if let asleep = sleep?.asleepMin {
-            ValueText(DashboardFormat.duration(asleep), unit: "", color: GoalColor.sleep(minutes: Double(asleep), goal: goalMin))
+            ValueText(Format.duration(minutes: asleep), unit: "", color: GoalColor.sleep(minutes: Double(asleep), goal: goalMin))
         } else if let inBed = sleep?.inBedMin {
             ValueText(
-                DashboardFormat.duration(inBed), unit: String(localized: "in bed"),
+                Format.duration(minutes: inBed), unit: String(localized: "in bed"),
                 color: GoalColor.sleep(minutes: Double(inBed), goal: goalMin),
             )
         }
@@ -429,8 +429,8 @@ private struct BaselineContent: View {
     var body: some View {
         if let comparison {
             VStack(alignment: .leading, spacing: NL.Spacing.xxs) {
-                ValueText(comparison.value.formatted(.number.precision(.fractionLength(0))), unit: unit, color: color ?? .primary)
-                Text("7-day avg \(comparison.average7.formatted(.number.precision(.fractionLength(0)))) \(unit)")
+                ValueText(Format.whole(comparison.value), unit: unit, color: color ?? .primary)
+                Text("7-day avg \(Format.whole(comparison.average7)) \(unit)")
                     .font(.footnote).foregroundStyle(.secondary)
                 if showsDeviation {
                     Text(comparison.deviationText ?? String(localized: "30-day average after a week of data"))

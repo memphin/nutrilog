@@ -133,7 +133,7 @@ final class MealEditorModel {
 
     static let missingAmountMessage = String(localized: "Every food needs an amount greater than zero.")
     static var tooLargeAmountMessage: String {
-        String(localized: "An amount can't be more than \(EntryLimits.maxAmount.formatted(.number.precision(.fractionLength(0)))).")
+        String(localized: "An amount can't be more than \(Format.whole(EntryLimits.maxAmount)).")
     }
 
     /// Why the rows can't be saved; nil when every amount is valid. A missing or zero amount comes first: it is

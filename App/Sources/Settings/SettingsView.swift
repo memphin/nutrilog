@@ -35,7 +35,7 @@ struct SettingsView: View {
                     }
                     .onChange(of: stepGoal) { saveStepGoal() }
                     Stepper(value: $sleepGoal, in: SleepGoal.validRange, step: SleepGoal.step) {
-                        LabeledContent("Sleep", value: DashboardFormat.duration(sleepGoal))
+                        LabeledContent("Sleep", value: Format.duration(minutes: sleepGoal))
                     }
                     .onChange(of: sleepGoal) { saveSleepGoal() }
                     Stepper(value: $activeEnergyGoal, in: ActiveEnergyGoal.validRange, step: ActiveEnergyGoal.step) {

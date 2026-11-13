@@ -40,19 +40,14 @@ enum CorrelationPairBuilder {
     private static func daily(
         _ spec: CorrelationSpec, byDay: [LocalDay: DayStats], in days: ClosedRange<LocalDay>, unit: EnergyUnit,
     ) -> [CorrelationPair] {
-        var result: [CorrelationPair] = []
-        var day = days.lowerBound
-        while day <= days.upperBound {
+        days.days.compactMap { day in
             let partner = day.adding(days: spec.lag.days)
-            if partner <= days.upperBound,
-               let x = byDay[day].flatMap({ spec.x.dailyValue($0, unit: unit) }),
-               let y = byDay[partner].flatMap({ spec.y.dailyValue($0, unit: unit) })
-            {
-                result.append(CorrelationPair(day: day, x: x, y: y))
-            }
-            day = day.next
+            guard partner <= days.upperBound,
+                  let x = byDay[day].flatMap({ spec.x.dailyValue($0, unit: unit) }),
+                  let y = byDay[partner].flatMap({ spec.y.dailyValue($0, unit: unit) })
+            else { return nil }
+            return CorrelationPair(day: day, x: x, y: y)
         }
-        return result
     }
 
     private static func weekly(

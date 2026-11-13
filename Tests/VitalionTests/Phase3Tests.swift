@@ -843,7 +843,7 @@ struct TrendsDataTests {
         let summary = ChartBuilder.summary(weight, unit: .kcal)
         #expect(summary.hasPrefix("Weight, last 30 days: average "))
         #expect(summary.contains("10 of 30 days have data."))
-        #expect(summary.contains("Trend \(DashboardFormat.kgChange(-0.9)) over the period."))
+        #expect(summary.contains("Trend \(Format.kgChange(-0.9)) over the period."))
 
         let empty = ChartBuilder.series(.hrv, range: .week, stats: Array(stats.suffix(7)), unit: .kcal)
         #expect(empty.isEmpty && empty.average == nil)

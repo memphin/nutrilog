@@ -461,9 +461,9 @@ struct DashboardModelTests {
         #expect(rows.count == TileHistory.days)
         #expect(rows.first?.day == today)
         #expect(rows.last?.day == today.adding(days: -13))
-        #expect(rows[0].value == DashboardFormat.ml(330))
+        #expect(rows[0].value == Format.ml(330))
         #expect(rows[1].value == nil)
-        #expect(rows[2].value == DashboardFormat.ml(250))
+        #expect(rows[2].value == Format.ml(250))
     }
 }
 
@@ -537,11 +537,11 @@ struct WeightFormTests {
 
 struct DashboardFormatTests {
     @Test func `durations and changes`() {
-        #expect(DashboardFormat.duration(440) == "7h 20min")
-        #expect(DashboardFormat.duration(65) == "1h 5min")
-        #expect(DashboardFormat.duration(45) == "45min")
-        #expect(DashboardFormat.kgChange(-0.44).hasPrefix("−"))
-        #expect(DashboardFormat.kgChange(0.21).hasPrefix("+"))
-        #expect(DashboardFormat.kgChange(0.01).hasPrefix("±"))
+        #expect(Format.duration(minutes: 440) == "7 h 20 min")
+        #expect(Format.duration(minutes: 65) == "1 h 5 min")
+        #expect(Format.duration(minutes: 45) == "45 min")
+        #expect(Format.kgChange(-0.44).hasPrefix("−"))
+        #expect(Format.kgChange(0.21).hasPrefix("+"))
+        #expect(Format.kgChange(0.01).hasPrefix("±"))
     }
 }

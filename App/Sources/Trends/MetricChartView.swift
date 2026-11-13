@@ -135,14 +135,11 @@ struct MetricChartView: View {
             parts.append(point.value.map { ChartBuilder.format($0, metric, unit: unit) } ?? String(localized: "No value"))
         }
         if let resting = point.resting, let active = point.active {
-            func number(_ value: Double) -> String {
-                value.formatted(.number.precision(.fractionLength(0)))
-            }
-            parts.append(String(localized: "resting \(number(resting)) + active \(number(active))"))
+            parts.append(String(localized: "resting \(Format.whole(resting)) + active \(Format.whole(active))"))
         }
         if let reference = point.reference {
             parts.append(metric == .weight
-                ? String(localized: "trend \(reference.formatted(.number.precision(.fractionLength(1)))) kg")
+                ? String(localized: "trend \(Format.kgNumber(reference)) kg")
                 : String(localized: "target \(ChartBuilder.format(reference, metric, unit: unit))"))
         }
         return parts.joined(separator: " · ")

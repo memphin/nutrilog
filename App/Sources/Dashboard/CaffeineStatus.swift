@@ -34,7 +34,7 @@ struct CaffeineSettings: Equatable {
     /// In `thresholdRange`, on a `thresholdStep` step.
     static func normalizedThreshold(_ mg: Double) -> Double {
         guard mg.isFinite else { return CaffeineDefaults.sleepSafeThresholdMg }
-        let stepped = (mg / thresholdStep).rounded() * thresholdStep
+        let stepped = mg.rounded(toMultipleOf: thresholdStep)
         return min(max(stepped, thresholdRange.lowerBound), thresholdRange.upperBound)
     }
 
@@ -47,7 +47,7 @@ struct CaffeineSettings: Equatable {
     static func normalizedHalfLife(_ hours: Double) -> Double {
         let range = CaffeineMetabolism.halfLifeRange
         guard hours.isFinite else { return CaffeineMetabolism.baseHalfLifeHours }
-        let stepped = (hours / halfLifeStep).rounded() * halfLifeStep
+        let stepped = hours.rounded(toMultipleOf: halfLifeStep)
         return min(max(stepped, range.lowerBound), range.upperBound)
     }
 
@@ -212,7 +212,7 @@ struct CaffeineStatus: Equatable {
 
     /// "85" (whole mg).
     static func mgNumber(_ mg: Double) -> String {
-        max(mg, 0).formatted(.number.precision(.fractionLength(0)))
+        Format.whole(max(mg, 0))
     }
 
     /// "85 mg".
