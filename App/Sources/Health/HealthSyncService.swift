@@ -4,8 +4,8 @@ import HealthKitClient
 import Observation
 import Persistence
 
-/// Copies Apple Health into the `daily_metrics` cache (backlog #24). Health stays the system of record; every
-/// sync recomputes the rows of the days it reads.
+/// Copies Apple Health into the `daily_metrics` cache (backlog #24) and the workouts into `health_workout` (the
+/// Training tab). Health stays the system of record; every sync recomputes the rows of the days it reads.
 ///
 /// - Full sync: the whole 90-day window, newest days first. Runs after authorization, on a forced refresh
 ///   (Update now, pull-to-refresh, time or time-zone change) and automatically at most once a day, so access
@@ -47,6 +47,8 @@ final class HealthSyncService {
     /// Vitalion's own source in Health; its water and weights are not counted as data from other apps.
     private let ownBundleIdentifier: String?
     private let metrics: DailyMetricsRepository
+    /// Where the workouts go; nil leaves them out (tests of the daily metrics).
+    private let workouts: WorkoutRepository?
     private let settings: ProfileRepository
     private let clock: AppClock
     private let calendarProvider: @MainActor () -> Calendar
@@ -72,6 +74,7 @@ final class HealthSyncService {
         observer: (any HealthObserving)? = nil,
         ownBundleIdentifier: String? = Bundle.main.bundleIdentifier,
         metrics: DailyMetricsRepository,
+        workouts: WorkoutRepository? = nil,
         settings: ProfileRepository,
         clock: AppClock = .system,
         calendar: @escaping @MainActor () -> Calendar = { Calendar.current },
@@ -80,6 +83,7 @@ final class HealthSyncService {
         self.observer = observer
         self.ownBundleIdentifier = ownBundleIdentifier
         self.metrics = metrics
+        self.workouts = workouts
         self.settings = settings
         self.clock = clock
         calendarProvider = calendar
@@ -198,11 +202,20 @@ final class HealthSyncService {
         }
     }
 
-    /// Reads `days` from Health and writes their rows. Returns the number of rows inserted or changed.
+    /// Reads `days` from Health and writes their rows and workouts. Returns the number of `daily_metrics` rows
+    /// inserted or changed.
     @discardableResult
     func sync(days: ClosedRange<LocalDay>, calendar: Calendar? = nil) async throws -> Int {
         let calendar = calendar ?? calendarProvider()
         let batch = try await source.fetchDailyData(for: days, calendar: calendar)
+        if let workouts {
+            // From the first workout read on, a training workout makes its day a training day; days before keep
+            // the status they had (FR-32).
+            if !batch.workouts.isEmpty {
+                try workouts.startRulesIfNeeded(from: LocalDay.today(calendar: calendar, now: clock.now()))
+            }
+            try workouts.reconcile(batch.workouts, in: HealthFetchPlan(days: days, calendar: calendar).dayInterval)
+        }
         let own = ownBundleIdentifier.map { Set([$0]) } ?? []
         // Read after the fetch, so an own sample in the batch whose row was just created is known as local. Own
         // samples with no local row (reinstall, new phone without the backup) are read like any other source's.

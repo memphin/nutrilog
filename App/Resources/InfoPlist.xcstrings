@@ -62,13 +62,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Vitalion reads your weight, body fat, steps, sleep, energy, heart rate and water from Apple Health to show them next to what you eat."
+            "value" : "Vitalion reads your weight, body fat, steps, sleep, energy, heart rate, water and workouts from Apple Health to show them next to what you eat."
           }
         },
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vitalion čita tvoju težinu, tjelesnu mast, korake, san, energiju, puls i vodu iz aplikacije Zdravlje kako bi ih prikazao uz ono što jedeš."
+            "value" : "Vitalion čita tvoju težinu, tjelesnu mast, korake, san, energiju, puls, vodu i treninge iz aplikacije Zdravlje kako bi ih prikazao uz ono što jedeš."
           }
         }
       }

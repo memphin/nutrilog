@@ -53,6 +53,26 @@
         }
       }
     },
+    "Badminton" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Badminton"
+          }
+        }
+      }
+    },
+    "Basketball" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Košarka"
+          }
+        }
+      }
+    },
     "Black tea" : {
       "localizations" : {
         "hr" : {
@@ -63,12 +83,32 @@
         }
       }
     },
+    "Boxing" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Boks"
+          }
+        }
+      }
+    },
     "Caffeine pill" : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tableta kofeina"
+          }
+        }
+      }
+    },
+    "Climbing" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Penjanje"
           }
         }
       }
@@ -103,12 +143,82 @@
         }
       }
     },
+    "Cooldown" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hlađenje"
+          }
+        }
+      }
+    },
+    "Core training" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trening trupa"
+          }
+        }
+      }
+    },
+    "Cross training" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kros-trening"
+          }
+        }
+      }
+    },
+    "Cross-country skiing" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skijaško trčanje"
+          }
+        }
+      }
+    },
+    "Cycling" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Biciklizam"
+          }
+        }
+      }
+    },
+    "Dance" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ples"
+          }
+        }
+      }
+    },
     "Desk job, little or no exercise" : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sjedeći posao, malo ili nimalo vježbanja"
+          }
+        }
+      }
+    },
+    "Elliptical" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliptični trenažer"
           }
         }
       }
@@ -154,12 +264,63 @@
         }
       }
     },
+    "Flexibility" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fleksibilnost"
+          }
+        }
+      }
+    },
+    "Functional strength training" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Funkcionalni trening snage"
+          }
+        }
+      }
+    },
+    "Golf" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Golf"
+          }
+        }
+      }
+    },
     "Green tea" : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zeleni čaj"
+          }
+        }
+      }
+    },
+    "HIIT" : {
+      "comment" : "High-intensity interval training",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HIIT"
+          }
+        }
+      }
+    },
+    "Handball" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rukomet"
           }
         }
       }
@@ -184,12 +345,42 @@
         }
       }
     },
+    "Hiking" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Planinarenje"
+          }
+        }
+      }
+    },
     "In line with your 30-day average" : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "U skladu s tvojim prosjekom za 30 dana"
+          }
+        }
+      }
+    },
+    "Jump rope" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preskakanje užeta"
+          }
+        }
+      }
+    },
+    "Kickboxing" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kickboxing"
           }
         }
       }
@@ -235,6 +426,16 @@
         }
       }
     },
+    "Martial arts" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Borilačke vještine"
+          }
+        }
+      }
+    },
     "Matcha" : {
       "localizations" : {
         "hr" : {
@@ -251,6 +452,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Srednja pouzdanost"
+          }
+        }
+      }
+    },
+    "Mind and body" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Um i tijelo"
+          }
+        }
+      }
+    },
+    "Mixed cardio" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mješoviti kardio"
           }
         }
       }
@@ -272,6 +493,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Umjerena aktivnost"
+          }
+        }
+      }
+    },
+    "Multisport" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Multisport"
           }
         }
       }
@@ -306,12 +537,52 @@
         }
       }
     },
+    "Other workout" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drugi trening"
+          }
+        }
+      }
+    },
     "Physical job plus hard training" : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fizički posao uz naporne treninge"
+          }
+        }
+      }
+    },
+    "Pilates" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pilates"
+          }
+        }
+      }
+    },
+    "Rowing" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Veslanje"
+          }
+        }
+      }
+    },
+    "Running" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trčanje"
           }
         }
       }
@@ -327,6 +598,116 @@
         }
       }
     },
+    "Skating" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klizanje"
+          }
+        }
+      }
+    },
+    "Skiing" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skijanje"
+          }
+        }
+      }
+    },
+    "Snowboarding" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Snowboarding"
+          }
+        }
+      }
+    },
+    "Soccer" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nogomet"
+          }
+        }
+      }
+    },
+    "Squash" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skvoš"
+          }
+        }
+      }
+    },
+    "Stair stepper" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steper"
+          }
+        }
+      }
+    },
+    "Stairs" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stepenice"
+          }
+        }
+      }
+    },
+    "Strength training" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trening snage"
+          }
+        }
+      }
+    },
+    "Swimming" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plivanje"
+          }
+        }
+      }
+    },
+    "Table tennis" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stolni tenis"
+          }
+        }
+      }
+    },
+    "Tennis" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tenis"
+          }
+        }
+      }
+    },
     "Very active" : {
       "comment" : "Activity level",
       "localizations" : {
@@ -338,12 +719,42 @@
         }
       }
     },
+    "Volleyball" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odbojka"
+          }
+        }
+      }
+    },
+    "Walking" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hodanje"
+          }
+        }
+      }
+    },
     "Weight change measured from your smoothed weight trend." : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Promjena težine računa se iz tvog izglađenog trenda težine."
+          }
+        }
+      }
+    },
+    "Yoga" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Joga"
           }
         }
       }

@@ -68,6 +68,17 @@
         }
       }
     },
+    "%@ a week" : {
+      "comment" : "Average training sessions per week, e.g. “3.2 a week”",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ tjedno"
+          }
+        }
+      }
+    },
     "%@ active" : {
       "comment" : "Energy unit, e.g. “kcal active”",
       "localizations" : {
@@ -105,6 +116,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Grafikon: %@"
+          }
+        }
+      }
+    },
+    "%@ g/kg" : {
+      "comment" : "Protein per kilogram of body weight, e.g. “1.7 g/kg”",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ g/kg"
           }
         }
       }
@@ -1066,6 +1088,16 @@
         }
       }
     },
+    "%lld g a day" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld g dnevno"
+          }
+        }
+      }
+    },
     "%lld h" : {
       "comment" : "Short duration in hours",
       "localizations" : {
@@ -1838,6 +1870,23 @@
         }
       }
     },
+    "%lld of %lld planned" : {
+      "comment" : "Days trained out of the planned training days",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld planned"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld od %2$lld po planu"
+          }
+        }
+      }
+    },
     "%lld of %lld taken" : {
       "localizations" : {
         "en" : {
@@ -2110,6 +2159,63 @@
         }
       }
     },
+    "%lld this week" : {
+      "comment" : "Number of walks or other activities this week",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld ovaj tjedan"
+          }
+        }
+      }
+    },
+    "%lld workouts" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld workout"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld workouts"
+                }
+              }
+            }
+          }
+        },
+        "hr" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld treninga"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld trening"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld treninga"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld-day streak" : {
       "localizations" : {
         "hr" : {
@@ -2338,6 +2444,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ravna linija kroz tvoja vaganja ide od %1$@ (%2$@) do %3$@ (%4$@): %5$@ u razdoblju od %6$lld dana, što je %7$@ tjedno."
+          }
+        }
+      }
+    },
+    "A workout from Apple Health that counts as training is a session on the Training tab and makes its day a training day. The others are listed as activity only. Changes apply from today." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktivnost iz aplikacije Zdravlje koja se računa kao trening prikazuje se kao trening na kartici Trening i njezin dan postaje dan treninga. Ostale se navode samo kao aktivnost. Promjene vrijede od danas."
           }
         }
       }
@@ -2911,6 +3027,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dopusti zapisivanje tjelesne masti"
+          }
+        }
+      }
+    },
+    "Allow workouts" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dopusti treninge"
           }
         }
       }
@@ -3789,6 +3915,16 @@
         }
       }
     },
+    "Connect Apple Health to see the workouts your watch and training apps record." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Poveži Zdravlje da vidiš treninge koje bilježe tvoj sat i aplikacije za trening."
+          }
+        }
+      }
+    },
     "Connect Apple Health to see this" : {
       "localizations" : {
         "hr" : {
@@ -4031,6 +4167,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Učitavanje fotografije nije uspjelo: %@"
+          }
+        }
+      }
+    },
+    "Couldn't load your workouts: %@" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Učitavanje treninga nije uspjelo: %@"
           }
         }
       }
@@ -4327,6 +4473,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Računa se kao piće"
+          }
+        }
+      }
+    },
+    "Counts as training" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Računa se kao trening"
           }
         }
       }
@@ -6298,6 +6454,26 @@
         }
       }
     },
+    "Last %lld weeks" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zadnjih %lld tjedana"
+          }
+        }
+      }
+    },
+    "Last 4 weeks" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zadnja 4 tjedna"
+          }
+        }
+      }
+    },
     "Last 90 days" : {
       "localizations" : {
         "hr" : {
@@ -7520,6 +7696,16 @@
         }
       }
     },
+    "No training in the last 4 weeks." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nema treninga u zadnja 4 tjedna."
+          }
+        }
+      }
+    },
     "No value" : {
       "localizations" : {
         "hr" : {
@@ -7546,6 +7732,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Još nema težine"
+          }
+        }
+      }
+    },
+    "No workouts yet" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Još nema treninga"
           }
         }
       }
@@ -8130,6 +8326,16 @@
         }
       }
     },
+    "Other activity" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ostala aktivnost"
+          }
+        }
+      }
+    },
     "Other amount or time…" : {
       "localizations" : {
         "hr" : {
@@ -8345,6 +8551,7 @@
       }
     },
     "Planned" : {
+      "comment" : "Legend: a planned training day without a workout",
       "localizations" : {
         "hr" : {
           "stringUnit" : {
@@ -10494,6 +10701,16 @@
         }
       }
     },
+    "This week's fuel" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prehrana ovaj tjedan"
+          }
+        }
+      }
+    },
     "Time" : {
       "localizations" : {
         "hr" : {
@@ -10653,6 +10870,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ukupna energija zbroj je energije u mirovanju i aktivne energije iz aplikacije Zdravlje: energija u mirovanju je ono što tijelo troši samo da bi funkcioniralo, a aktivna je ono što dodaju kretanje i vježbanje. Dan sa samo jednom od njih nema ukupnu vrijednost. Boja prikazuje aktivni dio u odnosu na tvoj cilj aktivne energije (Postavke → Dnevni ciljevi): na dio u mirovanju ne možeš utjecati."
+          }
+        }
+      }
+    },
+    "Trained" : {
+      "comment" : "Legend: a day with a training workout",
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odrađeno"
           }
         }
       }
@@ -11073,6 +11301,16 @@
         }
       }
     },
+    "Vitalion can now show the workouts your watch and training apps record. Apple Health asks you once." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vitalion sada može prikazati treninge koje bilježe tvoj sat i aplikacije za trening. Zdravlje će te pitati jednom."
+          }
+        }
+      }
+    },
     "Vitalion is not a medical device and provides no medical advice." : {
       "localizations" : {
         "hr" : {
@@ -11177,6 +11415,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vrijeme buđenja"
+          }
+        }
+      }
+    },
+    "Walks" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šetnje"
           }
         }
       }
@@ -11383,6 +11631,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bez barem %lld dana aktivne energije i energije u mirovanju u aplikaciji Zdravlje potrošnja za održavanje procjenjuje se prema razini aktivnosti. Tjedna provjera (Postavke) to precizira tvojim stvarnim unosom i trendom težine."
+          }
+        }
+      }
+    },
+    "Workouts" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Treninzi"
+          }
+        }
+      }
+    },
+    "Workouts come from Apple Health" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Treninzi dolaze iz aplikacije Zdravlje"
+          }
+        }
+      }
+    },
+    "Workouts recorded in Apple Health in the last 90 days show up here. If you have some, check %@." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ovdje se prikazuju treninzi zabilježeni u aplikaciji Zdravlje u zadnjih 90 dana. Ako ih imaš, provjeri %@."
           }
         }
       }
@@ -12973,6 +13251,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "linija tempa sada je na %lld"
+          }
+        }
+      }
+    },
+    "trained on %@" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "trenirano: %@"
           }
         }
       }

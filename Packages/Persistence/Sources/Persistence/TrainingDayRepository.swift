@@ -96,9 +96,9 @@ public extension TrainingDays {
     }
 }
 
-/// Training days: the default weekdays and boost as history (`training_schedule`, like `target`) and per-day
-/// overrides (`training_day`). ``trainingDays(in:)`` / ``observeTrainingDays(in:)`` combine both into a Core
-/// `TrainingDays` resolver.
+/// Training days: the default weekdays and boost as history (`training_schedule`, like `target`), per-day
+/// overrides (`training_day`) and the days with a training workout in Apple Health (`WorkoutRepository`).
+/// ``trainingDays(in:)`` / ``observeTrainingDays(in:)`` combine them into a Core `TrainingDays` resolver.
 public struct TrainingDayRepository: Sendable {
     let database: AppDatabase
     let clock: AppClock
@@ -152,15 +152,16 @@ public struct TrainingDayRepository: Sendable {
     // MARK: Overrides
 
     /// The user's tap on a day's training switch (diary, meal plan, history calendar): flips whether `day` is a
-    /// training day. The choice is kept as an override only while it differs from the day's schedule; a day switched
-    /// back to what its schedule says follows the schedule again. Returns whether `day` is a training day now.
+    /// training day. The choice is kept as an override only while it differs from what the day would be by itself
+    /// (its schedule, or a training workout in Apple Health); a day switched back to that follows it again. Returns
+    /// whether `day` is a training day now.
     @discardableResult
     public func toggleTraining(on day: LocalDay) throws -> Bool {
         let now = clock.now()
         return try database.writer.write { db in
             let days = try Self.trainingDays(db, in: day ... day)
             let isTraining = !days.isTraining(day)
-            if isTraining == days.scheduledTraining(day) {
+            if isTraining == days.defaultTraining(day) {
                 try Self.clearOverride(db, on: day, now: now)
             } else {
                 try Self.setTraining(db, isTraining, on: day, now: now)
@@ -171,14 +172,14 @@ public struct TrainingDayRepository: Sendable {
 
     // MARK: Resolver
 
-    /// Every schedule and the overrides of `days`. Only answers days in `days` correctly: overrides outside it are
-    /// not loaded.
+    /// Every schedule, and the overrides and training workouts of `days`. Only answers days in `days` correctly:
+    /// overrides and workouts outside it are not loaded.
     public func trainingDays(in days: ClosedRange<LocalDay>) throws -> TrainingDays {
         try database.reader.read { db in try Self.trainingDays(db, in: days) }
     }
 
-    /// ``trainingDays(in:)`` now and after every change to a schedule or an override — for the dashboard, diary and
-    /// history, which must follow the settings live.
+    /// ``trainingDays(in:)`` now and after every change to a schedule, an override, the workouts read from Apple
+    /// Health or the kinds that count as training — for the dashboard, diary and history, which must follow them live.
     public func observeTrainingDays(in days: ClosedRange<LocalDay>) -> AsyncValueObservation<TrainingDays> {
         database.observe { db in try Self.trainingDays(db, in: days) }
     }
@@ -222,7 +223,9 @@ public struct TrainingDayRepository: Sendable {
     }
 
     static func trainingDays(_ db: Database, in days: ClosedRange<LocalDay>) throws -> TrainingDays {
-        try TrainingDays(timeline: timeline(db), overrides: overrides(db, in: days))
+        try TrainingDays(
+            timeline: timeline(db), overrides: overrides(db, in: days), workoutDays: WorkoutRepository.trainingDays(db, in: days),
+        )
     }
 
     static func setTraining(_ db: Database, _ isTraining: Bool, on day: LocalDay, now: Date) throws {

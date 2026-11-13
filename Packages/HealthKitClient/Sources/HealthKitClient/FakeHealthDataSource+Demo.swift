@@ -5,10 +5,12 @@ public extension FakeHealthDataSource {
     static let demoWatch = HealthSource(name: "Apple Watch", bundleIdentifier: "com.apple.health.demo-watch", productType: "Watch7,1")
     static let demoPhone = HealthSource(name: "iPhone", bundleIdentifier: "com.apple.health.demo-phone", productType: "iPhone17,1")
     static let demoScale = HealthSource(name: "Withings", bundleIdentifier: "com.withings.wiScaleNG", productType: "iPhone17,1")
+    static let demoGymApp = HealthSource(name: "Gym Log", bundleIdentifier: "com.example.gymlog", productType: "iPhone17,1")
 
     /// An already-authorized fake with plausible, deterministic data for the `days` days ending on `lastDay`:
     /// a Withings weigh-in with body fat each morning (slowly trending down), Apple Watch steps, energy, sleep
-    /// with stages, resting heart rate and overnight HRV, and water. For previews and screenshots.
+    /// with stages, resting heart rate and overnight HRV, water, and workouts (strength three times a week — also
+    /// recorded by a gym app — a Saturday run and a walk on the other days). For previews and screenshots.
     static func demo(endingOn lastDay: LocalDay, days: Int = 120, calendar: Calendar = .current) -> FakeHealthDataSource {
         var state = State()
         state.authorizationRequested = true
@@ -51,8 +53,37 @@ public extension FakeHealthDataSource {
             }
 
             state.sleep += demoNight(startingAt: nightStart)
+            state.workouts += demoWorkouts(on: day, wobble: wobble, calendar: calendar)
         }
         return FakeHealthDataSource(state: state)
+    }
+
+    /// Monday, Wednesday and Friday: an hour of strength training, recorded by the watch and by a gym app (one
+    /// session). Saturday: a run. The other days: a walk.
+    private static func demoWorkouts(on day: LocalDay, wobble: Double, calendar: Calendar) -> [HealthWorkout] {
+        let evening = day.date(atHour: 18, calendar: calendar)
+        func workout(
+            _ suffix: String, _ kind: WorkoutKind, minutes: Double, kcal: Double?, km: Double? = nil, source: HealthSource = demoWatch,
+            startOffsetMin: Double = 0,
+        ) -> HealthWorkout {
+            let start = evening.addingTimeInterval(startOffsetMin * 60)
+            return HealthWorkout(
+                id: "demo-\(day.isoString)-\(suffix)", day: day, activityType: kind.rawValue, start: start,
+                end: start.addingTimeInterval(minutes * 60), activeKcal: kcal, distanceM: km.map { $0 * 1000 }, source: source,
+            )
+        }
+        switch day.weekday {
+        case 2, 4, 6:
+            let minutes = (58 + 6 * wobble).rounded()
+            return [
+                workout("strength", .strength, minutes: minutes, kcal: (400 + 40 * wobble).rounded()),
+                workout("gymlog", .strength, minutes: minutes - 4, kcal: nil, source: demoGymApp, startOffsetMin: 2),
+            ]
+        case 7:
+            return [workout("run", .running, minutes: (42 + 4 * wobble).rounded(), kcal: 480, km: 6.8 + 0.6 * wobble)]
+        default:
+            return [workout("walk", .walking, minutes: (38 + 8 * wobble).rounded(), kcal: 150, km: 3.1 + 0.5 * wobble)]
+        }
     }
 
     /// About 7 h 20 min asleep in 90-minute cycles with one short awakening.

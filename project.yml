@@ -62,7 +62,7 @@ targets:
         ITSAppUsesNonExemptEncryption: false
         USDAFDCAPIKey: $(USDA_FDC_API_KEY)
         OFFUserAgentContact: $(OFF_USER_AGENT_CONTACT)
-        NSHealthShareUsageDescription: Vitalion reads your weight, body fat, steps, sleep, energy, heart rate and water from Apple Health to show them next to what you eat.
+        NSHealthShareUsageDescription: Vitalion reads your weight, body fat, steps, sleep, energy, heart rate, water and workouts from Apple Health to show them next to what you eat.
         NSHealthUpdateUsageDescription: Vitalion writes the nutrients and water you log, and the weight and body fat you enter manually, to Apple Health.
         NSCameraUsageDescription: Vitalion uses the camera to scan product barcodes and to take a photo of a meal to estimate what it contains.
     entitlements:

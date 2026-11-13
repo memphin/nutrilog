@@ -133,6 +133,7 @@ final class AppEnvironment {
                 source: health,
                 observer: healthObserver,
                 metrics: DailyMetricsRepository(db, clock: clock),
+                workouts: WorkoutRepository(db, clock: clock),
                 settings: ProfileRepository(db, clock: clock),
                 clock: clock,
             )
@@ -221,6 +222,11 @@ final class AppEnvironment {
         db.map { TrainingDayRepository($0, clock: clock) }
     }
 
+    /// The workouts read from Apple Health and which kinds of them count as training (the Training tab).
+    var workouts: WorkoutRepository? {
+        db.map { WorkoutRepository($0, clock: clock) }
+    }
+
     // MARK: Health background work (backlog #26, #27)
 
     /// At launch (also a background launch for Health delivery): register the observer queries once the user has been
@@ -250,6 +256,20 @@ final class AppEnvironment {
         if let healthWrites {
             // Drains are serialised inside the service (one pass at a time, a request during a pass adds one more).
             healthWriteCatchUp = Task { await healthWrites.writeAccessDidChange() }
+        }
+    }
+
+    /// For users who connected Health before Vitalion read a type (workouts): shows the Health permission sheet,
+    /// which lists only the types not answered yet, then reads the full window again and registers the observers
+    /// anew — the one of a type that was never asked for does not deliver. Throws when the sheet could not be shown.
+    func allowNewHealthTypes() async throws {
+        guard let healthSync else { return }
+        await healthSync.stopObserving()
+        do {
+            try await connectHealth()
+        } catch {
+            await healthSync.startObserving()
+            throw error
         }
     }
 

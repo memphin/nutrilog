@@ -187,6 +187,8 @@ public struct HealthDataBatch: Hashable, Sendable {
     /// still has a local `water_entry` row (the totals come from `statistics`). The live source reads only the app's
     /// own samples here. Nil when not read: all own water is then treated as local.
     public var waterSamples: [HealthQuantitySample]?
+    /// The workouts that started on `days` (the Training tab); not part of `daily_metrics`.
+    public var workouts: [HealthWorkout]
 
     public init(
         days: ClosedRange<LocalDay>,
@@ -194,12 +196,14 @@ public struct HealthDataBatch: Hashable, Sendable {
         samples: [SampledMetric: [HealthQuantitySample]] = [:],
         sleep: [SleepSample] = [],
         waterSamples: [HealthQuantitySample]? = nil,
+        workouts: [HealthWorkout] = [],
     ) {
         self.days = days
         self.statistics = statistics
         self.samples = samples
         self.sleep = sleep
         self.waterSamples = waterSamples
+        self.workouts = workouts
     }
 }
 

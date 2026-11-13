@@ -404,6 +404,16 @@
         }
       }
     },
+    "Workouts" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Treninzi"
+          }
+        }
+      }
+    },
     "Your age, for the calorie needs estimate." : {
       "localizations" : {
         "hr" : {
@@ -430,6 +440,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tvoj noćni prosjek HRV-a s Apple Watcha, kao kontekst oporavka. Samo informativno."
+          }
+        }
+      }
+    },
+    "Your workouts for the Training tab. A training workout also makes its day a training day." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tvoji treninzi za karticu Trening. Dan s treningom ujedno postaje dan treninga."
           }
         }
       }

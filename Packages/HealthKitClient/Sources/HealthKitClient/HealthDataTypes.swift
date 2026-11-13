@@ -13,12 +13,14 @@ public enum HealthReadType: String, CaseIterable, Sendable, Identifiable {
     case restingHeartRate
     case heartRateVariabilitySDNN
     case dietaryWater
+    /// Workouts (`HKWorkoutType`), for the Training tab and training days.
+    case workout
     case height
     case dateOfBirth
     case biologicalSex
 
     public enum Kind: Sendable {
-        case quantity, category, characteristic
+        case quantity, category, characteristic, workout
     }
 
     public var id: String {
@@ -28,6 +30,7 @@ public enum HealthReadType: String, CaseIterable, Sendable, Identifiable {
     public var kind: Kind {
         switch self {
         case .sleepAnalysis: .category
+        case .workout: .workout
         case .dateOfBirth, .biologicalSex: .characteristic
         default: .quantity
         }
@@ -39,10 +42,12 @@ public enum HealthReadType: String, CaseIterable, Sendable, Identifiable {
         case .quantity: "HKQuantityTypeIdentifier" + rawValue.prefix(1).uppercased() + rawValue.dropFirst()
         case .category: "HKCategoryTypeIdentifier" + rawValue.prefix(1).uppercased() + rawValue.dropFirst()
         case .characteristic: "HKCharacteristicTypeIdentifier" + rawValue.prefix(1).uppercased() + rawValue.dropFirst()
+        case .workout: "HKWorkoutTypeIdentifier"
         }
     }
 
-    /// The `daily_metrics` value this type feeds; nil for profile characteristics.
+    /// The `daily_metrics` value this type feeds; nil for workouts (kept one by one in `health_workout`) and profile
+    /// characteristics.
     public var metric: HealthMetric? {
         switch self {
         case .stepCount: .steps
@@ -54,7 +59,7 @@ public enum HealthReadType: String, CaseIterable, Sendable, Identifiable {
         case .restingHeartRate: .restingHeartRate
         case .heartRateVariabilitySDNN: .hrv
         case .dietaryWater: .water
-        case .height, .dateOfBirth, .biologicalSex: nil
+        case .workout, .height, .dateOfBirth, .biologicalSex: nil
         }
     }
 
@@ -69,6 +74,7 @@ public enum HealthReadType: String, CaseIterable, Sendable, Identifiable {
         case .restingHeartRate: String(localized: "Resting heart rate", bundle: .module)
         case .heartRateVariabilitySDNN: String(localized: "Heart rate variability", bundle: .module)
         case .dietaryWater: String(localized: "Water", bundle: .module)
+        case .workout: String(localized: "Workouts", bundle: .module)
         case .height: String(localized: "Height", bundle: .module)
         case .dateOfBirth: String(localized: "Date of birth", bundle: .module)
         case .biologicalSex: String(localized: "Sex", bundle: .module, comment: "Biological sex (Health data type)")
@@ -96,6 +102,11 @@ public enum HealthReadType: String, CaseIterable, Sendable, Identifiable {
             String(localized: "Your overnight HRV average from Apple Watch, as recovery context. Informational only.", bundle: .module)
         case .dietaryWater:
             String(localized: "Water logged in other apps also counts toward your daily water goal.", bundle: .module)
+        case .workout:
+            String(
+                localized: "Your workouts for the Training tab. A training workout also makes its day a training day.",
+                bundle: .module,
+            )
         case .height:
             String(localized: "Used with your age, sex and weight to estimate your calorie needs.", bundle: .module)
         case .dateOfBirth:

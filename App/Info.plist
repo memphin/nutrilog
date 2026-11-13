@@ -27,7 +27,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>Vitalion uses the camera to scan product barcodes and to take a photo of a meal to estimate what it contains.</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Vitalion reads your weight, body fat, steps, sleep, energy, heart rate and water from Apple Health to show them next to what you eat.</string>
+	<string>Vitalion reads your weight, body fat, steps, sleep, energy, heart rate, water and workouts from Apple Health to show them next to what you eat.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Vitalion writes the nutrients and water you log, and the weight and body fat you enter manually, to Apple Health.</string>
 	<key>OFFUserAgentContact</key>

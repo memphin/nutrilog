@@ -63,6 +63,7 @@
 		5F840E3018A414B035EDE468 /* ScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E06A37F87F80825C3EB8E826 /* ScanView.swift */; };
 		6048E5248FB4F93014ED6B8F /* FoodLookup in Frameworks */ = {isa = PBXBuildFile; productRef = B8CBC1F50763FB9CEFB6F4E5 /* FoodLookup */; };
 		61C770810AECE6E470E23402 /* HealthKitClient in Frameworks */ = {isa = PBXBuildFile; productRef = 21058B4AB52F76D665E5A05D /* HealthKitClient */; };
+		656733B62662619006A8D8D9 /* TrainingModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0906FA2B056847A58C4845D /* TrainingModel.swift */; };
 		66C1DDA4C05D84E5E41D2D0B /* MealEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51648512C272F5BAB2CCDAEB /* MealEditorView.swift */; };
 		66CB1CE58F2AB831FE8B088C /* HydrationReminder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C69604C57FE502D08D926F /* HydrationReminder.swift */; };
 		6A6D7FB5AE670D82694327BC /* VitalionWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0A83FF24C8E676D75F22F754 /* VitalionWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -74,6 +75,7 @@
 		74B2381D81030F4F1E7A5741 /* VitalionIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = C765BACA160F1ECF2058D539 /* VitalionIntents.swift */; };
 		75BA8D8A669FB9FB9C9375D6 /* TrainingDayViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB60D34B0BA52D272B8B20C8 /* TrainingDayViews.swift */; };
 		790621B1B50CB4C7B4CB880D /* TestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = B676A848F8A4FD5E187A9F63 /* TestSupport.swift */; };
+		7D2855A2F415CB2E10960AD8 /* TrainingTabTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0678681A60DBDD7E03A94E9 /* TrainingTabTests.swift */; };
 		815F51B813312E155D5FBC9B /* HydrationDetailTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36BCF11A7CC4A1C69281B243 /* HydrationDetailTests.swift */; };
 		8542CDA8DAFD67E8F8BE182E /* OnlineResultsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBFC8A195B20CF85237483E9 /* OnlineResultsView.swift */; };
 		855DC2C54103B68E1E6677D3 /* HydrationDayBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B82C78F6A08FA91289CE96E4 /* HydrationDayBuilder.swift */; };
@@ -280,6 +282,7 @@
 		AE614412E9B40CD14693CA20 /* Streaks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Streaks.swift; sourceTree = "<group>"; };
 		AEFCCA68F0A67ECF0B040E21 /* DashboardEditing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardEditing.swift; sourceTree = "<group>"; };
 		AF55C382C31249974F0ABEEF /* DiarySupplementsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiarySupplementsSection.swift; sourceTree = "<group>"; };
+		B0906FA2B056847A58C4845D /* TrainingModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingModel.swift; sourceTree = "<group>"; };
 		B2562F6E4540C9C32B3D5E43 /* MealPlanViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPlanViews.swift; sourceTree = "<group>"; };
 		B2F38B07CDBC88FC4F971C55 /* MealPhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPhoto.swift; sourceTree = "<group>"; };
 		B4C9AF3E76054F5D4422CCB4 /* SupplementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupplementTests.swift; sourceTree = "<group>"; };
@@ -296,6 +299,7 @@
 		BD383A5C27B3EEBA52E452DD /* FoodsListModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodsListModel.swift; sourceTree = "<group>"; };
 		BF217C5A1CECD3C0A93356F9 /* MealEditorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealEditorTests.swift; sourceTree = "<group>"; };
 		BF637A935EF04706613296A2 /* CaffeineStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaffeineStatus.swift; sourceTree = "<group>"; };
+		C0678681A60DBDD7E03A94E9 /* TrainingTabTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingTabTests.swift; sourceTree = "<group>"; };
 		C10B6F66AAC55153F7490F76 /* FoodEditorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodEditorModel.swift; sourceTree = "<group>"; };
 		C1F6491AE676169DC5DB4353 /* CaffeineTileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaffeineTileTests.swift; sourceTree = "<group>"; };
 		C25FBE25FD065F70F074E151 /* DashboardModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardModel.swift; sourceTree = "<group>"; };
@@ -545,6 +549,7 @@
 		A9A74E214FC764B8CA048AC5 /* Training */ = {
 			isa = PBXGroup;
 			children = (
+				B0906FA2B056847A58C4845D /* TrainingModel.swift */,
 				E653E8EB8C67A99735B8B7DA /* TrainingView.swift */,
 			);
 			path = Training;
@@ -656,6 +661,7 @@
 				B4C9AF3E76054F5D4422CCB4 /* SupplementTests.swift */,
 				B676A848F8A4FD5E187A9F63 /* TestSupport.swift */,
 				2E51600E4CDB7D3ACCF86888 /* TrainingDayTests.swift */,
+				C0678681A60DBDD7E03A94E9 /* TrainingTabTests.swift */,
 				EB3F4582DC70F1C223188D23 /* TrendsTests.swift */,
 				5516198E467F49B553A99AB6 /* WidgetTests.swift */,
 			);
@@ -883,6 +889,7 @@
 				F16B1413A467864F8CBE30CC /* SupplementTests.swift in Sources */,
 				790621B1B50CB4C7B4CB880D /* TestSupport.swift in Sources */,
 				33DF6D472D6BEFA89D81F39E /* TrainingDayTests.swift in Sources */,
+				7D2855A2F415CB2E10960AD8 /* TrainingTabTests.swift in Sources */,
 				0048DB50955475F69CC5C8F9 /* TrendsTests.swift in Sources */,
 				92D82A62D3E1D5657285FBAE /* WidgetTests.swift in Sources */,
 			);
@@ -981,6 +988,7 @@
 				4B3249A25400669043F23BFD /* TileDetailView.swift in Sources */,
 				75BA8D8A669FB9FB9C9375D6 /* TrainingDayViews.swift in Sources */,
 				EC62D30CABC8FC416C8BAD56 /* TrainingDaysSettingsView.swift in Sources */,
+				656733B62662619006A8D8D9 /* TrainingModel.swift in Sources */,
 				D028732B41535C393C0320A8 /* TrainingView.swift in Sources */,
 				E0B92D28BE843F8C8BD7745B /* UndoToast.swift in Sources */,
 				A62871BC5EADE61B26FA7058 /* VitalionApp.swift in Sources */,

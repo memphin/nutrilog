@@ -33,24 +33,31 @@ public struct TrainingSchedule: Hashable, Sendable, Codable {
     }
 }
 
-/// Which days are training days: the weekdays of the schedule in effect on a day, unless the user switched that day
-/// on or off (an override, which ignores the weekdays). Without any schedule no weekday is a training day and the
-/// boost is ``TrainingSchedule/defaultBoostPercent``.
+/// Which days are training days: the user's switch for that day (an override) if there is one; else a day with a
+/// training workout in Apple Health (`workoutDays`) or one of the weekdays of the schedule in effect. Without any
+/// schedule no weekday is a training day and the boost is ``TrainingSchedule/defaultBoostPercent``.
 public struct TrainingDays: Equatable, Sendable {
     public let timeline: EffectiveTimeline<TrainingSchedule>
     /// Days the user switched on (`true`) or off (`false`).
     public let overrides: [LocalDay: Bool]
+    /// Days with a workout that counts as training (`TrainingRules.trainingDays(of:)`): training days whatever the
+    /// schedule says, unless the user switched them off.
+    public let workoutDays: Set<LocalDay>
 
     public static let none = TrainingDays(schedules: [], overrides: [:])
 
-    public init(timeline: EffectiveTimeline<TrainingSchedule>, overrides: [LocalDay: Bool]) {
+    public init(timeline: EffectiveTimeline<TrainingSchedule>, overrides: [LocalDay: Bool], workoutDays: Set<LocalDay> = []) {
         self.timeline = timeline
         self.overrides = overrides
+        self.workoutDays = workoutDays
     }
 
     /// `schedules` in any order; with two on the same day the later one in the array wins.
-    public init(schedules: [TrainingSchedule], overrides: [LocalDay: Bool]) {
-        self.init(timeline: EffectiveTimeline(schedules.map { (from: $0.effectiveFrom, value: $0) }), overrides: overrides)
+    public init(schedules: [TrainingSchedule], overrides: [LocalDay: Bool], workoutDays: Set<LocalDay> = []) {
+        self.init(
+            timeline: EffectiveTimeline(schedules.map { (from: $0.effectiveFrom, value: $0) }), overrides: overrides,
+            workoutDays: workoutDays,
+        )
     }
 
     /// The schedule in effect on `day`; nil before the first one.
@@ -58,19 +65,29 @@ public struct TrainingDays: Equatable, Sendable {
         timeline.value(on: day)
     }
 
-    /// The user's choice for `day`, nil when the day follows its schedule.
+    /// The user's choice for `day`, nil when the day follows its schedule and workouts.
     public func override(on day: LocalDay) -> Bool? {
         overrides[day]
     }
 
-    /// Whether the schedule makes `day` a training day, overrides aside.
+    /// Whether the schedule makes `day` a training day, overrides and workouts aside.
     public func scheduledTraining(_ day: LocalDay) -> Bool {
         schedule(on: day)?.includes(day) ?? false
     }
 
-    /// Whether `day` is a training day: its override, else its schedule's weekdays.
-    public func isTraining(_ day: LocalDay) -> Bool {
+    /// Whether `day` is a training day without the user's switch: it has a training workout or its schedule says so.
+    public func defaultTraining(_ day: LocalDay) -> Bool {
+        workoutDays.contains(day) || scheduledTraining(day)
+    }
+
+    /// Whether training was planned on `day`: the user's switch, else the schedule. A workout is not a plan.
+    public func isPlanned(_ day: LocalDay) -> Bool {
         override(on: day) ?? scheduledTraining(day)
+    }
+
+    /// Whether `day` is a training day: its override, else a training workout or its schedule's weekdays.
+    public func isTraining(_ day: LocalDay) -> Bool {
+        override(on: day) ?? defaultTraining(day)
     }
 
     /// The boost of the schedule in effect on `day` (``TrainingSchedule/defaultBoostPercent`` without one), whether

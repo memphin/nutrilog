@@ -21,6 +21,8 @@ public final class FakeHealthDataSource: HealthDataSource {
         public var cumulativeSamples: [CumulativeMetric: [HealthQuantitySample]] = [:]
         public var samples: [SampledMetric: [HealthQuantitySample]] = [:]
         public var sleep: [SleepSample] = []
+        /// Workouts, returned for the days they start on.
+        public var workouts: [HealthWorkout] = []
         public var characteristics = HealthCharacteristics()
         /// Thrown by the next `requestAuthorization()` call while set.
         public var authorizationError: (any Error & Sendable)?
@@ -109,6 +111,9 @@ public final class FakeHealthDataSource: HealthDataSource {
             sleep: state.sleep.filter { $0.end >= sleepQuery.start && $0.end < sleepQuery.end },
             // Every water sample (the live source reads only its own; Core looks only at the own ones).
             waterSamples: (state.cumulativeSamples[.dietaryWater] ?? []).filter(inDays),
+            workouts: state.workouts
+                .filter { $0.start >= plan.dayInterval.start && $0.start < plan.dayInterval.end }
+                .sorted { $0.start < $1.start },
         )
     }
 
