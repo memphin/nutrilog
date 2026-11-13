@@ -306,16 +306,21 @@ struct AddFoodView: View {
         }
     }
 
-    /// Stores a local copy of the online food, then opens it (asking for the serving weight first when needed).
+    /// Stores a local copy of the online food (an Open Food Facts product is fetched by barcode first), then opens
+    /// it (asking for the serving weight first when needed).
     private func openOnline(_ result: OnlineFoodResult) {
         guard let foods = environment.foods else { return }
-        do {
-            switch try online.select(result, in: foods) {
-            case let .open(detail): path.append(detail)
-            case let .askServingWeight(pending): servingPrompt = pending
+        Task {
+            do {
+                switch try await online.select(result, in: foods, lookup: environment.barcodeLookup) {
+                case let .open(detail): path.append(detail)
+                case let .askServingWeight(pending): servingPrompt = pending
+                }
+            } catch is CancellationError {
+                // Nothing to report.
+            } catch {
+                errorMessage = error.localizedDescription
             }
-        } catch {
-            errorMessage = error.localizedDescription
         }
     }
 }

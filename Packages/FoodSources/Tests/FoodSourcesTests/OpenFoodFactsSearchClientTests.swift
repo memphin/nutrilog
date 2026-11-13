@@ -12,92 +12,106 @@ struct OpenFoodFactsSearchClientTests {
 
     // MARK: - Request
 
-    @Test func `request uses v1 full-text search with the fields allowlist, User-Agent and 5 s timeout`() throws {
+    @Test func `request uses Search-a-licious with the fields allowlist, User-Agent and 5 s timeout`() throws {
         let client = OpenFoodFactsSearchHTTPClient(contact: Self.contact, appVersion: "1.2", pageSize: 15)
-        let request = client.request(query: "kraš dorina")
+        let request = try #require(client.request(query: "kraš dorina"))
         let url = try #require(request.url)
         let components = try #require(URLComponents(url: url, resolvingAgainstBaseURL: false))
         #expect(components.scheme == "https")
-        #expect(components.host == "world.openfoodfacts.org")
-        #expect(components.path == "/cgi/search.pl")
+        #expect(components.host == "search.openfoodfacts.org")
+        #expect(components.path == "/search")
         let items = Dictionary(uniqueKeysWithValues: (components.queryItems ?? []).map { ($0.name, $0.value ?? "") })
-        #expect(items["search_terms"] == "kraš dorina")
-        #expect(items["search_simple"] == "1")
-        #expect(items["json"] == "1")
+        #expect(items["q"] == OpenFoodFactsSearchHTTPClient.luceneQuery("kraš dorina"))
         #expect(items["page_size"] == "15")
-        #expect(items["fields"] == OFFProduct.fields.joined(separator: ","))
+        #expect(items["fields"] == "code,product_name,product_name_hr,product_name_en,generic_name,brands,quantity")
         #expect(request.value(forHTTPHeaderField: "User-Agent") == Self.userAgent)
         #expect(request.timeoutInterval == 5)
         #expect(request.httpMethod == "GET")
     }
 
-    @Test func `plus in the query is percent-encoded`() throws {
-        let request = makeClient(StubTransport([.http(200, Data())])).request(query: "c+ juice")
-        let query = try #require(request.url?.query(percentEncoded: true))
-        #expect(query.contains("search_terms=c%2B%20juice"))
+    @Test func `query matches every word in the main name, English name, generic name or brand, with nutrition`() {
+        #expect(OpenFoodFactsSearchHTTPClient.luceneQuery("  Dorina  Mliječna ") == """
+        (product_name.main:(dorina mliječna) OR product_name.en:(dorina mliječna) OR generic_name.en:(dorina mliječna) \
+        OR brands:(dorina mliječna)) AND states_tags:"en:nutrition-facts-completed"
+        """)
+    }
+
+    @Test func `query syntax typed by the user is dropped`() {
+        #expect(OpenFoodFactsSearchHTTPClient.luceneQuery(#"milk" AND (a:b) c+ OR*"#)
+            == OpenFoodFactsSearchHTTPClient.luceneQuery("milk and a b c or"))
+    }
+
+    @Test(arguments: ["", "   ", "\"(:)*\""])
+    func `text without words makes no request`(text: String) async throws {
+        let transport = StubTransport([.http(200, Data())])
+        #expect(OpenFoodFactsSearchHTTPClient.luceneQuery(text) == nil)
+        let results = try await makeClient(transport).search(query: text)
+        #expect(results.isEmpty)
+        #expect(transport.requests.isEmpty)
     }
 
     @Test func `blank contact falls back to the app name and version`() {
         #expect(OpenFoodFactsSearchHTTPClient(contact: "  ", appVersion: "2.0").userAgent == "Vitalion/2.0")
     }
 
-    @Test func `blank query returns nothing without a request`() async throws {
-        let transport = StubTransport([.http(200, Data())])
-        let results = try await makeClient(transport).search(query: "   ")
-        #expect(results.isEmpty)
-        #expect(transport.requests.isEmpty)
-    }
-
     // MARK: - Responses
 
-    @Test func `real nutella search maps every hit`() async throws {
+    @Test func `real nutella search lists every hit`() async throws {
         let transport = try StubTransport([.http(200, Fixture.data("search_nutella"))])
         let results = try await makeClient(transport).search(query: "nutella")
         #expect(results.count == 4)
-        #expect(results.allSatisfy { $0.origin == .off })
-        let first = try #require(results.first)
-        #expect(first.sourceID == "3017620422003")
-        #expect(first.barcode == "3017620422003")
-        #expect(first.name == "Nutella")
-        #expect(first.brand == "Ferrero")
-        #expect(first.dataQuality == .complete)
-        #expect(isClose(first.nutrients.kcal, 539, tolerance: 1))
+        #expect(results.map(\.code) == ["0202416019687", "8000500223321", "80177333", "8000500280706"])
+        let second = results[1]
+        #expect(second.name == "Nutella B-ready")
+        #expect(second.brand == "Nutella")
+        #expect(second.quantity == "286,5 g, 15 pièces")
+        #expect(second.productURL?.absoluteString == "https://world.openfoodfacts.org/product/8000500223321")
+        #expect(results[0].brand == nil)
         #expect(transport.requests.count == 1)
     }
 
-    @Test func `real Croatian search keeps Croatian names and servings`() async throws {
+    @Test func `real Croatian search finds products by their main-language name`() async throws {
         let transport = try StubTransport([.http(200, Fixture.data("search_dorina"))])
-        let results = try await makeClient(transport).search(query: "dorina")
-        #expect(results.map(\.sourceID) == ["3850102111961", "3850102128440", "3850102117215", "3850102110711"])
-        #expect(results[0].name == "Dorina Mliječna")
-        #expect(results[0].brand == "Dorina")
-        #expect(results[2].serving?.amount == 20)
-        #expect(results.allSatisfy { $0.basis == .per100 })
+        let results = try await makeClient(transport).search(query: "dorina mliječna")
+        #expect(results.map(\.code) == ["3850102501946", "3850102111961", "3850102502189"])
+        #expect(results[1].name == "Dorina Mliječna")
+        #expect(results[1].brand == "Kraš")
+        #expect(results[1].quantity == "80g")
     }
 
-    @Test func `products without a code or nutrition and non-objects are skipped`() async throws {
-        let transport = try StubTransport([.http(200, Fixture.data("search_edge_cases"))])
-        let results = try await makeClient(transport).search(query: "x")
-        #expect(results.map(\.sourceID) == ["3850000000024", "3850000000031", "3850000000048"])
-        // Numeric code and string values are read leniently; a blank name is left to the caller.
+    @Test func `hits without a valid barcode, duplicates and non-objects are skipped`() async throws {
+        let body = Data("""
+        {"count": 6, "hits": [
+          {"code": "3850102111961", "brands": "PODRAVKA", "product_name": " "},
+          {"code": "", "product_name": "No code"},
+          {"code": "123", "product_name": "Internal code"},
+          42,
+          {"code": "3850102111961", "product_name": "Again"},
+          {"code": "036000291452", "brands": [" ", "Acme"], "quantity": " "}
+        ]}
+        """.utf8)
+        let results = try await makeClient(StubTransport([.http(200, body)])).search(query: "x")
+        #expect(results.map(\.code) == ["3850102111961", "0036000291452"]) // UPC-A normalized to EAN-13
         #expect(results[0].name == nil)
         #expect(results[0].brand == "PODRAVKA")
-        #expect(results[0].nutrients.proteinG == 10.5)
-        // Per-serving only, no weight: kept, flagged per serving.
-        #expect(results[1].basis == .perServing)
-        #expect(results[1].dataQuality == .partialMacros)
-        // Energy only.
-        #expect(results[2].dataQuality == .energyOnly)
+        #expect(results[1].brand == "Acme")
+        #expect(results[1].quantity == nil)
+    }
+
+    @Test func `all caps names are display-cased`() {
+        let hit = OFFSearchHit(code: "1", name: "KRAŠ DORINA", brand: "KRAŠ").displayCased
+        #expect(hit.name == "Kraš Dorina")
+        #expect(hit.brand == "Kraš")
     }
 
     @Test func `empty result list`() async throws {
-        let body = Data(#"{"count": 0, "page": 1, "page_size": 20, "products": [], "skip": 0}"#.utf8)
+        let body = Data(#"{"hits": [], "count": 0, "page": 1, "page_size": 20}"#.utf8)
         let results = try await makeClient(StubTransport([.http(200, body)])).search(query: "zzzz")
         #expect(results.isEmpty)
     }
 
     @Test(arguments: ["not json", "[]", #"{"count": 3}"#, "<html>busy</html>"])
-    func `a 2xx without a products list is invalidResponse`(body: String) async {
+    func `a 2xx without a hits list is invalidResponse`(body: String) async {
         let transport = StubTransport([.http(200, Data(body.utf8))])
         await #expect(throws: OpenFoodFactsError.invalidResponse) {
             try await makeClient(transport).search(query: "nutella")
@@ -106,21 +120,23 @@ struct OpenFoodFactsSearchClientTests {
 
     // MARK: - Failures (never retried)
 
-    @Test(arguments: [429, 503])
-    func `throttling statuses are rateLimited and not retried`(status: Int) async {
-        let transport = StubTransport([.http(status, Data("<html>Page temporarily unavailable</html>".utf8))])
+    @Test func `too many requests (429) is rateLimited and not retried`() async {
+        let transport = StubTransport([.http(429, Data())])
         await #expect(throws: OpenFoodFactsError.rateLimited) {
             try await makeClient(transport).search(query: "nutella")
         }
         #expect(transport.requests.count == 1)
     }
 
-    @Test func `server error is not retried`() async {
-        let transport = StubTransport([.http(500, Data())])
-        await #expect(throws: OpenFoodFactsError.server(status: 500)) {
-            try await makeClient(transport).search(query: "nutella")
+    @Test(arguments: [500, 503])
+    func `server errors are not retried and start no cool-down`(status: Int) async {
+        let transport = StubTransport([.http(status, Data("<html>Service unavailable</html>".utf8))])
+        let client = makeClient(transport)
+        await #expect(throws: OpenFoodFactsError.server(status: status)) {
+            try await client.search(query: "nutella")
         }
         #expect(transport.requests.count == 1)
+        #expect(client.rateLimitedUntil == nil)
     }
 
     @Test(arguments: [
@@ -163,13 +179,12 @@ struct OpenFoodFactsSearchThrottleTests {
 
     @Test func `responses are never read from or kept for URLCache`() {
         let request = OpenFoodFactsSearchHTTPClient(contact: "x").request(query: "nutella")
-        #expect(request.cachePolicy == .reloadIgnoringLocalCacheData)
+        #expect(request?.cachePolicy == .reloadIgnoringLocalCacheData)
     }
 
-    @Test(arguments: [429, 503])
-    func `throttling starts a 60 s cool-down with no requests`(status: Int) async throws {
+    @Test func `a 429 starts a 60 s cool-down with no requests`() async throws {
         let clock = TestClock()
-        let transport = try StubTransport([.http(status, Data()), .http(200, Fixture.data("search_nutella"))])
+        let transport = try StubTransport([.http(429, Data()), .http(200, Fixture.data("search_nutella"))])
         let client = makeClient(transport, clock: clock, sleeper: SleepRecorder())
 
         await #expect(throws: OpenFoodFactsError.rateLimited) { try await client.search(query: "nutella") }
@@ -187,7 +202,15 @@ struct OpenFoodFactsSearchThrottleTests {
         #expect(transport.requests.count == 2)
     }
 
-    @Test func `requests are spaced at least 1.5 s apart`() async throws {
+    @Test func `a 429 with Retry-After cools down that long`() async throws {
+        let clock = TestClock()
+        let transport = StubTransport([.http(429, Data(), headers: ["Retry-After": "15"])])
+        let client = makeClient(transport, clock: clock, sleeper: SleepRecorder())
+        await #expect(throws: OpenFoodFactsError.rateLimited) { try await client.search(query: "nutella") }
+        #expect(client.rateLimitedUntil == clock.now.addingTimeInterval(15))
+    }
+
+    @Test func `requests are spaced at least 0.5 s apart`() async throws {
         let clock = TestClock()
         let sleeper = SleepRecorder()
         let transport = try StubTransport([.http(200, Fixture.data("search_nutella"))])
@@ -195,18 +218,18 @@ struct OpenFoodFactsSearchThrottleTests {
 
         _ = try await client.search(query: "nu")
         #expect(sleeper.delays.isEmpty)
-        clock.advance(by: 0.5)
+        clock.advance(by: 0.2)
         _ = try await client.search(query: "nut")
-        #expect(sleeper.delays == [.milliseconds(1000)])
+        #expect(sleeper.delays == [.milliseconds(300)])
         clock.advance(by: 5)
         _ = try await client.search(query: "nute")
-        #expect(sleeper.delays == [.milliseconds(1000)])
+        #expect(sleeper.delays == [.milliseconds(300)])
         #expect(transport.requests.count == 3)
     }
 
     @Test func `searches cancelled while waiting give their slot back`() async throws {
         let clock = TestClock()
-        let throttle = OFFSearchThrottle()
+        let throttle = OFFSearchThrottle(minimumInterval: .milliseconds(1500))
         let transport = try StubTransport([.http(200, Fixture.data("search_nutella"))])
         let sleeper = SleepRecorder()
         let client = OpenFoodFactsSearchHTTPClient(
@@ -238,7 +261,7 @@ struct OpenFoodFactsSearchThrottleTests {
 
     @Test func `two waiters for the same slot are still spaced apart`() {
         let start = Date(timeIntervalSince1970: 1_800_000_000)
-        let throttle = OFFSearchThrottle()
+        let throttle = OFFSearchThrottle(minimumInterval: .milliseconds(1500))
         #expect(throttle.claim(throttle.nextSlot(now: start), now: start) == nil)
         let later = start.addingTimeInterval(0.2)
         let first = throttle.nextSlot(now: later)
@@ -254,7 +277,7 @@ struct OpenFoodFactsSearchThrottleTests {
     @Test func `copies of a client share the throttle`() async throws {
         let clock = TestClock()
         let throttle = OFFSearchThrottle()
-        let transport = StubTransport([.http(503, Data())])
+        let transport = StubTransport([.http(429, Data())])
         let first = OpenFoodFactsSearchHTTPClient(contact: "a", transport: transport, throttle: throttle, now: { clock.now })
         let second = OpenFoodFactsSearchHTTPClient(contact: "a", transport: transport, throttle: throttle, now: { clock.now })
         await #expect(throws: OpenFoodFactsError.rateLimited) { try await first.search(query: "x") }

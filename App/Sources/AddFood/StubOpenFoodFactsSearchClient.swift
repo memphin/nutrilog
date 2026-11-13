@@ -9,7 +9,7 @@
             nil
         }
 
-        func search(query _: String, nameLanguage _: FoodNameLanguage) async throws -> [FoodDraft] {
+        func search(query _: String, nameLanguage _: FoodNameLanguage) async throws -> [OFFSearchHit] {
             []
         }
     }

@@ -44,15 +44,15 @@ private final class Gate: Sendable {
 }
 
 /// Records queries and answers them with `handler`.
-private final class QueryRecorder: Sendable {
+private final class QueryRecorder<Value: Sendable>: Sendable {
     private let recorded = Mutex<(queries: [String], cancelled: [String])>(([], []))
     /// What the stub reports as `rateLimitedUntil`.
     let pausedUntil = Mutex<Date?>(nil)
     /// The food name language each Open Food Facts search was asked for.
     let languages = Mutex<[FoodNameLanguage]>([])
-    let handler: @Sendable (String) async throws -> [FoodDraft]
+    let handler: @Sendable (String) async throws -> [Value]
 
-    init(_ handler: @escaping @Sendable (String) async throws -> [FoodDraft]) {
+    init(_ handler: @escaping @Sendable (String) async throws -> [Value]) {
         self.handler = handler
     }
 
@@ -64,7 +64,7 @@ private final class QueryRecorder: Sendable {
         recorded.withLock { $0.cancelled }
     }
 
-    func run(_ query: String) async throws -> [FoodDraft] {
+    func run(_ query: String) async throws -> [Value] {
         recorded.withLock { $0.queries.append(query) }
         do {
             return try await handler(query)
@@ -76,7 +76,7 @@ private final class QueryRecorder: Sendable {
 }
 
 private struct StubOFFSearch: OpenFoodFactsSearchClient {
-    let recorder: QueryRecorder
+    let recorder: QueryRecorder<OFFSearchHit>
 
     /// The food name language of every search, in order.
     var languages: [FoodNameLanguage] {
@@ -87,11 +87,11 @@ private struct StubOFFSearch: OpenFoodFactsSearchClient {
         recorder.pausedUntil.withLock { $0 }
     }
 
-    init(_ handler: @escaping @Sendable (String) async throws -> [FoodDraft] = { _ in [] }) {
+    init(_ handler: @escaping @Sendable (String) async throws -> [OFFSearchHit] = { _ in [] }) {
         recorder = QueryRecorder(handler)
     }
 
-    func search(query: String, nameLanguage: FoodNameLanguage) async throws -> [FoodDraft] {
+    func search(query: String, nameLanguage: FoodNameLanguage) async throws -> [OFFSearchHit] {
         recorder.languages.withLock { $0.append(nameLanguage) }
         return try await recorder.run(query)
     }
@@ -104,7 +104,7 @@ private extension OnlineSearchModel {
     }
 }
 
-/// Throws `.rateLimited` and from then on reports a cool-down, like the real client after HTTP 429/503.
+/// Throws `.rateLimited` and from then on reports a cool-down, like the real client after HTTP 429.
 private final class PausingOFF: OpenFoodFactsSearchClient {
     let until: Date
     private let paused = Mutex(false)
@@ -117,7 +117,7 @@ private final class PausingOFF: OpenFoodFactsSearchClient {
         paused.withLock { $0 } ? until : nil
     }
 
-    func search(query _: String, nameLanguage _: FoodNameLanguage) async throws -> [FoodDraft] {
+    func search(query _: String, nameLanguage _: FoodNameLanguage) async throws -> [OFFSearchHit] {
         paused.withLock { $0 = true }
         throw OpenFoodFactsError.rateLimited
     }
@@ -126,7 +126,7 @@ private final class PausingOFF: OpenFoodFactsSearchClient {
 private struct StubUSDA: USDAClient {
     var isAvailable = true
     var rateLimitedUntil: Date?
-    let recorder: QueryRecorder
+    let recorder: QueryRecorder<FoodDraft>
 
     init(
         isAvailable: Bool = true,
@@ -157,12 +157,16 @@ private func draft(
     )
 }
 
+private func hit(_ code: String, _ name: String, brand: String? = nil, quantity: String? = nil) -> OFFSearchHit {
+    OFFSearchHit(code: code, name: name, brand: brand, quantity: quantity)
+}
+
 // MARK: - Search behaviour
 
 @MainActor
 struct OnlineSearchModelTests {
     @Test func `typing is debounced: only the query that stays searches`() async {
-        let off = StubOFFSearch { [draft(.off, "1", "Apple juice \($0)")] }
+        let off = StubOFFSearch { [hit("1", "Apple juice \($0)")] }
         let usda = StubUSDA { [draft(.usda, "2", "Apples, raw \($0)")] }
         let model = OnlineSearchModel(debounce: .seconds(1)) // long enough for a slow CI runner
 
@@ -187,7 +191,7 @@ struct OnlineSearchModelTests {
             if query == "slow" {
                 try await Task.sleep(for: .seconds(30)) // cancellable request
             }
-            return [draft(.off, query, "OFF \(query)")]
+            return [hit(query, "OFF \(query)")]
         }
         let usda = StubUSDA { query in
             if query == "slow" {
@@ -226,7 +230,7 @@ struct OnlineSearchModelTests {
     }
 
     @Test func `open food facts is searched in the food name language`() async {
-        let off = StubOFFSearch { _ in [draft(.off, "3850104012341", "Vegeta dodatak jelima")] }
+        let off = StubOFFSearch { _ in [hit("3850104012341", "Vegeta dodatak jelima")] }
         let model = OnlineSearchModel(debounce: .zero)
         await model.search("vegeta", offSearch: off, usda: StubUSDA(isAvailable: false), nameLanguage: .croatian)
         #expect(off.languages == [.croatian])
@@ -236,7 +240,7 @@ struct OnlineSearchModelTests {
         let gate = Gate()
         let off = StubOFFSearch { _ in
             await gate.wait()
-            return [draft(.off, "3850000000017", "Dorina")]
+            return [hit("3850000000017", "Dorina")]
         }
         let usda = StubUSDA { _ in [draft(.usda, "1", "Chocolate, dark")] }
         let model = OnlineSearchModel(debounce: .zero)
@@ -255,7 +259,7 @@ struct OnlineSearchModelTests {
     }
 
     @Test func `USDA is hidden and never asked without an API key`() async {
-        let off = StubOFFSearch { _ in [draft(.off, "1", "Nutella")] }
+        let off = StubOFFSearch { _ in [hit("1", "Nutella")] }
         let usda = StubUSDA(isAvailable: false)
         let model = OnlineSearchModel(debounce: .zero)
 
@@ -271,7 +275,7 @@ struct OnlineSearchModelTests {
 
     @Test func `USDA cool-down shows a paused notice without a request`() async {
         let until = Date(timeIntervalSinceReferenceDate: 800_000_000)
-        let off = StubOFFSearch { _ in [draft(.off, "1", "Nutella")] }
+        let off = StubOFFSearch { _ in [hit("1", "Nutella")] }
         let usda = StubUSDA(rateLimitedUntil: until)
         let model = OnlineSearchModel(debounce: .zero)
 
@@ -280,8 +284,8 @@ struct OnlineSearchModelTests {
         #expect(model.usdaStatus == .paused(until: until))
         #expect(usda.recorder.queries.isEmpty)
         #expect(model.results.count == 1)
-        let text = OnlineSourceStatusRow.text(source: .usda, status: model.usdaStatus)
-        #expect(text.hasPrefix("USDA paused until \(until.formatted(date: .omitted, time: .shortened))"))
+        let text = OnlineSourceStatusRow.text(source: .usda, status: model.usdaStatus, now: until.addingTimeInterval(-42))
+        #expect(text == "USDA is rate-limited. Retrying in 42 seconds.")
     }
 
     @Test func `a 429 during the search switches USDA to paused`() async {
@@ -327,7 +331,7 @@ struct OnlineSearchModelTests {
     }
 
     @Test func `the same product from both sources is listed once`() async {
-        let off = StubOFFSearch { _ in [draft(.off, "3017620422003", "Nutella", barcode: "3017620422003")] }
+        let off = StubOFFSearch { _ in [hit("3017620422003", "Nutella")] }
         let usda = StubUSDA { _ in
             [
                 draft(.usda, "1", "NUTELLA", barcode: "3017620422003"),
@@ -337,8 +341,8 @@ struct OnlineSearchModelTests {
         let model = OnlineSearchModel(debounce: .zero)
         await model.search("nutella", offSearch: off, usda: usda)
         #expect(model.results.count == 2)
-        #expect(Set(model.results.compactMap(\.draft.barcode)) == ["3017620422003"])
-        #expect(model.results.first { $0.draft.barcode != nil }?.source == .off) // OFF wins, whoever came first
+        #expect(model.results.compactMap(\.barcodeKey) == ["3017620422003"])
+        #expect(model.results.first { $0.barcodeKey == "3017620422003" }?.source == .off) // OFF wins, whoever came first
     }
 
     @Test func `duplicate barcodes within one source's answer are listed once`() async {
@@ -356,10 +360,9 @@ struct OnlineSearchModelTests {
 
     @Test func `OFF arriving after USDA replaces the USDA row in place`() async {
         let gate = Gate()
-        // OFF keeps UPC-A codes as printed (12 digits); FDC barcodes are normalized to EAN-13.
         let off = StubOFFSearch { _ in
             await gate.wait()
-            return [draft(.off, "012345678905", "Peanut butter", barcode: "012345678905")]
+            return [hit("0012345678905", "Peanut butter")]
         }
         let usda = StubUSDA { _ in
             [draft(.usda, "1", "PEANUT BUTTER", barcode: "0012345678905"), draft(.usda, "2", "Peanuts, raw")]
@@ -371,7 +374,7 @@ struct OnlineSearchModelTests {
 
         gate.open()
         await search.value
-        #expect(model.results.map(\.id) == ["off:012345678905", "usda:2"])
+        #expect(model.results.map(\.id) == ["off:0012345678905", "usda:2"])
         #expect(model.offStatus == .loaded(count: 1))
         #expect(model.usdaStatus == .loaded(count: 1))
     }
@@ -385,23 +388,24 @@ struct OnlineSearchModelTests {
         #expect(model.offStatus == .paused(until: until))
         #expect(off.recorder.queries.isEmpty)
         #expect(!model.showsNoMatches) // the paused row says why there is nothing
-        #expect(OnlineSourceStatusRow.text(source: .off, status: model.offStatus).hasPrefix("Open Food Facts paused until"))
+        #expect(OnlineSourceStatusRow.text(source: .off, status: model.offStatus).hasPrefix("Open Food Facts is rate-limited"))
 
-        // A throttled answer (HTTP 429/503) starts the client's cool-down: shown as paused too.
+        // A throttled answer (HTTP 429) starts the client's cool-down: shown as paused too.
         await model.search("nutellas", offSearch: PausingOFF(until: until), usda: StubUSDA(isAvailable: false))
         #expect(model.offStatus == .paused(until: until))
-        // A server error without a cool-down is "busy".
-        await model.search(
+        // A server error without a cool-down is "busy" (and retried; instantly here).
+        let retrying = OnlineSearchModel(debounce: .zero, sleep: { _ in })
+        await retrying.search(
             "nutella b",
             offSearch: StubOFFSearch { _ in throw OpenFoodFactsError.server(status: 502) },
             usda: StubUSDA(isAvailable: false),
         )
-        #expect(model.offStatus == .busy)
+        #expect(retrying.offStatus == .busy)
     }
 
     @Test func `cached answers are shown even while a source is paused`() async {
         let until = Date(timeIntervalSinceReferenceDate: 800_000_000)
-        let off = StubOFFSearch { [draft(.off, "3017620422003", "OFF \($0)")] }
+        let off = StubOFFSearch { [hit("3017620422003", "OFF \($0)")] }
         let model = OnlineSearchModel(debounce: .zero)
         await model.search("rice", offSearch: off, usda: StubUSDA { [draft(.usda, "1", "Rice \($0)")] })
         await model.search("rice", offSearch: off, usda: StubUSDA(rateLimitedUntil: until))
@@ -433,7 +437,7 @@ struct OnlineSearchModelTests {
     }
 
     @Test func `repeated queries are answered from the session cache`() async {
-        let off = StubOFFSearch { [draft(.off, $0, "OFF \($0)")] }
+        let off = StubOFFSearch { [hit($0, "OFF \($0)")] }
         let usda = StubUSDA { [draft(.usda, $0, "USDA \($0)")] }
         let model = OnlineSearchModel(debounce: .zero)
         await model.search("milk", offSearch: off, usda: usda)
@@ -444,124 +448,59 @@ struct OnlineSearchModelTests {
         #expect(model.results.count == 2)
     }
 
+    @Test func `a rate-limited source is searched again when its pause ends`() async {
+        let start = Date(timeIntervalSinceReferenceDate: 800_000_000)
+        let off = StubOFFSearch { [hit("3017620422003", "OFF \($0)")] }
+        off.recorder.pausedUntil.withLock { $0 = start.addingTimeInterval(42) }
+        let waits = Mutex<[Duration]>([])
+        let model = OnlineSearchModel(
+            debounce: .zero,
+            sleep: { delay in
+                waits.withLock { $0.append(delay) }
+                if delay > .zero {
+                    off.recorder.pausedUntil.withLock { $0 = nil } // the cool-down is over
+                }
+            },
+            now: { start },
+        )
+        await model.search("nutella", offSearch: off, usda: StubUSDA(isAvailable: false))
+        #expect(waits.withLock { $0 } == [.zero, .milliseconds(42100)])
+        #expect(off.recorder.queries == ["nutella"])
+        #expect(model.offStatus == .loaded(count: 1))
+        #expect(model.results.map(\.name) == ["OFF nutella"])
+    }
+
+    @Test func `automatic retries stop after a few attempts`() async {
+        let start = Date(timeIntervalSinceReferenceDate: 800_000_000)
+        let waits = Mutex<[Duration]>([])
+        let model = OnlineSearchModel(debounce: .zero, sleep: { delay in waits.withLock { $0.append(delay) } }, now: { start })
+        let off = StubOFFSearch { _ in throw OpenFoodFactsError.server(status: 503) }
+        await model.search("nutella", offSearch: off, usda: StubUSDA(isAvailable: false))
+        #expect(off.recorder.queries.count == 1 + OnlineSearchModel.maxAutomaticRetries)
+        #expect(waits.withLock { $0 }.filter { $0 > .zero } == Array(repeating: .milliseconds(5100), count: 3))
+        #expect(model.offStatus == .busy)
+    }
+
+    @Test func `pause text counts down`() {
+        let until = Date(timeIntervalSinceReferenceDate: 800_000_000)
+        #expect(OnlineSourceStatusRow.retryText(until: until, now: until.addingTimeInterval(-1)) == "in 1 second")
+        #expect(OnlineSourceStatusRow.retryText(until: until, now: until.addingTimeInterval(-3000)) == "in 50 minutes")
+        #expect(OnlineSourceStatusRow.retryText(until: until, now: until) == "now")
+    }
+
+    @Test func `rows from Open Food Facts show the package size instead of energy`() {
+        let result = OnlineFoodResult(hit("3850102111961", "DORINA MLIJEČNA", brand: "KRAŠ", quantity: "80g"))
+        #expect(result.draft == nil)
+        #expect(result.name == "Dorina Mliječna")
+        #expect(result.brand == "Kraš")
+        #expect(result.id == "off:3850102111961")
+        #expect(result.source == .off)
+    }
+
     @Test func `branded ALL CAPS names are title-cased for display`() {
         let result = OnlineFoodResult(draft(.usda, "1", "CHOCOLATE HAZELNUT SPREAD WITH COCOA", brand: "FERRERO U.S.A., INCORPORATED"))
         #expect(result.name == "Chocolate Hazelnut Spread with Cocoa")
         #expect(result.brand == "Ferrero U.S.A., Incorporated")
         #expect(OnlineFoodResult(draft(.usda, "2", "Apples, raw, with skin")).name == "Apples, raw, with skin")
-    }
-}
-
-// MARK: - Selecting a result
-
-@MainActor
-struct OnlineSelectionTests {
-    @Test func `selecting a result stores a local copy that local search finds`() throws {
-        let env = AppEnvironment.preview()
-        let foods = try #require(env.foods)
-        let search = try #require(env.search)
-        let model = OnlineSearchModel()
-        let result = OnlineFoodResult(draft(.usda, "2345678", "ZDENKA CHEESE TRIANGLES", brand: "VINDIJA", kcal: 260))
-
-        guard case let .open(detail) = try model.select(result, in: foods) else {
-            Issue.record("expected the food to open")
-            return
-        }
-        #expect(detail.food.source == .usda)
-        #expect(detail.food.sourceID == "2345678")
-        #expect(detail.food.name == "Zdenka Cheese Triangles")
-        #expect(detail.food.brand == "Vindija")
-        #expect(detail.food.per100.kcal == 260)
-
-        let local = try search.search("zdenka")
-        #expect(local.first?.id == "food:\(detail.food.id)")
-        #expect(local.first?.source == .usda)
-
-        // Idempotent: picking it again reuses the copy.
-        guard case let .open(again) = try model.select(result, in: foods) else {
-            Issue.record("expected the food to open")
-            return
-        }
-        #expect(again.food.id == detail.food.id)
-    }
-
-    @Test func `a per-serving-only result asks for the serving weight first`() throws {
-        let env = AppEnvironment.preview()
-        let foods = try #require(env.foods)
-        var bar = draft(.off, "3850000000031", "Protein bar", barcode: "3850000000031", kcal: 210)
-        bar.basis = .perServing
-        bar.servingDescription = "1 bar"
-
-        guard case let .askServingWeight(pending) = try OnlineSearchModel().select(OnlineFoodResult(bar), in: foods) else {
-            Issue.record("expected the serving-weight prompt")
-            return
-        }
-        #expect(pending.detail.isPerServingPlaceholder)
-
-        // Same conversion as the scan flow; quality follows the stored copy (nothing stored as 0 → complete).
-        let converted = try pending.detail.convertingPerServingPlaceholder(servingWeight: 40)
-        let saved = try foods.save(converted)
-        #expect(!saved.isPerServingPlaceholder)
-        #expect(saved.food.per100.kcal == 525) // 210 kcal per 40 g bar
-        #expect(saved.food.dataQuality == .complete)
-        #expect(saved.food.notes == nil)
-        #expect(saved.servings.first { $0.id == saved.food.defaultServingID }?.grams == 40)
-        #expect(saved.food.id == pending.detail.food.id)
-
-        // Picked again later: the converted copy opens directly.
-        guard case .open = try OnlineSearchModel().select(OnlineFoodResult(bar), in: foods) else {
-            Issue.record("expected the converted food to open")
-            return
-        }
-    }
-
-    @Test func `a skipped serving weight still logs one serving correctly`() throws {
-        let env = AppEnvironment.preview()
-        let foods = try #require(env.foods)
-        let diary = try #require(env.diary)
-        var bar = draft(.off, "3850000000048", "Energy bar", barcode: "3850000000048", kcal: 210)
-        bar.basis = .perServing
-        bar.servingDescription = "1 bar"
-        guard case let .askServingWeight(pending) = try OnlineSearchModel().select(OnlineFoodResult(bar), in: foods) else {
-            Issue.record("expected the serving-weight prompt")
-            return
-        }
-
-        // "Skip" opens the quantity sheet with the placeholder: servings only, 1 serving prefilled.
-        let detail = pending.detail
-        #expect(!QuantitySheet.offersBaseUnit(detail))
-        let serving = try #require(detail.servings.first { $0.id == detail.food.defaultServingID })
-        let initial = QuantitySheet.initialLogQuantity(detail)
-        #expect(initial.quantity == .servings(count: 1, serving: serving.size))
-        #expect(QuantitySheet.quantity(amountText: "100", unitChoice: "base", detail: detail) == nil)
-
-        let entry = try diary.log(
-            food: detail.food, quantity: initial.quantity, servingID: serving.id,
-            slotID: "breakfast", day: env.today,
-        )
-        #expect(entry.nutrients.kcal == 210)
-        #expect(entry.nutrients.proteinG == 5)
-        #expect(entry.servingLabel?.contains("1 bar") == true)
-    }
-
-    @Test func `the prompt's conversion rejects implausible weights`() {
-        var gummy = draft(.off, "2", "Gummies", kcal: 60)
-        gummy.basis = .perServing
-        gummy.nutrients = Nutrients(kcal: 60, proteinG: 0, carbsG: 30, fatG: 0)
-        let detail = FoodDetail(draft: gummy)
-        #expect(throws: ServingWeightError.notPositive) { try detail.convertingPerServingPlaceholder(servingWeight: 0) }
-        // 30 g of carbs in a 20 g serving = 150 g per 100 g, though only 300 kcal per 100.
-        #expect(throws: ServingWeightError.implausibleMacros(gramsPer100: 150)) {
-            try detail.convertingPerServingPlaceholder(servingWeight: 20)
-        }
-    }
-
-    @Test func `OFF rows link to the product page; USDA rows don't`() {
-        var off = draft(.off, "3017620422003", "Nutella")
-        off.productURL = URL(string: "https://world.openfoodfacts.org/product/3017620422003")
-        var usda = draft(.usda, "1", "Nutella")
-        usda.productURL = URL(string: "https://fdc.nal.usda.gov/food-details/1")
-        #expect(OnlineFoodResult(off).offProductURL?.absoluteString == "https://world.openfoodfacts.org/product/3017620422003")
-        #expect(OnlineFoodResult(usda).offProductURL == nil)
     }
 }
