@@ -66,14 +66,14 @@ public enum FDCFoodMapper {
         let values = NutrientValues(fdcNutrients: food.foodNutrients).plausiblePer100()
         let serving = serving(food)
         let isLiquid = servingUnit(food) == .milliliters
-        let household = OFFFoodMapper.clean(food.householdServingFullText)
-        let brand = OFFFoodMapper.clean(food.brandName) ?? OFFFoodMapper.clean(food.brandOwner)
+        let household = food.householdServingFullText.trimmedNonEmpty
+        let brand = food.brandName.trimmedNonEmpty ?? food.brandOwner.trimmedNonEmpty
 
         return FoodDraft(
             origin: .usda,
             sourceID: String(fdcID),
             barcode: food.gtinUpc.flatMap { Barcode.normalize($0) },
-            name: OFFFoodMapper.clean(food.name),
+            name: food.name.trimmedNonEmpty,
             brand: brand,
             nutrients: values.nutrients,
             basis: .per100,
@@ -87,18 +87,16 @@ public enum FDCFoodMapper {
                 )
             },
             servingDescription: household,
-            packageDescription: OFFFoodMapper.clean(food.packageWeight),
             productURL: productURL(fdcID: fdcID),
-            ingredientsText: OFFFoodMapper.clean(food.ingredients),
         )
     }
 
     /// Branded serving in g or ml; `nil` for other data types, unknown units and amounts that aren't above 0 and at
-    /// most ``OFFFoodMapper/maximumServing`` (after conversion).
+    /// most ``SourceServing/maximumAmount`` (after conversion).
     static func serving(_ food: FDCFood) -> (amount: Double, unit: BaseUnit)? {
         guard let size = food.servingSize, size > 0, size.isFinite, let unit = food.servingSizeUnit,
               let serving = MeasureParser.convert(size, unit: normalizedUnit(unit)),
-              let amount = OFFFoodMapper.usableServing(serving.amount)
+              let amount = SourceServing.usable(serving.amount)
         else { return nil }
         return (amount, serving.unit)
     }
@@ -121,7 +119,7 @@ public enum FDCFoodMapper {
     static func kcal(_ value: Double, unitName: String?, defaultUnit: String) -> Double? {
         switch (unitName ?? defaultUnit).lowercased() {
         case "kcal": value
-        case "kj": value / OFFFoodMapper.kJPerKcal
+        case "kj": value / Energy.kJPerKcal
         default: nil
         }
     }

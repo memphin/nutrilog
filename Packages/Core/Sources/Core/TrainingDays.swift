@@ -91,20 +91,20 @@ public enum TrainingBoost {
     /// The calorie target boosted by `percent`, rounded to 10 kcal; never below `kcal`. 0 % leaves it unchanged.
     public static func kcal(_ kcal: Double, percent: Int) -> Double {
         guard percent > 0, kcal.isFinite else { return kcal }
-        return max(kcal, (kcal * Double(100 + percent) / 100 / 10).rounded() * 10)
+        return max(kcal, (kcal * Double(100 + percent) / 100).rounded(toMultipleOf: 10))
     }
 
     /// Boosted calories, and carbs raised by the extra energy at 4 kcal/g. 0 % leaves both unchanged.
     /// E.g. 2000 kcal / 200 g carbs at 10 % → 2200 kcal / 250 g.
     public static func apply(kcal: Double, carbsG: Double, percent: Int) -> (kcal: Double, carbsG: Double) {
         let boosted = Self.kcal(kcal, percent: percent)
-        return (boosted, carbsG + (boosted - kcal) / 4)
+        return (boosted, carbsG + (boosted - kcal) / Energy.kcalPerGramCarbs)
     }
 
     /// The fluid goal boosted by `percent`, rounded to 50 ml; never below `ml`. 0 % leaves it unchanged.
     /// E.g. 2500 ml at 10 % → 2750 ml.
     public static func waterMl(_ ml: Double, percent: Int) -> Double {
         guard percent > 0, ml.isFinite else { return ml }
-        return max(ml, (ml * Double(100 + percent) / 100 / 50).rounded() * 50)
+        return max(ml, (ml * Double(100 + percent) / 100).rounded(toMultipleOf: 50))
     }
 }

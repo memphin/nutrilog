@@ -15,6 +15,23 @@ struct WeightTrendComputeTests {
         return result
     }
 
+    /// Reference: the plain gap-aware EMA, without outlier handling.
+    private func plainEMA(_ weights: [LocalDay: Double], through lastDay: LocalDay) -> [LocalDay: Double] {
+        guard let first = weights.keys.min(), first <= lastDay else { return [:] }
+        var trend: Double?
+        var previous: LocalDay?
+        var result: [LocalDay: Double] = [:]
+        for day in (first ... lastDay).days {
+            if let weight = weights[day] {
+                let step = WeightTrend.gapAlpha(WeightTrend.defaultAlpha, gapDays: previous.map { $0.days(until: day) } ?? 1)
+                trend = trend.map { $0 + step * (weight - $0) } ?? weight
+                previous = day
+            }
+            result[day] = trend
+        }
+        return result
+    }
+
     @Test func `steady loss: the trend follows with the same slope`() throws {
         // 0.1 kg a day from 90 kg.
         let points = WeightTrend.compute(samples: samples(60) { 90 - 0.1 * Double($0) })
@@ -88,7 +105,7 @@ struct WeightTrendComputeTests {
         #expect(points.count(where: \.isOutlier) == 1) // the return to 80 kg is not a jump
         #expect(abs(points[20].trendKg - (80 + 0.1 * 0.25 * 2.5)) < 1e-9) // 80.0625 instead of 80.25
         #expect(points[21].trendKg < points[20].trendKg)
-        let plain = WeightTrend.ema(samples(30) { $0 == 20 ? 82.5 : 80 }, through: start.adding(days: 29))
+        let plain = plainEMA(samples(30) { $0 == 20 ? 82.5 : 80 }, through: start.adding(days: 29))
         #expect(try #require(plain[start.adding(days: 20)]) - 80 > 3 * (points[20].trendKg - 80))
     }
 
@@ -124,7 +141,7 @@ struct WeightTrendComputeTests {
 
     @Test func `matches the plain EMA when nothing jumps`() throws {
         let data = samples(40) { 75 + sin(Double($0)) * 0.6 }
-        let plain = WeightTrend.ema(data, through: start.adding(days: 39))
+        let plain = plainEMA(data, through: start.adding(days: 39))
         let robust = WeightTrend.trendByDay(data)
         for (day, value) in plain {
             #expect(try abs(value - #require(robust[day])) < 1e-9)

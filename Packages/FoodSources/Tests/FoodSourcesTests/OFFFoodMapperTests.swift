@@ -27,11 +27,9 @@ struct OFFFoodMapperTests {
         #expect(isClose(draft.nutrients.sodiumMg, 42.8)) // salt 0.107 g × 400
         #expect(draft.isLiquid == false)
         #expect(draft.serving == nil) // serving_quantity_unit without serving_quantity or serving_size
-        #expect(draft.packageDescription == "400 g e")
         #expect(draft.nutriscore == "e")
         #expect(draft.imageURL?.host == "images.openfoodfacts.org")
         #expect(draft.productURL?.absoluteString == "https://world.openfoodfacts.org/product/3017620422003")
-        #expect(draft.allergens == ["en:milk", "en:nuts", "en:soybeans"])
         #expect(draft.lastModified == Date(timeIntervalSince1970: 1_794_233_882))
     }
 
@@ -48,7 +46,6 @@ struct OFFFoodMapperTests {
         #expect(draft.isLiquid)
         #expect(draft.baseUnit == .milliliters)
         #expect(draft.serving == ServingSize(label: "1 portion (330 ml)", amount: 330))
-        #expect(draft.packageDescription == "330 ml")
     }
 
     @Test func `real Kraš Dorina payload maps complete`() throws {
@@ -64,7 +61,6 @@ struct OFFFoodMapperTests {
         #expect(isClose(draft.nutrients.sodiumMg, 16)) // salt 0.04 g
         #expect(draft.nutriscore == nil) // "unknown"
         #expect(draft.serving == nil)
-        #expect(draft.allergens.isEmpty)
     }
 
     @Test func `a Podravka product with English main name gets the Croatian name as local name`() throws {
@@ -186,7 +182,6 @@ struct OFFFoodMapperTests {
         #expect(draft.servingDescription == "30")
         #expect(draft.imageURL == nil) // not http(s)
         #expect(draft.nutriscore == nil) // "unknown"
-        #expect(draft.allergens.isEmpty) // a string instead of an array
         #expect(draft.lastModified == nil)
     }
 

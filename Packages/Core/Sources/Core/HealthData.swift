@@ -234,13 +234,7 @@ public struct HealthFetchPlan: Hashable, Sendable {
 
     /// Every day of the plan, oldest first.
     public var allDays: [LocalDay] {
-        var result: [LocalDay] = []
-        var day = days.lowerBound
-        while day <= days.upperBound {
-            result.append(day)
-            day = day.next
-        }
-        return result
+        days.days
     }
 }
 

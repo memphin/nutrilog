@@ -158,33 +158,10 @@ public struct USDAHTTPClient: USDAClient {
 
     /// Sends `request`, retrying per ``retryPolicy``.
     private func send(_ request: URLRequest) async throws -> [FDCFood] {
-        var retry = 0
-        while true {
-            try Task.checkCancellation()
-            let outcome: Outcome
-            do {
-                let (data, response) = try await transport.data(for: request)
-                outcome = self.outcome(data: data, response: response)
-            } catch let error as URLError {
-                if error.code == .cancelled {
-                    throw CancellationError()
-                }
-                outcome = Self.outcome(error)
-            } catch is CancellationError {
-                throw CancellationError()
-            } catch {
-                outcome = .failure(.network(.unknown))
-            }
-
-            switch outcome {
-            case let .success(foods):
-                return foods
-            case let .failure(error):
-                throw error
-            case let .retryable(error):
-                guard retry < retryPolicy.maxRetries else { throw error }
-                try await sleep(retryPolicy.delay(beforeRetry: retry))
-                retry += 1
+        try await retryPolicy.run(sleep: sleep) {
+            switch try await transport.classifiedData(for: request) {
+            case let .success((data, response)): outcome(data: data, response: response)
+            case let .failure(failure): Self.outcome(failure)
             }
         }
     }
@@ -224,12 +201,7 @@ public struct USDAHTTPClient: USDAClient {
 
     // MARK: - Outcome
 
-    private enum Outcome {
-        case success([FDCFood])
-        case failure(USDAError)
-        /// Worth another attempt after the backoff delay.
-        case retryable(USDAError)
-    }
+    private typealias Outcome = HTTPAttempt<[FDCFood], USDAError>
 
     private func outcome(data: Data, response: HTTPURLResponse) -> Outcome {
         switch response.statusCode {
@@ -258,8 +230,8 @@ public struct USDAHTTPClient: USDAClient {
         return .rateLimited(until: rateLimit.blockedUntil(now: now()) ?? until)
     }
 
-    private static func outcome(_ error: URLError) -> Outcome {
-        switch HTTPFailure.classify(error) {
+    private static func outcome(_ failure: HTTPFailure) -> Outcome {
+        switch failure {
         case .offline: .failure(.offline)
         case .timedOut: .failure(.timedOut)
         case .connectionDropped: .retryable(.offline)

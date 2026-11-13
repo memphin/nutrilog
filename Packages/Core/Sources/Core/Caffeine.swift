@@ -296,10 +296,6 @@ public struct CaffeineDrink: Hashable, Sendable, Identifiable {
     /// The quick-add buttons shown until the user picks their own.
     public static let defaultQuickAddIDs: [String] = [espresso.id, filterCoffee.id, blackTea.id, energyDrink.id]
 
-    public static var defaultQuickAdd: [CaffeineDrink] {
-        defaultQuickAddIDs.compactMap(preset(id:))
-    }
-
     /// The preset with `id`; nil for unknown ids (e.g. a preset removed in a later version).
     public static func preset(id: String) -> CaffeineDrink? {
         all.first { $0.id == id }

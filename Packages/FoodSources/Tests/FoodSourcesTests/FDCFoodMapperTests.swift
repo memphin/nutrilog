@@ -68,7 +68,6 @@ struct FDCFoodMapperTests {
         #expect(apple.servingDescription == "5.5 ONZ")
         #expect(apple.barcode == Barcode.normalize("867824000001"))
         #expect(apple.barcode?.count == 13)
-        #expect(apple.ingredientsText == "CRISP APPLE.")
     }
 
     @Test(arguments: ["2117388", "2501185"])
@@ -86,7 +85,6 @@ struct FDCFoodMapperTests {
         #expect(milk.nutrients.kcal == 62)
         #expect(milk.nutrients.satFatG == 2.08)
         #expect(milk.nutrients.sodiumMg == 52)
-        #expect(milk.packageDescription == "HALF GALLON/1.89 L")
     }
 
     @Test func `mixed search keeps FDC order and every data type`() throws {

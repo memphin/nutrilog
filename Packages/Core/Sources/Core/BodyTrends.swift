@@ -137,49 +137,26 @@ public enum WeightTrend {
         gapDays <= 1 ? alpha : 1 - pow(1 - alpha, Double(gapDays))
     }
 
-    /// The plain (gap-aware) EMA for every day from the first weigh-in through `lastDay`. The first weigh-in starts the
-    /// trend; each later weigh-in moves it by ``gapAlpha(_:gapDays:)`` of the difference — `alpha` for consecutive
-    /// days; days without one carry the previous value forward.
-    public static func ema(
-        _ weights: [LocalDay: Double],
-        through lastDay: LocalDay,
-        alpha: Double = defaultAlpha,
-    ) -> [LocalDay: Double] {
-        guard var day = weights.keys.min(), day <= lastDay else { return [:] }
-        var trend: Double?
-        var previous: LocalDay?
-        var result: [LocalDay: Double] = [:]
-        while day <= lastDay {
-            if let weight = weights[day] {
-                let step = gapAlpha(alpha, gapDays: previous.map { $0.days(until: day) } ?? 1)
-                trend = trend.map { $0 + step * (weight - $0) } ?? weight
-                previous = day
-            }
-            result[day] = trend
-            day = day.next
-        }
-        return result
-    }
-
     /// The trend for every day from the first weigh-in through `lastDay` (default: the last weigh-in), oldest first.
     ///
-    /// Like ``ema(_:through:alpha:)`` (gap-aware: a weigh-in `g` days after the previous one moves the trend by
-    /// `1 − (1 − alpha)^g`), but a weigh-in that jumps more than ``outlierJump`` from the previous accepted
-    /// weigh-in (at most ``outlierMaxGapDays`` days earlier) is down-weighted: it moves the trend with
-    /// `gapAlpha × outlierAlphaFactor`, so one salty dinner barely shows. When the next weigh-in confirms the new level
-    /// (within the threshold of the jump), it is accepted normally — a real change is followed, just a day late.
+    /// A gap-aware EMA — the first weigh-in starts the trend, a weigh-in `g` days after the previous one moves it by
+    /// `1 − (1 − alpha)^g`, days without one carry the trend forward — but a weigh-in that jumps more than
+    /// ``outlierJump`` from the previous accepted weigh-in (at most ``outlierMaxGapDays`` days earlier) is
+    /// down-weighted: it moves the trend with `gapAlpha × outlierAlphaFactor`, so one salty dinner barely shows. When
+    /// the next weigh-in confirms the new level (within the threshold of the jump), it is accepted normally — a real
+    /// change is followed, just a day late.
     public static func compute(
         samples: [LocalDay: Double],
         through lastDay: LocalDay? = nil,
         alpha: Double = defaultAlpha,
     ) -> [WeightTrendPoint] {
-        guard var day = samples.keys.min(), let end = lastDay ?? samples.keys.max(), day <= end else { return [] }
+        guard let first = samples.keys.min(), let end = lastDay ?? samples.keys.max(), first <= end else { return [] }
         var trend: Double?
         var accepted: (day: LocalDay, kg: Double)?
         var pendingJump: Double?
         var previous: LocalDay?
         var result: [WeightTrendPoint] = []
-        while day <= end {
+        for day in (first ... end).days {
             var isOutlier = false
             if let weight = samples[day] {
                 // Days since the previous weigh-in (accepted or not): the trend has decayed once per day of the gap.
@@ -207,7 +184,6 @@ public enum WeightTrend {
             if let trend {
                 result.append(WeightTrendPoint(day: day, trendKg: trend, weightKg: samples[day], isOutlier: isOutlier))
             }
-            day = day.next
         }
         return result
     }

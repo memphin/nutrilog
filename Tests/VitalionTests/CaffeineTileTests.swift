@@ -161,7 +161,7 @@ struct CaffeineSettingsTests {
         #expect(CaffeineSettings.load(from: profiles) == .default)
         #expect(CaffeineSettings.default.thresholdMg == 50)
         #expect(CaffeineSettings.default.bedtimeMinutes == 23 * 60)
-        #expect(CaffeineSettings.default.quickAddDrinks == CaffeineDrink.defaultQuickAdd)
+        #expect(CaffeineSettings.default.quickAddDrinks == CaffeineDrink.defaultQuickAddIDs.compactMap(CaffeineDrink.preset(id:)))
 
         var settings = CaffeineSettings.default
         settings.thresholdMg = 263 // clamped, stepped

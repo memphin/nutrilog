@@ -13,6 +13,20 @@ public enum BaseUnit: String, Sendable, Codable, CaseIterable {
     public var symbol: String {
         rawValue
     }
+
+    /// Metric unit symbols, lowercase ("kg", "cl", "gram", …) → the factor to grams or millilitres and which of the two.
+    /// The one unit table of the text parsers (FoodSources' `MeasureParser`, ``MealDescription``).
+    public static let metricUnits: [String: (factor: Double, unit: BaseUnit)] = [
+        "kg": (1000, .grams), "mg": (0.001, .grams),
+        "g": (1, .grams), "gr": (1, .grams), "gram": (1, .grams), "grams": (1, .grams),
+        "ml": (1, .milliliters), "cl": (10, .milliliters), "dl": (100, .milliliters), "l": (1000, .milliliters),
+    ]
+
+    /// `amount` of the metric unit `symbol` (any case) in grams or millilitres; `nil` for symbols not in
+    /// ``metricUnits``.
+    public static func convert(_ amount: Double, metricUnit symbol: String) -> (amount: Double, unit: BaseUnit)? {
+        metricUnits[symbol.lowercased()].map { (amount * $0.factor, $0.unit) }
+    }
 }
 
 /// A named portion of a food, e.g. "1 slice" = 25 g.

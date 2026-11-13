@@ -31,7 +31,6 @@ struct HealthTypeCatalogTests {
         #expect(Set(HealthReadType.allCases.compactMap(\.metric)) == Set(HealthMetric.allCases))
         #expect(HealthReadType.allCases.filter { $0.kind == .characteristic } == [.dateOfBirth, .biologicalSex])
         #expect(HealthReadType.allCases.filter { $0.kind == .category } == [.sleepAnalysis])
-        #expect(Set(HealthReadType.allCases.compactMap(\.cumulativeMetric)) == Set(CumulativeMetric.allCases))
         #expect(Set(HealthReadType.allCases.compactMap(\.sampledMetric)) == Set(SampledMetric.allCases))
     }
 

@@ -4,36 +4,28 @@ import Foundation
 // MARK: - Measure parsing
 
 /// Reads an amount and unit from OFF text such as "30 g", "1 portion (30g)", "2 keksa (25 g)", "0,5 l", "33 cl",
-/// "1 oz (28 g)". Metric units win over ounces; result is in grams or millilitres.
-enum MeasureParser {
-    static let gramsPerOunce = 28.349_523_125
+/// "1 oz (28 g)". Metric units (`BaseUnit.metricUnits`) win over ounces; result is in grams or millilitres.
+public enum MeasureParser {
+    public static let gramsPerOunce = 28.349_523_125
 
-    /// Factor to grams or millilitres per metric unit.
-    private static let metricUnits: [String: (factor: Double, unit: BaseUnit)] = [
-        "kg": (1000, .grams), "mg": (0.001, .grams),
-        "g": (1, .grams), "gr": (1, .grams), "gram": (1, .grams), "grams": (1, .grams),
-        "ml": (1, .milliliters), "cl": (10, .milliliters), "dl": (100, .milliliters), "l": (1000, .milliliters),
-    ]
-
-    /// `amount` of `unit` ("kg", "cl", "oz", …) in g or ml; `nil` for unknown units.
-    static func convert(_ amount: Double, unit: String) -> (amount: Double, unit: BaseUnit)? {
-        let unit = unit.lowercased()
-        if unit == "oz" {
+    /// `amount` of `unit` ("kg", "cl", "oz", …, any case) in g or ml; `nil` for unknown units.
+    public static func convert(_ amount: Double, unit: String) -> (amount: Double, unit: BaseUnit)? {
+        if unit.lowercased() == "oz" {
             return (amount * gramsPerOunce, .grams)
         }
-        return metricUnits[unit].map { (amount * $0.factor, $0.unit) }
+        return BaseUnit.convert(amount, metricUnit: unit)
     }
 
     /// Also reads multipacks ("2 x 125 ml" → 250 ml, "×" too), fractions ("1/2 l" → 500 ml, "1 1/2 oz") and skips
     /// amounts that may carry a thousands separator ("1.000 g", "1,500 kg": 1 or 1000?) — a wrong serving weight
     /// scales per-serving values wrongly, so no reading beats a guess.
-    static func parse(_ text: String) -> (amount: Double, unit: BaseUnit)? {
+    public static func parse(_ text: String) -> (amount: Double, unit: BaseUnit)? {
         let pattern = #/(?i)(?:(?<count>\d+(?:[.,]\d+)?)\s*[x×]\s*)?(?:(?<whole>\d+)\s+(?=\d+\s*\/\s*\d))?(?<number>\d+(?:[.,]\d+)?)(?:\s*\/\s*(?<denominator>\d+))?\s*(?<unit>kg|mg|grams|gram|gr|g|ml|cl|dl|l|oz)\b/#
         var ounces: Double?
         for match in text.matches(of: pattern) {
             guard let amount = amount(match.output) else { continue }
-            if let metric = metricUnits[match.output.unit.lowercased()] {
-                return (amount * metric.factor, metric.unit)
+            if let metric = BaseUnit.convert(amount, metricUnit: String(match.output.unit)) {
+                return metric
             }
             if ounces == nil {
                 ounces = amount * gramsPerOunce

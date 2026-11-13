@@ -294,35 +294,37 @@ public struct ErrorStateView: View {
 
 // MARK: - Previews
 
-#Preview("Components – light") {
-    ComponentsGallery()
-}
+#if DEBUG
+    #Preview("Components – light") {
+        ComponentsGallery()
+    }
 
-#Preview("Components – dark, XXL") {
-    ComponentsGallery()
-        .preferredColorScheme(.dark)
-        .dynamicTypeSize(.xxxLarge)
-}
+    #Preview("Components – dark, XXL") {
+        ComponentsGallery()
+            .preferredColorScheme(.dark)
+            .dynamicTypeSize(.xxxLarge)
+    }
 
-struct ComponentsGallery: View {
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: NL.Spacing.l) {
-                HStack(spacing: NL.Spacing.l) {
-                    EnergyRing(consumed: 1250, target: 2000).frame(width: 120, height: 120)
-                    EnergyRing(consumed: 2300, target: 2000).frame(width: 120, height: 120)
+    struct ComponentsGallery: View {
+        var body: some View {
+            ScrollView {
+                VStack(alignment: .leading, spacing: NL.Spacing.l) {
+                    HStack(spacing: NL.Spacing.l) {
+                        EnergyRing(consumed: 1250, target: 2000).frame(width: 120, height: 120)
+                        EnergyRing(consumed: 2300, target: 2000).frame(width: 120, height: 120)
+                    }
+                    MacroBar(macro: .protein, value: 120, target: 160)
+                    MacroBar(macro: .carbs, value: 260, target: 220)
+                    MacroBar(macro: .fat, value: 40, target: nil)
+                    NutrientRow("Energy", value: 189.5, unit: "kcal", emphasized: true)
+                    NutrientRow("of which sugars", value: 4.46, indent: true)
+                    NutrientRow("Fiber", value: nil)
+                    HStack { ForEach(SourceBadge.Kind.allCases, id: \.self) { SourceBadge($0) } }
+                    MacroLine(protein: 12, carbs: 30.4, fat: 8)
+                    EmptyStateView("No foods yet", systemImage: "fork.knife", message: "Create your first food.")
                 }
-                MacroBar(macro: .protein, value: 120, target: 160)
-                MacroBar(macro: .carbs, value: 260, target: 220)
-                MacroBar(macro: .fat, value: 40, target: nil)
-                NutrientRow("Energy", value: 189.5, unit: "kcal", emphasized: true)
-                NutrientRow("of which sugars", value: 4.46, indent: true)
-                NutrientRow("Fiber", value: nil)
-                HStack { ForEach(SourceBadge.Kind.allCases, id: \.self) { SourceBadge($0) } }
-                MacroLine(protein: 12, carbs: 30.4, fat: 8)
-                EmptyStateView("No foods yet", systemImage: "fork.knife", message: "Create your first food.")
+                .padding()
             }
-            .padding()
         }
     }
-}
+#endif

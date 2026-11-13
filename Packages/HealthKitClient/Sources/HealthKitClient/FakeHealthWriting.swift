@@ -154,7 +154,6 @@ public final class FakeHealthObserver: HealthObserving {
         /// Types whose background delivery fails to enable.
         public var failingBackgroundDelivery: Set<HealthReadType> = []
         public var startCount = 0
-        public var stopCount = 0
 
         public init() {}
     }
@@ -197,10 +196,7 @@ public final class FakeHealthObserver: HealthObserving {
 
     public func stopObserving() async {
         handler.withLock { $0 = nil }
-        state.withLock { state in
-            state.stopCount += 1
-            state.observedTypes = []
-        }
+        state.withLock { $0.observedTypes = [] }
     }
 
     /// Delivers an update for `type` (with `error`, like a failed observer query) to the registered handler and

@@ -53,16 +53,11 @@ public struct FoodDraft: Hashable, Sendable, Codable {
     public var serving: ServingSize?
     /// Serving as printed by the source, e.g. "1 bar", even when its weight is unknown.
     public var servingDescription: String?
-    /// Package size as printed, e.g. "100 g".
-    public var packageDescription: String?
     public var imageURL: URL?
     /// Nutri-Score grade "a"…"e", lowercase; `nil` when unknown or not applicable.
     public var nutriscore: String?
     /// Page to link back to (ODbL attribution, SPEC §3.1).
     public var productURL: URL?
-    public var ingredientsText: String?
-    /// Source tags as given, e.g. "en:milk".
-    public var allergens: [String]
     public var lastModified: Date?
 
     public init(
@@ -78,12 +73,9 @@ public struct FoodDraft: Hashable, Sendable, Codable {
         isLiquid: Bool = false,
         serving: ServingSize? = nil,
         servingDescription: String? = nil,
-        packageDescription: String? = nil,
         imageURL: URL? = nil,
         nutriscore: String? = nil,
         productURL: URL? = nil,
-        ingredientsText: String? = nil,
-        allergens: [String] = [],
         lastModified: Date? = nil,
     ) {
         self.origin = origin
@@ -98,12 +90,9 @@ public struct FoodDraft: Hashable, Sendable, Codable {
         self.isLiquid = isLiquid
         self.serving = serving
         self.servingDescription = servingDescription
-        self.packageDescription = packageDescription
         self.imageURL = imageURL
         self.nutriscore = nutriscore
         self.productURL = productURL
-        self.ingredientsText = ingredientsText
-        self.allergens = allergens
         self.lastModified = lastModified
     }
 

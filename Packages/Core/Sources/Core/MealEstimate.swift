@@ -90,10 +90,12 @@ public enum MealDescription {
         }
     }
 
-    private static let units: [String: Double] = [
-        "g": 1, "gr": 1, "gram": 1, "grams": 1, "kg": 1000, "dag": 10, "dkg": 10,
-        "ml": 1, "cl": 10, "dl": 100, "l": 1000,
-    ]
+    /// Factor to grams or ml: ``BaseUnit/metricUnits`` without "mg" (no meal is weighed in milligrams), plus the
+    /// decagram ("10 dag" in Croatian).
+    private static let units: [String: Double] = BaseUnit.metricUnits
+        .filter { $0.key != "mg" }
+        .mapValues { $0.factor }
+        .merging(["dag": 10, "dkg": 10]) { metric, _ in metric }
     private static let words: [String: Double] = [
         "a": 1, "an": 1, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "half": 0.5,
     ]

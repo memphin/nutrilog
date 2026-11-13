@@ -71,10 +71,61 @@ public struct HTTPRetryPolicy: Hashable, Sendable {
     public func delay(beforeRetry retry: Int) -> Duration {
         baseDelay * (1 << min(retry, 16))
     }
+
+    /// Runs `attempt` until it succeeds or fails for good: a `.retryable` outcome is tried again, after its
+    /// `retryAfter` when given, else after ``delay(beforeRetry:)``, at most ``maxRetries`` times — the last one's
+    /// error is thrown. Checks for cancellation before every attempt.
+    func run<Success, Failure: Error>(
+        sleep: (Duration) async throws -> Void,
+        attempt: () async throws -> HTTPAttempt<Success, Failure>,
+    ) async throws -> Success {
+        var retry = 0
+        while true {
+            try Task.checkCancellation()
+            switch try await attempt() {
+            case let .success(value):
+                return value
+            case let .failure(error):
+                throw error
+            case let .retryable(error, retryAfter):
+                guard retry < maxRetries else { throw error }
+                try await sleep(retryAfter ?? delay(beforeRetry: retry))
+                retry += 1
+            }
+        }
+    }
+}
+
+/// What one attempt of a request came to, for ``HTTPRetryPolicy/run(sleep:attempt:)``.
+enum HTTPAttempt<Success, Failure: Error> {
+    case success(Success)
+    case failure(Failure)
+    /// Worth another attempt, after `retryAfter` when the server said so, else after the backoff delay.
+    case retryable(Failure, retryAfter: Duration? = nil)
+}
+
+extension HTTPTransport {
+    /// ``data(for:)`` with its failures classified. A cancelled request (`URLError.cancelled` or
+    /// `CancellationError`) throws `CancellationError`; any other error is returned as a failure — one that isn't a
+    /// `URLError` as `.other(.unknown)`.
+    func classifiedData(for request: URLRequest) async throws -> Result<(Data, HTTPURLResponse), HTTPFailure> {
+        do {
+            return try await .success(data(for: request))
+        } catch let error as URLError {
+            if error.code == .cancelled {
+                throw CancellationError()
+            }
+            return .failure(HTTPFailure.classify(error))
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            return .failure(.other(.unknown))
+        }
+    }
 }
 
 /// Transport failure classification shared by the online clients; each maps the cases to its own error type.
-enum HTTPFailure: Equatable {
+enum HTTPFailure: Error, Equatable {
     /// No connection at all: fail at once.
     case offline
     /// The request timeout fired: not retried.

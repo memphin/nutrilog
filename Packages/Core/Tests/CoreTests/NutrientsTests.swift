@@ -33,10 +33,9 @@ struct NutrientsTests {
             satFatG: 4.44,
             sodiumMg: 202,
         ))
-        let rounded = full.displayRounded
-        #expect(rounded.sugarG == 5.6)
-        #expect(rounded.satFatG == 2.2)
-        #expect(rounded.sodiumMg == 101)
+        #expect(DisplayRounding.grams(5.55) == 5.6)
+        #expect(DisplayRounding.grams(2.22) == 2.2)
+        #expect(DisplayRounding.milligrams(101) == 101)
     }
 
     @Test func `addition treats nil as missing not zero`() {
@@ -61,7 +60,7 @@ struct NutrientsTests {
         #expect((coffee + oats).caffeineMg == 40) // nil + 40
         #expect((oats + oats).caffeineMg == nil)
         #expect((coffee + coffee).caffeineMg == 80)
-        #expect(Nutrients(kcal: 0, proteinG: 0, carbsG: 0, fatG: 0, caffeineMg: 63.6).displayRounded.caffeineMg == 64)
+        #expect(DisplayRounding.milligrams(63.6) == 64)
         let data = try JSONEncoder().encode(coffee)
         #expect(try JSONDecoder().decode(Nutrients.self, from: data) == coffee)
         // Older JSON without the key still decodes.
@@ -108,32 +107,19 @@ struct NutrientsTests {
         #expect(Salt.saltG(fromSodiumMg: 400) == 1)
     }
 
-    @Test func `macro energy shares`() {
-        let n = Nutrients(kcal: 0, proteinG: 25, carbsG: 25, fatG: 0)
-        let shares = n.macroEnergyShares
-        #expect(shares.protein == 0.5)
-        #expect(shares.carbs == 0.5)
-        #expect(shares.fat == 0)
-        let none = Nutrients.zero.macroEnergyShares
-        #expect(none.protein == 0 && none.carbs == 0 && none.fat == 0)
-    }
-
     @Test func `codable round trip`() throws {
         let data = try JSONEncoder().encode(oats)
         #expect(try JSONDecoder().decode(Nutrients.self, from: data) == oats)
     }
 
     @Test func `display rounding`() {
-        let n = Nutrients(kcal: 189.5, proteinG: 6.64, carbsG: 33.86, fatG: 0.04, fiberG: 5.05, sugarG: nil, satFatG: 12.4, sodiumMg: 3.6)
-        let r = n.displayRounded
-        #expect(r.kcal == 190)
-        #expect(r.proteinG == 6.6)
-        #expect(r.carbsG == 34)
-        #expect(r.fatG == 0)
-        #expect(r.fiberG == 5.1)
-        #expect(r.sugarG == nil)
-        #expect(r.satFatG == 12)
-        #expect(r.sodiumMg == 4)
+        #expect(DisplayRounding.kcal(189.5) == 190)
+        #expect(DisplayRounding.grams(6.64) == 6.6)
+        #expect(DisplayRounding.grams(33.86) == 34)
+        #expect(DisplayRounding.grams(0.04) == 0)
+        #expect(DisplayRounding.grams(5.05) == 5.1)
+        #expect(DisplayRounding.grams(12.4) == 12)
+        #expect(DisplayRounding.milligrams(3.6) == 4)
         let en = Locale(identifier: "en_US")
         #expect(DisplayRounding.gramsText(4.0, locale: en) == "4")
         #expect(DisplayRounding.gramsText(4.46, locale: en) == "4.5")
@@ -227,6 +213,7 @@ struct WholeRoundingTests {
         #expect(DisplayRounding.kcal(.nan) == 0)
         #expect(DisplayRounding.kcal(1e300) == Int.max)
         #expect(DisplayRounding.milligrams(-.infinity) == 0)
-        #expect(Nutrients(kcal: .infinity, proteinG: 0, carbsG: 0, fatG: 0, sodiumMg: 1e40).displayRounded.kcal == 0)
+        #expect(DisplayRounding.kcal(.infinity) == 0)
+        #expect(DisplayRounding.milligrams(1e40) == Int.max)
     }
 }

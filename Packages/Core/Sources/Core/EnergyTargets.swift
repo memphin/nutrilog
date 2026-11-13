@@ -61,6 +61,12 @@ public enum GoalMode: String, Sendable, Codable, CaseIterable {
 public enum Energy {
     /// kcal per kg of body-weight change (SPEC §5.4.1 step 3).
     public static let kcalPerKg: Double = 7700
+    /// kJ in one kcal (thermochemical calorie).
+    public static let kJPerKcal = 4.184
+    /// Atwater general factors: kcal per gram of protein, carbohydrate and fat (4 / 4 / 9).
+    public static let kcalPerGramProtein = 4.0
+    public static let kcalPerGramCarbs = 4.0
+    public static let kcalPerGramFat = 9.0
 
     /// Mifflin-St Jeor resting energy expenditure in kcal/day.
     /// `10·kg + 6.25·cm − 5·age + s`, s = +5 (male), −161 (female), −78 (other, midpoint).
@@ -104,7 +110,7 @@ public enum Energy {
 
     /// Calorie target = maintenance + goal delta, rounded to 10 kcal.
     public static func calorieTarget(tdee: Double, goal: GoalMode, rateKgPerWeek: Double) -> Double {
-        ((tdee + dailyDelta(goal: goal, rateKgPerWeek: rateKgPerWeek)) / 10).rounded() * 10
+        (tdee + dailyDelta(goal: goal, rateKgPerWeek: rateKgPerWeek)).rounded(toMultipleOf: 10)
     }
 
     /// Age in whole years on `day`.
@@ -142,7 +148,7 @@ public struct MacroTargets: Hashable, Sendable, Codable {
 
     /// Energy these macros represent at 4/4/9.
     public var kcal: Double {
-        proteinG * 4 + carbsG * 4 + fatG * 9
+        proteinG * Energy.kcalPerGramProtein + carbsG * Energy.kcalPerGramCarbs + fatG * Energy.kcalPerGramFat
     }
 }
 
@@ -170,9 +176,9 @@ public struct MacroSplit: Hashable, Sendable, Codable {
     /// Grams for a calorie target, rounded to whole grams.
     public func grams(forKcal kcal: Double) -> MacroTargets {
         MacroTargets(
-            proteinG: (kcal * proteinPct / 100 / 4).rounded(),
-            carbsG: (kcal * carbsPct / 100 / 4).rounded(),
-            fatG: (kcal * fatPct / 100 / 9).rounded(),
+            proteinG: (kcal * proteinPct / 100 / Energy.kcalPerGramProtein).rounded(),
+            carbsG: (kcal * carbsPct / 100 / Energy.kcalPerGramCarbs).rounded(),
+            fatG: (kcal * fatPct / 100 / Energy.kcalPerGramFat).rounded(),
         )
     }
 
@@ -183,8 +189,8 @@ public struct MacroSplit: Hashable, Sendable, Codable {
             self = .balanced
             return
         }
-        proteinPct = targets.proteinG * 4 / total * 100
-        carbsPct = targets.carbsG * 4 / total * 100
-        fatPct = targets.fatG * 9 / total * 100
+        proteinPct = targets.proteinG * Energy.kcalPerGramProtein / total * 100
+        carbsPct = targets.carbsG * Energy.kcalPerGramCarbs / total * 100
+        fatPct = targets.fatG * Energy.kcalPerGramFat / total * 100
     }
 }

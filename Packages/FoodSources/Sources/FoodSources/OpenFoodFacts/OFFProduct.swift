@@ -32,8 +32,6 @@ public struct OFFProduct: Hashable, Sendable, Codable {
     public var nutriments: [String: Double]
     public var nutriscoreGrade: String?
     public var imageFrontSmallURL: String?
-    public var ingredientsText: String?
-    public var allergensTags: [String]
     /// Unix seconds.
     public var lastModifiedT: Int?
 
@@ -55,8 +53,6 @@ public struct OFFProduct: Hashable, Sendable, Codable {
         "nutriments",
         "nutriscore_grade",
         "image_front_small_url",
-        "ingredients_text",
-        "allergens_tags",
         "last_modified_t",
     ]
 
@@ -77,8 +73,6 @@ public struct OFFProduct: Hashable, Sendable, Codable {
         nutriments: [String: Double] = [:],
         nutriscoreGrade: String? = nil,
         imageFrontSmallURL: String? = nil,
-        ingredientsText: String? = nil,
-        allergensTags: [String] = [],
         lastModifiedT: Int? = nil,
     ) {
         self.code = code
@@ -97,8 +91,6 @@ public struct OFFProduct: Hashable, Sendable, Codable {
         self.nutriments = nutriments
         self.nutriscoreGrade = nutriscoreGrade
         self.imageFrontSmallURL = imageFrontSmallURL
-        self.ingredientsText = ingredientsText
-        self.allergensTags = allergensTags
         self.lastModifiedT = lastModifiedT
     }
 
@@ -120,8 +112,6 @@ public struct OFFProduct: Hashable, Sendable, Codable {
         case nutritionDataPer = "nutrition_data_per"
         case nutriscoreGrade = "nutriscore_grade"
         case imageFrontSmallURL = "image_front_small_url"
-        case ingredientsText = "ingredients_text"
-        case allergensTags = "allergens_tags"
         case lastModifiedT = "last_modified_t"
     }
 
@@ -144,8 +134,6 @@ public struct OFFProduct: Hashable, Sendable, Codable {
         nutriments = (try? container.decodeIfPresent(LenientNutriments.self, forKey: .nutriments))?.values ?? [:]
         nutriscoreGrade = container.lenientString(.nutriscoreGrade)
         imageFrontSmallURL = container.lenientString(.imageFrontSmallURL)
-        ingredientsText = container.lenientString(.ingredientsText)
-        allergensTags = container.lenientStrings(.allergensTags)
         lastModifiedT = container.lenientDouble(.lastModifiedT).flatMap { Int(exactly: $0.rounded()) }
     }
 }

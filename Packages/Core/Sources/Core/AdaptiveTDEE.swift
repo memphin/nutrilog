@@ -405,17 +405,11 @@ public enum AdaptiveTDEE {
         guard let first = points.first?.key, let last = points.last?.key, points.count >= 2,
               first.days(until: last) >= minimumTrendSpanDays
         else { return nil }
-        let xs = points.map { Double(first.days(until: $0.key)) }
-        let ys = points.map(\.value)
-        let meanX = xs.reduce(0, +) / Double(xs.count)
-        let meanY = ys.reduce(0, +) / Double(ys.count)
-        let sxx = xs.reduce(0) { $0 + ($1 - meanX) * ($1 - meanX) }
-        let sxy = zip(xs, ys).reduce(0) { $0 + ($1.0 - meanX) * ($1.1 - meanY) }
-        let slope = sxy / sxx
+        guard let fit = Correlation.linearFit(points.map { CorrelationPoint(x: Double(first.days(until: $0.key)), y: $0.value) })
+        else { return nil }
         let span = first.days(until: endDay)
         return WeightChange(
-            method: .weighInLine, startDay: first, startKg: meanY - slope * meanX,
-            endKg: meanY + slope * (Double(span) - meanX), span: span,
+            method: .weighInLine, startDay: first, startKg: fit.intercept, endKg: fit.y(at: Double(span)), span: span,
         )
     }
 
