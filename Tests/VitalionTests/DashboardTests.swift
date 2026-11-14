@@ -49,6 +49,32 @@ struct TileStateTests {
         #expect(snapshot.state(of: .water, access: .unavailable, isFirstSync: false) == .ready)
         #expect(snapshot.state(of: .totalEnergy, access: .unavailable, isFirstSync: false) == .unavailable)
     }
+
+    @Test func `the previous days draw with a value and with none yet today, not without access`() {
+        #expect(TileState.ready.showsHistory)
+        #expect(TileState.noData(HealthKitClient.noDataMessage).showsHistory)
+        #expect(!TileState.loading.showsHistory)
+        #expect(!TileState.needsAccess.showsHistory)
+        #expect(!TileState.unavailable.showsHistory)
+    }
+
+    @Test func `first thing in the morning the tiles still chart the previous days`() throws {
+        let today = try #require(LocalDay("2026-11-09"))
+        // Steps, sleep and total energy on the six days before; nothing yet today.
+        let metrics = (1 ... 6).map { offset in
+            DailyHealthMetrics(
+                day: today.adding(days: -offset), steps: 8000 + offset * 100, activeKcal: 400, basalKcal: 1600,
+                sleepAsleepMin: 420,
+            )
+        }
+        let snapshot = dashboardSnapshot(today: today, metrics: metrics)
+        for tile in [DashboardTile.steps, .sleep, .totalEnergy] {
+            let state = snapshot.state(of: tile, access: .requested, isFirstSync: false)
+            #expect(state == .noData(HealthKitClient.noDataMessage), "\(tile)")
+            #expect(snapshot.sparkline(for: tile) != nil, "\(tile)")
+            #expect(snapshot.accessibilityTrend(of: tile, state: state) != nil, "\(tile)")
+        }
+    }
 }
 
 @MainActor
