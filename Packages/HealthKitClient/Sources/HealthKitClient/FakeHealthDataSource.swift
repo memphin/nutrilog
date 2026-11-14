@@ -107,7 +107,10 @@ public final class FakeHealthDataSource: HealthDataSource {
         return HealthDataBatch(
             days: days,
             statistics: state.cumulativeSamples.mapValues { Self.dailyStatistics($0.filter(inDays), plan: plan) },
-            samples: state.samples.mapValues { $0.filter(inDays) },
+            samples: Dictionary(uniqueKeysWithValues: state.samples.map { metric, samples in
+                let interval = plan.sampleInterval(for: metric)
+                return (metric, samples.filter { $0.start >= interval.start && $0.start < interval.end })
+            }),
             sleep: state.sleep.filter { $0.end >= sleepQuery.start && $0.end < sleepQuery.end },
             // Every water sample (the live source reads only its own; Core looks only at the own ones).
             waterSamples: (state.cumulativeSamples[.dietaryWater] ?? []).filter(inDays),
