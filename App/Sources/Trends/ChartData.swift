@@ -129,6 +129,12 @@ struct ChartPoint: Identifiable, Equatable {
     }
 }
 
+struct MacroAverages: Equatable {
+    var proteinG: Double
+    var carbsG: Double
+    var fatG: Double
+}
+
 struct ChartSeries: Equatable {
     var metric: ChartMetric
     var range: ChartRange
@@ -140,6 +146,8 @@ struct ChartSeries: Equatable {
     var unitLabel: String
     /// Days per mark: 1, or 7 when bars are grouped by week.
     var bucketDays: Int
+    /// Macros only: the mean grams of each macro over the counted days (same days as `average`).
+    var macroAverages: MacroAverages? = nil
 
     var isEmpty: Bool {
         daysWithData == 0
@@ -166,7 +174,9 @@ enum ChartBuilder {
         switch metric {
         case .weight: day.weightKg
         case .bodyFat: day.bodyFatPct
-        case .energy, .macros: day.kcal.map(unit.display)
+        case .energy: day.kcal.map(unit.display)
+        // The bars stack grams, so the value (average, range, axis) is the day's protein + carbs + fat in grams.
+        case .macros: day.intake.map { $0.proteinG + $0.carbsG + $0.fatG }
         case .steps: day.steps.map(Double.init)
         case .sleep: day.sleepMin.map { Double($0) / 60 }
         case .restingHeartRate: day.restingHR
@@ -255,6 +265,12 @@ enum ChartBuilder {
         }
         let values = counted.compactMap { value(metric, $0, unit: unit) }
         let groupsByWeek = metric.isBar && range.days > 31
+        let intakes = metric == .macros ? counted.compactMap(\.intake) : []
+        let macroAverages = intakes.isEmpty ? nil : MacroAverages(
+            proteinG: intakes.map(\.proteinG).reduce(0, +) / Double(intakes.count),
+            carbsG: intakes.map(\.carbsG).reduce(0, +) / Double(intakes.count),
+            fatG: intakes.map(\.fatG).reduce(0, +) / Double(intakes.count),
+        )
         return ChartSeries(
             metric: metric, range: range,
             points: groupsByWeek ? weekly(daily, firstWeekday: firstWeekday) : daily,
@@ -262,6 +278,7 @@ enum ChartBuilder {
             daysWithData: values.count,
             unitLabel: unitLabel(metric, unit: unit),
             bucketDays: groupsByWeek ? 7 : 1,
+            macroAverages: macroAverages,
         )
     }
 
