@@ -213,7 +213,7 @@ extension DashboardSnapshot {
     /// The tile's 7-day trend for VoiceOver ("up over 7 days"), spoken as the tile's value; nil without a chart or
     /// when the tile shows no value.
     func accessibilityTrend(of tile: DashboardTile, state: TileState) -> String? {
-        guard state == .ready else { return nil }
+        guard state.showsHistory else { return nil }
         return sparkline(for: tile)?.accessibilitySummary
     }
 

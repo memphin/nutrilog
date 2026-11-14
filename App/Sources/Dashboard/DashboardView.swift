@@ -183,20 +183,21 @@ struct DashboardTileView: View {
     @ViewBuilder private func card(now: Date) -> some View {
         let state = model.state(of: tile)
         let snapshot = model.snapshot
-        // Only for a tile with a value: no chart when there is no data or no access.
-        let sparkline = state == .ready ? snapshot.sparkline(for: tile) : nil
+        // With a value, or with none today yet (no sleep or steps first thing in the morning): the previous days still
+        // draw. No chart without access or while loading.
+        let sparkline = state.showsHistory ? snapshot.sparkline(for: tile) : nil
         let trend = snapshot.accessibilityTrend(of: tile, state: state)
         let card = VStack(alignment: .leading, spacing: NL.Spacing.s) {
             header(trend: trend, now: now)
             if state == .ready {
                 TileContent(tile: tile, model: model, now: now)
-                if let sparkline {
-                    SparklineView(sparkline: sparkline, tint: tile == .totalEnergy ? .orange : NL.Palette.trend) {
-                        snapshot.goalColor(of: tile, value: $0.upper, day: $0.day)
-                    }
-                }
             } else {
                 TilePlaceholder(state: state, model: model)
+            }
+            if let sparkline {
+                SparklineView(sparkline: sparkline, tint: tile == .totalEnergy ? .orange : NL.Palette.trend) {
+                    snapshot.goalColor(of: tile, value: $0.upper, day: $0.day)
+                }
             }
         }
         .frame(maxWidth: .infinity, minHeight: 96, alignment: .topLeading)

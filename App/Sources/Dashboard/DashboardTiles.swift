@@ -577,6 +577,14 @@ enum TileState: Equatable {
         }
     }
 
+    /// Whether the tile draws its chart of the previous days: with a value, and with none yet today.
+    var showsHistory: Bool {
+        switch self {
+        case .ready, .noData: true
+        case .loading, .needsAccess, .unavailable: false
+        }
+    }
+
     var message: String? {
         switch self {
         case .loading: String(localized: "Reading Apple Health…")

@@ -216,6 +216,12 @@ struct TrendsDataTests {
         #expect(energy.points[0].reference == 2100)
         let macros = ChartBuilder.series(.macros, range: .month, stats: month, unit: .kcal)
         #expect(macros.points.first { $0.proteinG != nil }?.carbsG == 220)
+        // Macros are in grams, not kcal: the value, average and axis follow the stacked grams.
+        #expect(macros.points.first { $0.proteinG != nil }?.value == 410)
+        #expect(macros.average == 410)
+        #expect(macros.macroAverages == MacroAverages(proteinG: 120, carbsG: 220, fatG: 70))
+        #expect(ChartBuilder.barAxisTop(macros, goal: nil) == 500)
+        #expect(ChartBuilder.summary(macros, unit: .kcal).contains("410 g"))
 
         let weight = ChartBuilder.series(.weight, range: .month, stats: month, unit: .kcal)
         let summary = ChartBuilder.summary(weight, unit: .kcal)

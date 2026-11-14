@@ -13,6 +13,10 @@ struct HealthFetchPlanTests {
         #expect(plan.sleepInterval.start == time("2026-03-27 18:00"))
         #expect(plan.sleepInterval.end == time("2026-03-30 18:00"))
         #expect(plan.allDays.map(\.isoString) == ["2026-03-28", "2026-03-29", "2026-03-30"])
+        // HRV is also read from the evening before; the other samples within the days.
+        #expect(plan.sampleInterval(for: .heartRateVariabilitySDNN).start == time("2026-03-27 18:00"))
+        #expect(plan.sampleInterval(for: .heartRateVariabilitySDNN).end == plan.dayInterval.end)
+        #expect(plan.sampleInterval(for: .bodyMass) == plan.dayInterval)
     }
 
     @Test func `day containing a date`() {
@@ -210,6 +214,43 @@ struct DailyMetricsAggregatorTests {
         #expect(spring.hrvSDNNms == 50)
         #expect(spring.sources[.hrv] == watch.name)
         #expect(rows[day("2026-03-30")]?.hrvSDNNms == nil)
+    }
+
+    @Test func `other apps' nightly HRV counts from 18 00 the evening before until 12 00`() throws {
+        // WHOOP writes one reading per night: timed at sleep start (before midnight) or after the sleep was processed.
+        let whoop = HealthSource(name: "WHOOP", bundleIdentifier: "com.whoop.iphone", productType: "iPhone17,1")
+        let batch = HealthDataBatch(days: day("2026-11-09") ... day("2026-11-12"), samples: [
+            .heartRateVariabilitySDNN: [
+                quantity(80, at: "2026-11-08 23:40", whoop), // the first night, before the plan's first midnight
+                quantity(70, at: "2026-11-10 09:30", whoop), // after the watch's 09:00
+                quantity(999, at: "2026-11-10 15:00", whoop), // afternoon: no day's night
+                quantity(65, at: "2026-11-10 18:00", whoop), // the evening before the 11th (start inclusive)
+                quantity(55, at: "2026-11-12 12:00", whoop), // end exclusive
+                quantity(30, at: "2026-11-11 23:00", watch), // the watch keeps 00:00–09:00
+            ],
+        ])
+        let rows = aggregate(batch)
+        #expect(rows[day("2026-11-09")]?.hrvSDNNms == 80)
+        #expect(rows[day("2026-11-09")]?.sources[.hrv] == "WHOOP")
+        #expect(rows[day("2026-11-10")]?.hrvSDNNms == 70)
+        #expect(rows[day("2026-11-11")]?.hrvSDNNms == 65)
+        #expect(rows[day("2026-11-12")]?.hrvSDNNms == nil)
+    }
+
+    @Test func `the watch's night wins over another app's, which fills the nights the watch missed`() throws {
+        let whoop = HealthSource(name: "WHOOP", bundleIdentifier: "com.whoop.iphone", productType: "iPhone17,1")
+        let batch = HealthDataBatch(days: day("2026-11-09") ... day("2026-11-10"), samples: [
+            .heartRateVariabilitySDNN: [
+                quantity(40, at: "2026-11-09 03:00", watch),
+                quantity(90, at: "2026-11-08 23:40", whoop),
+                quantity(50, at: "2026-11-09 14:00", watch), // daytime watch reading: not the 10th's night
+                quantity(85, at: "2026-11-09 23:50", whoop),
+            ],
+        ])
+        let rows = aggregate(batch)
+        #expect(rows[day("2026-11-09")]?.hrvSDNNms == 40)
+        #expect(rows[day("2026-11-10")]?.hrvSDNNms == 85)
+        #expect(rows[day("2026-11-10")]?.sources[.hrv] == "WHOOP")
     }
 
     @Test func `sleep columns come from the sleep aggregator`() throws {

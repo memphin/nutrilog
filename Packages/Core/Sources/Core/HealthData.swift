@@ -230,6 +230,17 @@ public struct HealthFetchPlan: Hashable, Sendable {
         )
     }
 
+    /// Where the samples of `metric` are read: the days, and for HRV also the evening before the first day, where an
+    /// app that writes one reading per night (WHOOP, Oura…) may time the first night's reading
+    /// (`DailyMetricsAggregator.hrvWindow(for:source:calendar:)`).
+    public func sampleInterval(for metric: SampledMetric) -> DateInterval {
+        guard metric == .heartRateVariabilitySDNN else { return dayInterval }
+        return DateInterval(
+            start: days.lowerBound.adding(days: -1).date(atHour: DailyMetricsAggregator.hrvEveningStartHour, calendar: calendar),
+            end: dayInterval.end,
+        )
+    }
+
     /// The day containing `date`, or nil when it lies outside the plan.
     public func day(containing date: Date) -> LocalDay? {
         let day = LocalDay(date, calendar: calendar)

@@ -274,7 +274,9 @@ struct DashboardSnapshot: Equatable {
     /// Total energy without a total today (only one part known) has none either: a chart of totals next to a
     /// partial value would read as if it were one of them.
     func sparkline(for tile: DashboardTile) -> Sparkline? {
-        if tile == .totalEnergy, energyBurned?.totalKcal == nil {
+        // Only active or only resting energy today: no total, so the bars of the other days would not compare. With
+        // nothing yet today the previous days still draw.
+        if tile == .totalEnergy, let burned = energyBurned, burned.totalKcal == nil {
             return nil
         }
         return sparklines[tile].flatMap { $0.isDrawable ? $0 : nil }

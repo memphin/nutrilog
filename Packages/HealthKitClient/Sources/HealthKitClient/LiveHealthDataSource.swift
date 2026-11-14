@@ -131,11 +131,12 @@
         }
 
         private func samples(_ metric: SampledMetric, plan: HealthFetchPlan) async throws -> [HealthQuantitySample] {
+            let interval = plan.sampleInterval(for: metric)
             let descriptor = HKSampleQueryDescriptor(
                 predicates: [.quantitySample(
                     type: metric.quantityType,
                     predicate: HKQuery.predicateForSamples(
-                        withStart: plan.dayInterval.start, end: plan.dayInterval.end, options: .strictStartDate,
+                        withStart: interval.start, end: interval.end, options: .strictStartDate,
                     ),
                 )],
                 sortDescriptors: [SortDescriptor(\.startDate)],

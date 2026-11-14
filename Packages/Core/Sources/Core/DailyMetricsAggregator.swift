@@ -142,7 +142,10 @@ public extension DailyHealthMetrics {
 /// - Weight: the earliest sample of the day (the morning weigh-in). Body fat: the sample from the same
 ///   measurement (same source, within five minutes) when present, else the earliest of the day.
 /// - Resting heart rate: the latest sample of the day from the highest-priority source (Apple Watch first).
-/// - HRV: the average of the samples taken 00:00–09:00, Apple Watch samples only when there are any.
+/// - HRV: Apple Watch samples taken 00:00–09:00 (it measures several times a night, and during the day too) when
+///   there are any; otherwise other apps' samples from 18:00 the evening before until 12:00. Apps such as WHOOP or
+///   Oura write one reading per night, timed when the sleep started (often before midnight) or when it was processed
+///   (often after 09:00), and the watch's window would miss it. The window's samples are averaged.
 /// - Sleep: `SleepAggregator` for the night ending on the day.
 /// - Water: as the cumulative metrics, minus the water written by the sources in `excludingOwnSamplesFrom` (Vitalion
 ///   itself), so water the app logged and wrote to Health is not counted twice (SPEC §3.4 write loops, FR-46).
@@ -151,8 +154,25 @@ public extension DailyHealthMetrics {
 /// - With `localSampleIDs`, only own samples whose row still exists locally are left out: after a reinstall (or a new
 ///   phone without the backup) the app's earlier samples in Health have no local row and are read like other data.
 public enum DailyMetricsAggregator {
-    /// HRV counts samples from midnight until this hour (overnight average).
+    /// HRV counts Apple Watch samples from midnight until this hour (overnight average).
     public static let hrvWindowEndHour = 9
+    /// Other apps' HRV counts from this hour the evening before…
+    public static let hrvEveningStartHour = 18
+    /// …until this hour of the day.
+    public static let hrvAppWindowEndHour = 12
+
+    /// The samples of `source` that count for the HRV of `day`: [00:00, 09:00) for Apple Watch, [18:00 the evening
+    /// before, 12:00) for every other source. The other sources' windows of consecutive days do not overlap, so a
+    /// reading counts for one day only.
+    public static func hrvWindow(for day: LocalDay, source: HealthSourceKind, calendar: Calendar = .current) -> DateInterval {
+        if source == .appleWatch {
+            return DateInterval(start: day.startDate(calendar: calendar), end: day.date(atHour: hrvWindowEndHour, calendar: calendar))
+        }
+        return DateInterval(
+            start: day.adding(days: -1).date(atHour: hrvEveningStartHour, calendar: calendar),
+            end: day.date(atHour: hrvAppWindowEndHour, calendar: calendar),
+        )
+    }
     /// Body fat taken this close to the weight, by the same source, is treated as the same measurement.
     public static let sameMeasurementTolerance: TimeInterval = 5 * 60
 
@@ -206,15 +226,16 @@ public enum DailyMetricsAggregator {
             let samples = ownBody.contains(entry.key) ? entry.value.filter { !isLocal($0) } : entry.value
             result[entry.key] = Dictionary(grouping: samples) { plan.day(containing: $0.start) }
         }
+        // Not grouped by day: another app's reading from the evening before counts for the next day.
+        let hrvSamples = batch.samples[.heartRateVariabilitySDNN] ?? []
         for day in plan.allDays {
             let samples = { (metric: SampledMetric) in samplesByDay[metric]?[day] ?? [] }
             days[day]?.applyBody(weights: samples(.bodyMass), bodyFat: samples(.bodyFatPercentage))
             days[day]?.applyRestingHeartRate(samples(.restingHeartRate))
-            let hrvWindow = DateInterval(
-                start: day.startDate(calendar: calendar),
-                end: day.date(atHour: hrvWindowEndHour, calendar: calendar),
-            )
-            days[day]?.applyHRV(samples(.heartRateVariabilitySDNN).filter { $0.start >= hrvWindow.start && $0.start < hrvWindow.end })
+            days[day]?.applyHRV(hrvSamples.filter { sample in
+                let window = hrvWindow(for: day, source: sample.source.kind, calendar: calendar)
+                return sample.start >= window.start && sample.start < window.end
+            })
         }
 
         for (night, summary) in SleepAggregator.aggregate(samples: batch.sleep, nights: batch.days, calendar: calendar) {

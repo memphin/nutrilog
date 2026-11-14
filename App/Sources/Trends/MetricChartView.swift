@@ -104,11 +104,26 @@ struct MetricChartView: View {
         } else {
             VStack(alignment: .leading, spacing: NL.Spacing.xxs) {
                 Text(metric.isBar ? "Daily average" : "Average").font(.caption).foregroundStyle(.secondary)
-                Text(series.average.map { ChartBuilder.format($0, metric, unit: unit) } ?? "—")
+                Text(averageText(series, unit: unit))
                     .font(NL.Typography.number).monospacedDigit()
             }
             .accessibilityElement(children: .combine)
         }
+    }
+
+    private func averageText(_ series: ChartSeries, unit: EnergyUnit) -> String {
+        if let macros = series.macroAverages {
+            return macroGrams(protein: macros.proteinG, carbs: macros.carbsG, fat: macros.fatG)
+        }
+        return series.average.map { ChartBuilder.format($0, metric, unit: unit) } ?? "—"
+    }
+
+    private func macroGrams(protein: Double, carbs: Double, fat: Double) -> String {
+        let grams = [protein, carbs, fat].map(DisplayRounding.whole)
+        return String(
+            localized: "P \(grams[0]) g · C \(grams[1]) g · F \(grams[2]) g",
+            comment: "Protein, carbs and fat in grams, abbreviated",
+        )
     }
 
     private func pointTitle(_ point: ChartPoint) -> String {
@@ -123,11 +138,7 @@ struct MetricChartView: View {
         var parts: [String] = []
         if metric == .macros {
             if let protein = point.proteinG, let carbs = point.carbsG, let fat = point.fatG {
-                let grams = [protein, carbs, fat].map(DisplayRounding.whole)
-                parts.append(String(
-                    localized: "P \(grams[0]) g · C \(grams[1]) g · F \(grams[2]) g",
-                    comment: "Protein, carbs and fat in grams, abbreviated",
-                ))
+                parts.append(macroGrams(protein: protein, carbs: carbs, fat: fat))
             } else {
                 parts.append(String(localized: "Not logged"))
             }
